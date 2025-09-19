@@ -251,11 +251,11 @@ const getPathData = (feature) => {
   return pathGenerator.value(feature)
 }
 
-// Estilos dinámicos para los estados
+// Estilos dinámicos para los estados -------------------------------------->#FF8600. #FF5510. FF9800
 const getStrokeColor = (stateName) => {
-  if (selectedState.value === stateName) return '#2196F3'
-  if (hoveredState.value === stateName) return '#FF9800'
-  return '#fff'
+  if (selectedState.value === stateName) return '#FfFFFF'
+  if (hoveredState.value === stateName) return '#000000'
+  return '#555555'
 }
 
 const getStrokeWidth = (stateName) => {
@@ -412,18 +412,28 @@ const applyFilter = () => {
 }
 
 .mexico-map {
-  border: 1px solid #ddd;
+  border: 1px solid #13ca65;
   border-radius: 8px;
   background: #f8f9fa;
 }
-
+/*--------------estado*/
 .state-path {
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.05s ease;
+  opacity: 1;
+  stroke-width: .5;
+  vector-effect: non-scaling-stroke; /* Líneas consistentes */
+  stroke-linejoin: round; /* Uniones redondeadas */
+  stroke-linecap: round; /* Extremos redondeados */
 }
-
+/*Cuando hay transicion, lo que pasa en el mapa cuando se hoverea un estado*/
 .state-path:hover {
   filter: brightness(1.1);
+  opacity: 0.9;
+  stroke-width: 0.8;
+  vector-effect: non-scaling-stroke; /* Líneas consistentes */
+  stroke-linejoin: round; /* Uniones redondeadas */
+  stroke-linecap: round; /* Extremos redondeados */
 }
 
 .tooltip {
@@ -530,6 +540,7 @@ const applyFilter = () => {
   text-align: center;
 }
 
+/**/
 .stat-value {
   display: block;
   font-size: 20px;
