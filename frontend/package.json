@@ -1,5 +1,24 @@
+
 {
+  "name": "frontend-finanzas-sostenibles",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "serve": "vite dev"
+  },
   "dependencies": {
-    "d3-geo": "^3.1.1"
+    "vue": "^3.5.21",
+    "vue-router": "^4.2.0",
+    "d3-geo": "^3.1.1",
+    "d3": "^7.8.0",
+    "leaflet": "^1.9.0",
+    "topojson-client": "^3.1.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.0.0",
+    "vite": "^5.0.0"
   }
 }

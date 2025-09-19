@@ -50,38 +50,38 @@
       <div class="map-wrapper">
         <!-- Leyenda de colores IFSS -->
         <div class="color-legend">
-          <h4>Escala IFSS</h4>
-          <div class="legend-items">
-            <div class="legend-item">
-              <div class="legend-color" style="background-color: #6ac952"></div>
-              <span>Muy alto (85-100%)</span>
-            </div>
-            <div class="legend-item">
-              <div class="legend-color" style="background-color: #94d351"></div>
-              <span>Alto (70-84%)</span>
-            </div>
-            <div class="legend-item">
-              <div class="legend-color" style="background-color: #bddc50"></div>
-              <span>Medio alto (55-69%)</span>
-            </div>
-            <div class="legend-item">
-              <div class="legend-color" style="background-color: #e6d64f"></div>
-              <span>Medio (40-54%)</span>
-            </div>
-            <div class="legend-item">
-              <div class="legend-color" style="background-color: #e6a74c"></div>
-              <span>Medio bajo (25-39%)</span>
-            </div>
-            <div class="legend-item">
-              <div class="legend-color" style="background-color: #e67849"></div>
-              <span>Bajo (10-24%)</span>
-            </div>
-            <div class="legend-item">
-              <div class="legend-color" style="background-color: #e52845"></div>
-              <span>Muy bajo (0-9%)</span>
-            </div>
-          </div>
-        </div>
+  <h4>Escala IFSS</h4>
+  <div class="legend-items">
+    <div class="legend-item">
+      <div class="legend-color" style="background-color: #e52845"></div>
+      <span>Muy alto (2.5+)</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-color" style="background-color: #e67849"></div>
+      <span>Alto (2.0-2.4)</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-color" style="background-color: #e6a74c"></div>
+      <span>Medio alto (1.5-1.9)</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-color" style="background-color: #e6d64f"></div>
+      <span>Medio (1.0-1.4)</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-color" style="background-color: #bddc50"></div>
+      <span>Medio bajo (0.8-0.9)</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-color" style="background-color: #94d351"></div>
+      <span>Bajo (0.6-0.7)</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-color" style="background-color: #6ac952"></div>
+      <span>Muy bajo (0.5)</span>
+    </div>
+  </div>
+</div>
 
         <svg 
           :width="mapConfig.width" 
@@ -91,14 +91,14 @@
           <g>
             <path
               v-for="feature in geoData?.features || []"
-              :key="feature.properties.name"
+              :key="feature.properties.state_name"
               :d="getPathData(feature)"
-              :fill="getStateColor(feature.properties.name)"
-              :stroke="getStrokeColor(feature.properties.name)"
-              :stroke-width="getStrokeWidth(feature.properties.name)"
+              :fill="getStateColor(feature.properties.state_name)"
+              :stroke="getStrokeColor(feature.properties.state_name)"
+              :stroke-width="getStrokeWidth(feature.properties.state_name)"
               class="state-path"
-              @click="handleStateClick(feature.properties.name)"
-              @mouseenter="handleStateHover(feature.properties.name)"
+              @click="handleStateClick(feature.properties.state_name)"
+              @mouseenter="handleStateHover(feature.properties.state_name)"
               @mouseleave="handleStateLeave"
             />
           </g>
@@ -113,8 +113,8 @@
           <div class="tooltip-content">
             <h4>{{ hoveredState }}</h4>
             <div class="tooltip-data">
-              <p><strong>IFSS:</strong> {{ getStateInfo(hoveredState).ifss || getStateInfo(hoveredState).financiamiento_verde || 0 }}%</p>
-              <p><strong>Clasificación:</strong> {{ getIFSSLabel(getStateInfo(hoveredState).ifss || getStateInfo(hoveredState).financiamiento_verde || 0).label }}</p>
+              <p><strong>IFSS:</strong> {{ getStateInfo(hoveredState).value || 0 }}</p>
+              <p><strong>Clasificación:</strong> {{ getIFSSLabel(getStateInfo(hoveredState).value || 0).label }}</p>
               <p><strong>Proyectos Activos:</strong> {{ getStateInfo(hoveredState).proyectos_activos }}</p>
               <p><strong>Inversión Total:</strong> ${{ formatCurrency(getStateInfo(hoveredState).inversion_total) }}</p>
             </div>
@@ -131,10 +131,10 @@
         
         <div class="details-content">
           <div class="metric-card">
-            <div class="metric-value">{{ getStateInfo(selectedState).ifss || getStateInfo(selectedState).financiamiento_verde || 0 }}%</div>
+            <div class="metric-value">{{ getStateInfo(selectedState).value || 0 }}</div>
             <div class="metric-label">IFSS</div>
-            <div class="metric-classification" :style="{ color: getIFSSLabel(getStateInfo(selectedState).ifss || getStateInfo(selectedState).financiamiento_verde || 0).color }">
-              {{ getIFSSLabel(getStateInfo(selectedState).ifss || getStateInfo(selectedState).financiamiento_verde || 0).label }}
+            <div class="metric-classification" :style="{ color: getIFSSLabel(getStateInfo(selectedState).value || 0).color }">
+              {{ getIFSSLabel(getStateInfo(selectedState).value || 0).label }}
             </div>
           </div>
           
@@ -190,9 +190,9 @@
             >
               <span class="rank">{{ index + 1 }}</span>
               <span class="name">{{ state.name }}</span>
-              <span class="value">{{ state.ifss || state.financiamiento_verde || 0 }}%</span>
-              <span class="classification" :style="{ color: getIFSSLabel(state.ifss || state.financiamiento_verde || 0).color }">
-                {{ getIFSSLabel(state.ifss || state.financiamiento_verde || 0).label }}
+              <span class="value">{{ state.value || 0 }}</span>
+              <span class="classification" :style="{ color: getIFSSLabel(state.value || 0).color }">
+                {{ getIFSSLabel(state.value || 0).label }}
               </span>
             </div>
           </div>
