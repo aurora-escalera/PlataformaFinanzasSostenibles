@@ -1,0 +1,162 @@
+[
+  {
+    "region": "Aguascalientes",
+    "year": 2023,
+    "value": 0.8
+  },
+  {
+    "region": "Baja California",
+    "year": 2023,
+    "value": 0.7
+  },
+  {
+    "region": "Baja California Sur",
+    "year": 2023,
+    "value": 1.7
+  },
+  {
+    "region": "Campeche",
+    "year": 2023,
+    "value": 1.5
+  },
+  {
+    "region": "Chiapas",
+    "year": 2023,
+    "value": 1.7
+  },
+  {
+    "region": "Chihuahua",
+    "year": 2023,
+    "value": 0.5
+  },
+  {
+    "region": "Ciudad de México",
+    "year": 2023,
+    "value": 1.9
+  },
+  {
+    "region": "Coahuila",
+    "year": 2023,
+    "value": 1.6
+  },
+  {
+    "region": "Colima",
+    "year": 2023,
+    "value": 0.7
+  },
+  {
+    "region": "Durango",
+    "year": 2023,
+    "value": 1.7
+  },
+  {
+    "region": "Estado de México",
+    "year": 2023,
+    "value": 2.0
+  },
+  {
+    "region": "Guanajuato",
+    "year": 2023,
+    "value": 1.6
+  },
+  {
+    "region": "Guerrero",
+    "year": 2023,
+    "value": 2.1
+  },
+  {
+    "region": "Hidalgo",
+    "year": 2023,
+    "value": 1.9
+  },
+  {
+    "region": "Jalisco",
+    "year": 2023,
+    "value": 1.9
+  },
+  {
+    "region": "Michoacán",
+    "year": 2023,
+    "value": 1.6
+  },
+  {
+    "region": "Morelos",
+    "year": 2023,
+    "value": 2.0
+  },
+  {
+    "region": "Nayarit",
+    "year": 2023,
+    "value": 1.7
+  },
+  {
+    "region": "Nuevo León",
+    "year": 2023,
+    "value": 1.9
+  },
+  {
+    "region": "Oaxaca",
+    "year": 2023,
+    "value": 2.9
+  },
+  {
+    "region": "Puebla",
+    "year": 2023,
+    "value": 1.8
+  },
+  {
+    "region": "Querétaro",
+    "year": 2023,
+    "value": 2.0
+  },
+  {
+    "region": "Quintana Roo",
+    "year": 2023,
+    "value": 2.0
+  },
+  {
+    "region": "San Luis Potosí",
+    "year": 2023,
+    "value": 1.9
+  },
+  {
+    "region": "Sinaloa",
+    "year": 2023,
+    "value": 1.1
+  },
+  {
+    "region": "Sonora",
+    "year": 2023,
+    "value": 1.7
+  },
+  {
+    "region": "Tabasco",
+    "year": 2023,
+    "value": 1.9
+  },
+  {
+    "region": "Tamaulipas",
+    "year": 2023,
+    "value": 2.0
+  },
+  {
+    "region": "Tlaxcala",
+    "year": 2023,
+    "value": 2.2
+  },
+  {
+    "region": "Veracruz",
+    "year": 2023,
+    "value": 2.0
+  },
+  {
+    "region": "Yucatán",
+    "year": 2023,
+    "value": 2.1
+  },
+  {
+    "region": "Zacatecas",
+    "year": 2023,
+    "value": 2.4
+  }
+]
