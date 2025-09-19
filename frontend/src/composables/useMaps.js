@@ -12,10 +12,10 @@ export const useMaps = () => {
   
   // Configuración del mapa
   const mapConfig = ref({
-    width: 800,
-    height: 600,
-    scale: 2500,
-    center: [-102, 23], // Centro aproximado de México
+    width: 1200,
+    height: 800,
+    scale: 1600,
+    center: [-99, 23], // Centro aproximado de México
     projection: 'geoMercator'
   })
 
