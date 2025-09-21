@@ -1,6 +1,5 @@
-
- <!-- src/modules/maps/components/MapComponent.vue-->
-  <template>
+<!-- src/modules/maps/components/MapComponent.vue - SOLO DATOS REALES -->
+<template>
   <div class="map-container">
     <!-- Loading State -->
     <div v-if="loading" class="loading-state">
@@ -18,15 +17,14 @@
 
     <!-- Map Content -->
     <div v-if="!loading && !error" class="map-content">
-
       <!-- SVG Map -->
-    <div class="map-wrapper">
-    <!-- Información de hover/nacional -->
+      <div class="map-wrapper">
+        <!-- Información de hover/nacional -->
         <div class="hover-info-box">
           <!-- Si hay estado en hover, mostrar información del estado -->
           <div v-if="hoveredState" class="info-content">
             <div class="location-label">{{ hoveredState }}</div>
-            <div class="value-display">{{ getStateInfo(hoveredState).value || 0  }}%</div>
+            <div class="value-display">{{ getStateInfo(hoveredState).value || 0 }}%</div>
           </div>
           
           <!-- Si no hay estado en hover, mostrar información nacional -->
@@ -35,7 +33,6 @@
             <div class="value-display">{{ nationalIFSS.value }}%</div>
           </div>
         </div>
-
 
         <!-- Leyenda de colores IFSS -->
         <div class="color-legend">
@@ -70,6 +67,7 @@
             </div>
           </div>
         </div>
+
         <svg 
           :width="mapConfig.width" 
           :height="mapConfig.height"
@@ -88,7 +86,6 @@
               @mouseenter="handleMouseHover(feature.properties.state_name, $event)"
               @mouseleave="handleStateLeave"
             />
-
           </g>
         </svg>
 
@@ -103,12 +100,13 @@
             <div class="tooltip-data">
               <p>IFSS: {{ getStateInfo(hoveredState).value || 0 }}</p>
               <p>Clasificación: {{ getIFSSLabel(getStateInfo(hoveredState).value || 0).label }}</p>
+              <p>Año: {{ getStateInfo(hoveredState).year }}</p>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- State Details Panel -->
+      <!-- State Details Panel - SOLO DATOS REALES -->
       <div v-if="selectedState" class="details-panel">
         <div class="details-header">
           <h3>{{ selectedState }}</h3>
@@ -125,13 +123,8 @@
           </div>
           
           <div class="metric-card">
-            <div class="metric-value">{{ getStateInfo(selectedState).proyectos_activos }}</div>
-            <div class="metric-label">Proyectos Activos</div>
-          </div>
-          
-          <div class="metric-card">
-            <div class="metric-value">${{ formatCurrency(getStateInfo(selectedState).inversion_total) }}</div>
-            <div class="metric-label">Inversión Total</div>
+            <div class="metric-value">{{ getStateInfo(selectedState).year }}</div>
+            <div class="metric-label">Año de datos</div>
           </div>
         </div>
 
@@ -140,25 +133,25 @@
         </div>
       </div>
 
-      <!-- Statistics Summary -->
+      <!-- Statistics Summary - SOLO DATOS REALES -->
       <div v-if="generalStats" class="stats-summary">
-        <h3>Resumen Nacional</h3>
+        <h3>Resumen Nacional IFSS</h3>
         <div class="stats-grid">
           <div class="stat-item">
             <span class="stat-value">{{ generalStats.totalStates }}</span>
             <span class="stat-label">Estados</span>
           </div>
           <div class="stat-item">
-            <span class="stat-value">${{ formatCurrency(generalStats.totalInvestment) }}</span>
-            <span class="stat-label">Inversión Total</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-value">{{ generalStats.totalProjects }}</span>
-            <span class="stat-label">Proyectos Totales</span>
-          </div>
-          <div class="stat-item">
             <span class="stat-value">{{ generalStats.avgIFSS }}%</span>
             <span class="stat-label">Promedio IFSS</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value">{{ generalStats.maxIFSS }}%</span>
+            <span class="stat-label">IFSS Máximo</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value">{{ generalStats.minIFSS }}%</span>
+            <span class="stat-label">IFSS Mínimo</span>
           </div>
         </div>
       </div>
@@ -166,7 +159,7 @@
       <!-- Top Performers -->
       <div class="rankings">
         <div class="top-performers">
-          <h4>🏆 Top 5 Estados</h4>
+          <h4>🏆 Top 5 Estados IFSS</h4>
           <div class="ranking-list">
             <div 
               v-for="(state, index) in topPerformingStates" 
@@ -210,27 +203,18 @@ const {
   handleStateClick,
   handleStateHover,
   handleStateLeave,
-  resetSelection,
-  searchState,
-  filterByRange,
   initializeData
 } = useMaps()
 
 // Estados locales del componente
-const searchTerm = ref('')
-const minFilter = ref(0)
-const searchResults = ref([])
-
 const mousePosition = ref({ x: 0, y: 0 })
+
 // Función local para manejar el hover con posición del mouse
 const handleMouseHover = (stateName, event) => {
-  // Capturar posición del mouse
   mousePosition.value = {
     x: event.clientX,
     y: event.clientY
   }
-  
-  // Llamar a la función original del composable
   handleStateHover(stateName)
 }
 
@@ -251,17 +235,11 @@ const getPathData = (feature) => {
   return pathGenerator.value(feature)
 }
 
-// Estilos dinámicos para los estados -------------------------------------->#FF8600. #FF5510. FF9800
-/*const getStrokeColor = (stateName) => {
-  if (selectedState.value === stateName) return '#FfFFFF'
-  if (hoveredState.value === stateName) return '#000000'
-  return '#555555'
-}
-*/
+// Estilos dinámicos para los estados
 const getStrokeColor = (stateName) => {
   if (selectedState.value === stateName) return '#FfFFFF'
   if (hoveredState.value === stateName) return '#555555'
-  return '#555555' // ← Mismo color que el fondo del SVG, esto hará invisible el contorno externo
+  return '#555555'
 }
 
 const getStrokeWidth = (stateName) => {
@@ -275,37 +253,15 @@ const tooltipStyle = computed(() => {
   if (!hoveredState.value) return { display: 'none' }
   
   return {
-    position: 'fixed', // Cambiar a 'fixed' para posición relativa a la ventana
-    left: `${mousePosition.value.x + 20}px`, // Offset de 15px a la derecha
-    top: `${mousePosition.value.y - 150}px`, // Offset de 10px arriba
+    position: 'fixed',
+    left: `${mousePosition.value.x + 20}px`,
+    top: `${mousePosition.value.y - 150}px`,
     pointerEvents: 'none',
     zIndex: 1000,
-    transform: 'translate(0, 0)', // Evitar transformaciones adicionales
-    maxWidth: '250px' // Limitar ancho del tooltip
+    transform: 'translate(0, 0)',
+    maxWidth: '250px'
   }
 })
-
-// Formatear moneda
-const formatCurrency = (value) => {
-  if (!value) return '0'
-  return new Intl.NumberFormat('es-MX', {
-    style: 'currency',
-    currency: 'MXN',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(value).replace('MX$', '')
-}
-
-// Búsqueda de estados
-const onSearch = () => {
-  searchResults.value = searchState(searchTerm.value)
-}
-
-// Aplicar filtro
-const applyFilter = () => {
-  const filtered = filterByRange(minFilter.value, 100)
-  console.log('Estados filtrados:', filtered)
-}
 </script>
 
 <style scoped>
@@ -362,46 +318,6 @@ const applyFilter = () => {
   max-width: 450px;
 }
 
-.color-legend h4 {
-  margin: 0 0 14px 0;
-  font-size: 12px;
-  color: #333;
-  text-align: center;
-  font-weight: 600;
-}
-
-/* Barra de colores continua */
-.color-bar {
-  height: 20px;
-  border-radius: 10px;
-  background: linear-gradient(to left, 
-    #6ac952 100%,     /* Muy bajo */
-    #94d351 83.33%, /* Bajo */
-    #bddc50 66.67%, /* Medio bajo */
-    #e6d64f 50%,    /* Medio */
-    #e6a74c 33.33% /* Medio alto */
-    #e67849 16.67%, /* Alto */
-    #e52845 0%    /* Muy alto */
-  );
-  border: 1px solid rgba(0,0,0,0.1);
-  position: relative;
-}
-
-.color-labels {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 5px;
-  font-size: 10px;
-  color: #666;
-}
-
-.color-labels span {
-  flex: 1;
-  text-align: center;
-  padding: 0 2px;
-}
-
-/* ===== CUADRO DE INFORMACIÓN EN HOVER ===== */
 .hover-info-box {
   position: absolute;
   top: 59%;
@@ -433,14 +349,13 @@ const applyFilter = () => {
   padding-bottom: 14px;
 }
 
-/* Alternativa: Items individuales horizontales */
 .legend-items-horizontal {
   display: flex;
-  gap: 0; /* Sin espacios entre elementos */
+  gap: 0;
   align-items: stretch;
   justify-content: center;
   border-radius: 4px;
-  overflow: hidden; /* Para bordes redondeados */
+  overflow: hidden;
   border: 0px solid rgba(0,0,0,0.1);
 }
 
@@ -457,11 +372,10 @@ const applyFilter = () => {
 .legend-color-horizontal {
   width: 160%;
   height: 30px;
-  border: none; /* Sin bordes individuales */
+  border: none;
   margin-bottom: 4px;
 }
 
-/* Bordes redondeados solo en extremos */
 .legend-item-horizontal:first-child .legend-color-horizontal {
   border-radius: 4px 0 0 4px;
 }
@@ -470,33 +384,10 @@ const applyFilter = () => {
   border-radius: 0 4px 4px 0;
 }
 
-/* Texto debajo de la barra */
 .legend-item-horizontal span {
   padding: 2px 4px;
   font-size: 9px;
   line-height: 1.2;
-}
-
-.legend-items {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  color: #333;
-}
-
-.legend-color {
-  width: 12px;
-  height: 14px;
-  border-radius: 2px;
-  border: 1px solid rgba(0,0,0,0.1);
-  flex-shrink: 0;
 }
 
 .mexico-map {
@@ -504,37 +395,35 @@ const applyFilter = () => {
   border-radius: 8px;
   background: #f8f9fa;
 }
-/*--------------estado*/
+
 .state-path {
   cursor: pointer;
   transition: all 0.05s ease;
   opacity: 1;
   stroke-width: .5;
-  vector-effect: non-scaling-stroke; /* Líneas consistentes */
-  stroke-linejoin: round; /* Uniones redondeadas */
-  stroke-linecap: round; /* Extremos redondeados */
+  vector-effect: non-scaling-stroke;
+  stroke-linejoin: round;
+  stroke-linecap: round;
 }
-/*Cuando hay transicion, lo que pasa en el mapa cuando se hoverea un estado*/
+
 .state-path:hover {
   filter: brightness(1.3);
   opacity: 0.95;
   stroke-width: 0.5;
-  vector-effect: non-scaling-stroke; /* Líneas consistentes */
-  stroke-linejoin: round; /* Uniones redondeadas */
-  stroke-linecap: round; /* Extremos redondeados */
+  vector-effect: non-scaling-stroke;
+  stroke-linejoin: round;
+  stroke-linecap: round;
 }
 
-/* Cuando hay hover en cualquier estado del grupo */
 svg g:hover .state-path {
-  opacity: 0.8; /* Todos los estados se atenúan */
+  opacity: 0.8;
 }
 
-/* El estado específico que tiene hover mantiene opacidad 1 */
 svg g:hover .state-path:hover  {
   opacity: 1;
   filter: saturate(1.8) contrast(1.3);
   stroke-width: 0.4;
-    filter: drop-shadow(0 0 6px rgba(10, 10, 10, 0.8));
+  filter: drop-shadow(0 0 6px rgba(10, 10, 10, 0.8));
   transform-origin: center;
 }
 
@@ -646,7 +535,6 @@ svg g:hover .state-path:hover  {
   text-align: center;
 }
 
-/**/
 .stat-value {
   display: block;
   font-size: 20px;
@@ -722,11 +610,6 @@ svg g:hover .state-path:hover  {
     padding: 10px;
   }
   
-  .map-controls {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
   .map-wrapper {
     flex-direction: column;
     align-items: center;
@@ -734,12 +617,6 @@ svg g:hover .state-path:hover  {
   
   .color-legend {
     min-width: 140px;
-  }
-  
-  .legend-items {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 4px;
   }
   
   .details-content {
