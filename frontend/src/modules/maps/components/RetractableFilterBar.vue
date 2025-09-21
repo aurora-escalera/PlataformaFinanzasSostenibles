@@ -273,10 +273,11 @@ onMounted(() => {
 <style scoped>
 .filter-bar-container {
   position: relative;
+
   left: 8%;
   top: 0px;
   width: 80%;
-  height: 150px; /* Altura fija para el contenedor */
+  height: 100px; /* Altura fija para el contenedor */
   overflow: hidden; /* Ocultar la parte que se desliza fuera */
   margin: 0; /* Eliminar margin-bottom para quitar el gap */
   padding: 0; /* Eliminar cualquier padding */
@@ -286,18 +287,16 @@ onMounted(() => {
   background: linear-gradient(135deg, #2c5282 0%, #2a4d7a 100%);
   color: white;
   padding: 16px 24px;
-  border-radius: 12px 12px 0 0; /* Solo bordes superiores redondeados */
+  border-radius: 45px 30px 0 0; /* Solo bordes superiores redondeados */
   box-shadow: 0 4px 20px rgba(44, 82, 130, 0.3);
   transition: transform 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
   position: absolute;
-  top: 70px;
+  bottom: -30px;
   left: 0;
   right: 0;
-  width: 100%;
+  width: 80%;
   cursor: pointer;
   transform: translateY(calc(100% - 70px)); /* Mostrar solo 70px de la barra */
-  margin-top: 0;
-  padding-top: 0px;
 }
 
 .filter-bar:hover,
@@ -309,16 +308,12 @@ onMounted(() => {
 .filter-content {
   display: flex;
   gap: 24px; /* Restaurar espaciado para el estado expandido */
-  padding-top: 0%;
-  margin-top: 0;
   align-items: flex-start;
   flex-wrap: wrap;
   justify-content: center; /* Centrar los elementos */
 }
 
 .filter-group {
-  padding-top: 1%;
-  margin-top: 0;
   position: relative;
   min-width: 200px;
   flex: 1;
@@ -332,32 +327,28 @@ onMounted(() => {
 .filter-group:not(:last-child)::after {
   content: '|';
   position: absolute;
-  right: -1px; 
-  top: 5px; 
+  right: -1px;
+  top: 50%; /* Centrar verticalmente con el contenido */
+  transform: translateY(-50%);
   color: rgba(255, 255, 255, 0.6);
   font-size: 18px;
   font-weight: 300;
-  padding-bottom: 100px;
-  z-index: 10; /* Asegurar que esté por encima */
-  transition: top 0.1s ease; /* Transición suave para el cambio de posición */
+  z-index: 10;
+  transition: all 0.1s ease;
 }
 
-/* Cuando está expandida, mover los separadores al centro */
+/* Cuando está expandida, mantener la misma posición centrada */
 .filter-bar.expanded .filter-group:not(:last-child)::after {
-  top: 35%;
-  transform: translateY(0%);
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 .filter-label {
   display: block;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
-  margin-top: 0;
-  font-family:Verdana, Geneva, Tahoma, sans-serif;
-  padding-top: 0px; /*padding entre entidad y el dropdown*/
-  margin-bottom: 25px;
+  margin-bottom: 8px;
   color: #e2e8f0;
-  font-weight:300;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -367,33 +358,42 @@ onMounted(() => {
 }
 
 .dropdown-button {
-  width: 100%;
-  background: rgba(255, 255, 255, 0.1);
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  color: white;
+  opacity: 80%;
+  width: 200px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: #2d3748;
   padding: 12px 16px;
-  border-radius: 8px;
+  border-radius: 25px; /* Bordes muy redondeados como en la imagen 2 */
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 12px;
   transition: all 0.2s ease;
-    margin-top: 0;
-  padding-top: 0px;
   font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .dropdown-button:hover,
 .dropdown-button.active {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 1);
+  border-color: rgba(255, 255, 255, 0.6);
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .dropdown-icon {
-  font-size: 14px;
-    margin-top: 0;
-  padding-top: 0px;
+  font-size: 16px;
+  width: 24px;
+  height: 24px;
+  background: #4a5568;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 12px;
 }
 
 .dropdown-text {
@@ -402,13 +402,14 @@ onMounted(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-    margin-top: 0;
-  padding-top: 0px;
+  color: #4a5568; /* Color más oscuro para mejor contraste */
+  font-weight: 500;
 }
 
 .dropdown-arrow {
-  font-size: 1spx;
+  font-size: 12px;
   transition: transform 0.2s ease;
+  color: #718096; /* Color más suave para la flecha */
 }
 
 .dropdown-button.active .dropdown-arrow {
@@ -423,13 +424,11 @@ onMounted(() => {
   background: white;
   border-radius: 8px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
+  z-index: 9999; /* Aumentar z-index para que aparezca por encima del wrapper */
   margin-top: 8px;
   max-height: 300px;
   overflow: hidden;
   animation: dropdownFadeIn 0.2s ease;
-    margin-top: 0;
-  padding-top: 0px;
 }
 
 @keyframes dropdownFadeIn {
