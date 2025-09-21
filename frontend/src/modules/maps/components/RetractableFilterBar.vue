@@ -1,7 +1,13 @@
+<!-- src/modules/maps/components/RetractableFilterBar.vue -->
 <template>
   <div class="filter-bar-container">
     <!-- Barra de filtros principal -->
-    <div class="filter-bar" :class="{ 'expanded': isExpanded }">
+    <div 
+      class="filter-bar" 
+      :class="{ 'expanded': isSlideUp || activeDropdown }"
+      @mouseenter="handleMouseEnter"
+      @mouseleave="handleMouseLeave"
+    >
       <div class="filter-content">
         <!-- Filtro Entidad -->
         <div class="filter-group">
@@ -74,13 +80,14 @@
                   :class="{ 'selected': selectedYear === year }"
                 >
                   <span>{{ year }}</span>
+                  <span v-if="year !== '2023'" class="year-note">(Sin datos)</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Filtro Variable -->
+        <!-- Filtro Variable SIMPLIFICADO -->
         <div class="filter-group">
           <label class="filter-label">Variable</label>
           <div class="filter-dropdown">
@@ -90,7 +97,7 @@
               :class="{ 'active': activeDropdown === 'variable' }"
             >
               <span class="dropdown-icon">📊</span>
-              <span class="dropdown-text">{{ selectedVariable?.label || 'IFSS Total' }}</span>
+              <span class="dropdown-text">IFSS Total</span>
               <span class="dropdown-arrow">▼</span>
             </button>
             
@@ -98,29 +105,26 @@
             <div v-if="activeDropdown === 'variable'" class="dropdown-menu">
               <div class="dropdown-options">
                 <div 
-                  v-for="variable in availableVariables" 
-                  :key="variable.key"
-                  @click="selectVariable(variable)"
-                  class="dropdown-option"
-                  :class="{ 'selected': selectedVariable?.key === variable.key }"
+                  @click="selectVariable(defaultVariable)"
+                  class="dropdown-option selected"
                 >
-                  <span>{{ variable.label }}</span>
-                  <span class="variable-description">{{ variable.description }}</span>
+                  <span>IFSS Total</span>
+                  <span class="variable-description">Índice completo de finanzas sostenibles</span>
+                </div>
+                <!-- Futuras variables cuando tengas más datos -->
+                <div class="dropdown-option disabled">
+                  <span>Financiamiento Verde</span>
+                  <span class="variable-description">Próximamente</span>
+                </div>
+                <div class="dropdown-option disabled">
+                  <span>Transparencia</span>
+                  <span class="variable-description">Próximamente</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-
-      <!-- Botón para expandir/contraer -->
-      <button 
-        @click="toggleExpanded"
-        class="expand-button"
-        :class="{ 'expanded': isExpanded }"
-      >
-        {{ isExpanded ? '▲' : '▼' }}
-      </button>
     </div>
 
     <!-- Overlay para cerrar dropdowns -->
@@ -156,9 +160,10 @@ const emit = defineEmits([
 ])
 
 // Estados reactivos
-const isExpanded = ref(true)
+const isSlideUp = ref(false) // Controla si está deslizado hacia arriba
 const activeDropdown = ref(null)
 const entitySearch = ref('')
+const slideTimeout = ref(null)
 
 // Filtros seleccionados
 const selectedEntity = ref(null)
@@ -170,38 +175,13 @@ const availableYears = ref([
   '2023', '2022', '2021', '2020', '2019'
 ])
 
-const availableVariables = ref([
-  {
-    key: 'ifss_total',
-    label: 'IFSS Total',
-    description: 'Índice completo de finanzas sostenibles'
-  },
-  {
-    key: 'financiamiento_verde',
-    label: 'Financiamiento Verde',
-    description: 'Recursos destinados a proyectos ambientales'
-  },
-  {
-    key: 'transparencia',
-    label: 'Transparencia',
-    description: 'Nivel de transparencia en información financiera'
-  },
-  {
-    key: 'gestion_riesgo',
-    label: 'Gestión de Riesgo',
-    description: 'Capacidad de gestión de riesgos climáticos'
-  },
-  {
-    key: 'innovacion',
-    label: 'Innovación',
-    description: 'Adopción de tecnologías e instrumentos innovadores'
-  },
-  {
-    key: 'participacion_social',
-    label: 'Participación Social',
-    description: 'Nivel de participación ciudadana en decisiones'
-  }
-])
+// Variable por defecto (única disponible actualmente)
+const defaultVariable = ref({
+  key: 'ifss_total',
+  label: 'IFSS Total',
+  description: 'Índice completo de finanzas sostenibles',
+  field: 'value'
+})
 
 // Computed
 const filteredEntities = computed(() => {
@@ -213,17 +193,33 @@ const filteredEntities = computed(() => {
   )
 })
 
-// Métodos
-const toggleExpanded = () => {
-  isExpanded.value = !isExpanded.value
-  if (!isExpanded.value) {
-    closeAllDropdowns()
+// Métodos para manejo de deslizamiento
+const handleMouseEnter = () => {
+  // Limpiar timeout anterior si existe
+  if (slideTimeout.value) {
+    clearTimeout(slideTimeout.value)
+    slideTimeout.value = null
+  }
+  isSlideUp.value = true
+}
+
+const handleMouseLeave = () => {
+  // Solo deslizar hacia abajo si no hay dropdowns activos
+  if (!activeDropdown.value) {
+    slideTimeout.value = setTimeout(() => {
+      isSlideUp.value = false
+    }, 300) // 300ms de delay
   }
 }
 
 const toggleDropdown = (dropdownName) => {
-  if (!isExpanded.value) {
-    isExpanded.value = true
+  // Asegurar que esté deslizado hacia arriba cuando se abre un dropdown
+  isSlideUp.value = true
+  
+  // Limpiar timeout si existe
+  if (slideTimeout.value) {
+    clearTimeout(slideTimeout.value)
+    slideTimeout.value = null
   }
   
   activeDropdown.value = activeDropdown.value === dropdownName ? null : dropdownName
@@ -231,6 +227,11 @@ const toggleDropdown = (dropdownName) => {
 
 const closeAllDropdowns = () => {
   activeDropdown.value = null
+  
+  // Permitir que se deslice hacia abajo después de cerrar dropdowns
+  slideTimeout.value = setTimeout(() => {
+    isSlideUp.value = false
+  }, 300)
 }
 
 const selectEntity = (entityName) => {
@@ -264,62 +265,99 @@ const emitFiltersChange = () => {
 
 // Inicialización
 onMounted(() => {
-  selectedVariable.value = availableVariables.value[0]
+  selectedVariable.value = defaultVariable.value
   emitFiltersChange()
 })
 </script>
 
 <style scoped>
 .filter-bar-container {
-  display: flex;
-  justify-content: space-between;
-  padding: 10px;
-  background: #f8f9fa;
-  border-radius: 6px;
-}
-
-.stat-item span:first-child {
-  color: #666;
-}
-
-.stat-item span:last-child {
-  font-weight: bold;
-  color: #4CAF50;
+  position: relative;
+  left: 8%;
+  top: 0px;
+  width: 80%;
+  height: 150px; /* Altura fija para el contenedor */
+  overflow: hidden; /* Ocultar la parte que se desliza fuera */
+  margin: 0; /* Eliminar margin-bottom para quitar el gap */
+  padding: 0; /* Eliminar cualquier padding */
 }
 
 .filter-bar {
   background: linear-gradient(135deg, #2c5282 0%, #2a4d7a 100%);
   color: white;
   padding: 16px 24px;
-  border-radius: 12px;
+  border-radius: 12px 12px 0 0; /* Solo bordes superiores redondeados */
   box-shadow: 0 4px 20px rgba(44, 82, 130, 0.3);
-  transition: all 0.3s ease;
-  margin-bottom: 20px;
+  transition: transform 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
+  position: absolute;
+  top: 70px;
+  left: 0;
+  right: 0;
+  width: 100%;
+  cursor: pointer;
+  transform: translateY(calc(100% - 70px)); /* Mostrar solo 70px de la barra */
+  margin-top: 0;
+  padding-top: 0px;
 }
 
+.filter-bar:hover,
 .filter-bar.expanded {
-  padding: 24px;
+  transform: translateY(0); /* Deslizar completamente hacia arriba */
+  cursor: default;
 }
 
 .filter-content {
   display: flex;
-  gap: 32px;
+  gap: 24px; /* Restaurar espaciado para el estado expandido */
+  padding-top: 0%;
+  margin-top: 0;
   align-items: flex-start;
   flex-wrap: wrap;
+  justify-content: center; /* Centrar los elementos */
 }
 
 .filter-group {
+  padding-top: 1%;
+  margin-top: 0;
   position: relative;
   min-width: 200px;
   flex: 1;
+  text-align: center; /* Centrar el contenido del grupo */
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Centrar horizontalmente */
+}
+
+/* Agregar separadores verticales */
+.filter-group:not(:last-child)::after {
+  content: '|';
+  position: absolute;
+  right: -1px; 
+  top: 5px; 
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 18px;
+  font-weight: 300;
+  padding-bottom: 100px;
+  z-index: 10; /* Asegurar que esté por encima */
+  transition: top 0.1s ease; /* Transición suave para el cambio de posición */
+}
+
+/* Cuando está expandida, mover los separadores al centro */
+.filter-bar.expanded .filter-group:not(:last-child)::after {
+  top: 35%;
+  transform: translateY(0%);
 }
 
 .filter-label {
   display: block;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
-  margin-bottom: 8px;
+  margin-top: 0;
+  font-family:Verdana, Geneva, Tahoma, sans-serif;
+  padding-top: 0px; /*padding entre entidad y el dropdown*/
+  margin-bottom: 25px;
   color: #e2e8f0;
+  font-weight:300;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -340,6 +378,8 @@ onMounted(() => {
   align-items: center;
   gap: 12px;
   transition: all 0.2s ease;
+    margin-top: 0;
+  padding-top: 0px;
   font-size: 14px;
 }
 
@@ -351,7 +391,9 @@ onMounted(() => {
 }
 
 .dropdown-icon {
-  font-size: 16px;
+  font-size: 14px;
+    margin-top: 0;
+  padding-top: 0px;
 }
 
 .dropdown-text {
@@ -360,10 +402,12 @@ onMounted(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+    margin-top: 0;
+  padding-top: 0px;
 }
 
 .dropdown-arrow {
-  font-size: 12px;
+  font-size: 1spx;
   transition: transform 0.2s ease;
 }
 
@@ -384,6 +428,8 @@ onMounted(() => {
   max-height: 300px;
   overflow: hidden;
   animation: dropdownFadeIn 0.2s ease;
+    margin-top: 0;
+  padding-top: 0px;
 }
 
 @keyframes dropdownFadeIn {
@@ -442,6 +488,16 @@ onMounted(() => {
   font-weight: 600;
 }
 
+.dropdown-option.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f9f9f9;
+}
+
+.dropdown-option.disabled:hover {
+  background: #f9f9f9;
+}
+
 .dropdown-option:last-child {
   border-bottom: none;
 }
@@ -459,28 +515,10 @@ onMounted(() => {
   text-align: right;
 }
 
-.expand-button {
-  position: absolute;
-  right: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  color: white;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  font-size: 14px;
-}
-
-.expand-button:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: translateY(-50%) scale(1.1);
+.year-note {
+  font-size: 10px;
+  color: #999;
+  font-style: italic;
 }
 
 .dropdown-overlay {
@@ -504,29 +542,12 @@ onMounted(() => {
     min-width: 100%;
   }
   
-  .expand-button {
-    position: relative;
-    right: auto;
-    top: auto;
-    transform: none;
-    margin-top: 16px;
-    align-self: center;
+  .filter-bar-container {
+    height: 80px; /* Altura menor en móvil */
   }
-}
-
-/* Estados colapsado */
-.filter-bar:not(.expanded) .filter-content {
-  display: none;
-}
-
-.filter-bar:not(.expanded) {
-  padding: 12px 24px;
-  cursor: pointer;
-}
-
-.filter-bar:not(.expanded) .expand-button {
-  position: static;
-  transform: none;
-  margin: 0;
+  
+  .filter-bar {
+    transform: translateY(calc(100% - 60px)); /* Mostrar menos en móvil */
+  }
 }
 </style>

@@ -1,3 +1,4 @@
+ <!-- src/pages/MapsPage.vue-->
 <template>
   <div class="maps-page">
     <!-- Barra de filtros retráctil -->

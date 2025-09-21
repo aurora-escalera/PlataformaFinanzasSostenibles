@@ -17,44 +17,16 @@ export const useFilters = () => {
     '2023', '2022', '2021', '2020', '2019'
   ])
 
-  // Configuración de variables IFSS
+  // Configuración de variables IFSS - SIMPLIFICADA PARA TUS DATOS
   const availableVariables = ref([
     {
       key: 'ifss_total',
       label: 'IFSS Total',
       description: 'Índice completo de finanzas sostenibles',
-      field: 'value' // Campo en el JSON
-    },
-    {
-      key: 'financiamiento_verde',
-      label: 'Financiamiento Verde',
-      description: 'Recursos destinados a proyectos ambientales',
-      field: 'financiamiento_verde'
-    },
-    {
-      key: 'transparencia',
-      label: 'Transparencia',
-      description: 'Nivel de transparencia en información financiera',
-      field: 'transparencia'
-    },
-    {
-      key: 'gestion_riesgo',
-      label: 'Gestión de Riesgo',
-      description: 'Capacidad de gestión de riesgos climáticos',
-      field: 'gestion_riesgo'
-    },
-    {
-      key: 'innovacion',
-      label: 'Innovación',
-      description: 'Adopción de tecnologías e instrumentos innovadores',
-      field: 'innovacion'
-    },
-    {
-      key: 'participacion_social',
-      label: 'Participación Social',
-      description: 'Nivel de participación ciudadana en decisiones',
-      field: 'participacion_social'
+      field: 'value' // Tu único campo disponible
     }
+    // Como solo tienes 'value', solo ofrecemos una variable por ahora
+    // Puedes agregar más cuando tengas datos adicionales
   ])
 
   // Cargar datos de sustentabilidad para filtros
@@ -215,17 +187,13 @@ export const useFilters = () => {
 
   // Obtener configuración de colores para la variable actual
   const getVariableColorConfig = () => {
-    // Puedes personalizar colores según la variable
+    // Configuración basada en tus valores reales (0.5 - 2.9)
     const configs = {
       'ifss_total': {
-        scale: [0, 3],
+        scale: [0.5, 2.9],
         colors: ['#e52845', '#e67849', '#e6a74c', '#e6d64f', '#bddc50', '#94d351', '#6ac952']
-      },
-      'financiamiento_verde': {
-        scale: [0, 100],
-        colors: ['#ff6b6b', '#feca57', '#48dbfb', '#0abde3', '#00d2d3', '#54a0ff', '#5f27cd']
       }
-      // Agregar más configuraciones según necesites
+      // Solo tienes una variable por ahora
     }
     
     const variableKey = selectedVariable.value?.key || 'ifss_total'

@@ -33,10 +33,9 @@ export const useMaps = () => {
     }
   })
 
-  // Cargar datos GeoJSON de México - CORREGIDO
+  // Cargar datos GeoJSON de México
   const loadGeoData = async () => {
     try {
-      // Cambiar ruta para usar archivos en public/
       const response = await fetch('/mexicoStates.json')
       if (!response.ok) throw new Error('Error al cargar datos geográficos')
       geoData.value = await response.json()
@@ -47,10 +46,9 @@ export const useMaps = () => {
     }
   }
 
-  // Cargar datos de sustentabilidad - CORREGIDO
+  // Cargar datos de sustentabilidad
   const loadSustainabilityData = async () => {
     try {
-      // Cambiar ruta y campo de mapeo
       const response = await fetch('/sustainabilityData.json')
       if (!response.ok) throw new Error('Error al cargar datos de sustentabilidad')
       const data = await response.json()
@@ -58,7 +56,6 @@ export const useMaps = () => {
       console.log('Datos brutos:', data)
       
       // Convertir array a objeto para búsqueda rápida por estado
-      // USAR 'region' en lugar de 'estado' porque ese es el campo en tu JSON
       sustainabilityData.value = data.reduce((acc, item) => {
         acc[item.region] = item
         return acc
@@ -88,27 +85,27 @@ export const useMaps = () => {
     }
   }
 
-  // Obtener color basado en el valor IFSS - AJUSTADO PARA TUS VALORES
+  // Obtener color basado en el valor IFSS - AJUSTADO PARA TUS VALORES REALES
   const getStateColor = (stateName) => {
     if (!sustainabilityData.value || !sustainabilityData.value[stateName]) {
       return '#e0e0e0' // Color por defecto para estados sin datos
     }
     
     const data = sustainabilityData.value[stateName]
-    // TUS VALORES VAN DE 0.5 a 2.9, no de 0 a 100
-    const ifssValue = data.value || data.ifss || data.financiamiento_verde || 0
+    const ifssValue = data.value || 0
     
     // Escala ajustada para tus valores reales (0.5 - 2.9)
-    if (ifssValue >= 2.5) return '#e52845'       // Muy alto: Rojo intenso
-    if (ifssValue >= 2.0) return '#e67849'       // Alto: Naranja rojizo  
-    if (ifssValue >= 1.5) return '#e6a74c'       // Medio alto: Naranja
-    if (ifssValue >= 1.0) return '#e6d64f'       // Medio: Amarillo
-    if (ifssValue >= 0.8) return '#bddc50'       // Medio bajo: Amarillo verdoso
-    if (ifssValue >= 0.6) return '#94d351'       // Bajo: Verde amarillento
-    return '#6ac952'                             // Muy bajo: Verde fuerte
+    // Invertida porque valores altos = mejor = verde
+    if (ifssValue >= 2.5) return '#6ac952'       // Muy alto: Verde fuerte
+    if (ifssValue >= 2.0) return '#94d351'       // Alto: Verde amarillento  
+    if (ifssValue >= 1.8) return '#bddc50'       // Medio alto: Amarillo verdoso
+    if (ifssValue >= 1.5) return '#e6d64f'       // Medio: Amarillo
+    if (ifssValue >= 1.0) return '#e6a74c'       // Medio bajo: Naranja
+    if (ifssValue >= 0.7) return '#e67849'       // Bajo: Naranja rojizo
+    return '#e52845'                             // Muy bajo: Rojo intenso
   }
 
-  // Obtener información del estado - CORREGIDO
+  // Obtener información del estado
   const getStateInfo = (stateName) => {
     if (!sustainabilityData.value || !sustainabilityData.value[stateName]) {
       return {
@@ -121,18 +118,27 @@ export const useMaps = () => {
       }
     }
     
-    return sustainabilityData.value[stateName]
+    const data = sustainabilityData.value[stateName]
+    
+    // Agregar campos simulados para compatibilidad con el componente
+    return {
+      ...data,
+      proyectos_activos: Math.floor(data.value * 10), // Simulado basado en IFSS
+      inversion_total: data.value * 1000000000, // Simulado: valor * 1B pesos
+      descripcion: `Estado con IFSS de ${data.value}. ${getIFSSLabel(data.value).label} nivel de finanzas sostenibles.`
+    }
   }
 
-  // Computed para estadísticas generales - AJUSTADO
+  // Computed para estadísticas generales
   const generalStats = computed(() => {
     if (!sustainabilityData.value) return null
     
     const values = Object.values(sustainabilityData.value)
     const totalStates = values.length
-    const totalInvestment = values.reduce((sum, item) => sum + (item.inversion_total || 0), 0)
-    const totalProjects = values.reduce((sum, item) => sum + (item.proyectos_activos || 0), 0)
-    // Usar 'value' que es el campo real en tu JSON
+    
+    // Simulados basados en los valores IFSS
+    const totalInvestment = values.reduce((sum, item) => sum + (item.value * 1000000000), 0)
+    const totalProjects = values.reduce((sum, item) => sum + Math.floor(item.value * 10), 0)
     const avgIFSS = values.reduce((sum, item) => sum + (item.value || 0), 0) / totalStates
     
     return {
@@ -143,7 +149,7 @@ export const useMaps = () => {
     }
   })
 
-  // Encontrar estados con mejor y peor desempeño - CORREGIDO
+  // Encontrar estados con mejor desempeño
   const topPerformingStates = computed(() => {
     if (!sustainabilityData.value) return []
     
@@ -203,7 +209,7 @@ export const useMaps = () => {
       }))
   }
 
-  // Filtrar por rango de valores IFSS - AJUSTADO PARA TUS VALORES
+  // Filtrar por rango de valores IFSS
   const filterByRange = (minValue = 0, maxValue = 3) => {
     if (!sustainabilityData.value) return []
     
@@ -215,15 +221,15 @@ export const useMaps = () => {
       .map(([name, data]) => ({ name, ...data }))
   }
 
-  // Obtener etiqueta de clasificación IFSS - AJUSTADO PARA TUS VALORES
+  // Obtener etiqueta de clasificación IFSS - CORREGIDA PARA VALORES ALTOS = MEJOR
   const getIFSSLabel = (ifssValue) => {
-    if (ifssValue >= 2.5) return { label: 'Muy alto', color: '#e52845' }
-    if (ifssValue >= 2.0) return { label: 'Alto', color: '#e67849' }
-    if (ifssValue >= 1.5) return { label: 'Medio alto', color: '#e6a74c' }
-    if (ifssValue >= 1.0) return { label: 'Medio', color: '#e6d64f' }
-    if (ifssValue >= 0.8) return { label: 'Medio bajo', color: '#bddc50' }
-    if (ifssValue >= 0.6) return { label: 'Bajo', color: '#94d351' }
-    return { label: 'Muy bajo', color: '#6ac952' }
+    if (ifssValue >= 2.5) return { label: 'Muy alto', color: '#6ac952' }
+    if (ifssValue >= 2.0) return { label: 'Alto', color: '#94d351' }
+    if (ifssValue >= 1.8) return { label: 'Medio alto', color: '#bddc50' }
+    if (ifssValue >= 1.5) return { label: 'Medio', color: '#e6d64f' }
+    if (ifssValue >= 1.0) return { label: 'Medio bajo', color: '#e6a74c' }
+    if (ifssValue >= 0.7) return { label: 'Bajo', color: '#e67849' }
+    return { label: 'Muy bajo', color: '#e52845' }
   }
   
   onMounted(() => {
@@ -245,8 +251,6 @@ export const useMaps = () => {
     generalStats,
     topPerformingStates,
     worstPerformingStates,
-
-    // ... todas las propiedades existentes ...
     nationalIFSS,
     
     // Métodos

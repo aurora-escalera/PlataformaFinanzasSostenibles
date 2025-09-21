@@ -1,4 +1,3 @@
-
 // src/app/router/index.js
 import { createRouter, createWebHistory } from 'vue-router'
 import MapsPage from '@/pages/MapsPage.vue'

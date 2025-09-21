@@ -1,4 +1,6 @@
-<template>
+
+ <!-- src/modules/maps/components/MapComponent.vue-->
+  <template>
   <div class="map-container">
     <!-- Loading State -->
     <div v-if="loading" class="loading-state">
@@ -311,7 +313,6 @@ const applyFilter = () => {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
