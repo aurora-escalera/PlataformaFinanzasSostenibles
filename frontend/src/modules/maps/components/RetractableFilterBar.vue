@@ -271,9 +271,20 @@ onMounted(() => {
 
 <style scoped>
 .filter-bar-container {
-  position: relative;
-  width: 100%;
-  z-index: 100;
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.stat-item span:first-child {
+  color: #666;
+}
+
+.stat-item span:last-child {
+  font-weight: bold;
+  color: #4CAF50;
 }
 
 .filter-bar {

@@ -16,74 +16,9 @@
 
     <!-- Map Content -->
     <div v-if="!loading && !error" class="map-content">
-      <!-- Controles -->
-      <div class="map-controls">
-        <div class="search-box">
-          <input 
-            v-model="searchTerm" 
-            placeholder="Buscar estado..."
-            @input="onSearch"
-            class="search-input"
-          >
-        </div>
-        
-        <div class="filter-controls">
-          <label>
-            IFSS mínimo:
-            <input 
-              v-model.number="minFilter" 
-              type="range" 
-              min="0" 
-              max="100"
-              @input="applyFilter"
-            >
-            {{ minFilter }}%
-          </label>
-        </div>
-
-        <button @click="resetSelection" class="reset-btn">
-          Resetear Selección
-        </button>
-      </div>
 
       <!-- SVG Map -->
-<div class="map-wrapper">
-        <!-- Leyenda de colores IFSS -->
-  <!--<div class="color-legend">
-    <h4>Escala IFSS</h4>
-    <div class="legend-items">
-      <div class="legend-item">
-        <div class="legend-color" style="background-color: #e52845"></div>
-        <span>Muy alto (2.5+)</span>
-      </div>
-      <div class="legend-item">
-        <div class="legend-color" style="background-color: #e67849"></div>
-        <span>Alto (2.0-2.4)</span>
-      </div>
-      <div class="legend-item">
-        <div class="legend-color" style="background-color: #e6a74c"></div>
-        <span>Medio alto (1.5-1.9)</span>
-      </div>
-      <div class="legend-item">
-        <div class="legend-color" style="background-color: #e6d64f"></div>
-        <span>Medio (1.0-1.4)</span>
-      </div>
-      <div class="legend-item">
-        <div class="legend-color" style="background-color: #bddc50"></div>
-        <span>Medio bajo (0.8-0.9)</span>
-      </div>
-      <div class="legend-item">
-        <div class="legend-color" style="background-color: #94d351"></div>
-        <span>Bajo (0.6-0.7)</span>
-      </div>
-      <div class="legend-item">
-        <div class="legend-color" style="background-color: #6ac952"></div>
-        <span>Muy bajo (0.5)</span>
-      </div>
-  </div>
-</div>
--->
-
+    <div class="map-wrapper">
     <!-- Información de hover/nacional -->
         <div class="hover-info-box">
           <!-- Si hay estado en hover, mostrar información del estado -->
@@ -404,56 +339,17 @@ const applyFilter = () => {
   100% { transform: rotate(360deg); }
 }
 
-.map-controls {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.search-input {
-  padding: 8px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
-.filter-controls label {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 14px;
-}
-
-.reset-btn, .retry-btn {
-  padding: 8px 16px;
-  background: #2196F3;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background 0.2s;
-}
-
-.reset-btn:hover, .retry-btn:hover {
-  background: #1976D2;
-}
-
 .map-wrapper {
   position: relative;
   display: flex;
-  gap: 20px;
   justify-content: center;
-  margin: 20px 0;
   flex-wrap: wrap;
 }
 
 .color-legend {
   position: absolute;
   bottom: 100px;
-  left: 30%;
+  left: 25%;
   transform: translateX(-50%);
   background: rgba(255, 255, 255, 0.95);
   border: none;
@@ -536,27 +432,6 @@ const applyFilter = () => {
   padding-bottom: 14px;
 }
 
-/* Animación suave cuando cambia el contenido */
-.info-content {
-  animation: fadeIn 0.3s ease-in;
-}
-
-@keyframes fadeIn {
-  0% {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Animación suave cuando cambia el contenido */
-.info-content {
-  animation: fadeIn 0.2s ease-in;
-}
-
 /* Alternativa: Items individuales horizontales */
 .legend-items-horizontal {
   display: flex;
@@ -616,7 +491,7 @@ const applyFilter = () => {
 }
 
 .legend-color {
-  width: 50px;
+  width: 12px;
   height: 14px;
   border-radius: 2px;
   border: 1px solid rgba(0,0,0,0.1);
