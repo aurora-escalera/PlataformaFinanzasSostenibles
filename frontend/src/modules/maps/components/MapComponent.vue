@@ -1,3 +1,4 @@
+<!-- src/modules/maps/components/MapComponent.vue - SOLO DATOS REALES -->
 <template>
   <div class="map-container">
     <!-- Loading State -->
@@ -16,72 +17,56 @@
 
     <!-- Map Content -->
     <div v-if="!loading && !error" class="map-content">
-      <!-- Controles -->
-      <div class="map-controls">
-        <div class="search-box">
-          <input 
-            v-model="searchTerm" 
-            placeholder="Buscar estado..."
-            @input="onSearch"
-            class="search-input"
-          >
-        </div>
-        
-        <div class="filter-controls">
-          <label>
-            IFSS mínimo:
-            <input 
-              v-model.number="minFilter" 
-              type="range" 
-              min="0" 
-              max="100"
-              @input="applyFilter"
-            >
-            {{ minFilter }}%
-          </label>
-        </div>
-
-        <button @click="resetSelection" class="reset-btn">
-          Resetear Selección
-        </button>
-      </div>
-
       <!-- SVG Map -->
       <div class="map-wrapper">
+        <!-- Información de hover/nacional -->
+        <div class="hover-info-box">
+          <!-- Si hay estado en hover, mostrar información del estado -->
+          <div v-if="hoveredState" class="info-content">
+            <div class="location-label">{{ hoveredState }}</div>
+            <div class="value-display">{{ getStateInfo(hoveredState).value || 0 }}%</div>
+          </div>
+          
+          <!-- Si no hay estado en hover, mostrar información nacional -->
+          <div v-else-if="nationalIFSS" class="info-content">
+            <div class="location-label">México</div>
+            <div class="value-display">{{ nationalIFSS.value }}%</div>
+          </div>
+        </div>
+
         <!-- Leyenda de colores IFSS -->
         <div class="color-legend">
-  <h4>Escala IFSS</h4>
-  <div class="legend-items">
-    <div class="legend-item">
-      <div class="legend-color" style="background-color: #e52845"></div>
-      <span>Muy alto (2.5+)</span>
-    </div>
-    <div class="legend-item">
-      <div class="legend-color" style="background-color: #e67849"></div>
-      <span>Alto (2.0-2.4)</span>
-    </div>
-    <div class="legend-item">
-      <div class="legend-color" style="background-color: #e6a74c"></div>
-      <span>Medio alto (1.5-1.9)</span>
-    </div>
-    <div class="legend-item">
-      <div class="legend-color" style="background-color: #e6d64f"></div>
-      <span>Medio (1.0-1.4)</span>
-    </div>
-    <div class="legend-item">
-      <div class="legend-color" style="background-color: #bddc50"></div>
-      <span>Medio bajo (0.8-0.9)</span>
-    </div>
-    <div class="legend-item">
-      <div class="legend-color" style="background-color: #94d351"></div>
-      <span>Bajo (0.6-0.7)</span>
-    </div>
-    <div class="legend-item">
-      <div class="legend-color" style="background-color: #6ac952"></div>
-      <span>Muy bajo (0.5)</span>
-    </div>
-  </div>
-</div>
+          <div class="legend-items-horizontal">
+            <div class="legend-item-horizontal">
+              <div class="legend-color-horizontal" style="background-color: #6ac952"></div>
+              <span>Muy Alto</span>
+            </div>
+            <div class="legend-item-horizontal">
+              <div class="legend-color-horizontal" style="background-color: #94d351"></div>
+              <span>Alto</span>
+            </div>
+            <div class="legend-item-horizontal">
+              <div class="legend-color-horizontal" style="background-color: #bddc50"></div>
+              <span>Medio Alto</span>
+            </div>
+            <div class="legend-item-horizontal">
+              <div class="legend-color-horizontal" style="background-color: #e6d64f"></div>
+              <span>Medio</span>
+            </div>
+            <div class="legend-item-horizontal">
+              <div class="legend-color-horizontal" style="background-color: #e6a74c"></div>
+              <span>Medio Bajo</span>
+            </div>
+            <div class="legend-item-horizontal">
+              <div class="legend-color-horizontal" style="background-color: #e67849"></div>
+              <span>Bajo</span>
+            </div>
+            <div class="legend-item-horizontal">
+              <div class="legend-color-horizontal" style="background-color: #e52845"></div>
+              <span>Muy Bajo</span>
+            </div>
+          </div>
+        </div>
 
         <svg 
           :width="mapConfig.width" 
@@ -98,7 +83,7 @@
               :stroke-width="getStrokeWidth(feature.properties.state_name)"
               class="state-path"
               @click="handleStateClick(feature.properties.state_name)"
-              @mouseenter="handleStateHover(feature.properties.state_name)"
+              @mouseenter="handleMouseHover(feature.properties.state_name, $event)"
               @mouseleave="handleStateLeave"
             />
           </g>
@@ -113,16 +98,15 @@
           <div class="tooltip-content">
             <h4>{{ hoveredState }}</h4>
             <div class="tooltip-data">
-              <p><strong>IFSS:</strong> {{ getStateInfo(hoveredState).value || 0 }}</p>
-              <p><strong>Clasificación:</strong> {{ getIFSSLabel(getStateInfo(hoveredState).value || 0).label }}</p>
-              <p><strong>Proyectos Activos:</strong> {{ getStateInfo(hoveredState).proyectos_activos }}</p>
-              <p><strong>Inversión Total:</strong> ${{ formatCurrency(getStateInfo(hoveredState).inversion_total) }}</p>
+              <p>IFSS: {{ getStateInfo(hoveredState).value || 0 }}</p>
+              <p>Clasificación: {{ getIFSSLabel(getStateInfo(hoveredState).value || 0).label }}</p>
+              <p>Año: {{ getStateInfo(hoveredState).year }}</p>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- State Details Panel -->
+      <!-- State Details Panel - SOLO DATOS REALES -->
       <div v-if="selectedState" class="details-panel">
         <div class="details-header">
           <h3>{{ selectedState }}</h3>
@@ -139,13 +123,8 @@
           </div>
           
           <div class="metric-card">
-            <div class="metric-value">{{ getStateInfo(selectedState).proyectos_activos }}</div>
-            <div class="metric-label">Proyectos Activos</div>
-          </div>
-          
-          <div class="metric-card">
-            <div class="metric-value">${{ formatCurrency(getStateInfo(selectedState).inversion_total) }}</div>
-            <div class="metric-label">Inversión Total</div>
+            <div class="metric-value">{{ getStateInfo(selectedState).year }}</div>
+            <div class="metric-label">Año de datos</div>
           </div>
         </div>
 
@@ -154,25 +133,25 @@
         </div>
       </div>
 
-      <!-- Statistics Summary -->
+      <!-- Statistics Summary - SOLO DATOS REALES -->
       <div v-if="generalStats" class="stats-summary">
-        <h3>Resumen Nacional</h3>
+        <h3>Resumen Nacional IFSS</h3>
         <div class="stats-grid">
           <div class="stat-item">
             <span class="stat-value">{{ generalStats.totalStates }}</span>
             <span class="stat-label">Estados</span>
           </div>
           <div class="stat-item">
-            <span class="stat-value">${{ formatCurrency(generalStats.totalInvestment) }}</span>
-            <span class="stat-label">Inversión Total</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-value">{{ generalStats.totalProjects }}</span>
-            <span class="stat-label">Proyectos Totales</span>
-          </div>
-          <div class="stat-item">
             <span class="stat-value">{{ generalStats.avgIFSS }}%</span>
             <span class="stat-label">Promedio IFSS</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value">{{ generalStats.maxIFSS }}%</span>
+            <span class="stat-label">IFSS Máximo</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value">{{ generalStats.minIFSS }}%</span>
+            <span class="stat-label">IFSS Mínimo</span>
           </div>
         </div>
       </div>
@@ -180,7 +159,7 @@
       <!-- Top Performers -->
       <div class="rankings">
         <div class="top-performers">
-          <h4>🏆 Top 5 Estados</h4>
+          <h4>🏆 Top 5 Estados IFSS</h4>
           <div class="ranking-list">
             <div 
               v-for="(state, index) in topPerformingStates" 
@@ -217,22 +196,27 @@ const {
   mapConfig,
   generalStats,
   topPerformingStates,
+  nationalIFSS,
   getStateColor,
   getStateInfo,
   getIFSSLabel,
   handleStateClick,
   handleStateHover,
   handleStateLeave,
-  resetSelection,
-  searchState,
-  filterByRange,
   initializeData
 } = useMaps()
 
 // Estados locales del componente
-const searchTerm = ref('')
-const minFilter = ref(0)
-const searchResults = ref([])
+const mousePosition = ref({ x: 0, y: 0 })
+
+// Función local para manejar el hover con posición del mouse
+const handleMouseHover = (stateName, event) => {
+  mousePosition.value = {
+    x: event.clientX,
+    y: event.clientY
+  }
+  handleStateHover(stateName)
+}
 
 // Configurar proyección D3
 const projection = computed(() => {
@@ -253,9 +237,9 @@ const getPathData = (feature) => {
 
 // Estilos dinámicos para los estados
 const getStrokeColor = (stateName) => {
-  if (selectedState.value === stateName) return '#2196F3'
-  if (hoveredState.value === stateName) return '#FF9800'
-  return '#fff'
+  if (selectedState.value === stateName) return '#FfFFFF'
+  if (hoveredState.value === stateName) return '#555555'
+  return '#555555'
 }
 
 const getStrokeWidth = (stateName) => {
@@ -266,34 +250,18 @@ const getStrokeWidth = (stateName) => {
 
 // Posición del tooltip
 const tooltipStyle = computed(() => {
+  if (!hoveredState.value) return { display: 'none' }
+  
   return {
-    position: 'absolute',
+    position: 'fixed',
+    left: `${mousePosition.value.x + 20}px`,
+    top: `${mousePosition.value.y - 150}px`,
     pointerEvents: 'none',
-    zIndex: 1000
+    zIndex: 1000,
+    transform: 'translate(0, 0)',
+    maxWidth: '250px'
   }
 })
-
-// Formatear moneda
-const formatCurrency = (value) => {
-  if (!value) return '0'
-  return new Intl.NumberFormat('es-MX', {
-    style: 'currency',
-    currency: 'MXN',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(value).replace('MX$', '')
-}
-
-// Búsqueda de estados
-const onSearch = () => {
-  searchResults.value = searchState(searchTerm.value)
-}
-
-// Aplicar filtro
-const applyFilter = () => {
-  const filtered = filterByRange(minFilter.value, 100)
-  console.log('Estados filtrados:', filtered)
-}
 </script>
 
 <style scoped>
@@ -301,7 +269,6 @@ const applyFilter = () => {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
@@ -317,7 +284,7 @@ const applyFilter = () => {
 .spinner {
   width: 40px;
   height: 40px;
-  border: 4px solid #f3f3f3;
+  border: 4px solid rgb(203, 199, 199);
   border-top: 4px solid #4CAF50;
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -329,121 +296,159 @@ const applyFilter = () => {
   100% { transform: rotate(360deg); }
 }
 
-.map-controls {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.search-input {
-  padding: 8px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
-.filter-controls label {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 14px;
-}
-
-.reset-btn, .retry-btn {
-  padding: 8px 16px;
-  background: #2196F3;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background 0.2s;
-}
-
-.reset-btn:hover, .retry-btn:hover {
-  background: #1976D2;
-}
-
 .map-wrapper {
   position: relative;
   display: flex;
-  gap: 20px;
   justify-content: center;
-  margin: 20px 0;
   flex-wrap: wrap;
 }
 
 .color-legend {
-  background: white;
-  border: 1px solid #ddd;
+  position: absolute;
+  bottom: 100px;
+  left: 25%;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.95);
+  border: none;
   border-radius: 8px;
-  padding: 15px;
-  min-width: 200px;
-  height: fit-content;
+  padding: 12px;
+  z-index: 10;
+  backdrop-filter: blur(5px);
+  min-width: 450px;
+  max-width: 450px;
 }
 
-.color-legend h4 {
-  margin: 0 0 12px 0;
-  font-size: 14px;
+.hover-info-box {
+  position: absolute;
+  top: 59%;
+  left: 10%;
+  z-index: 15;
+  backdrop-filter: blur(10px);
+  font-family: Arial, Helvetica, sans-serif;
+  min-width: 350px;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.location-label {
+  font-size: 20px;
+  color: #666;
+  font-weight: 500;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.value-display {
+  font-size: 70px;
+  font-weight: 300;
+  color: #2c3e50;
+  line-height: 1;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  border-bottom: 2px solid #bfbdbd; 
+  padding-bottom: 14px;
+}
+
+.legend-items-horizontal {
+  display: flex;
+  gap: 0;
+  align-items: stretch;
+  justify-content: center;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 0px solid rgba(0,0,0,0.1);
+}
+
+.legend-item-horizontal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 20px;
   color: #333;
+  flex: 1;
   text-align: center;
 }
 
-.legend-items {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.legend-color-horizontal {
+  width: 160%;
+  height: 30px;
+  border: none;
+  margin-bottom: 4px;
 }
 
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
+.legend-item-horizontal:first-child .legend-color-horizontal {
+  border-radius: 4px 0 0 4px;
 }
 
-.legend-color {
-  width: 16px;
-  height: 16px;
-  border-radius: 3px;
-  border: 1px solid rgba(0,0,0,0.1);
+.legend-item-horizontal:last-child .legend-color-horizontal {
+  border-radius: 0 4px 4px 0;
+}
+
+.legend-item-horizontal span {
+  padding: 2px 4px;
+  font-size: 9px;
+  line-height: 1.2;
 }
 
 .mexico-map {
-  border: 1px solid #ddd;
+  border: 1px solid #dee3e0;
   border-radius: 8px;
   background: #f8f9fa;
 }
 
 .state-path {
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.05s ease;
+  opacity: 1;
+  stroke-width: .5;
+  vector-effect: non-scaling-stroke;
+  stroke-linejoin: round;
+  stroke-linecap: round;
 }
 
 .state-path:hover {
-  filter: brightness(1.1);
+  filter: brightness(1.3);
+  opacity: 0.95;
+  stroke-width: 0.5;
+  vector-effect: non-scaling-stroke;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+svg g:hover .state-path {
+  opacity: 0.8;
+}
+
+svg g:hover .state-path:hover  {
+  opacity: 1;
+  filter: saturate(1.8) contrast(1.3);
+  stroke-width: 0.4;
+  filter: drop-shadow(0 0 6px rgba(10, 10, 10, 0.8));
+  transform-origin: center;
 }
 
 .tooltip {
-  background: rgba(0, 0, 0, 0.9);
-  color: white;
-  padding: 12px;
+  background: #f8f8f8;
+  color: rgb(12, 12, 12);
+  padding: 20px;
   border-radius: 6px;
   font-size: 12px;
   max-width: 200px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 14px rgba(0, 0, 0, 0.3);
 }
 
 .tooltip h4 {
-  margin: 0 0 8px 0;
+  margin: 0 0 4px 0;
   font-size: 14px;
-  color: #4CAF50;
+  color: #2f2e2e;
 }
 
 .tooltip-data p {
-  margin: 4px 0;
+  margin: 0px 0;
+  font-weight: normal;
+  color: #3a3a3a;
+  line-height: 1.2;
+  font-size: 12px;
 }
 
 .details-panel {
@@ -605,26 +610,13 @@ const applyFilter = () => {
     padding: 10px;
   }
   
-  .map-controls {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
   .map-wrapper {
     flex-direction: column;
     align-items: center;
   }
   
   .color-legend {
-    order: -1;
-    min-width: auto;
-    width: 100%;
-  }
-  
-  .legend-items {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 4px;
+    min-width: 140px;
   }
   
   .details-content {
