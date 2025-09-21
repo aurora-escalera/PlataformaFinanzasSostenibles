@@ -23,7 +23,7 @@ export default {
   data() {
     return {
       // ✅ RUTAS CORREGIDAS según tu estructura actual
-      geoDataUrl: '/src/modules/maps/data/mexicoStates.json',
+      geoDataUrl: '/mexicoStates.json',
       dataUrl: '/src/modules/maps/data/sustainabilityData.json'
     }
   },

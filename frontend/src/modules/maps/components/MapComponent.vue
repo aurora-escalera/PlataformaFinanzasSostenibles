@@ -47,42 +47,92 @@
       </div>
 
       <!-- SVG Map -->
-      <div class="map-wrapper">
+<div class="map-wrapper">
         <!-- Leyenda de colores IFSS -->
-        <div class="color-legend">
-  <h4>Escala IFSS</h4>
-  <div class="legend-items">
-    <div class="legend-item">
-      <div class="legend-color" style="background-color: #e52845"></div>
-      <span>Muy alto (2.5+)</span>
-    </div>
-    <div class="legend-item">
-      <div class="legend-color" style="background-color: #e67849"></div>
-      <span>Alto (2.0-2.4)</span>
-    </div>
-    <div class="legend-item">
-      <div class="legend-color" style="background-color: #e6a74c"></div>
-      <span>Medio alto (1.5-1.9)</span>
-    </div>
-    <div class="legend-item">
-      <div class="legend-color" style="background-color: #e6d64f"></div>
-      <span>Medio (1.0-1.4)</span>
-    </div>
-    <div class="legend-item">
-      <div class="legend-color" style="background-color: #bddc50"></div>
-      <span>Medio bajo (0.8-0.9)</span>
-    </div>
-    <div class="legend-item">
-      <div class="legend-color" style="background-color: #94d351"></div>
-      <span>Bajo (0.6-0.7)</span>
-    </div>
-    <div class="legend-item">
-      <div class="legend-color" style="background-color: #6ac952"></div>
-      <span>Muy bajo (0.5)</span>
-    </div>
+  <!--<div class="color-legend">
+    <h4>Escala IFSS</h4>
+    <div class="legend-items">
+      <div class="legend-item">
+        <div class="legend-color" style="background-color: #e52845"></div>
+        <span>Muy alto (2.5+)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background-color: #e67849"></div>
+        <span>Alto (2.0-2.4)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background-color: #e6a74c"></div>
+        <span>Medio alto (1.5-1.9)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background-color: #e6d64f"></div>
+        <span>Medio (1.0-1.4)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background-color: #bddc50"></div>
+        <span>Medio bajo (0.8-0.9)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background-color: #94d351"></div>
+        <span>Bajo (0.6-0.7)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background-color: #6ac952"></div>
+        <span>Muy bajo (0.5)</span>
+      </div>
   </div>
 </div>
+-->
 
+    <!-- Información de hover/nacional -->
+        <div class="hover-info-box">
+          <!-- Si hay estado en hover, mostrar información del estado -->
+          <div v-if="hoveredState" class="info-content">
+            <div class="location-label">{{ hoveredState }}</div>
+            <div class="value-display">{{ getStateInfo(hoveredState).value || 0  }}%</div>
+          </div>
+          
+          <!-- Si no hay estado en hover, mostrar información nacional -->
+          <div v-else-if="nationalIFSS" class="info-content">
+            <div class="location-label">México</div>
+            <div class="value-display">{{ nationalIFSS.value }}%</div>
+          </div>
+        </div>
+
+
+        <!-- Leyenda de colores IFSS -->
+        <div class="color-legend">
+          <div class="legend-items-horizontal">
+            <div class="legend-item-horizontal">
+              <div class="legend-color-horizontal" style="background-color: #6ac952"></div>
+              <span>Muy Alto</span>
+            </div>
+            <div class="legend-item-horizontal">
+              <div class="legend-color-horizontal" style="background-color: #94d351"></div>
+              <span>Alto</span>
+            </div>
+            <div class="legend-item-horizontal">
+              <div class="legend-color-horizontal" style="background-color: #bddc50"></div>
+              <span>Medio Alto</span>
+            </div>
+            <div class="legend-item-horizontal">
+              <div class="legend-color-horizontal" style="background-color: #e6d64f"></div>
+              <span>Medio</span>
+            </div>
+            <div class="legend-item-horizontal">
+              <div class="legend-color-horizontal" style="background-color: #e6a74c"></div>
+              <span>Medio Bajo</span>
+            </div>
+            <div class="legend-item-horizontal">
+              <div class="legend-color-horizontal" style="background-color: #e67849"></div>
+              <span>Bajo</span>
+            </div>
+            <div class="legend-item-horizontal">
+              <div class="legend-color-horizontal" style="background-color: #e52845"></div>
+              <span>Muy Bajo</span>
+            </div>
+          </div>
+        </div>
         <svg 
           :width="mapConfig.width" 
           :height="mapConfig.height"
@@ -98,9 +148,10 @@
               :stroke-width="getStrokeWidth(feature.properties.state_name)"
               class="state-path"
               @click="handleStateClick(feature.properties.state_name)"
-              @mouseenter="handleStateHover(feature.properties.state_name)"
+              @mouseenter="handleMouseHover(feature.properties.state_name, $event)"
               @mouseleave="handleStateLeave"
             />
+
           </g>
         </svg>
 
@@ -113,10 +164,8 @@
           <div class="tooltip-content">
             <h4>{{ hoveredState }}</h4>
             <div class="tooltip-data">
-              <p><strong>IFSS:</strong> {{ getStateInfo(hoveredState).value || 0 }}</p>
-              <p><strong>Clasificación:</strong> {{ getIFSSLabel(getStateInfo(hoveredState).value || 0).label }}</p>
-              <p><strong>Proyectos Activos:</strong> {{ getStateInfo(hoveredState).proyectos_activos }}</p>
-              <p><strong>Inversión Total:</strong> ${{ formatCurrency(getStateInfo(hoveredState).inversion_total) }}</p>
+              <p>IFSS: {{ getStateInfo(hoveredState).value || 0 }}</p>
+              <p>Clasificación: {{ getIFSSLabel(getStateInfo(hoveredState).value || 0).label }}</p>
             </div>
           </div>
         </div>
@@ -217,6 +266,7 @@ const {
   mapConfig,
   generalStats,
   topPerformingStates,
+  nationalIFSS,
   getStateColor,
   getStateInfo,
   getIFSSLabel,
@@ -233,6 +283,19 @@ const {
 const searchTerm = ref('')
 const minFilter = ref(0)
 const searchResults = ref([])
+
+const mousePosition = ref({ x: 0, y: 0 })
+// Función local para manejar el hover con posición del mouse
+const handleMouseHover = (stateName, event) => {
+  // Capturar posición del mouse
+  mousePosition.value = {
+    x: event.clientX,
+    y: event.clientY
+  }
+  
+  // Llamar a la función original del composable
+  handleStateHover(stateName)
+}
 
 // Configurar proyección D3
 const projection = computed(() => {
@@ -252,10 +315,16 @@ const getPathData = (feature) => {
 }
 
 // Estilos dinámicos para los estados -------------------------------------->#FF8600. #FF5510. FF9800
-const getStrokeColor = (stateName) => {
+/*const getStrokeColor = (stateName) => {
   if (selectedState.value === stateName) return '#FfFFFF'
   if (hoveredState.value === stateName) return '#000000'
   return '#555555'
+}
+*/
+const getStrokeColor = (stateName) => {
+  if (selectedState.value === stateName) return '#FfFFFF'
+  if (hoveredState.value === stateName) return '#555555'
+  return '#555555' // ← Mismo color que el fondo del SVG, esto hará invisible el contorno externo
 }
 
 const getStrokeWidth = (stateName) => {
@@ -266,10 +335,16 @@ const getStrokeWidth = (stateName) => {
 
 // Posición del tooltip
 const tooltipStyle = computed(() => {
+  if (!hoveredState.value) return { display: 'none' }
+  
   return {
-    position: 'absolute',
+    position: 'fixed', // Cambiar a 'fixed' para posición relativa a la ventana
+    left: `${mousePosition.value.x + 20}px`, // Offset de 15px a la derecha
+    top: `${mousePosition.value.y - 150}px`, // Offset de 10px arriba
     pointerEvents: 'none',
-    zIndex: 1000
+    zIndex: 1000,
+    transform: 'translate(0, 0)', // Evitar transformaciones adicionales
+    maxWidth: '250px' // Limitar ancho del tooltip
   }
 })
 
@@ -317,7 +392,7 @@ const applyFilter = () => {
 .spinner {
   width: 40px;
   height: 40px;
-  border: 4px solid #f3f3f3;
+  border: 4px solid rgb(203, 199, 199);
   border-top: 4px solid #4CAF50;
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -376,43 +451,180 @@ const applyFilter = () => {
 }
 
 .color-legend {
-  background: white;
-  border: 1px solid #ddd;
+  position: absolute;
+  bottom: 100px;
+  left: 30%;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.95);
+  border: none;
   border-radius: 8px;
-  padding: 15px;
-  min-width: 200px;
-  height: fit-content;
+  padding: 12px;
+  z-index: 10;
+  backdrop-filter: blur(5px);
+  min-width: 450px;
+  max-width: 450px;
 }
 
 .color-legend h4 {
-  margin: 0 0 12px 0;
-  font-size: 14px;
+  margin: 0 0 14px 0;
+  font-size: 12px;
   color: #333;
   text-align: center;
+  font-weight: 600;
+}
+
+/* Barra de colores continua */
+.color-bar {
+  height: 20px;
+  border-radius: 10px;
+  background: linear-gradient(to left, 
+    #6ac952 100%,     /* Muy bajo */
+    #94d351 83.33%, /* Bajo */
+    #bddc50 66.67%, /* Medio bajo */
+    #e6d64f 50%,    /* Medio */
+    #e6a74c 33.33% /* Medio alto */
+    #e67849 16.67%, /* Alto */
+    #e52845 0%    /* Muy alto */
+  );
+  border: 1px solid rgba(0,0,0,0.1);
+  position: relative;
+}
+
+.color-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 5px;
+  font-size: 10px;
+  color: #666;
+}
+
+.color-labels span {
+  flex: 1;
+  text-align: center;
+  padding: 0 2px;
+}
+
+/* ===== CUADRO DE INFORMACIÓN EN HOVER ===== */
+.hover-info-box {
+  position: absolute;
+  top: 59%;
+  left: 10%;
+  z-index: 15;
+  backdrop-filter: blur(10px);
+  font-family: Arial, Helvetica, sans-serif;
+  min-width: 350px;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.location-label {
+  font-size: 20px;
+  color: #666;
+  font-weight: 500;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.value-display {
+  font-size: 70px;
+  font-weight: 300;
+  color: #2c3e50;
+  line-height: 1;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  border-bottom: 2px solid #bfbdbd; 
+  padding-bottom: 14px;
+}
+
+/* Animación suave cuando cambia el contenido */
+.info-content {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Animación suave cuando cambia el contenido */
+.info-content {
+  animation: fadeIn 0.2s ease-in;
+}
+
+/* Alternativa: Items individuales horizontales */
+.legend-items-horizontal {
+  display: flex;
+  gap: 0; /* Sin espacios entre elementos */
+  align-items: stretch;
+  justify-content: center;
+  border-radius: 4px;
+  overflow: hidden; /* Para bordes redondeados */
+  border: 0px solid rgba(0,0,0,0.1);
+}
+
+.legend-item-horizontal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 20px;
+  color: #333;
+  flex: 1;
+  text-align: center;
+}
+
+.legend-color-horizontal {
+  width: 160%;
+  height: 30px;
+  border: none; /* Sin bordes individuales */
+  margin-bottom: 4px;
+}
+
+/* Bordes redondeados solo en extremos */
+.legend-item-horizontal:first-child .legend-color-horizontal {
+  border-radius: 4px 0 0 4px;
+}
+
+.legend-item-horizontal:last-child .legend-color-horizontal {
+  border-radius: 0 4px 4px 0;
+}
+
+/* Texto debajo de la barra */
+.legend-item-horizontal span {
+  padding: 2px 4px;
+  font-size: 9px;
+  line-height: 1.2;
 }
 
 .legend-items {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .legend-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 12px;
+  gap: 6px;
+  font-size: 11px;
+  color: #333;
 }
 
 .legend-color {
-  width: 16px;
-  height: 16px;
-  border-radius: 3px;
+  width: 50px;
+  height: 14px;
+  border-radius: 2px;
   border: 1px solid rgba(0,0,0,0.1);
+  flex-shrink: 0;
 }
 
 .mexico-map {
-  border: 1px solid #13ca65;
+  border: 1px solid #dee3e0;
   border-radius: 8px;
   background: #f8f9fa;
 }
@@ -428,32 +640,50 @@ const applyFilter = () => {
 }
 /*Cuando hay transicion, lo que pasa en el mapa cuando se hoverea un estado*/
 .state-path:hover {
-  filter: brightness(1.1);
-  opacity: 0.9;
-  stroke-width: 0.8;
+  filter: brightness(1.3);
+  opacity: 0.95;
+  stroke-width: 0.5;
   vector-effect: non-scaling-stroke; /* Líneas consistentes */
   stroke-linejoin: round; /* Uniones redondeadas */
   stroke-linecap: round; /* Extremos redondeados */
 }
 
+/* Cuando hay hover en cualquier estado del grupo */
+svg g:hover .state-path {
+  opacity: 0.8; /* Todos los estados se atenúan */
+}
+
+/* El estado específico que tiene hover mantiene opacidad 1 */
+svg g:hover .state-path:hover  {
+  opacity: 1;
+  filter: saturate(1.8) contrast(1.3);
+  stroke-width: 0.4;
+    filter: drop-shadow(0 0 6px rgba(10, 10, 10, 0.8));
+  transform-origin: center;
+}
+
 .tooltip {
-  background: rgba(0, 0, 0, 0.9);
-  color: white;
-  padding: 12px;
+  background: #f8f8f8;
+  color: rgb(12, 12, 12);
+  padding: 20px;
   border-radius: 6px;
   font-size: 12px;
   max-width: 200px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 14px rgba(0, 0, 0, 0.3);
 }
 
 .tooltip h4 {
-  margin: 0 0 8px 0;
+  margin: 0 0 4px 0;
   font-size: 14px;
-  color: #4CAF50;
+  color: #2f2e2e;
 }
 
 .tooltip-data p {
-  margin: 4px 0;
+  margin: 0px 0;
+  font-weight: normal;
+  color: #3a3a3a;
+  line-height: 1.2;
+  font-size: 12px;
 }
 
 .details-panel {
@@ -627,9 +857,7 @@ const applyFilter = () => {
   }
   
   .color-legend {
-    order: -1;
-    min-width: auto;
-    width: 100%;
+    min-width: 140px;
   }
   
   .legend-items {

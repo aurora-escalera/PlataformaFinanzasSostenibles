@@ -15,8 +15,22 @@ export const useMaps = () => {
     width: 1200,
     height: 800,
     scale: 1600,
-    center: [-99, 23], // Centro aproximado de México
+    center: [-101, 23], // Centro aproximado de México
     projection: 'geoMercator'
+  })
+
+  // Computed para IFSS nacional (promedio de todos los estados)
+  const nationalIFSS = computed(() => {
+    if (!sustainabilityData.value) return null
+    
+    const values = Object.values(sustainabilityData.value)
+    const total = values.reduce((sum, item) => sum + (item.value || 0), 0)
+    const average = total / values.length
+    
+    return {
+      value: Math.round(average * 100) / 100,
+      label: getIFSSLabel(average)
+    }
   })
 
   // Cargar datos GeoJSON de México - CORREGIDO
@@ -231,6 +245,9 @@ export const useMaps = () => {
     generalStats,
     topPerformingStates,
     worstPerformingStates,
+
+    // ... todas las propiedades existentes ...
+    nationalIFSS,
     
     // Métodos
     getStateColor,
