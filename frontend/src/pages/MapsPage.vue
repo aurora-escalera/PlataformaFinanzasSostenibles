@@ -1,4 +1,4 @@
-<!-- src/pages/MapsPage.vue -->
+<!-- src/pages/MapsPage.vue - LIMPIO Y CHARTS DEBAJO DEL MAPA -->
 <template>
   <div class="maps-page">
     <!-- Barra de filtros retráctil -->
@@ -12,21 +12,23 @@
     />
     
     <!-- Componente del mapa -->
-    <MapComponent 
-      title="Índice de Finanzas Sostenibles Subnacionales (IFSS) - México 2023"
-      :geoDataUrl="geoDataUrl"
-      :dataUrl="dataUrl" 
-      legendTitle="Valor IFSS"
-      @region-selected="handleRegionSelect"
-      @map-error="handleMapError"
-    />
+    <div class="map-section">
+      <MapComponent 
+        title="Índice de Finanzas Sostenibles Subnacionales (IFSS) - México 2023"
+        :geoDataUrl="geoDataUrl"
+        :dataUrl="dataUrl" 
+        legendTitle="Valor IFSS"
+        @region-selected="handleRegionSelect"
+        @map-error="handleMapError"
+      />
+    </div>
     
-    <!-- Panel de estadísticas de filtros MEJORADO -->
+    <!-- Panel de estadísticas de filtros -->
     <div v-if="showStats && filterStats" class="filter-stats-panel">
       <div class="stats-header">
         <h3>Estadísticas - {{ filterStats.selectedVariable }}</h3>
         <button @click="exportData" class="export-btn">
-          📊 Exportar Datos
+          Exportar Datos
         </button>
       </div>
       
@@ -54,15 +56,19 @@
         <h4>{{ selectedEntity }}</h4>
         <p>Valor IFSS: {{ getCurrentEntityValue() }}%</p>
         <p>Clasificación: {{ getCurrentEntityClassification() }}</p>
+        
+        <button @click="focusOnEntity" class="charts-btn">
+          Ver Análisis Detallado
+        </button>
       </div>
     </div>
 
     <!-- Panel de error si hay problemas -->
     <div v-if="error" class="error-panel">
-      <h3>⚠️ Error en el sistema</h3>
+      <h3>Error en el sistema</h3>
       <p>{{ error }}</p>
       <button @click="retry" class="retry-btn">
-        🔄 Reintentar
+        Reintentar
       </button>
     </div>
   </div>
@@ -84,19 +90,14 @@ const showStats = ref(false)
 
 // Usar composables
 const {
-  // Estados del filtro
   selectedEntity,
   selectedYear, 
   selectedVariable,
   loading: filtersLoading,
   error: filtersError,
-  
-  // Datos computados
   entitiesData,
   filteredData,
   filterStats,
-  
-  // Métodos
   loadFilterData,
   setEntityFilter,
   setYearFilter,
@@ -107,9 +108,9 @@ const {
 } = useFilters()
 
 const {
-  // Estados del mapa
   loading: mapsLoading,
   error: mapsError,
+  selectedState,
   getStateInfo,
   getIFSSLabel,
   initializeData: initializeMapsData
@@ -119,9 +120,23 @@ const {
 const loading = computed(() => filtersLoading.value || mapsLoading.value)
 const error = computed(() => filtersError.value || mapsError.value)
 
-// Métodos para manejar eventos
+// Manejar selección desde el mapa - simplificado
 const handleRegionSelect = (data) => {
-  console.log('Estado seleccionado:', data)
+  // Por ahora solo log, la funcionalidad de charts está dentro del MapComponent
+  console.log('Estado seleccionado desde mapa:', data)
+}
+
+// Watch simplificado
+watch(selectedState, (newState) => {
+  console.log('Estado seleccionado en el mapa:', newState)
+})
+
+// Método para enfocar en una entidad específica
+const focusOnEntity = () => {
+  if (selectedEntity.value) {
+    // Aquí podrías hacer scroll al mapa o alguna otra acción
+    console.log('Enfocando en entidad:', selectedEntity.value)
+  }
 }
 
 const handleMapError = (error) => {
@@ -129,25 +144,19 @@ const handleMapError = (error) => {
 }
 
 const handleEntityChange = (entityName) => {
-  console.log('Entidad seleccionada:', entityName)
   setEntityFilter(entityName)
   showStats.value = true
 }
 
 const handleYearChange = (year) => {
-  console.log('Año seleccionado:', year)
   setYearFilter(year)
 }
 
 const handleVariableChange = (variable) => {
-  console.log('Variable seleccionada:', variable)
   setVariableFilter(variable)
 }
 
 const handleFiltersChange = (allFilters) => {
-  console.log('Todos los filtros:', allFilters)
-  
-  // Aplicar todos los filtros
   if (allFilters.entity !== undefined) setEntityFilter(allFilters.entity)
   if (allFilters.year !== undefined) setYearFilter(allFilters.year)
   if (allFilters.variable !== undefined) setVariableFilter(allFilters.variable)
@@ -177,29 +186,11 @@ const retry = () => {
   loadFilterData()
 }
 
-// Watchers para debugging
-watch(filterStats, (newStats) => {
-  if (newStats) {
-    console.log('Nuevas estadísticas de filtros:', newStats)
-  }
-}, { deep: true })
-
-watch([selectedEntity, selectedYear, selectedVariable], ([entity, year, variable]) => {
-  console.log('Filtros actualizados:', {
-    entity,
-    year,
-    variable: variable?.label
-  })
-})
-
 // Inicialización
 onMounted(async () => {
   try {
-    // Inicializar filtros y cargar datos
     initializeFilters()
     await loadFilterData()
-    
-    console.log('MapsPage inicializada correctamente')
   } catch (err) {
     console.error('Error inicializando MapsPage:', err)
   }
@@ -213,6 +204,15 @@ onMounted(async () => {
   margin: 0 auto;
   background-color: #f8f9fa;
   min-height: 100vh;
+}
+
+.map-section {
+  margin-bottom: 0;
+}
+
+.charts-section {
+  margin-top: 20px;
+  margin-bottom: 20px;
 }
 
 .filter-stats-panel {
@@ -235,7 +235,7 @@ onMounted(async () => {
   color: #2c3e50;
 }
 
-.export-btn {
+.export-btn, .charts-btn {
   background: #4CAF50;
   color: white;
   border: none;
@@ -244,10 +244,20 @@ onMounted(async () => {
   cursor: pointer;
   font-size: 14px;
   transition: background 0.2s;
+  margin-top: 10px;
 }
 
-.export-btn:hover {
+.export-btn:hover, .charts-btn:hover {
   background: #45a049;
+}
+
+.charts-btn {
+  background: #2196F3;
+  margin-left: 10px;
+}
+
+.charts-btn:hover {
+  background: #1976D2;
 }
 
 .stats-grid {
