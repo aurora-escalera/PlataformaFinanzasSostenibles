@@ -1,4 +1,4 @@
-<!-- src/modules/maps/components/MapComponent.vue - SOLO DATOS REALES -->
+<!-- src/modules/maps/components/MapComponent.vue - LIMPIO SIN DEBUG -->
 <template>
   <div class="map-container">
     <!-- Loading State -->
@@ -9,7 +9,7 @@
 
     <!-- Error State -->
     <div v-if="error" class="error-state">
-      <p>❌ Error: {{ error }}</p>
+      <p>Error: {{ error }}</p>
       <button @click="initializeData" class="retry-btn">
         Reintentar
       </button>
@@ -82,7 +82,7 @@
               :stroke="getStrokeColor(feature.properties.state_name)"
               :stroke-width="getStrokeWidth(feature.properties.state_name)"
               class="state-path"
-              @click="handleStateClick(feature.properties.state_name)"
+              @click="handleStateClickWithEmit(feature.properties.state_name)"
               @mouseenter="handleMouseHover(feature.properties.state_name, $event)"
               @mouseleave="handleStateLeave"
             />
@@ -106,11 +106,54 @@
         </div>
       </div>
 
-      <!-- State Details Panel - SOLO DATOS REALES -->
+      <!-- CHARTS SECTION - Entre mapa y details -->
+      <div v-if="selectedState" class="charts-section">
+        <div class="charts-container">
+          <div class="charts-header">
+            <h3>Análisis Detallado - {{ selectedState }}</h3>
+            <button @click="resetSelection" class="charts-close-btn">✕</button>
+          </div>
+          
+          <!-- Gráficas reales -->
+          <div class="charts-grid">
+            <!-- Primera fila: 4 gráficas de dona -->
+            <div class="charts-row">
+              <div 
+                v-for="donut in currentChartsData.donuts" 
+                :key="donut.id"
+                class="chart-container"
+              >
+                <DonutChart 
+                  :data="donut.data"
+                  :title="donut.title"
+                  :subtitle="donut.subtitle"
+                />
+              </div>
+            </div>
+
+            <!-- Segunda fila: 4 gráficas de barras -->
+            <div class="charts-row">
+              <div 
+                v-for="bar in currentChartsData.bars" 
+                :key="bar.id"
+                class="chart-container"
+              >
+                <BarChart 
+                  :data="bar.data"
+                  :title="bar.title"
+                  :color="bar.color"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- State Details Panel -->
       <div v-if="selectedState" class="details-panel">
         <div class="details-header">
           <h3>{{ selectedState }}</h3>
-          <button @click="selectedState = null" class="close-btn">✕</button>
+          <button @click="resetSelection" class="close-btn">✕</button>
         </div>
         
         <div class="details-content">
@@ -133,7 +176,7 @@
         </div>
       </div>
 
-      <!-- Statistics Summary - SOLO DATOS REALES -->
+      <!-- Statistics Summary -->
       <div v-if="generalStats" class="stats-summary">
         <h3>Resumen Nacional IFSS</h3>
         <div class="stats-grid">
@@ -159,13 +202,13 @@
       <!-- Top Performers -->
       <div class="rankings">
         <div class="top-performers">
-          <h4>🏆 Top 5 Estados IFSS</h4>
+          <h4>Top 5 Estados IFSS</h4>
           <div class="ranking-list">
             <div 
               v-for="(state, index) in topPerformingStates" 
               :key="state.name"
               class="ranking-item"
-              @click="handleStateClick(state.name)"
+              @click="handleStateClickWithEmit(state.name)"
             >
               <span class="rank">{{ index + 1 }}</span>
               <span class="name">{{ state.name }}</span>
@@ -182,9 +225,35 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { geoPath, geoMercator } from 'd3-geo'
 import { useMaps } from '@/composables/useMaps'
+import { useCharts } from '@/composables/useCharts'
+import DonutChart from '@/modules/charts/components/DonutChart.vue'
+import BarChart from '@/modules/charts/components/BarChart.vue'
+
+// Props
+const props = defineProps({
+  title: {
+    type: String,
+    default: 'Mapa de México'
+  },
+  geoDataUrl: {
+    type: String,
+    default: '/mexicoStates.json'
+  },
+  dataUrl: {
+    type: String,
+    default: '/sustainabilityData.json'
+  },
+  legendTitle: {
+    type: String,
+    default: 'Valor IFSS'
+  }
+})
+
+// Emits para comunicación con el padre
+const emit = defineEmits(['region-selected', 'map-error'])
 
 // Usar el composable
 const {
@@ -203,8 +272,15 @@ const {
   handleStateClick,
   handleStateHover,
   handleStateLeave,
+  resetSelection,
   initializeData
 } = useMaps()
+
+// Usar el composable de charts
+const {
+  currentChartsData,
+  setChartData
+} = useCharts()
 
 // Estados locales del componente
 const mousePosition = ref({ x: 0, y: 0 })
@@ -216,6 +292,23 @@ const handleMouseHover = (stateName, event) => {
     y: event.clientY
   }
   handleStateHover(stateName)
+}
+
+// Función que maneja click y emite eventos
+const handleStateClickWithEmit = (stateName) => {
+  handleStateClick(stateName)
+  
+  setTimeout(() => {
+    if (selectedState.value === stateName) {
+      const stateData = getStateInfo(stateName)
+      emit('region-selected', {
+        name: stateName,
+        data: stateData
+      })
+    } else {
+      emit('region-selected', null)
+    }
+  }, 50)
 }
 
 // Configurar proyección D3
@@ -260,6 +353,28 @@ const tooltipStyle = computed(() => {
     zIndex: 1000,
     transform: 'translate(0, 0)',
     maxWidth: '250px'
+  }
+})
+
+// Watch para cambios en selectedState y emitir eventos
+watch(selectedState, (newState, oldState) => {
+  if (newState && newState !== oldState) {
+    const stateData = getStateInfo(newState)
+    // Actualizar datos para las gráficas
+    setChartData(stateData)
+    emit('region-selected', {
+      name: newState,
+      data: stateData
+    })
+  } else if (!newState && oldState) {
+    emit('region-selected', null)
+  }
+})
+
+// Watch para errores
+watch(error, (newError) => {
+  if (newError) {
+    emit('map-error', newError)
   }
 })
 </script>
@@ -449,6 +564,112 @@ svg g:hover .state-path:hover  {
   color: #3a3a3a;
   line-height: 1.2;
   font-size: 12px;
+}
+
+.charts-section {
+  margin: 30px 0;
+}
+
+.charts-container {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.charts-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.charts-header h3 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.charts-close-btn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #666;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.charts-close-btn:hover {
+  background: #f0f0f0;
+}
+
+.charts-placeholder {
+  text-align: center;
+  padding: 40px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  color: #666;
+}
+
+.charts-placeholder p {
+  margin: 8px 0;
+}
+
+.charts-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.charts-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.chart-container {
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 200px;
+  transition: box-shadow 0.2s;
+}
+
+.chart-container:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 1200px) {
+  .charts-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .charts-container {
+    padding: 16px;
+  }
+  
+  .charts-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .charts-header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+    text-align: center;
+  }
 }
 
 .details-panel {
