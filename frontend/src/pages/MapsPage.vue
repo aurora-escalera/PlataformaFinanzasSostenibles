@@ -1,15 +1,25 @@
-<!-- src/pages/MapsPage.vue - LIMPIO Y CHARTS DEBAJO DEL MAPA -->
+<!-- src/pages/MapsPage.vue - LAYOUT EN DOS COLUMNAS -->
 <template>
   <div class="maps-page">
-    <!-- Barra de filtros retráctil -->
-    <RetractableFilterBar 
-      :entities="entitiesData"
-      :loading="loading"
-      @entity-change="handleEntityChange"
-      @year-change="handleYearChange" 
-      @variable-change="handleVariableChange"
-      @filters-change="handleFiltersChange"
-    />
+    <!-- Contenedor de filtros y toggles en dos columnas -->
+    <div class="filters-toggles-row">
+      <!-- Columna izquierda: Filtros -->
+      <div class="filters-column">
+        <RetractableFilterBar 
+          :entities="entitiesData"
+          :loading="loading"
+          @entity-change="handleEntityChange"
+          @year-change="handleYearChange" 
+          @variable-change="handleVariableChange"
+          @filters-change="handleFiltersChange"
+        />
+      </div>
+      
+      <!-- Columna derecha: Toggles -->
+      <div class="toggles-column">
+        <DataToggleComponent />
+      </div>
+    </div>
     
     <!-- Componente del mapa -->
     <div class="map-section">
@@ -51,7 +61,6 @@
         </div>
       </div>
       
-      <!-- Información del filtro actual -->
       <div v-if="selectedEntity" class="current-filter">
         <h4>{{ selectedEntity }}</h4>
         <p>Valor IFSS: {{ getCurrentEntityValue() }}%</p>
@@ -63,7 +72,6 @@
       </div>
     </div>
 
-    <!-- Panel de error si hay problemas -->
     <div v-if="error" class="error-panel">
       <h3>Error en el sistema</h3>
       <p>{{ error }}</p>
@@ -78,17 +86,14 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import MapComponent from '@/modules/maps/components/MapComponent.vue'
 import RetractableFilterBar from '@/modules/maps/components/RetractableFilterBar.vue'
+import DataToggleComponent from '@modules/other/components/DataToggleComponent.vue'
 import { useFilters } from '@/composables/useFilters'
 import { useMaps } from '@/composables/useMaps'
 
-// URLs de datos
 const geoDataUrl = ref('/mexicoStates.json')
 const dataUrl = ref('/sustainabilityData.json')
-
-// Estados locales
 const showStats = ref(false)
 
-// Usar composables
 const {
   selectedEntity,
   selectedYear, 
@@ -116,25 +121,19 @@ const {
   initializeData: initializeMapsData
 } = useMaps()
 
-// Estados computados combinados
 const loading = computed(() => filtersLoading.value || mapsLoading.value)
 const error = computed(() => filtersError.value || mapsError.value)
 
-// Manejar selección desde el mapa - simplificado
 const handleRegionSelect = (data) => {
-  // Por ahora solo log, la funcionalidad de charts está dentro del MapComponent
   console.log('Estado seleccionado desde mapa:', data)
 }
 
-// Watch simplificado
 watch(selectedState, (newState) => {
   console.log('Estado seleccionado en el mapa:', newState)
 })
 
-// Método para enfocar en una entidad específica
 const focusOnEntity = () => {
   if (selectedEntity.value) {
-    // Aquí podrías hacer scroll al mapa o alguna otra acción
     console.log('Enfocando en entidad:', selectedEntity.value)
   }
 }
@@ -164,7 +163,6 @@ const handleFiltersChange = (allFilters) => {
   showStats.value = true
 }
 
-// Métodos auxiliares
 const getCurrentEntityValue = () => {
   if (!selectedEntity.value || !filteredData.value[selectedEntity.value]) return 0
   const data = filteredData.value[selectedEntity.value]
@@ -186,7 +184,6 @@ const retry = () => {
   loadFilterData()
 }
 
-// Inicialización
 onMounted(async () => {
   try {
     initializeFilters()
@@ -199,27 +196,44 @@ onMounted(async () => {
 
 <style scoped>
 .maps-page {
-  padding: 2rem;
-  max-width: 1400px;
-  margin: 0 auto;
+  padding: 0;
   background-color: #f8f9fa;
   min-height: 100vh;
 }
 
-.map-section {
-  margin-bottom: 0;
+/* Layout en dos columnas para filtros y toggles */
+.filters-toggles-row {
+  display: flex;
+  gap: 20px;
+  padding: 0 2rem;
+  max-width: 1600px;
+  margin: 0 auto;
 }
 
-.charts-section {
-  margin-top: 20px;
-  margin-bottom: 20px;
+.filters-column {
+  width: 800px;
+  flex-shrink: 0;
+}
+
+.toggles-column {
+  width: 700px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 1rem 0;
+}
+
+.map-section {
+  margin-bottom: 0;
+  padding: 2rem;
 }
 
 .filter-stats-panel {
   background: white;
   border-radius: 12px;
   padding: 20px;
-  margin-top: 20px;
+  margin: 20px 2rem;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
@@ -306,7 +320,7 @@ onMounted(async () => {
   border: 1px solid #f44336;
   border-radius: 8px;
   padding: 20px;
-  margin-top: 20px;
+  margin: 20px 2rem;
   text-align: center;
 }
 
@@ -335,7 +349,21 @@ onMounted(async () => {
 }
 
 @media (max-width: 768px) {
-  .maps-page {
+  .filters-toggles-row {
+    flex-direction: column;
+    padding: 1rem;
+  }
+
+  .filters-column,
+  .toggles-column {
+    width: 100%;
+  }
+
+  .toggles-column {
+    justify-content: center;
+  }
+
+  .map-section {
     padding: 1rem;
   }
   

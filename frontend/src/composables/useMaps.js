@@ -1,4 +1,4 @@
-// src/composables/useMaps.js - SOLO DATOS REALES
+// src/composables/useMaps.js - DIMENSIONES AJUSTADAS
 import { ref, computed, onMounted } from 'vue'
 
 export const useMaps = () => {
@@ -10,11 +10,11 @@ export const useMaps = () => {
   const selectedState = ref(null)
   const hoveredState = ref(null)
   
-  // Configuración del mapa
+  // Configuración del mapa - TAMAÑO REDUCIDO
   const mapConfig = ref({
-    width: 1200,
-    height: 800,
-    scale: 1600,
+    width: 800,
+    height: 600,
+    scale: 1200,
     center: [-101, 23],
     projection: 'geoMercator'
   })
