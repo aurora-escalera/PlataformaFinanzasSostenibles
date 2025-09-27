@@ -1,4 +1,4 @@
-// src/composables/useMaps.js - SOLO DATOS REALES
+// src/composables/useMaps.js
 import { ref, computed, onMounted } from 'vue'
 
 export const useMaps = () => {
@@ -12,14 +12,14 @@ export const useMaps = () => {
   
   // Configuración del mapa
   const mapConfig = ref({
-    width: 1200,
-    height: 800,
-    scale: 1600,
+    width: 800,
+    height: 600,
+    scale: 1200,
     center: [-101, 23],
     projection: 'geoMercator'
   })
 
-  // Computed para IFSS nacional (promedio real)
+  // Computed para IFSS nacional
   const nationalIFSS = computed(() => {
     if (!sustainabilityData.value) return null
     
@@ -34,7 +34,7 @@ export const useMaps = () => {
     }
   })
 
-  // Cargar datos GeoJSON de México
+  // Cargar datos GeoJSON
   const loadGeoData = async () => {
     try {
       const response = await fetch('/mexicoStates.json')
@@ -54,7 +54,6 @@ export const useMaps = () => {
       if (!response.ok) throw new Error('Error al cargar datos de sustentabilidad')
       const data = await response.json()
       
-      // Convertir array a objeto para búsqueda rápida por estado
       sustainabilityData.value = data.reduce((acc, item) => {
         acc[item.region] = item
         return acc
@@ -84,7 +83,7 @@ export const useMaps = () => {
     }
   }
 
-  // Obtener color basado en el valor IFSS
+  // Obtener color basado en IFSS
   const getStateColor = (stateName) => {
     if (!sustainabilityData.value || !sustainabilityData.value[stateName]) {
       return '#e0e0e0'
@@ -102,7 +101,7 @@ export const useMaps = () => {
     return '#e52845'
   }
 
-  // SOLO datos que existen realmente en sustainabilityData.json
+  // Obtener info del estado
   const getStateInfo = (stateName) => {
     if (!sustainabilityData.value || !sustainabilityData.value[stateName]) {
       return {
@@ -115,7 +114,6 @@ export const useMaps = () => {
     
     const data = sustainabilityData.value[stateName]
     
-    // Retornar EXACTAMENTE lo que viene en el JSON + descripción generada
     return {
       region: data.region,
       year: data.year,
@@ -124,7 +122,7 @@ export const useMaps = () => {
     }
   }
 
-  // Estadísticas SOLO basadas en datos reales del JSON
+  // Estadísticas generales
   const generalStats = computed(() => {
     if (!sustainabilityData.value) return null
     
@@ -143,11 +141,11 @@ export const useMaps = () => {
       avgIFSS: Math.round(avgIFSS * 100) / 100,
       maxIFSS,
       minIFSS,
-      year: 2023 // Año de los datos
+      year: 2023
     }
   })
 
-  // Estados con mejor/peor desempeño
+  // Top 5 estados
   const topPerformingStates = computed(() => {
     if (!sustainabilityData.value) return []
     
@@ -176,9 +174,30 @@ export const useMaps = () => {
       }))
   })
 
-  // Métodos para manejo de eventos
+  // MÉTODO PRINCIPAL: Manejar click en estado - CON LOGS DE DEBUG
   const handleStateClick = (stateName) => {
-    selectedState.value = selectedState.value === stateName ? null : stateName
+    console.log('=== USEMAPS: handleStateClick llamado con ===', stateName)
+    console.log('=== USEMAPS: sustainabilityData disponible? ===', !!sustainabilityData.value)
+    
+    if (!stateName) {
+      selectedState.value = null
+      return
+    }
+
+    // Normalizar nombre
+    const normalizedName = stateName.trim()
+    console.log('=== USEMAPS: Nombre normalizado ===', normalizedName)
+    
+    if (sustainabilityData.value) {
+      console.log('=== USEMAPS: Keys en sustainabilityData ===', Object.keys(sustainabilityData.value))
+      
+      if (sustainabilityData.value[normalizedName]) {
+        selectedState.value = selectedState.value === normalizedName ? null : normalizedName
+        console.log('=== USEMAPS: selectedState actualizado a ===', selectedState.value)
+      } else {
+        console.warn('=== USEMAPS: Estado NO encontrado ===', normalizedName)
+      }
+    }
   }
 
   const handleStateHover = (stateName) => {
@@ -202,7 +221,6 @@ export const useMaps = () => {
     }
   }
 
-  // Buscar estado por nombre
   const searchState = (searchTerm) => {
     if (!sustainabilityData.value || !searchTerm) return []
     
@@ -217,7 +235,6 @@ export const useMaps = () => {
       }))
   }
 
-  // Filtrar por rango de valores IFSS
   const filterByRange = (minValue = 0, maxValue = 3) => {
     if (!sustainabilityData.value) return []
     
@@ -234,7 +251,6 @@ export const useMaps = () => {
       }))
   }
 
-  // Obtener etiqueta de clasificación IFSS
   const getIFSSLabel = (ifssValue) => {
     if (ifssValue >= 2.5) return { label: 'Muy alto', color: '#6ac952' }
     if (ifssValue >= 2.0) return { label: 'Alto', color: '#94d351' }
@@ -250,7 +266,6 @@ export const useMaps = () => {
   })
 
   return {
-    // Estados reactivos
     geoData,
     sustainabilityData,
     loading,
@@ -258,14 +273,10 @@ export const useMaps = () => {
     selectedState,
     hoveredState,
     mapConfig,
-    
-    // Computed
     generalStats,
     topPerformingStates,
     worstPerformingStates,
     nationalIFSS,
-    
-    // Métodos
     getStateColor,
     getStateInfo,
     getIFSSLabel,
