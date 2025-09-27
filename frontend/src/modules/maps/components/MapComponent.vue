@@ -1,4 +1,4 @@
-<!-- src/modules/maps/components/MapComponent.vue - LIMPIO SIN DEBUG -->
+<!-- src/modules/maps/components/MapComponent.vue - CHARTS AL LADO DERECHO -->
 <template>
   <div class="map-container">
     <!-- Loading State -->
@@ -17,132 +17,142 @@
 
     <!-- Map Content -->
     <div v-if="!loading && !error" class="map-content">
-      <!-- SVG Map -->
-      <div class="map-wrapper">
-        <!-- Información de hover/nacional -->
-        <div class="hover-info-box">
-          <!-- Si hay estado en hover, mostrar información del estado -->
-          <div v-if="hoveredState" class="info-content">
-            <div class="location-label">{{ hoveredState }}</div>
-            <div class="value-display">{{ getStateInfo(hoveredState).value || 0 }}%</div>
+      <!-- Contenedor principal con mapa y charts lado a lado -->
+      <div class="map-and-charts-wrapper">
+        <!-- SVG Map -->
+        <div class="map-wrapper">
+          <!-- Información de hover/nacional -->
+          <div class="hover-info-box">
+            <!-- Si hay estado en hover, mostrar información del estado -->
+            <div v-if="hoveredState" class="info-content">
+              <div class="location-label">{{ hoveredState }}</div>
+              <div class="value-display">{{ getStateInfo(hoveredState).value || 0 }}%</div>
+            </div>
+            
+            <!-- Si no hay estado en hover, mostrar información nacional -->
+            <div v-else-if="nationalIFSS" class="info-content">
+              <div class="location-label">México</div>
+              <div class="value-display">{{ nationalIFSS.value }}%</div>
+            </div>
           </div>
-          
-          <!-- Si no hay estado en hover, mostrar información nacional -->
-          <div v-else-if="nationalIFSS" class="info-content">
-            <div class="location-label">México</div>
-            <div class="value-display">{{ nationalIFSS.value }}%</div>
-          </div>
-        </div>
 
-        <!-- Leyenda de colores IFSS -->
-        <div class="color-legend">
-          <div class="legend-items-horizontal">
-            <div class="legend-item-horizontal">
-              <div class="legend-color-horizontal" style="background-color: #6ac952"></div>
-              <span>Muy Alto</span>
-            </div>
-            <div class="legend-item-horizontal">
-              <div class="legend-color-horizontal" style="background-color: #94d351"></div>
-              <span>Alto</span>
-            </div>
-            <div class="legend-item-horizontal">
-              <div class="legend-color-horizontal" style="background-color: #bddc50"></div>
-              <span>Medio Alto</span>
-            </div>
-            <div class="legend-item-horizontal">
-              <div class="legend-color-horizontal" style="background-color: #e6d64f"></div>
-              <span>Medio</span>
-            </div>
-            <div class="legend-item-horizontal">
-              <div class="legend-color-horizontal" style="background-color: #e6a74c"></div>
-              <span>Medio Bajo</span>
-            </div>
-            <div class="legend-item-horizontal">
-              <div class="legend-color-horizontal" style="background-color: #e67849"></div>
-              <span>Bajo</span>
-            </div>
-            <div class="legend-item-horizontal">
-              <div class="legend-color-horizontal" style="background-color: #e52845"></div>
-              <span>Muy Bajo</span>
-            </div>
-          </div>
-        </div>
-
-        <svg 
-          :width="mapConfig.width" 
-          :height="mapConfig.height"
-          class="mexico-map"
-        >
-          <g>
-            <path
-              v-for="feature in geoData?.features || []"
-              :key="feature.properties.state_name"
-              :d="getPathData(feature)"
-              :fill="getStateColor(feature.properties.state_name)"
-              :stroke="getStrokeColor(feature.properties.state_name)"
-              :stroke-width="getStrokeWidth(feature.properties.state_name)"
-              class="state-path"
-              @click="handleStateClickWithEmit(feature.properties.state_name)"
-              @mouseenter="handleMouseHover(feature.properties.state_name, $event)"
-              @mouseleave="handleStateLeave"
-            />
-          </g>
-        </svg>
-
-        <!-- Tooltip -->
-        <div 
-          v-if="hoveredState" 
-          class="tooltip"
-          :style="tooltipStyle"
-        >
-          <div class="tooltip-content">
-            <h4>{{ hoveredState }}</h4>
-            <div class="tooltip-data">
-              <p>IFSS: {{ getStateInfo(hoveredState).value || 0 }}</p>
-              <p>Clasificación: {{ getIFSSLabel(getStateInfo(hoveredState).value || 0).label }}</p>
-              <p>Año: {{ getStateInfo(hoveredState).year }}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- CHARTS SECTION - Entre mapa y details -->
-      <div v-if="selectedState" class="charts-section">
-        <div class="charts-container">
-          <div class="charts-header">
-            <h3>Análisis Detallado - {{ selectedState }}</h3>
-            <button @click="resetSelection" class="charts-close-btn">✕</button>
-          </div>
-          
-          <!-- Gráficas reales -->
-          <div class="charts-grid">
-            <!-- Primera fila: 4 gráficas de dona -->
-            <div class="charts-row">
-              <div 
-                v-for="donut in currentChartsData.donuts" 
-                :key="donut.id"
-                class="chart-container"
-              >
-                <DonutChart 
-                  :data="donut.data"
-                  :title="donut.title"
-                  :subtitle="donut.subtitle"
-                />
+          <!-- Leyenda de colores IFSS -->
+          <div class="color-legend">
+            <div class="legend-items-horizontal">
+              <div class="legend-item-horizontal">
+                <div class="legend-color-horizontal" style="background-color: #6ac952"></div>
+                <span>Muy Alto</span>
+              </div>
+              <div class="legend-item-horizontal">
+                <div class="legend-color-horizontal" style="background-color: #94d351"></div>
+                <span>Alto</span>
+              </div>
+              <div class="legend-item-horizontal">
+                <div class="legend-color-horizontal" style="background-color: #bddc50"></div>
+                <span>Medio Alto</span>
+              </div>
+              <div class="legend-item-horizontal">
+                <div class="legend-color-horizontal" style="background-color: #e6d64f"></div>
+                <span>Medio</span>
+              </div>
+              <div class="legend-item-horizontal">
+                <div class="legend-color-horizontal" style="background-color: #e6a74c"></div>
+                <span>Medio Bajo</span>
+              </div>
+              <div class="legend-item-horizontal">
+                <div class="legend-color-horizontal" style="background-color: #e67849"></div>
+                <span>Bajo</span>
+              </div>
+              <div class="legend-item-horizontal">
+                <div class="legend-color-horizontal" style="background-color: #e52845"></div>
+                <span>Muy Bajo</span>
               </div>
             </div>
+          </div>
 
-            <!-- Segunda fila: 4 gráficas de barras -->
-            <div class="charts-row">
-              <div 
-                v-for="bar in currentChartsData.bars" 
-                :key="bar.id"
-                class="chart-container"
-              >
-                <BarChart 
-                  :data="bar.data"
-                  :title="bar.title"
-                  :color="bar.color"
-                />
+          <svg 
+            :width="mapConfig.width" 
+            :height="mapConfig.height"
+            class="mexico-map"
+          >
+            <g>
+              <path
+                v-for="feature in geoData?.features || []"
+                :key="feature.properties.state_name"
+                :d="getPathData(feature)"
+                :fill="getStateColor(feature.properties.state_name)"
+                :stroke="getStrokeColor(feature.properties.state_name)"
+                :stroke-width="getStrokeWidth(feature.properties.state_name)"
+                class="state-path"
+                @click="handleStateClickWithEmit(feature.properties.state_name)"
+                @mouseenter="handleMouseHover(feature.properties.state_name, $event)"
+                @mouseleave="handleStateLeave"
+              />
+            </g>
+          </svg>
+
+          <!-- Tooltip -->
+          <div 
+            v-if="hoveredState" 
+            class="tooltip"
+            :style="tooltipStyle"
+          >
+            <div class="tooltip-content">
+              <h4>{{ hoveredState }}</h4>
+              <div class="tooltip-data">
+                <p>IFSS: {{ getStateInfo(hoveredState).value || 0 }}</p>
+                <p>Clasificación: {{ getIFSSLabel(getStateInfo(hoveredState).value || 0).label }}</p>
+                <p>Año: {{ getStateInfo(hoveredState).year }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CHARTS SECTION - SIEMPRE VISIBLE -->
+        <div class="charts-section">
+          <div class="charts-container">
+            <div class="charts-header">
+              <h3>{{ selectedState ? `Análisis Detallado - ${selectedState}` : 'Selecciona un estado' }}</h3>
+              <button v-if="selectedState" @click="resetSelection" class="charts-close-btn">✕</button>
+            </div>
+            
+            <!-- Mensaje cuando no hay estado seleccionado -->
+            <div v-if="!selectedState" class="charts-empty-state">
+              <div class="empty-state-icon">📊</div>
+              <h4>Análisis de Estado</h4>
+              <p>Haz clic en cualquier estado del mapa para ver sus gráficas detalladas</p>
+            </div>
+            
+            <!-- Gráficas reales cuando hay estado seleccionado -->
+            <div v-else class="charts-grid">
+              <!-- Primera fila: 4 gráficas de dona -->
+              <div class="charts-row">
+                <div 
+                  v-for="donut in currentChartsData.donuts" 
+                  :key="donut.id"
+                  class="chart-container"
+                >
+                  <DonutChart 
+                    :data="donut.data"
+                    :title="donut.title"
+                    :subtitle="donut.subtitle"
+                  />
+                </div>
+              </div>
+
+              <!-- Segunda fila: 4 gráficas de barras -->
+              <div class="charts-row">
+                <div 
+                  v-for="bar in currentChartsData.bars" 
+                  :key="bar.id"
+                  class="chart-container"
+                >
+                  <BarChart 
+                    :data="bar.data"
+                    :title="bar.title"
+                    :color="bar.color"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -232,7 +242,6 @@ import { useCharts } from '@/composables/useCharts'
 import DonutChart from '@/modules/charts/components/DonutChart.vue'
 import BarChart from '@/modules/charts/components/BarChart.vue'
 
-// Props
 const props = defineProps({
   title: {
     type: String,
@@ -249,13 +258,17 @@ const props = defineProps({
   legendTitle: {
     type: String,
     default: 'Valor IFSS'
+  },
+  // NUEVO: Recibir el composable compartido
+  mapsComposable: {
+    type: Object,
+    default: null
   }
 })
 
-// Emits para comunicación con el padre
 const emit = defineEmits(['region-selected', 'map-error'])
 
-// Usar el composable
+// Usar el composable recibido o crear uno nuevo (fallback)
 const {
   geoData,
   loading,
@@ -274,18 +287,15 @@ const {
   handleStateLeave,
   resetSelection,
   initializeData
-} = useMaps()
+} = props.mapsComposable || useMaps()
 
-// Usar el composable de charts
 const {
   currentChartsData,
   setChartData
 } = useCharts()
 
-// Estados locales del componente
 const mousePosition = ref({ x: 0, y: 0 })
 
-// Función local para manejar el hover con posición del mouse
 const handleMouseHover = (stateName, event) => {
   mousePosition.value = {
     x: event.clientX,
@@ -294,7 +304,6 @@ const handleMouseHover = (stateName, event) => {
   handleStateHover(stateName)
 }
 
-// Función que maneja click y emite eventos
 const handleStateClickWithEmit = (stateName) => {
   handleStateClick(stateName)
   
@@ -311,7 +320,6 @@ const handleStateClickWithEmit = (stateName) => {
   }, 50)
 }
 
-// Configurar proyección D3
 const projection = computed(() => {
   return geoMercator()
     .scale(mapConfig.value.scale)
@@ -323,12 +331,10 @@ const pathGenerator = computed(() => {
   return geoPath().projection(projection.value)
 })
 
-// Generar path data para cada estado
 const getPathData = (feature) => {
   return pathGenerator.value(feature)
 }
 
-// Estilos dinámicos para los estados
 const getStrokeColor = (stateName) => {
   if (selectedState.value === stateName) return '#FfFFFF'
   if (hoveredState.value === stateName) return '#555555'
@@ -341,7 +347,6 @@ const getStrokeWidth = (stateName) => {
   return 1
 }
 
-// Posición del tooltip
 const tooltipStyle = computed(() => {
   if (!hoveredState.value) return { display: 'none' }
   
@@ -356,11 +361,9 @@ const tooltipStyle = computed(() => {
   }
 })
 
-// Watch para cambios en selectedState y emitir eventos
 watch(selectedState, (newState, oldState) => {
   if (newState && newState !== oldState) {
     const stateData = getStateInfo(newState)
-    // Actualizar datos para las gráficas
     setChartData(stateData)
     emit('region-selected', {
       name: newState,
@@ -371,7 +374,6 @@ watch(selectedState, (newState, oldState) => {
   }
 })
 
-// Watch para errores
 watch(error, (newError) => {
   if (newError) {
     emit('map-error', newError)
@@ -382,8 +384,9 @@ watch(error, (newError) => {
 <style scoped>
 .map-container {
   width: 100%;
-  max-width: 1200px;
+  max-width: 1520px;
   margin: 0 auto;
+  padding: 0;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
@@ -411,11 +414,17 @@ watch(error, (newError) => {
   100% { transform: rotate(360deg); }
 }
 
-.map-wrapper {
-  position: relative;
+.map-and-charts-wrapper {
   display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
+  gap: 20px;
+  align-items: flex-start;
+  padding: 0; 
+}
+
+.map-wrapper {
+  width: 800px; 
+  flex-shrink: 0;
+  position: relative;
 }
 
 .color-legend {
@@ -567,30 +576,34 @@ svg g:hover .state-path:hover  {
 }
 
 .charts-section {
-  margin: 30px 0;
+  width: 700px;
+  flex-shrink: 0;
+  height: 800px;
+  overflow-y: auto;
 }
 
 .charts-container {
   background: white;
   border: 1px solid #ddd;
   border-radius: 12px;
-  padding: 24px;
+  padding: 20px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  height: 100%;
 }
 
 .charts-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 16px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
   border-bottom: 1px solid #e0e0e0;
 }
 
 .charts-header h3 {
   margin: 0;
   color: #2c3e50;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
 }
 
@@ -609,67 +622,58 @@ svg g:hover .state-path:hover  {
   background: #f0f0f0;
 }
 
-.charts-placeholder {
+.charts-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #999;
   text-align: center;
   padding: 40px;
-  background: #f8f9fa;
-  border-radius: 8px;
+}
+
+.empty-state-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+}
+
+.charts-empty-state h4 {
+  margin: 0 0 10px 0;
   color: #666;
 }
 
-.charts-placeholder p {
-  margin: 8px 0;
+.charts-empty-state p {
+  margin: 0;
+  font-size: 14px;
 }
 
 .charts-grid {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
 }
 
 .charts-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
+  gap: 12px;
 }
 
 .chart-container {
   background: #fafafa;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
-  padding: 16px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-height: 200px;
+  min-height: 140px;
   transition: box-shadow 0.2s;
 }
 
 .chart-container:hover {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-@media (max-width: 1200px) {
-  .charts-row {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 768px) {
-  .charts-container {
-    padding: 16px;
-  }
-  
-  .charts-row {
-    grid-template-columns: 1fr;
-  }
-  
-  .charts-header {
-    flex-direction: column;
-    gap: 12px;
-    align-items: stretch;
-    text-align: center;
-  }
 }
 
 .details-panel {
@@ -731,6 +735,12 @@ svg g:hover .state-path:hover  {
   font-size: 11px;
   font-weight: bold;
   margin-top: 3px;
+}
+
+.description {
+  padding: 10px;
+  background: #f0f0f0;
+  border-radius: 4px;
 }
 
 .stats-summary {
@@ -826,14 +836,27 @@ svg g:hover .state-path:hover  {
   font-weight: bold;
 }
 
+@media (max-width: 1200px) {
+  .map-and-charts-wrapper {
+    flex-direction: column;
+  }
+  
+  .charts-section, .map-wrapper {
+    width: 100%;
+  }
+  
+  .charts-row {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
 @media (max-width: 768px) {
   .map-container {
     padding: 10px;
   }
   
-  .map-wrapper {
-    flex-direction: column;
-    align-items: center;
+  .charts-row {
+    grid-template-columns: repeat(2, 1fr);
   }
   
   .color-legend {

@@ -1,6 +1,9 @@
 <!-- src/modules/maps/components/RetractableFilterBar.vue -->
 <template>
-  <div class="filter-bar-container">
+  <div 
+    class="filter-bar-container" 
+    :style="{ overflow: activeDropdown !== null ? 'visible' : 'hidden' }"
+  >
     <!-- Barra de filtros principal -->
     <div 
       class="filter-bar" 
@@ -32,9 +35,12 @@
                   class="search-input"
                 >
               </div>
-              <div class="dropdown-options">
+              <div 
+                class="dropdown-options" 
+                @wheel.prevent="handleDropdownScroll"
+              >
                 <div 
-                  @click="selectEntity(null)"
+                  @click="() => { console.log('🖱️ Click en: Todas'); selectEntity(null); }"
                   class="dropdown-option"
                   :class="{ 'selected': !selectedEntity }"
                 >
@@ -43,12 +49,11 @@
                 <div 
                   v-for="entity in filteredEntities" 
                   :key="entity.name"
-                  @click="selectEntity(entity.name)"
+                  @click="() => { console.log('🖱️ Click en:', entity.name); selectEntity(entity.name); }"
                   class="dropdown-option"
                   :class="{ 'selected': selectedEntity === entity.name }"
                 >
                   <span>{{ entity.name }}</span>
-                  <span class="entity-value">{{ entity.value }}%</span>
                 </div>
               </div>
             </div>
@@ -127,12 +132,14 @@
       </div>
     </div>
 
-    <!-- Overlay para cerrar dropdowns -->
+    <!-- Overlay para cerrar dropdowns - COMENTADO TEMPORALMENTE PARA DEBUG -->
+    <!--
     <div 
       v-if="activeDropdown"
       @click="closeAllDropdowns"
       class="dropdown-overlay"
     ></div>
+    -->
   </div>
 </template>
 
@@ -160,7 +167,7 @@ const emit = defineEmits([
 ])
 
 // Estados reactivos
-const isSlideUp = ref(false) // Controla si está deslizado hacia arriba
+const isSlideUp = ref(false)
 const activeDropdown = ref(null)
 const entitySearch = ref('')
 const slideTimeout = ref(null)
@@ -175,7 +182,7 @@ const availableYears = ref([
   '2023', '2022', '2021', '2020', '2019'
 ])
 
-// Variable por defecto (única disponible actualmente)
+// Variable por defecto
 const defaultVariable = ref({
   key: 'ifss_total',
   label: 'IFSS Total',
@@ -193,9 +200,24 @@ const filteredEntities = computed(() => {
   )
 })
 
+// Función para manejar el scroll en el dropdown
+const handleDropdownScroll = (event) => {
+  const container = event.currentTarget
+  const { scrollTop, scrollHeight, clientHeight } = container
+  const delta = event.deltaY
+  
+  const isAtTop = scrollTop === 0 && delta < 0
+  const isAtBottom = scrollTop + clientHeight >= scrollHeight && delta > 0
+  
+  if (!isAtTop && !isAtBottom) {
+    event.preventDefault()
+  }
+  
+  event.stopPropagation()
+}
+
 // Métodos para manejo de deslizamiento
 const handleMouseEnter = () => {
-  // Limpiar timeout anterior si existe
   if (slideTimeout.value) {
     clearTimeout(slideTimeout.value)
     slideTimeout.value = null
@@ -204,41 +226,50 @@ const handleMouseEnter = () => {
 }
 
 const handleMouseLeave = () => {
-  // Solo deslizar hacia abajo si no hay dropdowns activos
   if (!activeDropdown.value) {
     slideTimeout.value = setTimeout(() => {
       isSlideUp.value = false
-    }, 300) // 300ms de delay
+    }, 300)
   }
 }
 
 const toggleDropdown = (dropdownName) => {
-  // Asegurar que esté deslizado hacia arriba cuando se abre un dropdown
+  console.log('📂 Toggle dropdown:', dropdownName)
   isSlideUp.value = true
   
-  // Limpiar timeout si existe
   if (slideTimeout.value) {
     clearTimeout(slideTimeout.value)
     slideTimeout.value = null
   }
   
   activeDropdown.value = activeDropdown.value === dropdownName ? null : dropdownName
+  console.log('📂 Dropdown activo:', activeDropdown.value)
 }
 
 const closeAllDropdowns = () => {
+  console.log('🚪 Cerrando todos los dropdowns')
   activeDropdown.value = null
   
-  // Permitir que se deslice hacia abajo después de cerrar dropdowns
   slideTimeout.value = setTimeout(() => {
     isSlideUp.value = false
   }, 300)
 }
 
 const selectEntity = (entityName) => {
+  console.log('=== FILTRO: Entidad seleccionada ===', entityName)
   selectedEntity.value = entityName
+  
+  console.log('=== FILTRO: Emitiendo entity-change ===')
   emit('entity-change', entityName)
+  
+  console.log('=== FILTRO: Llamando emitFiltersChange ===')
   emitFiltersChange()
-  closeAllDropdowns()
+  
+  entitySearch.value = ''
+  
+  // NO cerrar el dropdown inmediatamente para debug
+  // closeAllDropdowns()
+  console.log('=== FILTRO: selectEntity completado ===')
 }
 
 const selectYear = (year) => {
@@ -256,101 +287,97 @@ const selectVariable = (variable) => {
 }
 
 const emitFiltersChange = () => {
-  emit('filters-change', {
+  const filters = {
     entity: selectedEntity.value,
     year: selectedYear.value,
     variable: selectedVariable.value
-  })
+  }
+  console.log('=== FILTRO: Emitiendo filters-change ===', filters)
+  emit('filters-change', filters)
 }
 
 // Inicialización
 onMounted(() => {
+  console.log('✅ RetractableFilterBar montado')
+  console.log('✅ Entidades recibidas:', props.entities.length)
   selectedVariable.value = defaultVariable.value
   emitFiltersChange()
 })
 </script>
 
 <style scoped>
+/* ... todos los estilos anteriores permanecen igual ... */
 .filter-bar-container {
   position: relative;
-
-  left: 8%;
+  left: 0%;
   top: 0px;
-  width: 80%;
-  height: 100px; /* Altura fija para el contenedor */
-  overflow: hidden; /* Ocultar la parte que se desliza fuera */
-  margin: 0; /* Eliminar margin-bottom para quitar el gap */
-  padding: 0; /* Eliminar cualquier padding */
+  width: 100%;
+  height: 90px;
+  margin: 0;
+  padding: 0;
+  z-index: 1;
 }
 
 .filter-bar {
   background: linear-gradient(135deg, #2c5282 0%, #2a4d7a 100%);
   color: white;
-  padding: 16px 24px;
-  border-radius: 45px 30px 0 0; /* Solo bordes superiores redondeados */
+  padding: 5px 24px;
+  border-radius: 45px 30px 0 0;
   box-shadow: 0 4px 20px rgba(44, 82, 130, 0.3);
   transition: transform 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
   position: absolute;
-  bottom: -30px;
+  bottom: -20px;
   left: 0;
   right: 0;
-  width: 80%;
+  width: 100%;
   cursor: pointer;
-  transform: translateY(calc(100% - 70px)); /* Mostrar solo 70px de la barra */
+  transform: translateY(calc(100% - 50px));
 }
 
 .filter-bar:hover,
 .filter-bar.expanded {
-  transform: translateY(0); /* Deslizar completamente hacia arriba */
+  transform: translateY(-22px);
   cursor: default;
 }
 
 .filter-content {
   display: flex;
-  gap: 24px; /* Restaurar espaciado para el estado expandido */
-  align-items: flex-start;
+  top: 100px;
+  gap: 24px;
   flex-wrap: wrap;
-  justify-content: center; /* Centrar los elementos */
+  justify-content: center;
 }
 
 .filter-group {
   position: relative;
-  min-width: 200px;
+  min-width: 100px;
   flex: 1;
-  text-align: center; /* Centrar el contenido del grupo */
+  text-align: center;
   display: flex;
   flex-direction: column;
-  align-items: center; /* Centrar horizontalmente */
+  align-items: center;
 }
 
-/* Agregar separadores verticales */
-.filter-group:not(:last-child)::after {
+.filter-group::after {
   content: '|';
   position: absolute;
   right: -1px;
-  top: 50%; /* Centrar verticalmente con el contenido */
-  transform: translateY(-50%);
+  top: 50%;
+  transform: translateY(-100%);
   color: rgba(255, 255, 255, 0.6);
   font-size: 18px;
   font-weight: 300;
-  z-index: 10;
+  z-index: 100;
   transition: all 0.1s ease;
-}
-
-/* Cuando está expandida, mantener la misma posición centrada */
-.filter-bar.expanded .filter-group:not(:last-child)::after {
-  top: 50%;
-  transform: translateY(-50%);
 }
 
 .filter-label {
   display: block;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 400;
   margin-bottom: 8px;
   color: #e2e8f0;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.5px; 
 }
 
 .filter-dropdown {
@@ -359,19 +386,19 @@ onMounted(() => {
 
 .dropdown-button {
   opacity: 80%;
-  width: 200px;
+  width: 120%;
   background: rgba(255, 255, 255, 0.95);
   border: 2px solid rgba(255, 255, 255, 0.3);
-  color: #2d3748;
-  padding: 12px 16px;
-  border-radius: 25px; /* Bordes muy redondeados como en la imagen 2 */
+  color: hsl(218, 23%, 23%);
+  padding: 0px 3px;
+  border-radius: 25px;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 12px;
   transition: all 0.2s ease;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: 100px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
@@ -402,14 +429,14 @@ onMounted(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: #4a5568; /* Color más oscuro para mejor contraste */
+  color: #4a5568;
   font-weight: 500;
 }
 
 .dropdown-arrow {
   font-size: 12px;
   transition: transform 0.2s ease;
-  color: #718096; /* Color más suave para la flecha */
+  color: #718096;
 }
 
 .dropdown-button.active .dropdown-arrow {
@@ -420,14 +447,14 @@ onMounted(() => {
   position: absolute;
   top: 100%;
   left: 0;
-  right: 0;
+  width: 150%;
   background: white;
   border-radius: 8px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-  z-index: 9999; /* Aumentar z-index para que aparezca por encima del wrapper */
+  z-index: 9999;
   margin-top: 8px;
-  max-height: 300px;
-  overflow: hidden;
+  max-height: none;
+  overflow: visible;
   animation: dropdownFadeIn 0.2s ease;
 }
 
@@ -443,16 +470,16 @@ onMounted(() => {
 }
 
 .dropdown-search {
-  padding: 12px;
+  padding: 8px;
   border-bottom: 1px solid #e2e8f0;
 }
 
 .search-input {
   width: 100%;
-  padding: 8px 12px;
+  padding: 6px 10px;
   border: 1px solid #e2e8f0;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: 12px;
   outline: none;
 }
 
@@ -462,12 +489,32 @@ onMounted(() => {
 }
 
 .dropdown-options {
-  max-height: 200px;
+  max-height: 180px;
   overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+}
+
+.dropdown-options::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dropdown-options::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.dropdown-options::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 4px;
+}
+
+.dropdown-options::-webkit-scrollbar-thumb:hover {
+  background: #a0aec0;
 }
 
 .dropdown-option {
-  padding: 12px 16px;
+  padding: 8px 12px;
   cursor: pointer;
   display: flex;
   justify-content: space-between;
@@ -475,6 +522,12 @@ onMounted(() => {
   color: #2d3748;
   transition: background 0.2s ease;
   border-bottom: 1px solid #f7fafc;
+  font-size: 12px;
+}
+
+.dropdown-option span:first-child {
+  font-size: 12px;
+  font-weight: 500;
 }
 
 .dropdown-option:hover {
@@ -530,7 +583,6 @@ onMounted(() => {
   background: transparent;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
   .filter-content {
     flex-direction: column;
@@ -542,11 +594,11 @@ onMounted(() => {
   }
   
   .filter-bar-container {
-    height: 80px; /* Altura menor en móvil */
+    height: 80px;
   }
   
   .filter-bar {
-    transform: translateY(calc(100% - 60px)); /* Mostrar menos en móvil */
+    transform: translateY(calc(100% - 60px));
   }
 }
 </style>
