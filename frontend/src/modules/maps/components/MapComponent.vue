@@ -258,11 +258,17 @@ const props = defineProps({
   legendTitle: {
     type: String,
     default: 'Valor IFSS'
+  },
+  // NUEVO: Recibir el composable compartido
+  mapsComposable: {
+    type: Object,
+    default: null
   }
 })
 
 const emit = defineEmits(['region-selected', 'map-error'])
 
+// Usar el composable recibido o crear uno nuevo (fallback)
 const {
   geoData,
   loading,
@@ -281,7 +287,7 @@ const {
   handleStateLeave,
   resetSelection,
   initializeData
-} = useMaps()
+} = props.mapsComposable || useMaps()
 
 const {
   currentChartsData,
@@ -408,7 +414,6 @@ watch(error, (newError) => {
   100% { transform: rotate(360deg); }
 }
 
-/* Contenedor principal con mapa y charts lado a lado */
 .map-and-charts-wrapper {
   display: flex;
   gap: 20px;
@@ -419,6 +424,7 @@ watch(error, (newError) => {
 .map-wrapper {
   width: 800px; 
   flex-shrink: 0;
+  position: relative;
 }
 
 .color-legend {
@@ -569,7 +575,6 @@ svg g:hover .state-path:hover  {
   font-size: 12px;
 }
 
-/* CHARTS AL LADO DERECHO */
 .charts-section {
   width: 700px;
   flex-shrink: 0;
@@ -615,6 +620,32 @@ svg g:hover .state-path:hover  {
 
 .charts-close-btn:hover {
   background: #f0f0f0;
+}
+
+.charts-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #999;
+  text-align: center;
+  padding: 40px;
+}
+
+.empty-state-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+}
+
+.charts-empty-state h4 {
+  margin: 0 0 10px 0;
+  color: #666;
+}
+
+.charts-empty-state p {
+  margin: 0;
+  font-size: 14px;
 }
 
 .charts-grid {
@@ -704,6 +735,12 @@ svg g:hover .state-path:hover  {
   font-size: 11px;
   font-weight: bold;
   margin-top: 3px;
+}
+
+.description {
+  padding: 10px;
+  background: #f0f0f0;
+  border-radius: 4px;
 }
 
 .stats-summary {
@@ -799,13 +836,12 @@ svg g:hover .state-path:hover  {
   font-weight: bold;
 }
 
-/* Responsive */
 @media (max-width: 1200px) {
   .map-and-charts-wrapper {
     flex-direction: column;
   }
   
-  .charts-section {
+  .charts-section, .map-wrapper {
     width: 100%;
   }
   

@@ -24,6 +24,7 @@
     <!-- Componente del mapa -->
     <div class="map-section">
       <MapComponent 
+        :maps-composable="mapsComposable"
         title="Índice de Finanzas Sostenibles Subnacionales (IFSS) - México 2023"
         :geoDataUrl="geoDataUrl"
         :dataUrl="dataUrl" 
@@ -94,6 +95,9 @@ const geoDataUrl = ref('/mexicoStates.json')
 const dataUrl = ref('/sustainabilityData.json')
 const showStats = ref(false)
 
+// Crear instancia compartida de useMaps
+const mapsComposable = useMaps()
+
 const {
   selectedEntity,
   selectedYear, 
@@ -112,14 +116,17 @@ const {
   initializeFilters
 } = useFilters()
 
+// Desestructurar lo necesario del composable de mapas
 const {
   loading: mapsLoading,
   error: mapsError,
   selectedState,
   getStateInfo,
   getIFSSLabel,
+  handleStateClick,
+  resetSelection,
   initializeData: initializeMapsData
-} = useMaps()
+} = mapsComposable
 
 const loading = computed(() => filtersLoading.value || mapsLoading.value)
 const error = computed(() => filtersError.value || mapsError.value)
@@ -130,6 +137,15 @@ const handleRegionSelect = (data) => {
 
 watch(selectedState, (newState) => {
   console.log('Estado seleccionado en el mapa:', newState)
+  // Sincronizar con el filtro si es necesario
+  if (newState && newState !== selectedEntity.value) {
+    setEntityFilter(newState)
+    showStats.value = true
+  } else if (!newState) {
+    // Si se deselecciona en el mapa, limpiar filtro
+    setEntityFilter(null)
+    showStats.value = false
+  }
 })
 
 const focusOnEntity = () => {
@@ -145,6 +161,13 @@ const handleMapError = (error) => {
 const handleEntityChange = (entityName) => {
   setEntityFilter(entityName)
   showStats.value = true
+  
+  // Seleccionar en el mapa
+  if (entityName) {
+    handleStateClick(entityName)
+  } else {
+    resetSelection()
+  }
 }
 
 const handleYearChange = (year) => {
@@ -156,7 +179,8 @@ const handleVariableChange = (variable) => {
 }
 
 const handleFiltersChange = (allFilters) => {
-  if (allFilters.entity !== undefined) setEntityFilter(allFilters.entity)
+  // Solo manejar año y variable aquí
+  // La entidad ya se maneja en handleEntityChange
   if (allFilters.year !== undefined) setYearFilter(allFilters.year)
   if (allFilters.variable !== undefined) setVariableFilter(allFilters.variable)
   
@@ -206,7 +230,7 @@ onMounted(async () => {
   display: flex;
   gap: 20px;
   height: 90px;
-  max-width: 1520px; /* 800px + 20px gap + 700px */
+  max-width: 1520px;
   margin: 0 auto;
 }
 
