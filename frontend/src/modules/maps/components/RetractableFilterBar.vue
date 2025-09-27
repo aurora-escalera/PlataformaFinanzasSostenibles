@@ -274,9 +274,9 @@ onMounted(() => {
 .filter-bar-container {
   position: relative;
 
-  left: 8%;
+  left: 0%;
   top: 0px;
-  width: 80%;
+  width: 100%;
   height: 100px; /* Altura fija para el contenedor */
   overflow: hidden; /* Ocultar la parte que se desliza fuera */
   margin: 0; /* Eliminar margin-bottom para quitar el gap */
@@ -294,7 +294,7 @@ onMounted(() => {
   bottom: -30px;
   left: 0;
   right: 0;
-  width: 80%;
+  width: 100%;
   cursor: pointer;
   transform: translateY(calc(100% - 70px)); /* Mostrar solo 70px de la barra */
 }

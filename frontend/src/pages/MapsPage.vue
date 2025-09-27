@@ -1,9 +1,9 @@
-<!-- src/pages/MapsPage.vue - LAYOUT EN DOS COLUMNAS -->
+<!-- src/pages/MapsPage.vue - FILTRO 3/4 DEL MAPA -->
 <template>
   <div class="maps-page">
     <!-- Contenedor de filtros y toggles en dos columnas -->
     <div class="filters-toggles-row">
-      <!-- Columna izquierda: Filtros -->
+      <!-- Columna izquierda: Filtros (600px = 3/4 de 800px) -->
       <div class="filters-column">
         <RetractableFilterBar 
           :entities="entitiesData"
@@ -205,14 +205,15 @@ onMounted(async () => {
 .filters-toggles-row {
   display: flex;
   gap: 20px;
-  padding: 0 2rem;
-  max-width: 1600px;
+  padding: 1rem 0; /* Solo padding vertical */
+  max-width: 1520px; /* 800px + 20px gap + 700px */
   margin: 0 auto;
 }
 
 .filters-column {
   width: 800px;
   flex-shrink: 0;
+  padding: 0;
 }
 
 .toggles-column {
@@ -221,12 +222,13 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding: 1rem 0;
+  padding: 0;
 }
 
 .map-section {
-  margin-bottom: 0;
-  padding: 2rem;
+  margin: 0 auto;
+  padding: 0; 
+  max-width: 1520px; 
 }
 
 .filter-stats-panel {
@@ -276,8 +278,8 @@ onMounted(async () => {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 15px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0px;
   margin-bottom: 20px;
 }
 
@@ -348,10 +350,9 @@ onMounted(async () => {
   background: #d32f2f;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1000px) {
   .filters-toggles-row {
     flex-direction: column;
-    padding: 1rem;
   }
 
   .filters-column,

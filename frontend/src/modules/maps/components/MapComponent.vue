@@ -378,10 +378,10 @@ watch(error, (newError) => {
 <style scoped>
 .map-container {
   width: 100%;
-  max-width: 1600px;
+  max-width: 1520px;
   margin: 0 auto;
+  padding: 0;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  padding: 0 1rem;
 }
 
 .loading-state, .error-state {
@@ -413,40 +413,45 @@ watch(error, (newError) => {
   display: flex;
   gap: 20px;
   align-items: flex-start;
+  padding: 0; 
 }
 
 .map-wrapper {
+  width: 800px; 
+  flex-shrink: 0;
+}
+
+/*
   position: relative;
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
-  width: 800px;
+  width: 1200px;
   flex-shrink: 0;
-}
-
+*/
 .color-legend {
   position: absolute;
-  bottom: 60px;
+  bottom: 100px;
   left: 25%;
   transform: translateX(-50%);
   background: rgba(255, 255, 255, 0.95);
   border: none;
   border-radius: 8px;
-  padding: 10px;
+  padding: 12px;
   z-index: 10;
   backdrop-filter: blur(5px);
-  min-width: 350px;
-  max-width: 350px;
+  min-width: 450px;
+  max-width: 450px;
 }
 
 .hover-info-box {
   position: absolute;
-  top: 50%;
-  left: 8%;
+  top: 59%;
+  left: 10%;
   z-index: 15;
   backdrop-filter: blur(10px);
   font-family: Arial, Helvetica, sans-serif;
-  min-width: 250px;
+  min-width: 350px;
   text-align: center;
   transition: all 0.3s ease;
 }
@@ -461,13 +466,13 @@ watch(error, (newError) => {
 }
 
 .value-display {
-  font-size: 50px;
+  font-size: 70px;
   font-weight: 300;
   color: #2c3e50;
   line-height: 1;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   border-bottom: 2px solid #bfbdbd; 
-  padding-bottom: 10px;
+  padding-bottom: 14px;
 }
 
 .legend-items-horizontal {
@@ -576,7 +581,7 @@ svg g:hover .state-path:hover  {
 .charts-section {
   width: 700px;
   flex-shrink: 0;
-  height: 600px;
+  height: 800px;
   overflow-y: auto;
 }
 
@@ -620,34 +625,6 @@ svg g:hover .state-path:hover  {
   background: #f0f0f0;
 }
 
-.charts-empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 600px;
-  text-align: center;
-  color: #666;
-}
-
-.empty-state-icon {
-  font-size: 80px;
-  margin-bottom: 20px;
-  opacity: 0.3;
-}
-
-.charts-empty-state h4 {
-  font-size: 24px;
-  margin-bottom: 12px;
-  color: #2c3e50;
-}
-
-.charts-empty-state p {
-  font-size: 16px;
-  color: #666;
-  max-width: 300px;
-}
-
 .charts-grid {
   display: flex;
   flex-direction: column;
@@ -664,11 +641,11 @@ svg g:hover .state-path:hover  {
   background: #fafafa;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
-  padding: 10px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-height: 120px;
+  min-height: 140px;
   transition: box-shadow 0.2s;
 }
 
