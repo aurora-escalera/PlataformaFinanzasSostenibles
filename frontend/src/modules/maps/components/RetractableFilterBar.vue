@@ -1,6 +1,9 @@
 <!-- src/modules/maps/components/RetractableFilterBar.vue -->
 <template>
-  <div class="filter-bar-container">
+  <div 
+    class="filter-bar-container" 
+    :style="{ overflow: activeDropdown !== null ? 'visible' : 'hidden' }"
+  >
     <!-- Barra de filtros principal -->
     <div 
       class="filter-bar" 
@@ -32,7 +35,10 @@
                   class="search-input"
                 >
               </div>
-              <div class="dropdown-options">
+              <div 
+                class="dropdown-options" 
+                @wheel.prevent="handleDropdownScroll"
+              >
                 <div 
                   @click="selectEntity(null)"
                   class="dropdown-option"
@@ -48,7 +54,6 @@
                   :class="{ 'selected': selectedEntity === entity.name }"
                 >
                   <span>{{ entity.name }}</span>
-                  <span class="entity-value">{{ entity.value }}%</span>
                 </div>
               </div>
             </div>
@@ -193,6 +198,25 @@ const filteredEntities = computed(() => {
   )
 })
 
+// Función para manejar el scroll en el dropdown
+const handleDropdownScroll = (event) => {
+  const container = event.currentTarget
+  const { scrollTop, scrollHeight, clientHeight } = container
+  const delta = event.deltaY
+  
+  // Verificar si estamos en los límites del scroll
+  const isAtTop = scrollTop === 0 && delta < 0
+  const isAtBottom = scrollTop + clientHeight >= scrollHeight && delta > 0
+  
+  // Si no estamos en los límites, prevenir el scroll de la página
+  if (!isAtTop && !isAtBottom) {
+    event.preventDefault()
+  }
+  
+  // Siempre detener la propagación
+  event.stopPropagation()
+}
+
 // Métodos para manejo de deslizamiento
 const handleMouseEnter = () => {
   // Limpiar timeout anterior si existe
@@ -273,49 +297,48 @@ onMounted(() => {
 <style scoped>
 .filter-bar-container {
   position: relative;
-
   left: 0%;
   top: 0px;
   width: 100%;
-  height: 100px; /* Altura fija para el contenedor */
-  overflow: hidden; /* Ocultar la parte que se desliza fuera */
+  height: 90px; /* Altura fija para el contenedor */
   margin: 0; /* Eliminar margin-bottom para quitar el gap */
   padding: 0; /* Eliminar cualquier padding */
+  z-index: 1;
 }
 
 .filter-bar {
   background: linear-gradient(135deg, #2c5282 0%, #2a4d7a 100%);
   color: white;
-  padding: 16px 24px;
+  padding: 5px 24px;
   border-radius: 45px 30px 0 0; /* Solo bordes superiores redondeados */
   box-shadow: 0 4px 20px rgba(44, 82, 130, 0.3);
   transition: transform 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
   position: absolute;
-  bottom: -30px;
+  bottom: -20px;
   left: 0;
   right: 0;
   width: 100%;
   cursor: pointer;
-  transform: translateY(calc(100% - 70px)); /* Mostrar solo 70px de la barra */
+  transform: translateY(calc(100% - 50px)); /* Mostrar solo 70px de la barra */
 }
 
 .filter-bar:hover,
 .filter-bar.expanded {
-  transform: translateY(0); /* Deslizar completamente hacia arriba */
+  transform: translateY(-22px); /* Deslizar completamente hacia arriba */
   cursor: default;
 }
 
 .filter-content {
   display: flex;
+  top: 100px;
   gap: 24px; /* Restaurar espaciado para el estado expandido */
-  align-items: flex-start;
   flex-wrap: wrap;
   justify-content: center; /* Centrar los elementos */
 }
 
 .filter-group {
   position: relative;
-  min-width: 200px;
+  min-width: 100px;
   flex: 1;
   text-align: center; /* Centrar el contenido del grupo */
   display: flex;
@@ -324,33 +347,26 @@ onMounted(() => {
 }
 
 /* Agregar separadores verticales */
-.filter-group:not(:last-child)::after {
+.filter-group::after {
   content: '|';
   position: absolute;
   right: -1px;
   top: 50%; /* Centrar verticalmente con el contenido */
-  transform: translateY(-50%);
+  transform: translateY(-100%);
   color: rgba(255, 255, 255, 0.6);
   font-size: 18px;
   font-weight: 300;
-  z-index: 10;
+  z-index: 100;
   transition: all 0.1s ease;
-}
-
-/* Cuando está expandida, mantener la misma posición centrada */
-.filter-bar.expanded .filter-group:not(:last-child)::after {
-  top: 50%;
-  transform: translateY(-50%);
 }
 
 .filter-label {
   display: block;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 400;
   margin-bottom: 8px;
   color: #e2e8f0;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.5px; 
 }
 
 .filter-dropdown {
@@ -359,19 +375,19 @@ onMounted(() => {
 
 .dropdown-button {
   opacity: 80%;
-  width: 200px;
+  width: 120%;
   background: rgba(255, 255, 255, 0.95);
   border: 2px solid rgba(255, 255, 255, 0.3);
-  color: #2d3748;
-  padding: 12px 16px;
+  color: hsl(218, 23%, 23%);
+  padding: 0px 3px;
   border-radius: 25px; /* Bordes muy redondeados como en la imagen 2 */
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 12px;
   transition: all 0.2s ease;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: 100px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
@@ -420,14 +436,14 @@ onMounted(() => {
   position: absolute;
   top: 100%;
   left: 0;
-  right: 0;
+  width: 150%; /* Mismo ancho que el botón */
   background: white;
   border-radius: 8px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
   z-index: 9999; /* Aumentar z-index para que aparezca por encima del wrapper */
   margin-top: 8px;
-  max-height: 300px;
-  overflow: hidden;
+  max-height: none; /* Quitar límite de altura del contenedor */
+  overflow: visible; /* Permitir que el contenido sea visible */
   animation: dropdownFadeIn 0.2s ease;
 }
 
@@ -443,16 +459,16 @@ onMounted(() => {
 }
 
 .dropdown-search {
-  padding: 12px;
+  padding: 8px;
   border-bottom: 1px solid #e2e8f0;
 }
 
 .search-input {
   width: 100%;
-  padding: 8px 12px;
+  padding: 6px 10px;
   border: 1px solid #e2e8f0;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: 12px;
   outline: none;
 }
 
@@ -462,12 +478,33 @@ onMounted(() => {
 }
 
 .dropdown-options {
-  max-height: 200px;
+  max-height: 180px;
   overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain; /* Prevenir scroll en elementos padres */
+}
+
+/* Estilos personalizados para la barra de scroll */
+.dropdown-options::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dropdown-options::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.dropdown-options::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 4px;
+}
+
+.dropdown-options::-webkit-scrollbar-thumb:hover {
+  background: #a0aec0;
 }
 
 .dropdown-option {
-  padding: 12px 16px;
+  padding: 8px 12px;
   cursor: pointer;
   display: flex;
   justify-content: space-between;
@@ -475,6 +512,19 @@ onMounted(() => {
   color: #2d3748;
   transition: background 0.2s ease;
   border-bottom: 1px solid #f7fafc;
+  font-size: 12px; /* Mismo tamaño que dropdown-text */
+}
+
+.dropdown-option span:first-child {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.dropdown-options {
+  max-height: 180px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain; /* Prevenir scroll en elementos padres */
 }
 
 .dropdown-option:hover {

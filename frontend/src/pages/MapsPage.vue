@@ -205,7 +205,7 @@ onMounted(async () => {
 .filters-toggles-row {
   display: flex;
   gap: 20px;
-  padding: 1rem 0; /* Solo padding vertical */
+  height: 90px;
   max-width: 1520px; /* 800px + 20px gap + 700px */
   margin: 0 auto;
 }

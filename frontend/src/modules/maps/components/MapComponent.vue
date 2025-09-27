@@ -421,14 +421,6 @@ watch(error, (newError) => {
   flex-shrink: 0;
 }
 
-/*
-  position: relative;
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  width: 1200px;
-  flex-shrink: 0;
-*/
 .color-legend {
   position: absolute;
   bottom: 100px;
