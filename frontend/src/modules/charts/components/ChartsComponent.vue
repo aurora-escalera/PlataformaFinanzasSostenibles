@@ -1,409 +1,248 @@
-<!-- src/modules/charts/components/BarChart.vue -->
+<!-- src/modules/charts/components/ChartsComponent.vue -->
 <template>
-  <div class="vertical-bar-chart">
-    <!-- Título del componente -->
-    <div class="chart-header">
-      <h3 class="chart-title">{{ title }}</h3>
-    </div>
-
-    <!-- Filtros/Toggles para mostrar/ocultar variables -->
-    <div class="variable-filters">
-      <button 
-        v-for="variable in variables" 
-        :key="variable.key"
-        @click="toggleVariable(variable.key)"
-        :class="['filter-btn', { 
-          'active': isVariableActive(variable.key),
-          [variable.colorClass]: true 
-        }]"
-      >
-        {{ variable.label }}
-      </button>
-    </div>
-
-    <!-- Leyenda con indicadores de color -->
-    <div class="chart-legend">
-      <div 
-        v-for="variable in variables" 
-        :key="'legend-' + variable.key"
-        class="legend-item"
-      >
-        <span :class="['legend-dot', variable.colorClass]"></span>
-        <span class="legend-label">{{ variable.label }}</span>
-      </div>
-    </div>
-
-    <!-- Contenedor de barras verticales -->
-    <div class="bars-container" :class="`bars-count-${activeVariables.length}`">
-      <!-- Barra para cada variable activa -->
-      <div 
-        v-for="variable in activeVariables" 
-        :key="variable.key"
-        class="bar-column"
-      >
-        <!-- Valor numérico arriba de la barra -->
-        <div class="bar-value-top">{{ formatValue(variable.value) }}</div>
+  <div class="charts-wrapper">
+    <!-- FILA 1: PRESUPUESTOS -->
+    <div class="chart-section-row">
+      <h4 class="section-title">Presupuestos</h4>
+      
+      <div class="chart-row-content">
+        <!-- Barra izquierda -->
+        <div class="chart-col-bar">
+          <BarChart 
+            :data="presupuestosData"
+            title="Proporción del gasto asignado a Presupuestos"
+          />
+        </div>
         
-        <!-- Wrapper de la barra -->
-        <div class="bar-wrapper-vertical">
-          <div 
-            class="bar-vertical"
-            :class="variable.colorClass"
-            :style="{ height: getBarHeight(variable.value) + '%' }"
-          >
+        <!-- Donas derecha -->
+        <div class="chart-col-donuts">
+          <div class="donut-item">
+            <h5 class="donut-title">Análisis comparativo de los sectores que conforman Presupuestos Sostenibles (PS)</h5>
+            <DonutChart 
+              :data="donutPresupuestosSostenibles"
+              title="PS"
+              subtitle="35%"
+              :size="140"
+            />
+          </div>
+          <div class="donut-item">
+            <h5 class="donut-title">Análisis comparativo de los sectores que conforman Presupuestos Intensivos en Carbono (PIC)</h5>
+            <DonutChart 
+              :data="donutPresupuestosCarbono"
+              title="PIC"
+              subtitle="40%"
+              :size="140"
+            />
           </div>
         </div>
-        
-        <!-- Label debajo de la barra -->
-        <div class="bar-label-bottom">
-          <span :class="['color-indicator', variable.colorClass]"></span>
-        </div>
       </div>
+    </div>
 
-      <!-- Mensaje cuando no hay variables seleccionadas -->
-      <div v-if="activeVariables.length === 0" class="empty-state">
-        <p>Selecciona al menos una variable para visualizar</p>
+    <!-- FILA 2: INGRESOS -->
+    <div class="chart-section-row">
+      <h4 class="section-title">Ingresos</h4>
+      
+      <div class="chart-row-content">
+        <!-- Barra izquierda -->
+        <div class="chart-col-bar">
+          <BarChart 
+            :data="ingresosData"
+            title="Proporción del gasto asignado a Ingresos"
+          />
+        </div>
+        
+        <!-- Donas derecha -->
+        <div class="chart-col-donuts">
+          <div class="donut-item">
+            <h5 class="donut-title">Análisis comparativo de los sectores que conforman Ingresos Sostenibles (IS)</h5>
+            <DonutChart 
+              :data="donutIngresosSostenibles"
+              title="IS"
+              subtitle="45%"
+              :size="140"
+            />
+          </div>
+          <div class="donut-item">
+            <h5 class="donut-title">Análisis comparativo de los sectores que conforman Ingresos Intensivos en Carbono (IIC)</h5>
+            <DonutChart 
+              :data="donutIngresosCarbono"
+              title="IIC"
+              subtitle="38%"
+              :size="140"
+            />
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
+import BarChart from './BarChart.vue'
+import DonutChart from './DonutChart.vue'
 
 const props = defineProps({
-  data: {
-    type: Object,
-    required: true,
-    default: () => ({})
-  },
-  title: {
+  selectedState: {
     type: String,
-    default: 'Presupuestos'
-  }
-})
-
-// Variables disponibles con sus configuraciones
-const variables = ref([
-  {
-    key: 'presupuesto_total',
-    label: 'Presupuesto Total',
-    colorClass: 'gray',
-    value: 0,
-    active: true
+    default: null
   },
-  {
-    key: 'presupuesto_carbono',
-    label: 'Presupuesto Intensivo en Carbono',
-    colorClass: 'red',
-    value: 0,
-    active: false
-  },
-  {
-    key: 'presupuesto_sostenible',
-    label: 'Presupuesto sostenible',
-    colorClass: 'green',
-    value: 0,
-    active: false
+  ifssData: {
+    type: Object,
+    default: () => ({})
   }
-])
-
-// Inicializar valores desde props.data
-if (props.data.is_amount !== undefined) {
-  variables.value[1].value = props.data.is_amount
-}
-if (props.data.iic_amount !== undefined) {
-  variables.value[2].value = props.data.iic_amount
-}
-// Calcular presupuesto total como suma
-variables.value[0].value = variables.value[1].value + variables.value[2].value
-
-// Computed: Variables activas
-const activeVariables = computed(() => {
-  return variables.value.filter(v => v.active)
 })
 
-// Computed: Valor máximo para calcular porcentajes de altura
-const maxValue = computed(() => {
-  const values = activeVariables.value.map(v => v.value)
-  return Math.max(...values, 1)
+// Datos para Presupuestos (Barras)
+const presupuestosData = computed(() => {
+  if (!props.ifssData || !props.ifssData.is_amount) {
+    return {
+      is_amount: 0,
+      is_percentage: 0,
+      iic_amount: 0,
+      iic_percentage: 0
+    }
+  }
+  
+  return {
+    is_amount: props.ifssData.is_amount || 0,
+    is_percentage: props.ifssData.is_percentage || 0,
+    iic_amount: props.ifssData.iic_amount || 0,
+    iic_percentage: props.ifssData.iic_percentage || 0
+  }
 })
 
-// Métodos
-const toggleVariable = (key) => {
-  const variable = variables.value.find(v => v.key === key)
-  if (variable) {
-    variable.active = !variable.active
+// Datos para Ingresos (Barras)
+const ingresosData = computed(() => {
+  return {
+    is_amount: props.ifssData?.is_amount ? props.ifssData.is_amount * 0.8 : 0,
+    is_percentage: props.ifssData?.is_percentage || 0,
+    iic_amount: props.ifssData?.iic_amount ? props.ifssData.iic_amount * 1.2 : 0,
+    iic_percentage: props.ifssData?.iic_percentage || 0
   }
-}
+})
 
-const isVariableActive = (key) => {
-  return variables.value.find(v => v.key === key)?.active || false
-}
+// Datos para Donas - Presupuestos Sostenibles
+const donutPresupuestosSostenibles = computed(() => {
+  const percentage = props.ifssData?.is_percentage 
+    ? Math.round(props.ifssData.is_percentage * 100) 
+    : 35
+  
+  return [
+    { label: 'PS', value: percentage, color: '#7cb342' },
+    { label: 'Resto', value: 100 - percentage, color: '#E8E8E8' }
+  ]
+})
 
-const getBarHeight = (value) => {
-  const percentage = (value / maxValue.value) * 100
-  return Math.min(percentage, 100)
-}
+// Datos para Donas - Presupuestos Carbono
+const donutPresupuestosCarbono = computed(() => {
+  const percentage = props.ifssData?.iic_percentage 
+    ? Math.round(props.ifssData.iic_percentage * 100) 
+    : 40
+  
+  return [
+    { label: 'PIC', value: percentage, color: '#DC143C' },
+    { label: 'Resto', value: 100 - percentage, color: '#E8E8E8' }
+  ]
+})
 
-const formatValue = (value) => {
-  if (value >= 1000000000) {
-    return (value / 1000000000).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-  } else if (value >= 1000000) {
-    return (value / 1000000).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-  } else if (value >= 1000) {
-    return (value / 1000).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-  }
-  return value.toLocaleString()
-}
+// Datos para Donas - Ingresos Sostenibles
+const donutIngresosSostenibles = computed(() => {
+  return [
+    { label: 'IS', value: 45, color: '#7cb342' },
+    { label: 'Resto', value: 55, color: '#E8E8E8' }
+  ]
+})
+
+// Datos para Donas - Ingresos Carbono
+const donutIngresosCarbono = computed(() => {
+  return [
+    { label: 'IIC', value: 38, color: '#DC143C' },
+    { label: 'Resto', value: 62, color: '#E8E8E8' }
+  ]
+})
 </script>
 
 <style scoped>
-.vertical-bar-chart {
+.charts-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
   width: 100%;
-  padding: 24px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.chart-header {
-  margin-bottom: 20px;
+.chart-section-row {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
 }
 
-.chart-title {
+.section-title {
   margin: 0;
-  font-size: 20px;
+  padding: 8px 0;
+  border-bottom: 1px solid #e0e0e0;
+  font-size: 18px;
   font-weight: 600;
   color: #6b7280;
 }
 
-/* Filtros tipo toggle */
-.variable-filters {
+.chart-row-content {
   display: flex;
-  gap: 12px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-}
-
-.filter-btn {
-  flex: 1;
-  min-width: 200px;
-  padding: 12px 20px;
-  border: none;
-  background: #f3f4f6;
-  border-radius: 24px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  color: #6b7280;
-  transition: all 0.3s ease;
-  white-space: nowrap;
-}
-
-.filter-btn:hover {
-  background: #e5e7eb;
-}
-
-.filter-btn.active.gray {
-  background: #1e3a5f;
-  color: white;
-}
-
-.filter-btn.active.red {
-  background: #1e3a5f;
-  color: white;
-}
-
-.filter-btn.active.green {
-  background: #1e3a5f;
-  color: white;
-}
-
-/* Leyenda */
-.chart-legend {
-  display: flex;
-  gap: 24px;
-  margin-bottom: 24px;
-  padding: 12px 0;
-  border-bottom: 1px solid #e5e7eb;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.legend-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.legend-dot.gray {
-  background: #9ca3af;
-}
-
-.legend-dot.red {
-  background: #DC143C;
-}
-
-.legend-dot.green {
-  background: #7cb342;
-}
-
-.legend-label {
-  font-size: 13px;
-  color: #4b5563;
-}
-
-/* Contenedor de barras verticales */
-.bars-container {
-  display: flex;
-  gap: 24px;
-  justify-content: center;
-  align-items: flex-end;
-  min-height: 400px;
-  padding: 20px;
-  position: relative;
-}
-
-/* Ajuste dinámico del ancho según cantidad de barras */
-.bars-container.bars-count-1 .bar-column {
+  flex-direction: row;
+  gap: 16px;
   width: 100%;
-  max-width: 600px;
+  min-height: 450px;
 }
 
-.bars-container.bars-count-2 .bar-column {
-  width: 45%;
-  max-width: 350px;
+.chart-col-bar {
+  flex: 1;
+  min-width: 0;
 }
 
-.bars-container.bars-count-3 .bar-column {
-  width: 30%;
-  max-width: 250px;
+.chart-col-donuts {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.bar-column {
+.donut-item {
+  flex: 1;
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  animation: slideUp 0.5s ease;
-  transition: width 0.4s ease;
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.bar-value-top {
-  font-size: 16px;
-  font-weight: 600;
-  color: #1f2937;
-  margin-bottom: 12px;
-  min-height: 24px;
-}
-
-.bar-wrapper-vertical {
-  width: 100%;
-  height: 350px;
-  background: #f3f4f6;
-  border-radius: 12px;
-  overflow: hidden;
-  position: relative;
-  display: flex;
-  align-items: flex-end;
-}
-
-.bar-vertical {
-  width: 100%;
-  transition: height 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-  border-radius: 12px 12px 0 0;
-  position: relative;
-}
-
-.bar-vertical.gray {
-  background: linear-gradient(to top, #6b7280 0%, #9ca3af 100%);
-}
-
-.bar-vertical.red {
-  background: linear-gradient(to top, #b91c1c 0%, #DC143C 100%);
-}
-
-.bar-vertical.green {
-  background: linear-gradient(to top, #65a30d 0%, #7cb342 100%);
-}
-
-.bar-label-bottom {
-  margin-top: 12px;
-  display: flex;
-  align-items: center;
   justify-content: center;
-  gap: 8px;
+  min-height: 200px;
 }
 
-.color-indicator {
-  width: 40px;
-  height: 4px;
-  border-radius: 2px;
+.donut-title {
+  margin: 0 0 12px 0;
+  font-size: 11px;
+  font-weight: 500;
+  color: #6b7280;
+  text-align: center;
+  line-height: 1.4;
 }
 
-.color-indicator.gray {
-  background: #6b7280;
-}
-
-.color-indicator.red {
-  background: #DC143C;
-}
-
-.color-indicator.green {
-  background: #7cb342;
-}
-
-.empty-state {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 400px;
-  color: #9ca3af;
-  font-size: 14px;
+@media (max-width: 1000px) {
+  .chart-row-content {
+    flex-direction: column;
+  }
+  
+  .chart-col-donuts {
+    flex-direction: row;
+  }
 }
 
 @media (max-width: 768px) {
-  .bars-container {
+  .chart-col-donuts {
     flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .bars-container.bars-count-1 .bar-column,
-  .bars-container.bars-count-2 .bar-column,
-  .bars-container.bars-count-3 .bar-column {
-    width: 100%;
-    max-width: none;
-  }
-  
-  .bar-wrapper-vertical {
-    height: 250px;
-  }
-  
-  .variable-filters {
-    flex-direction: column;
-  }
-  
-  .filter-btn {
-    min-width: auto;
   }
 }
 </style>

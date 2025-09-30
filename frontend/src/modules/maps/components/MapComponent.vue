@@ -109,6 +109,7 @@
         </div>
 
         <!-- CHARTS SECTION - SIEMPRE VISIBLE -->
+        <!-- CHARTS SECTION - SIEMPRE VISIBLE -->
         <div class="charts-section">
           <div class="charts-container">
             <div class="charts-header">
@@ -123,40 +124,15 @@
               <p>Haz clic en cualquier estado del mapa para ver sus gráficas detalladas</p>
             </div>
             
-            <!-- Gráficas reales cuando hay estado seleccionado -->
-            <div v-else class="charts-grid">
-              <!-- Primera fila: 4 gráficas de dona -->
-              <div class="charts-row">
-                <div 
-                  v-for="donut in currentChartsData.donuts" 
-                  :key="donut.id"
-                  class="chart-container"
-                >
-                  <DonutChart 
-                    :data="donut.data"
-                    :title="donut.title"
-                    :subtitle="donut.subtitle"
-                  />
-                </div>
-              </div>
-
-              <!-- Segunda fila: 4 gráficas de barras -->
-              <div class="charts-row">
-                <div 
-                  v-for="bar in currentChartsData.bars" 
-                  :key="bar.id"
-                  class="chart-container"
-                >
-                  <BarChart 
-                    :data="bar.data"
-                    :title="bar.title"
-                    :color="bar.color"
-                  />
-                </div>
-              </div>
-            </div>
+            <!-- ChartsComponent cuando hay estado seleccionado -->
+            <ChartsComponent 
+              v-else
+              :selectedState="selectedState"
+              :ifssData="getStateInfo(selectedState)"
+            />
           </div>
         </div>
+        
       </div>
 
       <!-- State Details Panel -->
@@ -239,6 +215,7 @@ import { ref, computed, watch } from 'vue'
 import { geoPath, geoMercator } from 'd3-geo'
 import { useMaps } from '@/composables/useMaps'
 import { useCharts } from '@/composables/useCharts'
+import ChartsComponent from '@/modules/charts/components/ChartsComponent.vue'
 import DonutChart from '@/modules/charts/components/DonutChart.vue'
 import BarChart from '@/modules/charts/components/BarChart.vue'
 
