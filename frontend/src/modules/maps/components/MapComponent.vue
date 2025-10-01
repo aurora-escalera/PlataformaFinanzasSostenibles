@@ -1,4 +1,4 @@
-<!-- src/modules/maps/components/MapComponent.vue - CHARTS AL LADO DERECHO -->
+<!-- src/modules/maps/components/MapComponent.vue -->
 <template>
   <div class="map-container">
     <!-- Loading State -->
@@ -21,7 +21,32 @@
       <div class="map-and-charts-wrapper">
         <!-- SVG Map -->
         <div class="map-wrapper">
-          <!-- Información de hover/nacional -->
+          <!-- NUEVA CARD FLOTANTE CON INFO DEL ESTADO/NACIONAL -->
+          <div class="map-info-card" :class="{ 'state-selected': selectedState }">
+            <div class="card-content">
+              <!-- Título del estado o México -->
+              <div class="card-location">
+                {{ selectedState || 'México' }}
+              </div>
+              
+              <!-- Valor IFSS grande -->
+              <div class="card-ifss-value">
+                {{ getDisplayIFSS() }}%
+              </div>
+              
+              <!-- Label IFSS -->
+              <div class="card-ifss-label">
+                {{ selectedState ? 'IFSS Estatal' : 'IFSS Regional' }}
+              </div>
+              
+              <!-- Tipo de datos -->
+              <div class="card-data-type">
+                Datos {{ selectedState ? 'subnacionales' : 'federales' }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Información de hover/nacional (tu box existente) -->
           <div class="hover-info-box">
             <!-- Si hay estado en hover, mostrar información del estado -->
             <div v-if="hoveredState" class="info-content">
@@ -108,7 +133,6 @@
           </div>
         </div>
 
-        <!-- CHARTS SECTION - SIEMPRE VISIBLE -->
         <!-- CHARTS SECTION - SIEMPRE VISIBLE -->
         <div class="charts-section">
           <div class="charts-container">
@@ -216,8 +240,6 @@ import { geoPath, geoMercator } from 'd3-geo'
 import { useMaps } from '@/composables/useMaps'
 import { useCharts } from '@/composables/useCharts'
 import ChartsComponent from '@/modules/charts/components/ChartsComponent.vue'
-import DonutChart from '@/modules/charts/components/DonutChart.vue'
-import BarChart from '@/modules/charts/components/BarChart.vue'
 
 const props = defineProps({
   title: {
@@ -236,7 +258,6 @@ const props = defineProps({
     type: String,
     default: 'Valor IFSS'
   },
-  // NUEVO: Recibir el composable compartido
   mapsComposable: {
     type: Object,
     default: null
@@ -245,7 +266,6 @@ const props = defineProps({
 
 const emit = defineEmits(['region-selected', 'map-error'])
 
-// Usar el composable recibido o crear uno nuevo (fallback)
 const {
   geoData,
   loading,
@@ -272,6 +292,15 @@ const {
 } = useCharts()
 
 const mousePosition = ref({ x: 0, y: 0 })
+
+// NUEVA FUNCIÓN: Obtener IFSS para mostrar en la card
+const getDisplayIFSS = () => {
+  if (selectedState.value) {
+    const stateInfo = getStateInfo(selectedState.value)
+    return stateInfo.value || 0
+  }
+  return nationalIFSS.value?.value || 0
+}
 
 const handleMouseHover = (stateName, event) => {
   mousePosition.value = {
@@ -359,6 +388,66 @@ watch(error, (newError) => {
 </script>
 
 <style scoped>
+/* ... estilos existentes ... */
+
+/* NUEVOS ESTILOS PARA LA CARD FLOTANTE */
+.map-info-card {
+  position: absolute;
+  top: 60px;
+  left: 40px;
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  z-index: 10;
+  min-width: 200px;
+  transition: all 0.3s ease;
+}
+
+.map-info-card.state-selected {
+  border-left: 4px solid #2196F3;
+}
+
+.card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.card-location {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2c3e50;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.card-ifss-value {
+  font-size: 48px;
+  font-weight: 300;
+  color: #1e3a5f;
+  line-height: 1;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.card-ifss-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 4px;
+}
+
+.card-data-type {
+  font-size: 11px;
+  color: #999;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #e0e0e0;
+}
+
+/* Resto de estilos existentes... */
 .map-container {
   width: 100%;
   max-width: 1520px;
@@ -396,6 +485,9 @@ watch(error, (newError) => {
   gap: 20px;
   align-items: flex-start;
   padding: 0; 
+  background-color: red;
+  height: 365.1px;
+  width: 1189.5px;
 }
 
 .map-wrapper {
@@ -625,34 +717,6 @@ svg g:hover .state-path:hover  {
   font-size: 14px;
 }
 
-.charts-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.charts-row {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-}
-
-.chart-container {
-  background: #fafafa;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-height: 140px;
-  transition: box-shadow 0.2s;
-}
-
-.chart-container:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
 .details-panel {
   background: white;
   border: 1px solid #ddd;
@@ -822,8 +886,9 @@ svg g:hover .state-path:hover  {
     width: 100%;
   }
   
-  .charts-row {
-    grid-template-columns: repeat(4, 1fr);
+  .map-info-card {
+    top: 20px;
+    left: 20px;
   }
 }
 
@@ -832,12 +897,17 @@ svg g:hover .state-path:hover  {
     padding: 10px;
   }
   
-  .charts-row {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
   .color-legend {
     min-width: 140px;
+  }
+  
+  .map-info-card {
+    min-width: 150px;
+    padding: 16px;
+  }
+  
+  .card-ifss-value {
+    font-size: 36px;
   }
   
   .details-content {
