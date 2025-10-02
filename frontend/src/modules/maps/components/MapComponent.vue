@@ -24,24 +24,31 @@
           <!-- NUEVA CARD FLOTANTE CON INFO DEL ESTADO/NACIONAL -->
           <div class="map-info-card" :class="{ 'state-selected': selectedState }">
             <div class="card-content">
-              <!-- Título del estado o México -->
-              <div class="card-location">
-                {{ selectedState || 'México' }}
+              <!-- Título de la posición del país-->
+              <div class="card-position-title">
+                Posición del país en el Índice<br/>
+                de Finanzas Sostenibles<br/>
+                (IFS) en 2024
               </div>
               
-              <!-- Valor IFSS grande -->
-              <div class="card-ifss-value">
-                {{ getDisplayIFSS() }}%
+              <!-- FLEX 1: Dos columnas en una fila (15 | IFS + Clasificación) -->
+               <!-- {{ getDisplayIFSS() }} -->
+              <div class="card-top-row">
+                <!-- Columna izquierda: Número de posición -->
+                <div class="card-position-number">
+                  15
+                </div>
+                <!-- Columna derecha: IFS y clasificación -->
+                <div class="card-ifss-info">
+                  <div class="ifss-value-text">IFS: 1.3</div>
+                  <div class="ifss-classification">Medio bajo</div>
+                </div>
               </div>
-              
-              <!-- Label IFSS -->
-              <div class="card-ifss-label">
-                {{ selectedState ? 'IFSS Estatal' : 'IFSS Regional' }}
-              </div>
-              
-              <!-- Tipo de datos -->
-              <div class="card-data-type">
-                Datos {{ selectedState ? 'subnacionales' : 'federales' }}
+
+                  <!-- FLEX 2: Dos filas (IFS Regional + Datos federales) -->
+              <div class="card-bottom-stack">
+                <div class="card-label-pill" @click="handleIFSRegionalClick">IFS Regional</div>
+                <div class="card-label-pill" @click="handleDatosFederalesClick">Datos federales</div>
               </div>
             </div>
           </div>
@@ -183,51 +190,6 @@
 
         <div class="description">
           <p>{{ getStateInfo(selectedState).descripcion }}</p>
-        </div>
-      </div>
-
-      <!-- Statistics Summary -->
-      <div v-if="generalStats" class="stats-summary">
-        <h3>Resumen Nacional IFSS</h3>
-        <div class="stats-grid">
-          <div class="stat-item">
-            <span class="stat-value">{{ generalStats.totalStates }}</span>
-            <span class="stat-label">Estados</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-value">{{ generalStats.avgIFSS }}%</span>
-            <span class="stat-label">Promedio IFSS</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-value">{{ generalStats.maxIFSS }}%</span>
-            <span class="stat-label">IFSS Máximo</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-value">{{ generalStats.minIFSS }}%</span>
-            <span class="stat-label">IFSS Mínimo</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Top Performers -->
-      <div class="rankings">
-        <div class="top-performers">
-          <h4>Top 5 Estados IFSS</h4>
-          <div class="ranking-list">
-            <div 
-              v-for="(state, index) in topPerformingStates" 
-              :key="state.name"
-              class="ranking-item"
-              @click="handleStateClickWithEmit(state.name)"
-            >
-              <span class="rank">{{ index + 1 }}</span>
-              <span class="name">{{ state.name }}</span>
-              <span class="value">{{ state.value || 0 }}</span>
-              <span class="classification" :style="{ color: getIFSSLabel(state.value || 0).color }">
-                {{ getIFSSLabel(state.value || 0).label }}
-              </span>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -393,14 +355,15 @@ watch(error, (newError) => {
 /* NUEVOS ESTILOS PARA LA CARD FLOTANTE */
 .map-info-card {
   position: absolute;
-  top: 60px;
-  left: 40px;
+  top: 21px;
+  left: 410px;
   background: white;
   border-radius: 12px;
-  padding: 24px;
+  padding: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
   z-index: 10;
-  min-width: 200px;
+  width: 143.2px;
+  height: 143.2px;
   transition: all 0.3s ease;
 }
 
@@ -414,20 +377,116 @@ watch(error, (newError) => {
   gap: 8px;
 }
 
-.card-location {
-  font-size: 16px;
-  font-weight: 600;
-  color: #2c3e50;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+/* FLEX 1: Dos columnas en una fila */
+.card-top-row {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  align-items: center;
+  padding:0px 15px 2px 15px;
 }
 
-.card-ifss-value {
-  font-size: 48px;
-  font-weight: 300;
-  color: #1e3a5f;
+
+/* Columna izquierda - Posición */
+.card-position-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 100px;
+}
+
+.card-position-number {
+  font-size: 30px;
+  font-weight: 200;
+  color: #D4A574;
   line-height: 1;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  position: relative;
+}
+
+.icon-indicator {
+  position: absolute;
+  top: -5px;
+  right: -15px;
+  font-size: 16px;
+  background: #2196F3;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+/* Columna derecha - IFS Info */
+.card-ifss-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: center;
+}
+
+.ifss-value-text {
+  font-size: 7px;
+  color: #767d86;
+  font-weight: 300;
+  letter-spacing: 0.2ch;
+  margin: 0;
+}
+
+.ifss-classification {
+  font-size: 7px;
+  color: #ddb891;
+  font-weight: 600;
+  letter-spacing: 0.15ch;
+  margin: 0;
+  line-height: 1;
+}
+
+/* FLEX 2: Dos filas apiladas */
+.card-bottom-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding-left: 10px;
+  padding-top: 0px;
+}
+
+.card-label-pill {
+  background: #f3f4f6;
+  border-radius: 3px;
+  text-align: center;
+  font-size: 6px;
+  color: #7a7f8f;
+  font-weight: 100;
+  height: 15px;
+  width: 100px;
+  letter-spacing: 0.06em;
+  padding-top: 3px;
+  cursor: pointer;  /* NUEVO */
+  transition: all 0.2s ease;
+}
+
+.card-position-title{
+  font-size: 6px;
+  color: #6b7280;
+  letter-spacing: 0.2ch;
+  justify-content: center;
+  font-weight: 500;
+  text-align: center;
+  line-height: 1.5;
+  letter-spacing: 0.02em;  /* Más sutil que 0.2ch */
+  padding-bottom: 7px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.card-label-pill:hover {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+.card-label-pill:active {
+  background: #d1d5db;
 }
 
 .card-ifss-label {
@@ -485,55 +544,61 @@ watch(error, (newError) => {
   gap: 20px;
   align-items: flex-start;
   padding: 0; 
-  background-color: red;
+  background-color: #d6d6d6;
+  border-radius: 11px;
   height: 365.1px;
   width: 1189.5px;
 }
 
 .map-wrapper {
-  width: 800px; 
+  left: 19.6px;
+  top: 21.2px;
+  width: 591.8px; 
+  height: 324.3px;
   flex-shrink: 0;
   position: relative;
+  background-color: white;
+  border-radius: 15px;
+  box-shadow: 1px 1px 1px #666;
 }
 
-.color-legend {
-  position: absolute;
-  bottom: 100px;
-  left: 25%;
-  transform: translateX(-50%);
-  background: rgba(255, 255, 255, 0.95);
-  border: none;
-  border-radius: 8px;
-  padding: 12px;
-  z-index: 10;
-  backdrop-filter: blur(5px);
-  min-width: 450px;
-  max-width: 450px;
-}
-
+/* Porcentaje dinamico */
 .hover-info-box {
   position: absolute;
-  top: 59%;
-  left: 10%;
+  height: 50px;
+  top: 180px;
+  left: 70px;
   z-index: 15;
   backdrop-filter: blur(10px);
   font-family: Arial, Helvetica, sans-serif;
-  min-width: 350px;
   text-align: center;
   transition: all 0.3s ease;
 }
 
+/* Barra de colores */
+.color-legend {
+  position: absolute;
+  top: 270px;
+  left: 35px;
+  background: rgba(255, 255, 255, 0.95);
+  border: none;
+  border-radius: 8px;
+  z-index: 10;
+  backdrop-filter: blur(5px);
+  width: 130px;
+}
+
 .location-label {
-  font-size: 20px;
+  font-size: 10px;
   color: #666;
-  font-weight: 500;
+  font-weight: 100;
   margin-bottom: 8px;
   text-transform: uppercase;
   letter-spacing: 1px;
 }
 
 .value-display {
-  font-size: 70px;
+  font-size: 30px;
   font-weight: 300;
   color: #2c3e50;
   line-height: 1;
@@ -550,23 +615,28 @@ watch(error, (newError) => {
   border-radius: 4px;
   overflow: hidden;
   border: 0px solid rgba(0,0,0,0.1);
+  height: 40px;
+  width: 160px;
 }
 
 .legend-item-horizontal {
   display: flex;
   flex-direction: column;
   align-items: center;
-  font-size: 20px;
+  font-size: 8px;
   color: #333;
   flex: 1;
   text-align: center;
+  
+
 }
 
 .legend-color-horizontal {
-  width: 160%;
-  height: 30px;
+  width: 100%;
+  height: 5px;
   border: none;
-  margin-bottom: 4px;
+
+  padding-bottom: 10px;
 }
 
 .legend-item-horizontal:first-child .legend-color-horizontal {
@@ -578,15 +648,13 @@ watch(error, (newError) => {
 }
 
 .legend-item-horizontal span {
-  padding: 2px 4px;
-  font-size: 9px;
+  
+  font-size: 7px;
   line-height: 1.2;
 }
 
 .mexico-map {
-  border: 1px solid #dee3e0;
-  border-radius: 8px;
-  background: #f8f9fa;
+  background: white;
 }
 
 .state-path {
@@ -717,165 +785,9 @@ svg g:hover .state-path:hover  {
   font-size: 14px;
 }
 
-.details-panel {
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 20px;
-  margin: 20px 0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
 
-.details-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
 
-.details-header h3 {
-  margin: 0;
-  color: #2196F3;
-}
 
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 18px;
-  cursor: pointer;
-  color: #666;
-}
-
-.details-content {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 20px;
-  margin-bottom: 20px;
-}
-
-.metric-card {
-  text-align: center;
-  padding: 15px;
-  background: #f8f9fa;
-  border-radius: 6px;
-}
-
-.metric-value {
-  font-size: 24px;
-  font-weight: bold;
-  color: #4CAF50;
-}
-
-.metric-label {
-  font-size: 12px;
-  color: #666;
-  margin-top: 5px;
-}
-
-.metric-classification {
-  font-size: 11px;
-  font-weight: bold;
-  margin-top: 3px;
-}
-
-.description {
-  padding: 10px;
-  background: #f0f0f0;
-  border-radius: 4px;
-}
-
-.stats-summary {
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 20px;
-  margin: 20px 0;
-}
-
-.stats-summary h3 {
-  margin: 0 0 15px 0;
-  color: #333;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 15px;
-}
-
-.stat-item {
-  text-align: center;
-}
-
-.stat-value {
-  display: block;
-  font-size: 20px;
-  font-weight: bold;
-  color: #4CAF50;
-}
-
-.stat-label {
-  font-size: 12px;
-  color: #666;
-}
-
-.rankings {
-  margin: 20px 0;
-}
-
-.top-performers {
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 20px;
-}
-
-.top-performers h4 {
-  margin: 0 0 15px 0;
-  color: #333;
-}
-
-.ranking-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.ranking-item {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  padding: 8px 12px;
-  background: #f8f9fa;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.ranking-item:hover {
-  background: #e3f2fd;
-}
-
-.rank {
-  font-weight: bold;
-  color: #FF9800;
-  min-width: 20px;
-}
-
-.name {
-  flex: 1;
-}
-
-.value {
-  font-weight: bold;
-  color: #4CAF50;
-  margin-right: 8px;
-}
-
-.classification {
-  font-size: 10px;
-  font-weight: bold;
-}
 
 @media (max-width: 1200px) {
   .map-and-charts-wrapper {
@@ -904,10 +816,6 @@ svg g:hover .state-path:hover  {
   .map-info-card {
     min-width: 150px;
     padding: 16px;
-  }
-  
-  .card-ifss-value {
-    font-size: 36px;
   }
   
   .details-content {

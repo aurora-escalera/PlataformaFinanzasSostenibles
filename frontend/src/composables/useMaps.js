@@ -12,10 +12,10 @@ export const useMaps = () => {
   
   // Configuración del mapa
   const mapConfig = ref({
-    width: 800,
-    height: 600,
-    scale: 1200,
-    center: [-101, 23],
+    width: 470.2,
+    height: 300.4,
+    scale: 700,
+    center: [-106, 25],
     projection: 'geoMercator'
   })
 
