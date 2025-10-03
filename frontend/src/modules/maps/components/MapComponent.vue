@@ -143,11 +143,6 @@
         <!-- CHARTS SECTION - SIEMPRE VISIBLE -->
         <div class="charts-section">
           <div class="charts-container">
-            <div class="charts-header">
-              <h3>{{ selectedState ? `Análisis Detallado - ${selectedState}` : 'Selecciona un estado' }}</h3>
-              <button v-if="selectedState" @click="resetSelection" class="charts-close-btn">✕</button>
-            </div>
-            
             <!-- Mensaje cuando no hay estado seleccionado -->
             <div v-if="!selectedState" class="charts-empty-state">
               <div class="empty-state-icon">📊</div>
@@ -541,28 +536,26 @@ watch(error, (newError) => {
 
 .map-and-charts-wrapper {
   display: flex;
-  gap: 20px;
+  gap: 19.6px;
   align-items: flex-start;
-  padding: 0; 
+  padding: 19.6px; 
   background-color: #d6d6d6;
   border-radius: 11px;
-  height: 365.1px;
-  width: 1189.5px;
+  height: 383.5px;
+  width: 1242.4px;
 }
 
 .map-wrapper {
-  left: 19.6px;
-  top: 21.2px;
-  width: 591.8px; 
-  height: 324.3px;
-  flex-shrink: 0;
   position: relative;
+  width: 591.8px; 
+  height: 344.3px;
+  flex-shrink: 0;
   background-color: white;
   border-radius: 15px;
   box-shadow: 1px 1px 1px #666;
 }
 
-/* Porcentaje dinamico */
+/* Porcentaje dinamico left: 19.6px;*/
 .hover-info-box {
   position: absolute;
   height: 50px;
@@ -713,17 +706,18 @@ svg g:hover .state-path:hover  {
 }
 
 .charts-section {
-  width: 700px;
-  flex-shrink: 0;
-  height: 800px;
-  overflow-y: auto;
+  position: relative;
+  width: 591.8px;
+  height: 344.3px;
+  border-radius: 15px;
+  box-shadow: 1px 1px 1px #666;
 }
 
 .charts-container {
   background: white;
   border: 1px solid #ddd;
   border-radius: 12px;
-  padding: 20px;
+  padding: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   height: 100%;
 }

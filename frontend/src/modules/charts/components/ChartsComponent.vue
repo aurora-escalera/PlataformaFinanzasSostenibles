@@ -3,14 +3,13 @@
   <div class="charts-wrapper">
     <!-- FILA 1: PRESUPUESTOS -->
     <div class="chart-section-row">
-      <h4 class="section-title">Presupuestos</h4>
-      
+      <h4 class="section-title">{{ selectedState ? `Presupuestos - ${selectedState}` : 'Selecciona un estado' }}</h4>
       <div class="chart-row-content">
         <!-- Barra izquierda -->
         <div class="chart-col-bar">
           <BarChart 
             :data="presupuestosData"
-            title="Proporción del gasto asignado a Presupuestos"
+            :title="selectedYear ? `Proporción del gasto asignado a Presupuestos Intensivos en Carbono (PIC) y Presupuestos Sostenibles (PS) con respecto del gasto total en millones de pesos (MXN) en- ${selectedYear}` : 'Proporción del gasto asignado a Presupuestos Intensivos en Carbono (PIC) y Presupuestos Sostenibles (PS) con respecto del gasto total en millones de pesos (MXN)'"
           />
         </div>
         
@@ -22,7 +21,7 @@
               :data="donutPresupuestosSostenibles"
               title="PS"
               subtitle="35%"
-              :size="140"
+              :size="50"
             />
           </div>
           <div class="donut-item">
@@ -31,7 +30,7 @@
               :data="donutPresupuestosCarbono"
               title="PIC"
               subtitle="40%"
-              :size="140"
+              :size="50"
             />
           </div>
         </div>
@@ -59,7 +58,7 @@
               :data="donutIngresosSostenibles"
               title="IS"
               subtitle="45%"
-              :size="140"
+              :size="50"
             />
           </div>
           <div class="donut-item">
@@ -68,7 +67,7 @@
               :data="donutIngresosCarbono"
               title="IIC"
               subtitle="38%"
-              :size="140"
+              :size="50"
             />
           </div>
         </div>
@@ -167,7 +166,7 @@ const donutIngresosCarbono = computed(() => {
 .charts-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 30px;
+  gap: 10px;
   width: 100%;
 }
 
@@ -180,19 +179,21 @@ const donutIngresosCarbono = computed(() => {
 
 .section-title {
   margin: 0;
-  padding: 8px 0;
+  padding: 0px 0 0px;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   border-bottom: 1px solid #e0e0e0;
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 9px;
+  font-weight: 200;
   color: #6b7280;
 }
 
 .chart-row-content {
   display: flex;
   flex-direction: row;
-  gap: 16px;
+  gap: 10px;
+  padding: 0px 8px 0px 8px;
   width: 100%;
-  min-height: 450px;
+  height: 127.5px;
 }
 
 .chart-col-bar {
@@ -200,34 +201,31 @@ const donutIngresosCarbono = computed(() => {
   min-width: 0;
 }
 
+/*Container for donuts first row */
 .chart-col-donuts {
   flex: 1;
   min-width: 0;
   display: flex;
-  flex-direction: column;
-  gap: 16px;
+  flex-direction: row;
+  gap: 5px;
 }
 
 .donut-item {
-  flex: 1;
-  background: #fafafa;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  padding: 12px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 200px;
+  background: white;
+  border-radius: 8px;
+  min-height: 0;
 }
 
 .donut-title {
-  margin: 0 0 12px 0;
-  font-size: 11px;
-  font-weight: 500;
-  color: #6b7280;
+  font-size: 7px;
+  font-weight: 400;
+  color: #484d56;
   text-align: center;
-  line-height: 1.4;
+  letter-spacing: -0.5px;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+padding-bottom: 10px;
 }
 
 @media (max-width: 1000px) {

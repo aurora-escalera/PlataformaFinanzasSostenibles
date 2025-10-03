@@ -47,7 +47,7 @@ export const useCharts = () => {
       {
         label: 'Restante',
         value: 100 - percentage,
-        color: '#E8E8E8', // Gris claro
+        color: '#e8e8e8ff', // Gris claro
         rawValue: 2.9 - ifssValue
       }
     ]

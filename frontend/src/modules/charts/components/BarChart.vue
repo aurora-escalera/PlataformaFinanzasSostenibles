@@ -160,45 +160,58 @@ const formatValue = (value) => {
 
 <style scoped>
 .vertical-bar-chart {
+  display: flex;
+  flex-direction: column;
   width: 100%;
-  padding: 24px;
+  height: 127.5px;
+  align-items: center; 
   background: white;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .chart-header {
-  margin-bottom: 20px;
+  position: relative;
+  margin-bottom: 5px;
+  width: 100%;
 }
 
 .chart-title {
   margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: #6b7280;
+  letter-spacing: -0.5px;
+  font-size: 7px;
+  text-align:center;
+  font-weight: 400;
+  color: #484d56;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 }
 
-/* Filtros tipo toggle */
+/* Filtros  de bar chart 1 */
 .variable-filters {
+  background-color: red;
   display: flex;
-  gap: 12px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
+  flex-direction: row;
+  gap: 1px;
+  border-radius: 24px;
+  flex-wrap: nowrap;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); 
+  padding: 2px;
+  background: white;
+  
 }
 
 .filter-btn {
-  flex: 1;
-  min-width: 200px;
-  padding: 12px 20px;
+  flex: 0 1 auto;
   border: none;
-  background: #f3f4f6;
+  padding: 2px 10px;
   border-radius: 24px;
   cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  color: #6b7280;
+  font-size: 5px;
+  font-weight: 100;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  background: white;
   transition: all 0.3s ease;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .filter-btn:hover {
@@ -220,28 +233,33 @@ const formatValue = (value) => {
   color: white;
 }
 
-/* Leyenda */
+/* Leyendas de la grafica de barras */
 .chart-legend {
   display: flex;
-  gap: 24px;
-  margin-bottom: 24px;
-  padding: 12px 0;
-  border-bottom: 1px solid #e5e7eb;
+  flex-direction: row;
+  gap: 1px;
+  flex-wrap: nowrap;
+  justify-content: center;
   flex-wrap: wrap;
   justify-content: center;
 }
 
 .legend-item {
+  flex: 0 1 auto;
   display: flex;
   align-items: center;
-  gap: 8px;
+  font-size: 5px;
+  gap: 3px;
+  color: #4b5563;
+  padding: 2px;
 }
 
 .legend-dot {
-  width: 12px;
-  height: 12px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   flex-shrink: 0;
+  
 }
 
 .legend-dot.gray {
@@ -256,20 +274,36 @@ const formatValue = (value) => {
   background: #7cb342;
 }
 
-.legend-label {
-  font-size: 13px;
-  color: #4b5563;
-}
 
 /* Contenedor de barras verticales */
 .bars-container {
   display: flex;
-  gap: 24px;
+  flex-direction: row;
   justify-content: center;
-  align-items: flex-end;
-  min-height: 400px;
-  padding: 20px;
+  gap: 5px;
+  flex: 1;
+  width: 100%;
   position: relative;
+
+}
+
+.bar-column {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  animation: slideUp 0.5s ease;
+  transition: width 0.4s ease;
+
+}
+
+.bar-wrapper-vertical {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
 }
 
 /* Ajuste dinámico del ancho según cantidad de barras */
@@ -288,14 +322,6 @@ const formatValue = (value) => {
   max-width: 250px;
 }
 
-.bar-column {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  animation: slideUp 0.5s ease;
-  transition: width 0.4s ease;
-}
-
 @keyframes slideUp {
   from {
     opacity: 0;
@@ -308,22 +334,8 @@ const formatValue = (value) => {
 }
 
 .bar-value-top {
-  font-size: 16px;
-  font-weight: 600;
-  color: #1f2937;
-  margin-bottom: 12px;
-  min-height: 24px;
-}
-
-.bar-wrapper-vertical {
-  width: 100%;
-  height: 350px;
-  background: #f3f4f6;
-  border-radius: 12px;
-  overflow: hidden;
-  position: relative;
-  display: flex;
-  align-items: flex-end;
+  font-size: 6px;
+  font-weight: 100px;
 }
 
 .bar-vertical {
@@ -346,7 +358,6 @@ const formatValue = (value) => {
 }
 
 .bar-label-bottom {
-  margin-top: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -354,9 +365,9 @@ const formatValue = (value) => {
 }
 
 .color-indicator {
-  width: 40px;
-  height: 4px;
-  border-radius: 2px;
+  width: 80px;
+  height: 1px;
+  border-radius: 24px;
 }
 
 .color-indicator.gray {

@@ -1,9 +1,6 @@
 <!-- src/modules/charts/components/DonutChart.vue -->
 <template>
   <div class="donut-chart">
-    <!-- Título superior -->
-    <div class="chart-title">{{ title }}</div>
-    
     <!-- SVG de la gráfica de dona -->
     <div class="chart-svg-container">
       <svg :width="size" :height="size" class="donut-svg">
@@ -69,9 +66,9 @@ const props = defineProps({
   }
 })
 
-// Configuración de colores (rojo y gris como en tu diseño)
+// Configuración de colores (rojo y gris como en tu diseño) '#E8E8E8' 
 const primaryColor = '#DC143C'  // Rojo
-const backgroundColor = '#E8E8E8'  // Gris claro
+const backgroundColor = '#65a30d'  // Gris claro
 
 // Calculados para el SVG
 const center = computed(() => props.size / 2)
@@ -110,13 +107,6 @@ const strokeDashoffset = computed(() => {
   width: 100%;
 }
 
-.chart-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #666;
-  text-align: center;
-}
-
 .chart-svg-container {
   display: flex;
   justify-content: center;
@@ -132,7 +122,7 @@ const strokeDashoffset = computed(() => {
 }
 
 .percentage-text {
-  font-size: 14px;
+  font-size: 6px;
   font-weight: bold;
   fill: #333;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
