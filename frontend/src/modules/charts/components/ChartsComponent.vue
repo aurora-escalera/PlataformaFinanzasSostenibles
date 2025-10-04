@@ -21,7 +21,7 @@
               :data="donutPresupuestosSostenibles"
               title="PS"
               subtitle="35%"
-              :size="50"
+              :size="80"
             />
           </div>
           <div class="donut-item">
@@ -30,7 +30,7 @@
               :data="donutPresupuestosCarbono"
               title="PIC"
               subtitle="40%"
-              :size="50"
+              :size="80"
             />
           </div>
         </div>
@@ -58,7 +58,7 @@
               :data="donutIngresosSostenibles"
               title="IS"
               subtitle="45%"
-              :size="50"
+              :size="80"
             />
           </div>
           <div class="donut-item">
@@ -67,7 +67,7 @@
               :data="donutIngresosCarbono"
               title="IIC"
               subtitle="38%"
-              :size="50"
+              :size="80"
             />
           </div>
         </div>

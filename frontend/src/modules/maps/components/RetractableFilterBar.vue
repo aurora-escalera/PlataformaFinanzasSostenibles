@@ -266,9 +266,7 @@ const selectEntity = (entityName) => {
   emitFiltersChange()
   
   entitySearch.value = ''
-  
-  // NO cerrar el dropdown inmediatamente para debug
-  // closeAllDropdowns()
+  closeAllDropdowns()
   console.log('=== FILTRO: selectEntity completado ===')
 }
 
@@ -306,10 +304,9 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* ... todos los estilos anteriores permanecen igual ... */
 .filter-bar-container {
   position: relative;
-  left: 0%;
+  left: 19.6px;
   top: 0px;
   width: 100%;
   height: 90px;
@@ -319,10 +316,10 @@ onMounted(() => {
 }
 
 .filter-bar {
-  background: linear-gradient(135deg, #2c5282 0%, #2a4d7a 100%);
+  background: #053759;
   color: white;
   padding: 5px 24px;
-  border-radius: 45px 30px 0 0;
+  border-radius: 7px;
   box-shadow: 0 4px 20px rgba(44, 82, 130, 0.3);
   transition: transform 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
   position: absolute;
@@ -338,6 +335,7 @@ onMounted(() => {
 .filter-bar.expanded {
   transform: translateY(-22px);
   cursor: default;
+  z-index: 1;
 }
 
 .filter-content {
@@ -361,11 +359,11 @@ onMounted(() => {
 .filter-group::after {
   content: '|';
   position: absolute;
-  right: -1px;
-  top: 50%;
+  right: -26px;
+  top: 32%;
   transform: translateY(-100%);
   color: rgba(255, 255, 255, 0.6);
-  font-size: 18px;
+  font-size: 12px;
   font-weight: 300;
   z-index: 100;
   transition: all 0.1s ease;

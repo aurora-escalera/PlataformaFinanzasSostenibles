@@ -140,6 +140,10 @@
           </div>
         </div>
 
+        <div class="retractable-view">
+          <div class="expand-retractable-btn">+</div>
+        </div>
+
         <!-- CHARTS SECTION - SIEMPRE VISIBLE -->
         <div class="charts-section">
           <div class="charts-container">
@@ -192,7 +196,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { geoPath, geoMercator } from 'd3-geo'
 import { useMaps } from '@/composables/useMaps'
 import { useCharts } from '@/composables/useCharts'
@@ -267,20 +271,15 @@ const handleMouseHover = (stateName, event) => {
   handleStateHover(stateName)
 }
 
-const handleStateClickWithEmit = (stateName) => {
+const handleStateClickWithEmit = async (stateName) => {
   handleStateClick(stateName)
-  
-  setTimeout(() => {
-    if (selectedState.value === stateName) {
-      const stateData = getStateInfo(stateName)
-      emit('region-selected', {
-        name: stateName,
-        data: stateData
-      })
-    } else {
-      emit('region-selected', null)
-    }
-  }, 50)
+  await nextTick()
+  if (selectedState.value === stateName) {
+    const stateData = getStateInfo(stateName)
+    emit('region-selected', { name: stateName, data: stateData })
+  } else {
+    emit('region-selected', null)
+  }
 }
 
 const projection = computed(() => {
@@ -355,15 +354,11 @@ watch(error, (newError) => {
   background: white;
   border-radius: 12px;
   padding: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.38);
   z-index: 10;
   width: 143.2px;
   height: 143.2px;
   transition: all 0.3s ease;
-}
-
-.map-info-card.state-selected {
-  border-left: 4px solid #2196F3;
 }
 
 .card-content {
@@ -536,10 +531,10 @@ watch(error, (newError) => {
 
 .map-and-charts-wrapper {
   display: flex;
-  gap: 19.6px;
   align-items: flex-start;
-  padding: 19.6px; 
-  background-color: #d6d6d6;
+  gap: 0px;
+  padding: 19.6px;  
+  background: radial-gradient(circle at bottom left, #d6d6d6 0%, white 50%);
   border-radius: 11px;
   height: 383.5px;
   width: 1242.4px;
@@ -553,6 +548,7 @@ watch(error, (newError) => {
   background-color: white;
   border-radius: 15px;
   box-shadow: 1px 1px 1px #666;
+  z-index: 2;
 }
 
 /* Porcentaje dinamico left: 19.6px;*/
@@ -779,7 +775,44 @@ svg g:hover .state-path:hover  {
   font-size: 14px;
 }
 
+.retractable-view{
+  position: relative;
+  width: 68.6px;
+  height: 344.3px;
+  background-color: #053759;
+  border-radius: 15px;
+  left: -55px;
+  transform: translateX(calc(100% - 50px));
+  z-index: 1;
+}
 
+.expand-retractable-btn{
+  position: absolute;
+  font-size: 14px;
+  color: white;
+  left: 43px;
+  top: 5px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 
+    inset 0 3px 6px rgba(0, 0, 0, 0.4),  /* Sombra interior superior (efecto hundido) */
+    inset 0 -2px 4px rgba(255, 255, 255, 0.1), /* Luz interior inferior */
+    0 1px 2px rgba(242, 241, 241, 0.369); 
+  transition: all 0.1s ease;
+}
+
+.expand-retractable-btn:hover {
+  box-shadow: 
+    inset 0 4px 8px rgba(0, 0, 0, 0.5),
+    inset 0 -2px 4px rgba(255, 255, 255, 0.15),
+    0 1px 2px rgba(0, 0, 0, 0.3);
+  transform: translateY(1px);
+}
 
 
 

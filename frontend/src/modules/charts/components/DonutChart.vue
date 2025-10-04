@@ -24,7 +24,6 @@
           :stroke-width="strokeWidth"
           :stroke-dasharray="circumference"
           :stroke-dashoffset="strokeDashoffset"
-          stroke-linecap="round"
           :transform="`rotate(-90 ${center} ${center})`"
           class="progress-circle"
         />
@@ -62,17 +61,19 @@ const props = defineProps({
   },
   size: {
     type: Number,
-    default: 100
+    default: 1000
   }
 })
 
 // Configuración de colores (rojo y gris como en tu diseño) '#E8E8E8' 
-const primaryColor = '#DC143C'  // Rojo
-const backgroundColor = '#65a30d'  // Gris claro
+const primaryColor = '#009d14'  // Rojo
+const secondaryColor = '#bddc50'  // Rojo
+
+const backgroundColor = '#bddc50'  // Gris claro
 
 // Calculados para el SVG
 const center = computed(() => props.size / 2)
-const strokeWidth = computed(() => 8)
+const strokeWidth = computed(() => 19)
 const radius = computed(() => (props.size / 2) - (strokeWidth.value / 2))
 const circumference = computed(() => 2 * Math.PI * radius.value)
 
@@ -130,7 +131,7 @@ const strokeDashoffset = computed(() => {
 
 /* Animación inicial */
 .donut-chart:hover .progress-circle {
-  stroke-width: 10;
+  stroke-width: 20;
   transition: stroke-width 0.2s ease;
 }
 
