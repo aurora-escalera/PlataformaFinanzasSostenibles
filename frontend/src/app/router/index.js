@@ -1,6 +1,7 @@
 // src/app/router/index.js
 import { createRouter, createWebHistory } from 'vue-router'
 import MapsPage from '@/pages/MapsPage.vue'
+import QualitativePanel from '../../pages/QualitativePanel.vue'
 
 const routes = [
   // Ruta por defecto (opcional)
@@ -13,6 +14,15 @@ const routes = [
     path: '/finanzas/mapas',
     name: 'FinanzasMapas',
     component: MapsPage,
+    meta: {
+      title: 'Mapas - Finanzas Sostenibles'
+    }
+  },
+    // Tu ruta de cualitativos
+  {
+    path: '/finanzas/cualitativos',
+    name: 'FinanzasCualitativos',
+    component: QualitativePanel,
     meta: {
       title: 'Mapas - Finanzas Sostenibles'
     }
