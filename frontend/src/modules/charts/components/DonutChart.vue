@@ -1,9 +1,6 @@
 <!-- src/modules/charts/components/DonutChart.vue -->
 <template>
   <div class="donut-chart">
-    <!-- Título superior -->
-    <div class="chart-title">{{ title }}</div>
-    
     <!-- SVG de la gráfica de dona -->
     <div class="chart-svg-container">
       <svg :width="size" :height="size" class="donut-svg">
@@ -27,7 +24,6 @@
           :stroke-width="strokeWidth"
           :stroke-dasharray="circumference"
           :stroke-dashoffset="strokeDashoffset"
-          stroke-linecap="round"
           :transform="`rotate(-90 ${center} ${center})`"
           class="progress-circle"
         />
@@ -65,17 +61,19 @@ const props = defineProps({
   },
   size: {
     type: Number,
-    default: 100
+    default: 1000
   }
 })
 
-// Configuración de colores (rojo y gris como en tu diseño)
-const primaryColor = '#DC143C'  // Rojo
-const backgroundColor = '#E8E8E8'  // Gris claro
+// Configuración de colores (rojo y gris como en tu diseño) '#E8E8E8' 
+const primaryColor = '#009d14'  // Rojo
+const secondaryColor = '#bddc50'  // Rojo
+
+const backgroundColor = '#bddc50'  // Gris claro
 
 // Calculados para el SVG
 const center = computed(() => props.size / 2)
-const strokeWidth = computed(() => 8)
+const strokeWidth = computed(() => 19)
 const radius = computed(() => (props.size / 2) - (strokeWidth.value / 2))
 const circumference = computed(() => 2 * Math.PI * radius.value)
 
@@ -110,13 +108,6 @@ const strokeDashoffset = computed(() => {
   width: 100%;
 }
 
-.chart-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #666;
-  text-align: center;
-}
-
 .chart-svg-container {
   display: flex;
   justify-content: center;
@@ -132,7 +123,7 @@ const strokeDashoffset = computed(() => {
 }
 
 .percentage-text {
-  font-size: 14px;
+  font-size: 6px;
   font-weight: bold;
   fill: #333;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -140,7 +131,7 @@ const strokeDashoffset = computed(() => {
 
 /* Animación inicial */
 .donut-chart:hover .progress-circle {
-  stroke-width: 10;
+  stroke-width: 20;
   transition: stroke-width 0.2s ease;
 }
 

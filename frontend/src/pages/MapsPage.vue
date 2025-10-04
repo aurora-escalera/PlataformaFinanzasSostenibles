@@ -33,45 +33,6 @@
         @map-error="handleMapError"
       />
     </div>
-    
-    <!-- Panel de estadísticas de filtros -->
-    <div v-if="showStats && filterStats" class="filter-stats-panel">
-      <div class="stats-header">
-        <h3>Estadísticas - {{ filterStats.selectedVariable }}</h3>
-        <button @click="exportData" class="export-btn">
-          Exportar Datos
-        </button>
-      </div>
-      
-      <div class="stats-grid">
-        <div class="stat-item">
-          <span>Entidades:</span>
-          <span>{{ filterStats.total }}</span>
-        </div>
-        <div class="stat-item">
-          <span>Promedio:</span>
-          <span>{{ filterStats.average }}%</span>
-        </div>
-        <div class="stat-item">
-          <span>Máximo:</span>
-          <span>{{ filterStats.max }}%</span>
-        </div>
-        <div class="stat-item">
-          <span>Mínimo:</span>
-          <span>{{ filterStats.min }}%</span>
-        </div>
-      </div>
-      
-      <div v-if="selectedEntity" class="current-filter">
-        <h4>{{ selectedEntity }}</h4>
-        <p>Valor IFSS: {{ getCurrentEntityValue() }}%</p>
-        <p>Clasificación: {{ getCurrentEntityClassification() }}</p>
-        
-        <button @click="focusOnEntity" class="charts-btn">
-          Ver Análisis Detallado
-        </button>
-      </div>
-    </div>
 
     <div v-if="error" class="error-panel">
       <h3>Error en el sistema</h3>
@@ -235,7 +196,7 @@ onMounted(async () => {
 }
 
 .filters-column {
-  width: 800px;
+  width: 613.5px;
   flex-shrink: 0;
   padding: 0;
 }
