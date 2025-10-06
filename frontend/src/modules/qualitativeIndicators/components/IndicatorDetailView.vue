@@ -1,4 +1,4 @@
-<!-- src/modules/qualitativeIndicators/components/QualitativeIndicatorPanel.vue -->
+<!-- src/modules/qualitativeIndicators/components/IndicatorDetailView.vue -->
 <template>
   <div class="map-container">
     <!-- Loading State -->
@@ -180,7 +180,7 @@
                           :value="75" 
                         />
                       </div>
-                      <div class="bottle-number">3,249,683 kg</div>
+                      <div class="bottle-number number">3,249,683 kg</div>
                     </div>
                   </div>
                 </div>
@@ -189,7 +189,16 @@
                   <div class="top-right-card-container"> 
                     <div class="area-graph card">
                     </div>
-                    <div class="energetic-consume card">
+                    <div class="gauge-container card">
+                      <div class="title-gauge">
+                        <h3>Consumo de energía eléctrica</h3>
+                      </div>
+                      <div class="gauge-graph">
+                        <GaugeChart 
+                          :value="67"
+                        />
+                      </div>
+                      <div class="gauge-number number">2,013.80 GWh</div>
                     </div>
                   </div>
                   <div class="bottom-right-card-container">
@@ -249,7 +258,8 @@ import { useMaps } from '@/composables/useMaps'
 import { useCharts } from '@/composables/useCharts'
 import { useRoute, useRouter } from 'vue-router'
 import BarChart from '@/modules/charts/components/BarChart.vue'
-import BottleChart from '../../object/component/BottleChart.vue'
+import GaugeChart from '../../object//component/GaugeChart.vue'
+import BottleChart from '../../object/component/bottleChart.vue'
 import ChartsComponent from '@/modules/charts/components/ChartsComponent.vue'
 
 // Datos para Presupuestos (Barras)
@@ -1010,6 +1020,7 @@ svg g:hover .state-path:hover  {
 
 .card{
   border: 1px solid#b0b0b0;
+  border-radius: 12px;
 }
 
 /* Left Side Card */
@@ -1099,14 +1110,53 @@ h2{
 
 }
 
-.bottle-number{
- width: 35%;
- color: #053759;
+.number{
+width: 35%;
+ color: #58778F;
  font-family: Verdana, Geneva, Tahoma, sans-serif;
- font-weight: 300;
- font-size: 10px;
+ font-weight: 600;
+ font-size: 9.3px;
  display: flex;
  align-items: center;
  justify-content: center;
 }
+
+/* Gauge Graphic */
+.gauge-container {
+  width: 30%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  
+}
+
+.gauge-graph{
+  padding: 0px 0px 0px 0px;
+  width: 100%;
+  height:40%;
+}
+
+.title-gauge{
+ padding-top: 20px;
+ height: 30%;
+}
+
+h3{
+  padding: 5px 10px 25px 10px;
+  text-align: center;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 100;
+  color: #535353;
+  font-size: 7px;
+}
+
+.gauge-number{
+ padding-top: 7px;
+ width: 100%;
+ color: #58778F;
+ font-family: Verdana, Geneva, Tahoma, sans-serif;
+ font-weight: 600;
+ font-size: 8px;
+}
+
 </style>
