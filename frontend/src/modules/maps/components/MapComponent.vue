@@ -141,7 +141,7 @@
         </div>
 
         <div class="retractable-view">
-          <div class="expand-retractable-btn">+</div>
+          <div class="expand-retractable-btn" @click="handleDatosCualitativosClick">+</div>
         </div>
 
         <!-- CHARTS SECTION - SIEMPRE VISIBLE -->
@@ -200,6 +200,7 @@ import { ref, computed, watch, nextTick } from 'vue'
 import { geoPath, geoMercator } from 'd3-geo'
 import { useMaps } from '@/composables/useMaps'
 import { useCharts } from '@/composables/useCharts'
+import { useRouter } from 'vue-router'
 import ChartsComponent from '@/modules/charts/components/ChartsComponent.vue'
 
 const props = defineProps({
@@ -322,6 +323,21 @@ const tooltipStyle = computed(() => {
     maxWidth: '250px'
   }
 })
+
+const router = useRouter()
+const handleIFSRegionalClick = () => {
+  console.log('Navegando a datos regionales...')
+  // Mantener en la misma página o hacer algo específico
+}
+
+const handleDatosFederalesClick = () => {
+  console.log('Navegando a federales...')
+}
+
+const handleDatosCualitativosClick = () => {
+  console.log('Navegando a cualitativos...')
+  router.push('/finanzas/cualitativos')
+}
 
 watch(selectedState, (newState, oldState) => {
   if (newState && newState !== oldState) {
@@ -781,17 +797,16 @@ svg g:hover .state-path:hover  {
   height: 344.3px;
   background-color: #053759;
   border-radius: 15px;
-  left: -55px;
-  transform: translateX(calc(100% - 50px));
+  left: -40px;
   z-index: 1;
 }
 
 .expand-retractable-btn{
   position: absolute;
-  font-size: 14px;
+  font-size: 15px;
   color: white;
   left: 43px;
-  top: 5px;
+  top: 3px;
   width: 18px;
   height: 18px;
   border-radius: 50%;

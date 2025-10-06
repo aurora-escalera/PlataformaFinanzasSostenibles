@@ -22,7 +22,7 @@
     </div>
     <div class="qualitativeIndicatorPanel">
       <!-- Columna izquierda: Filtros (600px = 3/4 de 800px) -->
-      <QualitativeIndicatorPanel />
+      <IndicatorDetailView/>
     </div>
 
     <div v-if="error" class="error-panel">
@@ -37,11 +37,11 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import QualitativeIndicatorPanel from '../modules/qualitativeIndicators/components/QualitativeIndicatorPanel.vue'
 import RetractableFilterBar from '@/modules/maps/components/RetractableFilterBar.vue'
 import DataToggleComponent from '@modules/other/components/DataToggleComponent.vue'
 import { useFilters } from '@/composables/useFilters'
 import { useMaps } from '@/composables/useMaps'
+import IndicatorDetailView from '../modules/qualitativeIndicators/components/IndicatorDetailView.vue'
 
 
 const showStats = ref(false)
