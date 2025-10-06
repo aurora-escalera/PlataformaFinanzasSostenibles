@@ -96,9 +96,9 @@ const props = defineProps({
 const presupuestosData = computed(() => {
   if (!props.ifssData || !props.ifssData.is_amount) {
     return {
-      is_amount: 0,
-      is_percentage: 0,
-      iic_amount: 0,
+      is_amount: 5,
+      is_percentage: 8,
+      iic_amount: 10,
       iic_percentage: 0
     }
   }
@@ -114,9 +114,9 @@ const presupuestosData = computed(() => {
 // Datos para Ingresos (Barras)
 const ingresosData = computed(() => {
   return {
-    is_amount: props.ifssData?.is_amount ? props.ifssData.is_amount * 0.8 : 0,
+    is_amount: props.ifssData?.is_amount ? props.ifssData.is_amount * 0.8 : 18,
     is_percentage: props.ifssData?.is_percentage || 0,
-    iic_amount: props.ifssData?.iic_amount ? props.ifssData.iic_amount * 1.2 : 0,
+    iic_amount: props.ifssData?.iic_amount ? props.ifssData.iic_amount * 1.2 : 4,
     iic_percentage: props.ifssData?.iic_percentage || 0
   }
 })

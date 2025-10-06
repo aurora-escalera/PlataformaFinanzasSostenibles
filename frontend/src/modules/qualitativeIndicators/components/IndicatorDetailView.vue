@@ -1,4 +1,4 @@
-<!-- src/modules/maps/components/MapComponent.vue -->
+<!-- src/modules/qualitativeIndicators/components/QualitativeIndicatorPanel.vue -->
 <template>
   <div class="map-container">
     <!-- Loading State -->
@@ -140,28 +140,75 @@
           </div>
         </div>
 
-        <div class="retractable-view">
-          <div class="expand-retractable-btn" @click="handleDatosCualitativosClick">+</div>
-        </div>
-
-        <!-- CHARTS SECTION - SIEMPRE VISIBLE -->
-        <div class="charts-section">
-          <div class="charts-container">
-            <!-- Mensaje cuando no hay estado seleccionado -->
-            <div v-if="!selectedState" class="charts-empty-state">
-              <div class="empty-state-icon">📊</div>
-              <h4>Análisis de Estado</h4>
-              <p>Haz clic en cualquier estado del mapa para ver sus gráficas detalladas</p>
+        <div 
+          class="qualitative-panel"
+          :class="{ 'expanded': isOnQualitativePage }"
+        >
+          <!-- Vista colapsada (solo botón) -->
+          <div v-if="!isOnQualitativePage" class="collapsed-view">
+            <div class="expand-retractable-btn" @click="navigateToQualitative">
+              +
             </div>
-            
-            <!-- ChartsComponent cuando hay estado seleccionado -->
-            <ChartsComponent 
-              v-else
-              :selectedState="selectedState"
-              :ifssData="getStateInfo(selectedState)"
-            />
+          </div>
+          <!-- Vista expandida (contenido completo) -->
+          <div v-else class="expanded-view">
+            <div class="header-retractable-view">
+              <div class="hamburger-menu" @click="navigateToMaps">
+                <img src="/public/icons/white-hamburger.png" alt="hamburger-menu" class="hamburger-icon">
+              </div>
+              <h1 class="header-title">Indicadores Caulitativos</h1>
+              <div class="expand-retractable-btn" @click="navigateToMaps">
+                -
+              </div>
+            </div>
+
+            <div class="inner-card">
+              <div class="card-header">
+                <h1 class="card-header-title">Ambientales</h1>
+              </div>
+              <div class="card-body">
+                <div class="left-card-container">
+                  <div class="bar-graph card">
+                  </div>
+                  <div class="bottle-graphs card">
+                    <div class="title-bottle">
+                      <h2>Promedio diario de residuos sólidos urbanos recolectados</h2>
+                    </div>
+                    <div class="body-bottle">
+                      <div class="bottle-graph">
+                        <BottleChart 
+                          :value="75" 
+                        />
+                      </div>
+                      <div class="bottle-number">3,249,683 kg</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="right-card-container">
+                  <div class="top-right-card-container"> 
+                    <div class="area-graph card">
+                    </div>
+                    <div class="energetic-consume card">
+                    </div>
+                  </div>
+                  <div class="bottom-right-card-container">
+                    <div class="bottom-bar-graph card">
+                      <!--
+                      <BarChart 
+                        :data="presupuestosData"
+                        :title="selectedYear ? `Superficie estimada de Áreas Naturales Protegidas en hectáreas en- ${selectedYear}` : 'Superficie estimada de Áreas Naturales Protegidas en hectáreas'"
+                      />
+                      -->
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
+ 
+        <!-- CHARTS SECTION - SIEMPRE VISIBLE -->
         
       </div>
 
@@ -200,8 +247,33 @@ import { ref, computed, watch, nextTick } from 'vue'
 import { geoPath, geoMercator } from 'd3-geo'
 import { useMaps } from '@/composables/useMaps'
 import { useCharts } from '@/composables/useCharts'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import BarChart from '@/modules/charts/components/BarChart.vue'
+import BottleChart from '../../object/component/BottleChart.vue'
 import ChartsComponent from '@/modules/charts/components/ChartsComponent.vue'
+
+// Datos para Presupuestos (Barras)
+const presupuestosData = computed(() => {
+  if (!props.ifssData || !props.ifssData.is_amount) {
+    return {
+      is_amount: 10,
+      iic_amount: 5,
+    }
+  }
+  
+  return {
+    is_amount: props.ifssData.is_amount || 0,
+    iic_amount: props.ifssData.iic_amount || 0,
+  }
+})
+
+// Datos para Ingresos (Barras)
+const ingresosData = computed(() => {
+  return {
+    is_amount: props.ifssData?.is_amount ? props.ifssData.is_amount * 0.8 : 0,
+    iic_amount: props.ifssData?.iic_amount ? props.ifssData.iic_amount * 1.2 : 0,
+  }
+})
 
 const props = defineProps({
   title: {
@@ -324,7 +396,21 @@ const tooltipStyle = computed(() => {
   }
 })
 
+const route = useRoute()
 const router = useRouter()
+
+const isOnQualitativePage = computed(() => {
+  return route.path.includes('/cualitativos')
+})
+
+const navigateToQualitative = () => {
+  router.push('/finanzas/cualitativos')
+}
+
+const navigateToMaps = () => {
+  router.push('/finanzas/mapas')
+}
+
 const handleIFSRegionalClick = () => {
   console.log('Navegando a datos regionales...')
   // Mantener en la misma página o hacer algo específico
@@ -332,11 +418,6 @@ const handleIFSRegionalClick = () => {
 
 const handleDatosFederalesClick = () => {
   console.log('Navegando a federales...')
-}
-
-const handleDatosCualitativosClick = () => {
-  console.log('Navegando a cualitativos...')
-  router.push('/finanzas/cualitativos')
 }
 
 watch(selectedState, (newState, oldState) => {
@@ -469,7 +550,7 @@ watch(error, (newError) => {
   width: 100px;
   letter-spacing: 0.06em;
   padding-top: 3px;
-  cursor: pointer;  /* NUEVO */
+  cursor: pointer;
   transition: all 0.2s ease;
 }
 
@@ -481,7 +562,7 @@ watch(error, (newError) => {
   font-weight: 500;
   text-align: center;
   line-height: 1.5;
-  letter-spacing: 0.02em;  /* Más sutil que 0.2ch */
+  letter-spacing: 0.02em;
   padding-bottom: 7px;
   border-bottom: 1px solid #e5e7eb;
 }
@@ -632,15 +713,12 @@ watch(error, (newError) => {
   color: #333;
   flex: 1;
   text-align: center;
-  
-
 }
 
 .legend-color-horizontal {
   width: 100%;
   height: 5px;
   border: none;
-
   padding-bottom: 10px;
 }
 
@@ -653,7 +731,6 @@ watch(error, (newError) => {
 }
 
 .legend-item-horizontal span {
-  
   font-size: 7px;
   line-height: 1.2;
 }
@@ -791,21 +868,90 @@ svg g:hover .state-path:hover  {
   font-size: 14px;
 }
 
-.retractable-view{
+/* Qualitative panel */
+.qualitative-panel{
   position: relative;
   width: 68.6px;
   height: 344.3px;
   background-color: #053759;
   border-radius: 15px;
-  left: -40px;
+  left: -45px;
   z-index: 1;
+  overflow: hidden;
+  transition: all 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
+
+}
+
+.qualitative-panel.expanded {
+  width: 621.4px;
+  border-radius: 0 15px 15px 0;
+  left: -10px;
+  transition: all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1) 0.4s;
+  animation: fadeIn 0.6s ease 0.1s forwards;
+  opacity: 0;
+
+}
+
+.collapsed-view {
+  width: 100%;
+  height: 100%;
+}
+
+.expanded-view {
+  width: 100%;
+  height: 100%;
+  padding: 5px 10px 10px 25px;
+  color: white;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-300px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0px);
+  }
+}
+
+/* Header elements*/
+.header-retractable-view{ 
+  display: flex;
+  flex-direction: row;
+  gap: 13px;
+  border-bottom: 3px solid rgba(255, 255, 255, 0.15);
+  padding: 5px 0 3px 10px;
+  margin-bottom: 0px;
+}
+
+.header-title{
+  padding-top: 4px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 10px;
+  font-weight: 100;
+  color: #a19d9d
+}
+
+.hamburger-menu{
+  top: -15px;
+}
+.hamburger-icon{
+ color: #535353;
+ width: 15.9px;
+ height: 12.9px;
 }
 
 .expand-retractable-btn{
   position: absolute;
   font-size: 15px;
   color: white;
-  left: 43px;
+  left: 589px;
   top: 3px;
   width: 18px;
   height: 18px;
@@ -814,9 +960,11 @@ svg g:hover .state-path:hover  {
   display: flex;
   align-items: center;
   justify-content: center;
+  border: none;
+  background: transparent;
   box-shadow: 
-    inset 0 3px 6px rgba(0, 0, 0, 0.4),  /* Sombra interior superior (efecto hundido) */
-    inset 0 -2px 4px rgba(255, 255, 255, 0.1), /* Luz interior inferior */
+    inset 0 3px 6px rgba(0, 0, 0, 0.4),
+    inset 0 -2px 4px rgba(255, 255, 255, 0.1),
     0 1px 2px rgba(242, 241, 241, 0.369); 
   transition: all 0.1s ease;
 }
@@ -829,43 +977,136 @@ svg g:hover .state-path:hover  {
   transform: translateY(1px);
 }
 
-
-
-@media (max-width: 1200px) {
-  .map-and-charts-wrapper {
-    flex-direction: column;
-  }
-  
-  .charts-section, .map-wrapper {
-    width: 100%;
-  }
-  
-  .map-info-card {
-    top: 20px;
-    left: 20px;
-  }
+/* Card elements*/
+.inner-card{
+  background-color: white;
+  border-radius: 15px;
+  height: 100%;
+  width: 100%;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
 }
 
-@media (max-width: 768px) {
-  .map-container {
-    padding: 10px;
-  }
-  
-  .color-legend {
-    min-width: 140px;
-  }
-  
-  .map-info-card {
-    min-width: 150px;
-    padding: 16px;
-  }
-  
-  .details-content {
-    grid-template-columns: 1fr;
-  }
-  
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.card-body{
+  height:100%;
+  padding-top: 10px;
+  display: flex;
+  flex-direction: row;
+  gap: 5px;
+}
+
+.card-header-title{
+  display: flex;
+  flex-direction: row;
+  gap: 13px;
+  border-bottom: 1px solid #d1cfcf;
+  padding: 5px 0 3px 10px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 10px;
+  font-weight: 100;
+  color: #535353;
+} 
+
+.card{
+  border: 1px solid#b0b0b0;
+}
+
+/* Left Side Card */
+.left-card-container{
+  display: flex;
+  flex-direction: column;
+  width: 85%;
+  gap: 5px;
+}
+
+.bar-graph{
+  height: 70%;
+  border-radius: 12px;
+}
+
+.bottle-graphs{
+  height: 30%;
+  border-radius: 12px;
+}
+
+/* Right Side Card */
+.right-card-container{
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 5px;
+}
+
+.top-right-card-container{
+  display: flex;
+  flex-direction: row;
+  border-radius: 12px;
+  height: 60%;
+  gap: 5px;
+}
+
+.area-graph{
+  width: 70%;
+  border-radius: 12px;
+}
+
+.energetic-consume{
+  width: 30%;
+  border-radius: 12px;
+}
+
+.bottom-right-card-container{
+  height: 40%;
+  border-radius: 12px;
+}
+
+.bottom-bar-graph{
+  height: 100%;
+  border-radius: 12px;
+}
+
+/*Bottle Graph card*/
+.bottle-graphs{
+  flex:1;
+  display: flex;
+  flex-direction: column;
+  min-height: 80px;
+  max-height: 120px; /*  Limita la altura máxima */
+  overflow: hidden; /* Previene desbordamiento */
+}
+
+h2{
+  padding: 5px;
+  text-align: center;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 100;
+  color: #535353;
+  font-size: 8px;
+}
+
+.body-bottle{
+ display: flex;
+ flex-direction: row;
+ padding: 5px;
+ flex:1
+}
+
+.bottle-graph{
+  padding: 0 0 7px 7px;
+  flex: 1;
+  width: 65%;
+
+}
+
+.bottle-number{
+ width: 35%;
+ color: #053759;
+ font-family: Verdana, Geneva, Tahoma, sans-serif;
+ font-weight: 300;
+ font-size: 10px;
+ display: flex;
+ align-items: center;
+ justify-content: center;
 }
 </style>

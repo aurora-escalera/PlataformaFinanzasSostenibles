@@ -1,4 +1,4 @@
-<!-- src/modules/maps/components/MapComponent.vue -->
+<!-- src/modules/qualitativeIndicators/components/QualitativeIndicatorPanel.vue -->
 <template>
   <div class="map-container">
     <!-- Loading State -->
@@ -140,28 +140,54 @@
           </div>
         </div>
 
-        <div class="retractable-view">
-          <div class="expand-retractable-btn" @click="handleDatosCualitativosClick">+</div>
-        </div>
-
-        <!-- CHARTS SECTION - SIEMPRE VISIBLE -->
-        <div class="charts-section">
-          <div class="charts-container">
-            <!-- Mensaje cuando no hay estado seleccionado -->
-            <div v-if="!selectedState" class="charts-empty-state">
-              <div class="empty-state-icon">📊</div>
-              <h4>Análisis de Estado</h4>
-              <p>Haz clic en cualquier estado del mapa para ver sus gráficas detalladas</p>
+        <div 
+          class="qualitative-panel"
+          :class="{ 'expanded': isOnQualitativePage }"
+        >
+          <!-- Vista colapsada (solo botón) -->
+          <div v-if="!isOnQualitativePage" class="collapsed-view">
+            <div class="expand-retractable-btn" @click="navigateToQualitative">
+              +
             </div>
-            
-            <!-- ChartsComponent cuando hay estado seleccionado -->
-            <ChartsComponent 
-              v-else
-              :selectedState="selectedState"
-              :ifssData="getStateInfo(selectedState)"
-            />
+          </div>
+          <!-- Vista expandida (contenido completo) -->
+          <div v-else class="expanded-view">
+            <div class="header-retractable-view">
+              <div class="hamburger-menu" @click="navigateToMaps">
+                <img src="/public/icons/white-hamburger.png" alt="hamburger-menu" class="hamburger-icon">
+              </div>
+              <h1 class="header-title">Indicadores Caulitativos</h1>
+              <div class="expand-retractable-btn" @click="navigateToMaps">
+                -
+              </div>
+            </div>
+
+            <div class="buttons-container">
+                <div class="qualitative-btn" @click="navigateToQualitativeItem">
+                  <span class="title-btn">Ambientales</span>
+                  <span class="plus-btn">+</span>
+                </div>
+                <div class="qualitative-btn" @click="navigateToQualitativeItem">
+                  <span class="title-btn">Económicos</span>
+                  <span class="plus-btn">+</span>
+                </div>
+                <div class="qualitative-btn" @click="navigateToQualitativeItem">
+                  <span class="title-btn">Sociables</span>
+                  <span class="plus-btn">+</span>                  
+                </div>
+                <div class="qualitative-btn" @click="navigateToQualitativeItem">
+                  <span class="title-btn">Presupuestos y financiamiento</span>
+                  <span class="plus-btn">+</span>  
+                </div>
+                <div class="qualitative-btn" @click="navigateToQualitativeItem">
+                  <span class="title-btn">Gobernabilidad y transparencia</span>
+                  <span class="plus-btn">+</span>  
+                </div>
+            </div>
           </div>
         </div>
+ 
+        <!-- CHARTS SECTION - SIEMPRE VISIBLE -->
         
       </div>
 
@@ -200,7 +226,7 @@ import { ref, computed, watch, nextTick } from 'vue'
 import { geoPath, geoMercator } from 'd3-geo'
 import { useMaps } from '@/composables/useMaps'
 import { useCharts } from '@/composables/useCharts'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import ChartsComponent from '@/modules/charts/components/ChartsComponent.vue'
 
 const props = defineProps({
@@ -324,7 +350,25 @@ const tooltipStyle = computed(() => {
   }
 })
 
+const route = useRoute()
 const router = useRouter()
+
+const isOnQualitativePage = computed(() => {
+  return route.path.includes('/cualitativos')
+})
+
+const navigateToQualitative = () => {
+  router.push('/finanzas/cualitativos')
+}
+
+const navigateToMaps = () => {
+  router.push('/finanzas/mapas')
+}
+
+const navigateToQualitativeItem = () => {
+  router.push('/finanzas/cualitativos/item')
+}
+
 const handleIFSRegionalClick = () => {
   console.log('Navegando a datos regionales...')
   // Mantener en la misma página o hacer algo específico
@@ -332,11 +376,6 @@ const handleIFSRegionalClick = () => {
 
 const handleDatosFederalesClick = () => {
   console.log('Navegando a federales...')
-}
-
-const handleDatosCualitativosClick = () => {
-  console.log('Navegando a cualitativos...')
-  router.push('/finanzas/cualitativos')
 }
 
 watch(selectedState, (newState, oldState) => {
@@ -469,7 +508,7 @@ watch(error, (newError) => {
   width: 100px;
   letter-spacing: 0.06em;
   padding-top: 3px;
-  cursor: pointer;  /* NUEVO */
+  cursor: pointer;
   transition: all 0.2s ease;
 }
 
@@ -481,7 +520,7 @@ watch(error, (newError) => {
   font-weight: 500;
   text-align: center;
   line-height: 1.5;
-  letter-spacing: 0.02em;  /* Más sutil que 0.2ch */
+  letter-spacing: 0.02em;
   padding-bottom: 7px;
   border-bottom: 1px solid #e5e7eb;
 }
@@ -632,15 +671,12 @@ watch(error, (newError) => {
   color: #333;
   flex: 1;
   text-align: center;
-  
-
 }
 
 .legend-color-horizontal {
   width: 100%;
   height: 5px;
   border: none;
-
   padding-bottom: 10px;
 }
 
@@ -653,7 +689,6 @@ watch(error, (newError) => {
 }
 
 .legend-item-horizontal span {
-  
   font-size: 7px;
   line-height: 1.2;
 }
@@ -791,21 +826,89 @@ svg g:hover .state-path:hover  {
   font-size: 14px;
 }
 
-.retractable-view{
+/* Qualitative panel */
+.qualitative-panel{
   position: relative;
   width: 68.6px;
   height: 344.3px;
   background-color: #053759;
   border-radius: 15px;
-  left: -40px;
+  left: -45px;
   z-index: 1;
+  overflow: hidden;
+  transition: all 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
+
+}
+
+.qualitative-panel.expanded {
+  width: 621.4px;
+  border-radius: 0 15px 15px 0;
+  left: -10px;
+  transition: all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1) 0.4s;
+  animation: fadeIn 0.6s ease 0.1s forwards;
+  opacity: 0;
+
+}
+
+
+.collapsed-view {
+  width: 100%;
+  height: 100%;
+}
+
+.expanded-view {
+  width: 100%;
+  height: 100%;
+  padding: 10px 15px 0 25px;
+  color: white;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-300px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0px);
+  }
+}
+
+/* Header elements*/
+.header-retractable-view{ 
+  display: flex;
+  flex-direction: row;
+  gap: 13px;
+  border-bottom: 3px solid rgba(255, 255, 255, 0.15);
+  padding: 5px 0 10px 10px;
+  margin-bottom: 0px;
+}
+
+.header-title{
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  font-weight: 100;
+}
+
+.hamburger-menu{
+  top: -15px;
+}
+.hamburger-icon{
+ color: white;
+ width: 15.9px;
+ height: 12.9px;
 }
 
 .expand-retractable-btn{
   position: absolute;
   font-size: 15px;
   color: white;
-  left: 43px;
+  left: 589px;
   top: 3px;
   width: 18px;
   height: 18px;
@@ -814,9 +917,11 @@ svg g:hover .state-path:hover  {
   display: flex;
   align-items: center;
   justify-content: center;
+  border: none;
+  background: transparent;
   box-shadow: 
-    inset 0 3px 6px rgba(0, 0, 0, 0.4),  /* Sombra interior superior (efecto hundido) */
-    inset 0 -2px 4px rgba(255, 255, 255, 0.1), /* Luz interior inferior */
+    inset 0 3px 6px rgba(0, 0, 0, 0.4),
+    inset 0 -2px 4px rgba(255, 255, 255, 0.1),
     0 1px 2px rgba(242, 241, 241, 0.369); 
   transition: all 0.1s ease;
 }
@@ -829,7 +934,50 @@ svg g:hover .state-path:hover  {
   transform: translateY(1px);
 }
 
+/* Body elements*/
+.buttons-container{
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+}
 
+.qualitative-btn {
+  width: 101.8px;
+  height: 34.6;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  padding: 4px;
+
+}
+
+.qualitative-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Button elements*/
+.title-btn{
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 100; 
+  font-size: 9px;
+}
+
+.plus-btn{
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 100;
+  border: #053759;
+
+}
 
 @media (max-width: 1200px) {
   .map-and-charts-wrapper {

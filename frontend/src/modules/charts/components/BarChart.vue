@@ -56,7 +56,7 @@
         
         <!-- Label debajo de la barra -->
         <div class="bar-label-bottom">
-          <span :class="['color-indicator', variable.colorClass]"></span>
+
         </div>
       </div>
 
