@@ -169,6 +169,16 @@
               <div class="card-body">
                 <div class="left-card-container">
                   <div class="bar-graph card">
+                    <HorizontalBarChart
+                      :variables="advancedData"
+                      width="100%"
+                      height="100%"
+                      title="Indicadores Ambientales"
+                      :showFilters="true"
+                      :showLegend="true"
+                      barHeight="20px"
+                      barGap="1px"
+                    />
                   </div>
                   <div class="bottle-graphs card">
                     <div class="title-bottle">
@@ -270,6 +280,7 @@ import BarChart from '@/modules/charts/components/BarChart.vue'
 import GaugeChart from '../../object//component/GaugeChart.vue'
 import BottleChart from '../../object/component/bottleChart.vue'
 import AreaChart from '@/modules/charts/components/AreaChart.vue'
+import HorizontalBarChart from '@/modules/charts/components/HorizontalBarChart.vue'
 import ChartsComponent from '@/modules/charts/components/ChartsComponent.vue'
 
 // Datos para Presupuestos (Barras)
@@ -467,6 +478,53 @@ const myExcelData = [
   { label: 'Coco', value: 15 },
   { label:'Delfin', value: 30 },
   { label: 'Escalera', value: 15 }
+]
+
+//HorizontalBarChart
+// Datos avanzados con más opciones
+const advancedData = [
+  { 
+    key: 'incendios', 
+    label: 'Total (hectáreas)', 
+    value: 1200, 
+    color: '#0F3759', 
+    active: true 
+  },
+  { 
+    key: 'residuos', 
+    label: 'Arbolado Adulto', 
+    value: 3500, 
+    color: '#3B5A70', 
+    active: true 
+  },
+  { 
+    key: 'emisiones', 
+    label: 'Renuevo', 
+    value: 850, 
+    color: '#4E6D82', 
+    active: false 
+  },
+    { 
+    key: 'Arbustivo', 
+    label: 'Arbustivo', 
+    value: 3500, 
+    color: '#D6D6D6', 
+    active: true 
+  },
+  { 
+    key: 'Herbaceo', 
+    label: 'Herbaceo', 
+    value: 250, 
+    color: '#A1A1A1', 
+    active: false 
+  },
+  { 
+    key: 'Hojarasca', 
+    label: 'Hojarasca', 
+    value: 1050, 
+    color: '#B0B0B0', 
+    active: false 
+  }
 ]
 </script>
 
