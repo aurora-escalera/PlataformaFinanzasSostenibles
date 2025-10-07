@@ -187,7 +187,16 @@
 
                 <div class="right-card-container">
                   <div class="top-right-card-container"> 
-                    <div class="area-graph card">
+                    <div class="area-chart card">
+                      <div class="title-area-chart">
+                        <h3>Emisiones de contaminantes atmosféricos por fuente en toneladas.</h3>
+                      </div>
+                      <div class="area-chart-container">
+                        <AreaChart 
+                          :excelData="myExcelData"
+                          title="Datos de Excel"
+                        />
+                      </div>
                     </div>
                     <div class="gauge-container card">
                       <div class="title-gauge">
@@ -260,6 +269,7 @@ import { useRoute, useRouter } from 'vue-router'
 import BarChart from '@/modules/charts/components/BarChart.vue'
 import GaugeChart from '../../object//component/GaugeChart.vue'
 import BottleChart from '../../object/component/bottleChart.vue'
+import AreaChart from '@/modules/charts/components/AreaChart.vue'
 import ChartsComponent from '@/modules/charts/components/ChartsComponent.vue'
 
 // Datos para Presupuestos (Barras)
@@ -448,12 +458,19 @@ watch(error, (newError) => {
     emit('map-error', newError)
   }
 })
+
+//Area Chart
+// Datos que vendrán de Excel en el futuro
+const myExcelData = [
+  { label: 'Arboles', value: 25 },
+  { label: 'Ballenas', value: 30 },
+  { label: 'Coco', value: 15 },
+  { label:'Delfin', value: 30 },
+  { label: 'Escalera', value: 15 }
+]
 </script>
 
 <style scoped>
-/* ... estilos existentes ... */
-
-/* NUEVOS ESTILOS PARA LA CARD FLOTANTE */
 .map-info-card {
   position: absolute;
   top: 21px;
@@ -1036,48 +1053,12 @@ svg g:hover .state-path:hover  {
   border-radius: 12px;
 }
 
+/*Bottom Left Side Card: Bottle Graph*/
 .bottle-graphs{
   height: 30%;
   border-radius: 12px;
 }
 
-/* Right Side Card */
-.right-card-container{
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  gap: 5px;
-}
-
-.top-right-card-container{
-  display: flex;
-  flex-direction: row;
-  border-radius: 12px;
-  height: 60%;
-  gap: 5px;
-}
-
-.area-graph{
-  width: 70%;
-  border-radius: 12px;
-}
-
-.energetic-consume{
-  width: 30%;
-  border-radius: 12px;
-}
-
-.bottom-right-card-container{
-  height: 40%;
-  border-radius: 12px;
-}
-
-.bottom-bar-graph{
-  height: 100%;
-  border-radius: 12px;
-}
-
-/*Bottle Graph card*/
 .bottle-graphs{
   flex:1;
   display: flex;
@@ -1121,7 +1102,49 @@ width: 35%;
  justify-content: center;
 }
 
-/* Gauge Graphic */
+/* Right Side Card */
+.right-card-container{
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 5px;
+}
+
+/* Top Right Side Card */
+.top-right-card-container{
+  display: flex;
+  flex-direction: row;
+  border-radius: 12px;
+  height: 60%;
+  gap: 5px;
+}
+
+/* Top Right Side Card: Area Chart */
+.area-chart{
+  width: 70%;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: row;
+}
+
+.title-area-chart{
+ padding: 30px 0 0 15px;
+ width: 30%;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+}
+
+.area-chart-container{
+ width: 80%;
+}
+
+/* Top Right Side Card: Gauge Graph */
+.energetic-consume{
+  width: 30%;
+  border-radius: 12px;
+}
+
 .gauge-container {
   width: 30%;
   height: 100%;
@@ -1159,4 +1182,15 @@ h3{
  font-size: 8px;
 }
 
+/* Bottom Right Side Card */
+.bottom-right-card-container{
+  height: 40%;
+  border-radius: 12px;
+}
+
+/* Bottom Right Side Card: Bar Graph */
+.bottom-bar-graph{
+  height: 100%;
+  border-radius: 12px;
+}
 </style>
