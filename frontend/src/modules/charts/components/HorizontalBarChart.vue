@@ -39,14 +39,25 @@
     </div>
 
     <!-- Contenedor de barras horizontales -->
-    <div class="bars-container"
-         :class="`bars-count-${activeVariables.length}`"
+    <div 
+      class="bars-container"
+      :class="[
+        `bars-count-${activeVariables.length}`,
+        { 'has-hover': hoveredBarKey !== null }
+      ]"
     >
       <!-- Fila para cada variable activa -->
       <div 
         v-for="variable in activeVariables" 
         :key="variable.key"
         class="bar-row"
+        :class="{ 
+          'is-hovered': hoveredBarKey === variable.key,
+          'is-dimmed': hoveredBarKey !== null && hoveredBarKey !== variable.key
+        }"
+        @mouseenter="handleMouseEnter(variable, $event)"
+        @mousemove="handleMouseMove($event)"
+        @mouseleave="handleMouseLeave"
       >
         <!-- Wrapper de la barra horizontal -->
         <div class="bar-wrapper-horizontal">
@@ -54,23 +65,41 @@
             class="bar-horizontal"
             :class="variable.colorClass"
             :style="{ 
-              width: getBarWidth(variable.value) + '%',
+              width: getAnimatedWidth(variable) + '%',
               background: getBarColor(variable)
             }"
           >
           </div>
         </div>
       </div>
+
       <!-- Mensaje cuando no hay variables seleccionadas -->
       <div v-if="activeVariables.length === 0" class="empty-state">
         <p>{{ emptyMessage }}</p>
       </div>
     </div>
+
+    <!-- ✅ Tooltip con Teleport -->
+    <Teleport to="body">
+      <div 
+        v-if="tooltip.visible"
+        class="tooltip"
+        :style="tooltipStyle"
+      >
+        <div class="tooltip-content">
+          <div class="tooltip-color" :style="{ backgroundColor: tooltip.color }"></div>
+          <div class="tooltip-info">
+            <div class="tooltip-label">{{ tooltip.label }}</div>
+            <div class="tooltip-value">{{ tooltip.value }}</div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 
 const props = defineProps({
   variables: {
@@ -113,13 +142,31 @@ const props = defineProps({
   useGradients: {
     type: Boolean,
     default: true
+  },
+  animationDelay: {
+    type: Number,
+    default: 800
   }
+})
+
+// ✅ Estado del hover
+const hoveredBarKey = ref(null)
+
+// ✅ Estado del tooltip
+const tooltip = ref({
+  visible: false,
+  x: 0,
+  y: 0,
+  label: '',
+  value: '',
+  color: ''
 })
 
 // Copia interna de las variables para manejar el estado
 const internalVariables = ref([])
+const animatedWidths = ref({}) 
 
-// Inicializar variables internas desde props
+// ✅ Inicializar variables con TODAS inactivas y anchos en 0
 const initializeVariables = () => {
   internalVariables.value = props.variables.map(v => ({
     key: v.key,
@@ -127,14 +174,45 @@ const initializeVariables = () => {
     value: v.value || 0,
     colorClass: v.colorClass || 'default',
     color: v.color || null,
-    active: v.active !== undefined ? v.active : true
+    active: false
   }))
+  
+  // ✅ Inicializar todos los anchos en 0
+  animatedWidths.value = {}
+  props.variables.forEach(v => {
+    animatedWidths.value[v.key] = 0
+  })
+}
+
+// ✅ Función para activar las primeras 4 barras con animación de relleno
+const activateBarsWithAnimation = async () => {
+  await new Promise(resolve => setTimeout(resolve, props.animationDelay))
+  
+  // ✅ Activar solo las primeras 4 barras
+  const count = Math.min(4, internalVariables.value.length)
+  
+  for (let i = 0; i < count; i++) {
+    internalVariables.value[i].active = true
+    
+    // ✅ Animar el ancho desde 0 hasta el valor real
+    await new Promise(resolve => setTimeout(resolve, 50))
+    const targetWidth = getBarWidth(internalVariables.value[i].value)
+    animatedWidths.value[internalVariables.value[i].key] = targetWidth
+    
+    await new Promise(resolve => setTimeout(resolve, 200))
+  }
 }
 
 // Observar cambios en props.variables
 watch(() => props.variables, () => {
   initializeVariables()
+  activateBarsWithAnimation()
 }, { immediate: true, deep: true })
+
+// ✅ Activar animación al montar
+onMounted(() => {
+  activateBarsWithAnimation()
+})
 
 // Computed: Variables activas
 const activeVariables = computed(() => {
@@ -154,12 +232,54 @@ const maxValue = computed(() => {
   return Math.max(...values, 1)
 })
 
+// ✅ Computed: Estilo del tooltip
+const tooltipStyle = computed(() => {
+  return {
+    left: `${tooltip.value.x + 15}px`,
+    top: `${tooltip.value.y - 50}px`
+  }
+})
+
 // Métodos
 const toggleVariable = (key) => {
   const variable = internalVariables.value.find(v => v.key === key)
   if (variable) {
     variable.active = !variable.active
+    
+    // ✅ Animar el cambio de ancho
+    if (variable.active) {
+      setTimeout(() => {
+        animatedWidths.value[key] = getBarWidth(variable.value)
+      }, 50)
+    } else {
+      animatedWidths.value[key] = 0
+    }
   }
+}
+
+// ✅ Manejadores de eventos del tooltip
+const handleMouseEnter = (variable, event) => {
+  hoveredBarKey.value = variable.key
+  tooltip.value = {
+    visible: true,
+    x: event.clientX,
+    y: event.clientY,
+    label: variable.label,
+    value: variable.value,
+    color: getBarColor(variable)
+  }
+}
+
+const handleMouseMove = (event) => {
+  if (tooltip.value.visible) {
+    tooltip.value.x = event.clientX
+    tooltip.value.y = event.clientY
+  }
+}
+
+const handleMouseLeave = () => {
+  hoveredBarKey.value = null
+  tooltip.value.visible = false
 }
 
 const getBarWidth = (value) => {
@@ -167,12 +287,16 @@ const getBarWidth = (value) => {
   return Math.min(percentage, 100)
 }
 
+// ✅ Nueva función para obtener el ancho animado
+const getAnimatedWidth = (variable) => {
+  return animatedWidths.value[variable.key] || 0
+}
+
 const getBarColor = (variable) => {
   // Si hay color personalizado, usarlo
   if (variable.color) {
     return variable.color
   }
-
 
   // Colores sólidos por defecto
   const solidColors = {
@@ -283,15 +407,6 @@ const getBarColor = (variable) => {
   flex-shrink: 0;
 }
 
-.legend-dot.gray { background: #9ca3af; }
-.legend-dot.red { background: #DC143C; }
-.legend-dot.green { background: #7cb342; }
-.legend-dot.blue { background: #3b82f6; }
-.legend-dot.yellow { background: #eab308; }
-.legend-dot.purple { background: #a78bfa; }
-.legend-dot.orange { background: #fb923c; }
-.legend-dot.default { background: #6b7280; }
-
 /* Contenedor de barras horizontales */
 .bars-container {
   display: flex;
@@ -301,7 +416,6 @@ const getBarColor = (variable) => {
   width: 100%;
   padding: 8px 0px 0px 0px;
   position: relative;
-
 }
 
 .bar-row {
@@ -309,36 +423,33 @@ const getBarColor = (variable) => {
   display: flex;
   flex-direction: row;
   align-items: center;
-  animation: slideIn 0.5s ease;
   height: v-bind(dynamicBarHeight);
-  align-items: center;
-  animation: slideUp 0.5s ease;
-  transition: width 0.4s ease;
-  
+  animation: slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity 0.3s ease, transform 0.2s ease;
+  cursor: pointer;
 }
 
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+/* ✅ Efectos hover */
+.bar-row.is-hovered {
+  opacity: 1;
+  transform: scale(1.02);
+  z-index: 10;
+}
+
+.bar-row.is-dimmed {
+  opacity: 0.3;
 }
 
 @keyframes slideUp {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(30px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
-
 
 .bar-wrapper-horizontal {
   width: 100%; 
@@ -351,10 +462,14 @@ const getBarColor = (variable) => {
 .bar-horizontal {
   width: 100%; 
   height: 100%;
-  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   border-radius:0 2px 2px 0;
+}
+
+.bar-row.is-hovered .bar-horizontal {
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
 }
 
 .empty-state {
@@ -367,4 +482,45 @@ const getBarColor = (variable) => {
   font-size: 14px;
 }
 
+/*Tooltip */
+.tooltip {
+  position: fixed;
+  background: rgba(0, 0, 0, 0.85);
+  color: white;
+  padding: 4px 6px; 
+  border-radius: 4px; 
+  font-size: 8px; 
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  z-index: 999999;
+}
+
+.tooltip-content {
+  display: flex;
+  align-items: center;
+  gap: 5px; 
+}
+
+.tooltip-color {
+  width: 8px; 
+  height: 8px; 
+  border-radius: 2px;
+}
+
+.tooltip-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px; 
+}
+
+.tooltip-label {
+  font-weight: 600;
+  font-size: 7px; 
+}
+
+.tooltip-value {
+  font-size: 6px; 
+  opacity: 0.9;
+}
 </style>

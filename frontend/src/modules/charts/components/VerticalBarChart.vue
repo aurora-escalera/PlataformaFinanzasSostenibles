@@ -34,7 +34,10 @@
         :key="'legend-' + variable.key"
         class="legend-item"
       >
-        <span :class="['legend-dot', variable.colorClass]"></span>
+        <span 
+          class="legend-dot" 
+          :style="{ backgroundColor: getBarColor(variable) }"
+        ></span>
         <span class="legend-label">{{ variable.label }}</span>
       </div>
     </div>
@@ -42,13 +45,23 @@
     <!-- Contenedor de barras verticales -->
     <div 
       class="bars-container"
-      :class="`bars-count-${activeVariables.length}`"
+      :class="[
+        `bars-count-${activeVariables.length}`,
+        { 'has-hover': hoveredBarKey !== null }
+      ]"
     >
       <!-- Columna para cada variable activa -->
       <div 
         v-for="variable in activeVariables" 
         :key="variable.key"
         class="bar-column"
+        :class="{ 
+          'is-hovered': hoveredBarKey === variable.key,
+          'is-dimmed': hoveredBarKey !== null && hoveredBarKey !== variable.key
+        }"
+        @mouseenter="handleMouseEnter(variable, $event)"
+        @mousemove="handleMouseMove($event)"
+        @mouseleave="handleMouseLeave"
       >
         <!-- Wrapper de la barra vertical -->
         <div class="bar-wrapper-vertical">
@@ -69,11 +82,28 @@
         <p>{{ emptyMessage }}</p>
       </div>
     </div>
+
+    <!-- ✅ Tooltip con Teleport -->
+    <Teleport to="body">
+      <div 
+        v-if="tooltip.visible"
+        class="tooltip"
+        :style="tooltipStyle"
+      >
+        <div class="tooltip-content">
+          <div class="tooltip-color" :style="{ backgroundColor: tooltip.color }"></div>
+          <div class="tooltip-info">
+            <div class="tooltip-label">{{ tooltip.label }}</div>
+            <div class="tooltip-value">{{ tooltip.value }}</div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 
 const props = defineProps({
   variables: {
@@ -116,11 +146,33 @@ const props = defineProps({
   showLabels: {
     type: Boolean,
     default: true
+  }, 
+  autoSelectCount: {
+    type: Number,
+    default: 2
+  },
+  animationDelay: {
+    type: Number,
+    default: 800
   }
+})
+
+// ✅ Estado del hover
+const hoveredBarKey = ref(null)
+
+// ✅ Estado del tooltip
+const tooltip = ref({
+  visible: false,
+  x: 0,
+  y: 0,
+  label: '',
+  value: '',
+  color: ''
 })
 
 const internalVariables = ref([])
 
+// ✅ Inicializar variables con TODAS inactivas
 const initializeVariables = () => {
   internalVariables.value = props.variables.map(v => ({
     key: v.key,
@@ -128,12 +180,23 @@ const initializeVariables = () => {
     value: v.value || 0,
     colorClass: v.colorClass || 'default',
     color: v.color || null,
-    active: v.active !== undefined ? v.active : true
+    active: false // ✅ Todas inactivas al inicio
   }))
 }
 
+// ✅ Función para activar barras con animación
+const activateBarsWithAnimation = async () => {
+  await new Promise(resolve => setTimeout(resolve, props.animationDelay))
+  const count = Math.min(props.autoSelectCount, internalVariables.value.length)
+  for (let i = 0; i < count; i++) {
+    await new Promise(resolve => setTimeout(resolve, 300))
+    internalVariables.value[i].active = true
+  }
+} 
+
 watch(() => props.variables, () => {
   initializeVariables()
+  activateBarsWithAnimation()
 }, { immediate: true, deep: true })
 
 const activeVariables = computed(() => {
@@ -152,11 +215,44 @@ const maxValue = computed(() => {
   return Math.max(...values, 1)
 })
 
+// ✅ Computed: Estilo del tooltip
+const tooltipStyle = computed(() => {
+  return {
+    left: `${tooltip.value.x + 15}px`,
+    top: `${tooltip.value.y - 50}px`
+  }
+})
+
 const toggleVariable = (key) => {
   const variable = internalVariables.value.find(v => v.key === key)
   if (variable) {
     variable.active = !variable.active
   }
+}
+
+// ✅ Manejadores de eventos del tooltip
+const handleMouseEnter = (variable, event) => {
+  hoveredBarKey.value = variable.key
+  tooltip.value = {
+    visible: true,
+    x: event.clientX,
+    y: event.clientY,
+    label: variable.label,
+    value: variable.value,
+    color: getBarColor(variable)
+  }
+}
+
+const handleMouseMove = (event) => {
+  if (tooltip.value.visible) {
+    tooltip.value.x = event.clientX
+    tooltip.value.y = event.clientY
+  }
+}
+
+const handleMouseLeave = () => {
+  hoveredBarKey.value = null
+  tooltip.value.visible = false
 }
 
 const getBarHeight = (value) => {
@@ -286,15 +382,6 @@ const formatValue = (value) => {
   flex-shrink: 0;
 }
 
-.legend-dot.gray { background: #9ca3af; }
-.legend-dot.red { background: #DC143C; }
-.legend-dot.green { background: #7cb342; }
-.legend-dot.blue { background: #3b82f6; }
-.legend-dot.yellow { background: #eab308; }
-.legend-dot.purple { background: #a78bfa; }
-.legend-dot.orange { background: #fb923c; }
-.legend-dot.default { background: #6b7280; }
-
 /* Contenedor de barras verticales */
 .bars-container {
   display: flex;
@@ -332,18 +419,27 @@ const formatValue = (value) => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  animation: slideUp 0.5s ease;
-  transition: width 0.3s ease;
+  animation: slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity 0.3s ease, transform 0.2s ease, width 0.3s ease;
   width: v-bind(dynamicBarWidth);
   max-width: 80px;
   min-width: 30px;
   height: 100%;
+  cursor: pointer;
+}
+
+.bar-column.is-hovered {
+  opacity: 1;
+}
+
+.bar-column.is-dimmed {
+  opacity: 0.3;
 }
 
 @keyframes slideUp {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -358,14 +454,19 @@ const formatValue = (value) => {
   align-items: flex-end;
   justify-content: center;
   min-height: 0;
+  overflow: hidden;
 }
 
 .bar-vertical {
   width: 100%;
-  transition: height 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: height 1.2s cubic-bezier(0.1, 0, 0.2, 1); 
   border-radius: 8px 8px 0 0;
   box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
   position: relative;
+}
+
+.bar-column.is-hovered .bar-vertical {
+  box-shadow: 0 -3px 8px rgba(0, 0, 0, 0.2);
 }
 
 .empty-state {
@@ -392,6 +493,48 @@ const formatValue = (value) => {
 .bars-container.bars-count-5 .bar-column,
 .bars-container.bars-count-6 .bar-column {
   max-width: 60px;
+}
+
+/* ✅ Tooltip */
+.tooltip {
+  position: fixed;
+  background: rgba(0, 0, 0, 0.85);
+  color: white;
+  padding: 4px 6px;
+  border-radius: 4px;
+  font-size: 8px;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  z-index: 999999;
+}
+
+.tooltip-content {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.tooltip-color {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+.tooltip-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.tooltip-label {
+  font-weight: 600;
+  font-size: 7px;
+}
+
+.tooltip-value {
+  font-size: 6px;
+  opacity: 0.9;
 }
 
 @media (max-width: 768px) {

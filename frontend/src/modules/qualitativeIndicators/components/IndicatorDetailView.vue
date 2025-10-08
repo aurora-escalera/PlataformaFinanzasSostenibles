@@ -1300,5 +1300,6 @@ h3{
 .bottom-bar-graph{
   height: 100%;
   border-radius: 12px;
+  overflow: hidden;
 }
 </style>
