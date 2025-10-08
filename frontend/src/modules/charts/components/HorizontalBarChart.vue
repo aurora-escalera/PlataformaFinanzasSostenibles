@@ -40,7 +40,9 @@
     </div>
 
     <!-- Contenedor de barras horizontales -->
-    <div class="bars-container">
+    <div class="bars-container"
+         :class="`bars-count-${activeVariables.length}`"
+    >
       <!-- Fila para cada variable activa -->
       <div 
         v-for="variable in activeVariables" 
@@ -213,10 +215,11 @@ const getBarColor = (variable) => {
   border-radius: 12px;
   padding: 15px;
   box-sizing: border-box;
+  height: 100%;
 }
 
 .chart-header {
-  margin-bottom: 10px;
+  margin-bottom: 3px;
 }
 
 .chart-title {
@@ -231,30 +234,28 @@ const getBarColor = (variable) => {
 
 /* Filtros */
 .variable-filters {
-  background-color: red;
   display: flex;
   flex-direction: row;
-  gap: 1px;
+  height: 10px;
+  padding-top: 2px 0 2px 0;
   border-radius: 24px;
   flex-wrap: nowrap;
   justify-content: center;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); 
-  padding: 2px;
-  background: white;
+  gap:2px;
 }
 
 .filter-btn {
   flex: 0 1 auto;
   border: none;
-  padding: 2px 10px;
+  padding: 1px 3px;
   border-radius: 24px;
   cursor: pointer;
-  font-size: 5px;
+  font-size: 4.9px;
   font-weight: 100;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   background: white;
   transition: all 0.3s ease;
-  white-space: normal;
 }
 
 .filter-btn:hover {
@@ -262,7 +263,7 @@ const getBarColor = (variable) => {
 }
 
 .filter-btn.active {
-  background: #1e3a5f;
+  background: #737373;
   color: white;
 }
 
@@ -311,6 +312,7 @@ const getBarColor = (variable) => {
   flex: 1;
   width: 100%;
   position: relative;
+
 }
 
 .bar-row {
@@ -352,7 +354,7 @@ const getBarColor = (variable) => {
   width: 100%; 
   height: 100%;
   background: #f3f4f6;
-  border-radius: 8px;
+  border-radius:0  15px 15px 0;
   overflow: hidden;
   position: relative;
 }
@@ -361,7 +363,6 @@ const getBarColor = (variable) => {
   width: 100%; 
   height: 100%;
   transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-  border-radius: 8px;
   position: relative;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
@@ -374,5 +375,59 @@ const getBarColor = (variable) => {
   min-height: 100px;
   color: #9ca3af;
   font-size: 14px;
+}
+
+/* Ajuste dinámico del alto de .bar-row según cantidad de barras */
+.bars-container.bars-count-1 .bar-row{
+  height: 70px;
+  margin-bottom: 10px;
+}
+
+.bars-container.bars-count-2 .bar-row {
+  height: 40px;
+  margin-bottom: 10px;
+}
+
+.bars-container.bars-count-3 .bar-row,
+.bars-container.bars-count-4 .bar-row {
+  height: 30px;
+  margin-bottom: 8px;
+}
+
+.bars-container.bars-count-5 .bar-row,
+.bars-container.bars-count-6 .bar-row {
+  height: 25px;
+  margin-bottom: 6px;
+}
+
+.bars-container.bars-count-7 .bar-row,
+.bars-container.bars-count-8 .bar-row {
+  height: 20px;
+  margin-bottom: 4px;
+}
+
+.bars-container.bars-count-9 .bar-row,
+.bars-container.bars-count-10 .bar-row,
+.bars-container.bars-count-11 .bar-row,
+.bars-container.bars-count-12 .bar-row {
+  height: 18px;
+  margin-bottom: 3px;
+}
+
+.bars-container.bars-count-13 .bar-row,
+.bars-container.bars-count-14 .bar-row,
+.bars-container.bars-count-15 .bar-row,
+.bars-container.bars-count-16 .bar-row,
+.bars-container.bars-count-17 .bar-row,
+.bars-container.bars-count-18 .bar-row,
+.bars-container.bars-count-19 .bar-row,
+.bars-container.bars-count-20 .bar-row {
+  height: 15px;
+  margin-bottom: 2px;
+}
+
+.bars-container[class*="bars-count-"] .bar-row {
+  min-height: 12px;
+  margin-bottom: 2px;
 }
 </style>

@@ -1071,6 +1071,7 @@ svg g:hover .state-path:hover  {
   padding: 10px;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .card-body{
@@ -1079,6 +1080,8 @@ svg g:hover .state-path:hover  {
   display: flex;
   flex-direction: row;
   gap: 5px;
+   overflow: hidden; 
+  box-sizing: border-box;
 }
 
 .card-header-title{
@@ -1103,54 +1106,62 @@ svg g:hover .state-path:hover  {
   display: flex;
   flex-direction: column;
   width: 85%;
+  height: 100%;
   gap: 5px;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .bar-graph{
   height: 70%;
   border-radius: 12px;
+  overflow: hidden;  
+  box-sizing: border-box;
 }
 
 /*Bottom Left Side Card: Bottle Graph*/
 .bottle-graphs{
   height: 30%;
   border-radius: 12px;
+  flex: 0 0 auto;  /*no permite que se encoja */
+  flex-direction: column;
+  overflow: hidden;  
+  box-sizing: border-box;
 }
 
 .bottle-graphs{
   flex:1;
   display: flex;
   flex-direction: column;
-  min-height: 80px;
-  max-height: 120px; /*  Limita la altura máxima */
-  overflow: hidden; /* Previene desbordamiento */
 }
 
 h2{
-  padding: 5px;
+  padding: 4px 0 2px 0;
   text-align: center;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-weight: 100;
   color: #535353;
   font-size: 8px;
+  margin: 0;  
+  flex-shrink: 0;
 }
 
 .body-bottle{
  display: flex;
  flex-direction: row;
- padding: 5px;
- flex:1
+  overflow: hidden;  /* ✅ AGREGAR */
+  padding: 4px;  /* ✅ AGREGAR si necesitas espacio interno */
+  
 }
 
 .bottle-graph{
-  padding: 0 0 7px 7px;
-  flex: 1;
-  width: 65%;
-
+  width: 100%; 
+  height: 100%;
+  overflow: hidden;  /* ✅ AGREGAR */
 }
 
 .number{
-width: 35%;
+ width: 35%;
  color: #58778F;
  font-family: Verdana, Geneva, Tahoma, sans-serif;
  font-weight: 600;
@@ -1158,6 +1169,7 @@ width: 35%;
  display: flex;
  align-items: center;
  justify-content: center;
+ flex-shrink: 0;
 }
 
 /* Right Side Card */
@@ -1173,7 +1185,7 @@ width: 35%;
   display: flex;
   flex-direction: row;
   border-radius: 12px;
-  height: 60%;
+  height: 50%;
   gap: 5px;
 }
 
@@ -1242,7 +1254,7 @@ h3{
 
 /* Bottom Right Side Card */
 .bottom-right-card-container{
-  height: 40%;
+  height: 50%;
   border-radius: 12px;
 }
 
