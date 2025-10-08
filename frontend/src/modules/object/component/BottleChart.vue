@@ -58,37 +58,39 @@ const getBottleImage = (index) => {
 .bottle-chart {
   width: 100%;
   height: 100%;
-    display: flex;
+  display: flex;
   flex-direction: column;
-  overflow: hidden; /* Previene desbordamiento */
+  overflow: hidden;
   background: white;
 }
 
 .bottles-container {
+  justify-content: center;
   display: flex;
   width: 100%;
   height: 100%;
-  gap: 1px;
+  gap: 2px;
+  padding-bottom: 2px;
 }
 
 .bottle-wrapper {
-  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  min-width: 0; /* Importante para que flex funcione correctamente */
-  height: 100%; /* Ocupa toda la altura disponible */
-  
+  justify-content: flex-end;
+  height: 100%; 
+  overflow: visible;
 }
 
 .bottle-image {
   width: 100%;
-  height: 1000%;
+  height: 100%;
+ 
   max-width: none; /* Elimina el max-width fijo */
   object-fit: contain; /* IMPORTANTE - Mantiene aspecto sin desbordarse */
   object-position: bottom; /* Alinea la imagen al fondo */
   transition: transform 0.2s ease;
+  display: block;
 }
 
 .bottle-wrapper:hover .bottle-image {

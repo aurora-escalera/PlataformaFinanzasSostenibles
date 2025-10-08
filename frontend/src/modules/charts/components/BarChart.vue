@@ -259,7 +259,6 @@ const formatValue = (value) => {
   height: 5px;
   border-radius: 50%;
   flex-shrink: 0;
-  
 }
 
 .legend-dot.gray {

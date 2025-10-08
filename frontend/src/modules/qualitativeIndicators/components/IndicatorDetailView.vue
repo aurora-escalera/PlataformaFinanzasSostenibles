@@ -169,6 +169,16 @@
               <div class="card-body">
                 <div class="left-card-container">
                   <div class="bar-graph card">
+                    <HorizontalBarChart
+                      :variables="advancedData"
+                      width="100%"
+                      height="100%"
+                      title="Incendios forestales en hectáreas en 2024"
+                      :showFilters="true"
+                      :showLegend="true"
+                      barHeight="20px"
+                      barGap="1px"
+                    />
                   </div>
                   <div class="bottle-graphs card">
                     <div class="title-bottle">
@@ -184,10 +194,18 @@
                     </div>
                   </div>
                 </div>
-
                 <div class="right-card-container">
                   <div class="top-right-card-container"> 
-                    <div class="area-graph card">
+                    <div class="area-chart card">
+                      <div class="title-area-chart">
+                        <h3>Emisiones de contaminantes atmosféricos por fuente en toneladas.</h3>
+                      </div>
+                      <div class="area-chart-container">
+                        <AreaChart 
+                          :excelData="myExcelData"
+                          title="Datos de Excel"
+                        />
+                      </div>
                     </div>
                     <div class="gauge-container card">
                       <div class="title-gauge">
@@ -203,12 +221,16 @@
                   </div>
                   <div class="bottom-right-card-container">
                     <div class="bottom-bar-graph card">
-                      <!--
-                      <BarChart 
-                        :data="presupuestosData"
-                        :title="selectedYear ? `Superficie estimada de Áreas Naturales Protegidas en hectáreas en- ${selectedYear}` : 'Superficie estimada de Áreas Naturales Protegidas en hectáreas'"
-                      />
-                      -->
+                    <VerticalBarChart
+                      :variables="verticalData"
+                      width="100%"
+                      height="100%"
+                      title="Incendios forestales en hectáreas en 2024"
+                      :showFilters="true"
+                      :showLegend="true"
+                      barHeight="20px"
+                      barGap="1px"
+                    />
                     </div>
                   </div>
                 </div>
@@ -216,9 +238,6 @@
             </div>
           </div>
         </div>
- 
-        <!-- CHARTS SECTION - SIEMPRE VISIBLE -->
-        
       </div>
 
       <!-- State Details Panel -->
@@ -260,7 +279,10 @@ import { useRoute, useRouter } from 'vue-router'
 import BarChart from '@/modules/charts/components/BarChart.vue'
 import GaugeChart from '../../object//component/GaugeChart.vue'
 import BottleChart from '../../object/component/bottleChart.vue'
+import AreaChart from '@/modules/charts/components/AreaChart.vue'
+import HorizontalBarChart from '@/modules/charts/components/HorizontalBarChart.vue'
 import ChartsComponent from '@/modules/charts/components/ChartsComponent.vue'
+import VerticalBarChart from '../../charts/components/VerticalBarChart.vue'
 
 // Datos para Presupuestos (Barras)
 const presupuestosData = computed(() => {
@@ -448,12 +470,99 @@ watch(error, (newError) => {
     emit('map-error', newError)
   }
 })
+
+//Area Chart
+// Datos que vendrán de Excel en el futuro
+const myExcelData = [
+  { label: 'Arboles', value: 25 },
+  { label: 'Ballenas', value: 30 },
+  { label: 'Coco', value: 15 },
+  { label:'Delfin', value: 30 },
+  { label: 'Escalera', value: 15 }
+]
+
+//HorizontalBarChart
+// Datos avanzados con más opciones
+const advancedData = [
+  { 
+    key: 'incendios', 
+    label: 'Total (hectáreas)', 
+    value: 1200, 
+    color: '#0F3759', 
+    active: true 
+  },
+  { 
+    key: 'residuos', 
+    label: 'Arbolado Adulto', 
+    value: 3500, 
+    color: '#3B5A70', 
+    active: true 
+  },
+  { 
+    key: 'emisiones', 
+    label: 'Renuevo', 
+    value: 850, 
+    color: '#4E6D82', 
+    active: false 
+  },
+    { 
+    key: 'Arbustivo', 
+    label: 'Arbustivo', 
+    value: 3500, 
+    color: '#D6D6D6', 
+    active: true 
+  },
+  { 
+    key: 'Herbaceo', 
+    label: 'Herbaceo', 
+    value: 250, 
+    color: '#A1A1A1', 
+    active: false 
+  },
+  { 
+    key: 'Hojarasca', 
+    label: 'Hojarasca', 
+    value: 1050, 
+    color: '#B0B0B0', 
+    active: false 
+  }
+]
+
+//HorizontalBarChart
+// Datos avanzados con más opciones
+const verticalData = [
+  { 
+    key: 'Total', 
+    label: 'Total', 
+    value: 1200, 
+    color: '#0F3759', 
+    active: true 
+  },
+  { 
+    key: 'Area', 
+    label: 'Área de protección de flora y fauna', 
+    value: 3500, 
+    color: '#3B5A70', 
+    active: true 
+  },
+  { 
+    key: 'Reserva de la biosfera', 
+    label: 'Reserva de la biosfera', 
+    value: 850, 
+    color: '#4E6D82', 
+    active: false 
+  },
+    { 
+    key: 'Santuario', 
+    label: 'Santuario', 
+    value: 1050, 
+    color: '#B0B0B0', 
+    active: false 
+  }
+]
 </script>
 
 <style scoped>
-/* ... estilos existentes ... */
-
-/* NUEVOS ESTILOS PARA LA CARD FLOTANTE */
 .map-info-card {
   position: absolute;
   top: 21px;
@@ -993,17 +1102,20 @@ svg g:hover .state-path:hover  {
   border-radius: 15px;
   height: 100%;
   width: 100%;
-  padding: 10px;
+  padding: 3px 10px 10px 10px;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .card-body{
   height:100%;
-  padding-top: 10px;
+  padding-top: 7px;
   display: flex;
   flex-direction: row;
   gap: 5px;
+   overflow: hidden; 
+  box-sizing: border-box;
 }
 
 .card-header-title{
@@ -1011,9 +1123,10 @@ svg g:hover .state-path:hover  {
   flex-direction: row;
   gap: 13px;
   border-bottom: 1px solid #d1cfcf;
+  letter-spacing: -0.2px;
   padding: 5px 0 3px 10px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 100;
   color: #535353;
 } 
@@ -1028,17 +1141,70 @@ svg g:hover .state-path:hover  {
   display: flex;
   flex-direction: column;
   width: 85%;
+  height: 100%;
   gap: 5px;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .bar-graph{
   height: 70%;
   border-radius: 12px;
+  overflow: hidden;  
+  box-sizing: border-box;
 }
 
+/*Bottom Left Side Card: Bottle Graph*/
 .bottle-graphs{
   height: 30%;
   border-radius: 12px;
+  flex: 0 0 auto;  /*no permite que se encoja */
+  flex-direction: column;
+  overflow: hidden;  
+  box-sizing: border-box;
+}
+
+.bottle-graphs{
+  flex:1;
+  display: flex;
+  flex-direction: column;
+}
+
+h2{
+  padding: 4px 0 2px 0;
+  text-align: center;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 100;
+  color: #535353;
+  font-size: 8px;
+  margin: 0;  
+  flex-shrink: 0;
+}
+
+.body-bottle{
+ display: flex;
+ flex-direction: row;
+  overflow: hidden;  
+  padding: 4px; 
+  
+}
+
+.bottle-graph{
+  width: 100%; 
+  height: 100%;
+  overflow: hidden; 
+}
+
+.number{
+ width: 35%;
+ color: #58778F;
+ font-family: Verdana, Geneva, Tahoma, sans-serif;
+ font-weight: 600;
+ font-size: 9.3px;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ flex-shrink: 0;
 }
 
 /* Right Side Card */
@@ -1049,79 +1215,41 @@ svg g:hover .state-path:hover  {
   gap: 5px;
 }
 
+/* Top Right Side Card */
 .top-right-card-container{
   display: flex;
   flex-direction: row;
   border-radius: 12px;
-  height: 60%;
+  height: 50%;
   gap: 5px;
 }
 
-.area-graph{
+/* Top Right Side Card: Area Chart */
+.area-chart{
   width: 70%;
   border-radius: 12px;
-}
-
-.energetic-consume{
-  width: 30%;
-  border-radius: 12px;
-}
-
-.bottom-right-card-container{
-  height: 40%;
-  border-radius: 12px;
-}
-
-.bottom-bar-graph{
-  height: 100%;
-  border-radius: 12px;
-}
-
-/*Bottle Graph card*/
-.bottle-graphs{
-  flex:1;
   display: flex;
-  flex-direction: column;
-  min-height: 80px;
-  max-height: 120px; /*  Limita la altura máxima */
-  overflow: hidden; /* Previene desbordamiento */
+  flex-direction: row;
 }
 
-h2{
-  padding: 5px;
-  text-align: center;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-weight: 100;
-  color: #535353;
-  font-size: 8px;
-}
-
-.body-bottle{
- display: flex;
- flex-direction: row;
- padding: 5px;
- flex:1
-}
-
-.bottle-graph{
-  padding: 0 0 7px 7px;
-  flex: 1;
-  width: 65%;
-
-}
-
-.number{
-width: 35%;
- color: #58778F;
- font-family: Verdana, Geneva, Tahoma, sans-serif;
- font-weight: 600;
- font-size: 9.3px;
+.title-area-chart{
+ padding: 30px 0 0 15px;
+ width: 30%;
  display: flex;
  align-items: center;
  justify-content: center;
 }
 
-/* Gauge Graphic */
+.area-chart-container{
+ width: 80%;
+}
+
+/* Top Right Side Card: Gauge Graph */
+.energetic-consume{
+  width: 30%;
+  border-radius: 12px;
+}
+
 .gauge-container {
   width: 30%;
   height: 100%;
@@ -1137,7 +1265,10 @@ width: 35%;
 }
 
 .title-gauge{
- padding-top: 20px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+ padding-top: 40px;
  height: 30%;
 }
 
@@ -1159,4 +1290,16 @@ h3{
  font-size: 8px;
 }
 
+/* Bottom Right Side Card */
+.bottom-right-card-container{
+  height: 50%;
+  border-radius: 12px;
+}
+
+/* Bottom Right Side Card: Bar Graph */
+.bottom-bar-graph{
+  height: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+}
 </style>

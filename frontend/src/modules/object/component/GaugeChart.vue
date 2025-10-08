@@ -94,13 +94,14 @@ const centerX = computed(() => (viewBoxSize / 2))
 const centerY = computed(() => viewBoxSize * 0.6)
 const radius = computed(() => (viewBoxSize / 2) - (props.strokeWidth / 2) - 10)
 
-
 const startAngle = -90
 const endAngle = 90
 
 // Animar al montar el componente
 onMounted(() => {
-  animateNeedle()
+  setTimeout(() => {
+    animateNeedle()
+  }, 800)
 })
 
 // Animar cuando cambie el valor
