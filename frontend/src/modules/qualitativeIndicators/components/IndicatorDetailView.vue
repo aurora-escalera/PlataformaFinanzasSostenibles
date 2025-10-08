@@ -222,7 +222,7 @@
                   <div class="bottom-right-card-container">
                     <div class="bottom-bar-graph card">
                     <VerticalBarChart
-                      :variables="advancedData"
+                      :variables="verticalData"
                       width="100%"
                       height="100%"
                       title="Incendios forestales en hectáreas en 2024"
@@ -522,6 +522,39 @@ const advancedData = [
   { 
     key: 'Hojarasca', 
     label: 'Hojarasca', 
+    value: 1050, 
+    color: '#B0B0B0', 
+    active: false 
+  }
+]
+
+//HorizontalBarChart
+// Datos avanzados con más opciones
+const verticalData = [
+  { 
+    key: 'Total', 
+    label: 'Total', 
+    value: 1200, 
+    color: '#0F3759', 
+    active: true 
+  },
+  { 
+    key: 'Area', 
+    label: 'Área de protección de flora y fauna', 
+    value: 3500, 
+    color: '#3B5A70', 
+    active: true 
+  },
+  { 
+    key: 'Reserva de la biosfera', 
+    label: 'Reserva de la biosfera', 
+    value: 850, 
+    color: '#4E6D82', 
+    active: false 
+  },
+    { 
+    key: 'Santuario', 
+    label: 'Santuario', 
     value: 1050, 
     color: '#B0B0B0', 
     active: false 
@@ -1069,7 +1102,7 @@ svg g:hover .state-path:hover  {
   border-radius: 15px;
   height: 100%;
   width: 100%;
-  padding: 10px;
+  padding: 3px 10px 10px 10px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1077,7 +1110,7 @@ svg g:hover .state-path:hover  {
 
 .card-body{
   height:100%;
-  padding-top: 10px;
+  padding-top: 7px;
   display: flex;
   flex-direction: row;
   gap: 5px;
@@ -1090,9 +1123,10 @@ svg g:hover .state-path:hover  {
   flex-direction: row;
   gap: 13px;
   border-bottom: 1px solid #d1cfcf;
+  letter-spacing: -0.2px;
   padding: 5px 0 3px 10px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 100;
   color: #535353;
 } 
@@ -1231,7 +1265,10 @@ h2{
 }
 
 .title-gauge{
- padding-top: 20px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+ padding-top: 40px;
  height: 30%;
 }
 

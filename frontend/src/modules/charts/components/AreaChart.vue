@@ -1,18 +1,19 @@
-<!-- src/modules/charts/components/AreaChart.vue -->
 <template>
   <div class="area-chart-cont">    
+    <!-- ✅ DEBUG INFO REMOVIDO -->
+    
     <div class="legend" v-if="showLegend">
-        <div 
-            v-for="(item, index) in chartData"
-            :key="index"
-            class="legend-item"
-        >
+      <div 
+        v-for="(item, index) in chartData"
+        :key="index"
+        class="legend-item"
+      >
         <div class="legend-color" :style="{ backgroundColor: colors[index % colors.length] }"></div>
-            <span class="legend-label">{{ item.label }}</span>
-        </div>
-        </div>
+        <span class="legend-label">{{ item.label }}</span>
+      </div>
+    </div>
+    
     <div class="chart-container">
-        <!-- Leyenda -->
       <svg 
         width="100%" 
         height="100%" 
@@ -38,9 +39,12 @@
           :d="segment.path"
           :fill="segment.color"
           :class="['segment', { 'hovered': hoveredIndex === index }]"
-          @mouseenter="handleMouseEnter(index, segment, $event)"
-          @mouseleave="handleMouseLeave"
-        />
+          @mouseenter.native="handleMouseEnter(index, segment, $event)"
+          @mousemove.native="handleMouseMove($event)"
+          @mouseleave.native="handleMouseLeave"
+        >
+          <title>{{ segment.label }}: {{ segment.value }}</title>
+        </path>
         
         <!-- Líneas radiales -->
         <line
@@ -52,12 +56,15 @@
           :y2="line.y"
           stroke="#ffffff"
           stroke-width="2"
+          pointer-events="none"
         />
       </svg>
-      
-      <!-- Tooltip -->
+    </div>
+    
+    <!-- ✅ Tooltip más pequeño -->
+    <Teleport to="body">
       <div 
-        v-if="tooltip.visible" 
+        v-if="tooltip.visible"
         class="tooltip"
         :style="tooltipStyle"
       >
@@ -65,11 +72,11 @@
           <div class="tooltip-color" :style="{ backgroundColor: tooltip.color }"></div>
           <div class="tooltip-info">
             <div class="tooltip-label">{{ tooltip.label }}</div>
-            <div class="tooltip-value">{{ tooltip.value }}</div>
+            <div class="tooltip-value">Valor: {{ tooltip.value }}</div>
           </div>
         </div>
       </div>
-    </div>
+    </Teleport>
   </div>
 </template>
 
@@ -77,7 +84,6 @@
 import { computed, ref, onMounted, watch } from 'vue'
 
 const props = defineProps({
-  // En el futuro, estos datos vendrán de un archivo Excel
   excelData: {
     type: Array,
     default: null
@@ -104,8 +110,6 @@ const props = defineProps({
   }
 })
 
-// DATOS HARDCODEADOS - Simulan datos de Excel
-// TODO: Reemplazar con datos reales del archivo Excel
 const hardcodedData = [
   { label: 'Red', value: 11 },
   { label: 'Green', value: 16 },
@@ -114,7 +118,6 @@ const hardcodedData = [
   { label: 'Blue', value: 14 }
 ]
 
-// Usar datos del prop si existen, si no usar hardcoded
 const chartData = computed(() => {
   return props.excelData || hardcodedData
 })
@@ -122,9 +125,11 @@ const chartData = computed(() => {
 const centerX = computed(() => props.size / 2)
 const centerY = computed(() => props.size / 2)
 const maxRadius = computed(() => (props.size / 2) - 20)
+const rotationProgress = ref(0)
 
 const hoveredIndex = ref(null)
 const animationProgress = ref(0)
+
 const tooltip = ref({
   visible: false,
   x: 0,
@@ -134,27 +139,29 @@ const tooltip = ref({
   color: ''
 })
 
-// Animar al montar
 onMounted(() => {
-  animateChart()
+  setTimeout(() => {
+    animateChart()
+  }, 800)
 })
 
-// Animar cuando cambian los datos
 watch(() => chartData.value, () => {
   animationProgress.value = 0
+  rotationProgress.value = 0
   animateChart()
 })
 
 const animateChart = () => {
-  const duration = 1500 // 1.5 segundos
+  const duration = 1500
   const startTime = Date.now()
 
   const animate = () => {
     const now = Date.now()
     const progress = Math.min((now - startTime) / duration, 1)
     
-    // Ease-out cubic
-    animationProgress.value = 1 - Math.pow(1 - progress, 3)
+    rotationProgress.value = 1 - Math.pow(1 - progress, 6)
+    const scaleProgress = Math.max(0, (progress - 0.1) / 0.8)
+    animationProgress.value = 1 - Math.pow(1 - progress, 5)
 
     if (progress < 1) {
       requestAnimationFrame(animate)
@@ -164,12 +171,10 @@ const animateChart = () => {
   requestAnimationFrame(animate)
 }
 
-// Calcular el valor máximo para normalización
 const maxValue = computed(() => {
   return Math.max(...chartData.value.map(item => item.value))
 })
 
-// Generar anillos de fondo
 const rings = computed(() => {
   const ringCount = 4
   const step = (maxRadius.value - props.innerRadius) / ringCount
@@ -178,16 +183,13 @@ const rings = computed(() => {
   )
 })
 
-// Calcular ángulo para cada segmento
 const anglePerSegment = computed(() => (2 * Math.PI) / chartData.value.length)
 
-// Generar segmentos con valores originales
 const segments = computed(() => {
   return chartData.value.map((item, index) => {
     const startAngle = index * anglePerSegment.value - Math.PI / 2
     const endAngle = startAngle + anglePerSegment.value
     
-    // Radio basado en el valor
     const radius = props.innerRadius + 
       ((maxRadius.value - props.innerRadius) * (item.value / maxValue.value))
     
@@ -202,26 +204,28 @@ const segments = computed(() => {
   })
 })
 
-// Segmentos animados
 const animatedSegments = computed(() => {
+  const rotationAngle = -Math.PI * (1 - rotationProgress.value)
+  
   return segments.value.map(segment => {
     const animatedRadius = props.innerRadius + 
       ((segment.radius - props.innerRadius) * animationProgress.value)
     
-    // Calcular puntos del arco
-    const startX = centerX.value + props.innerRadius * Math.cos(segment.startAngle)
-    const startY = centerY.value + props.innerRadius * Math.sin(segment.startAngle)
+    const rotatedStartAngle = segment.startAngle + rotationAngle
+    const rotatedEndAngle = segment.endAngle + rotationAngle
     
-    const endX = centerX.value + props.innerRadius * Math.cos(segment.endAngle)
-    const endY = centerY.value + props.innerRadius * Math.sin(segment.endAngle)
+    const startX = centerX.value + props.innerRadius * Math.cos(rotatedStartAngle)
+    const startY = centerY.value + props.innerRadius * Math.sin(rotatedStartAngle)
     
-    const outerStartX = centerX.value + animatedRadius * Math.cos(segment.startAngle)
-    const outerStartY = centerY.value + animatedRadius * Math.sin(segment.startAngle)
+    const endX = centerX.value + props.innerRadius * Math.cos(rotatedEndAngle)
+    const endY = centerY.value + props.innerRadius * Math.sin(rotatedEndAngle)
     
-    const outerEndX = centerX.value + animatedRadius * Math.cos(segment.endAngle)
-    const outerEndY = centerY.value + animatedRadius * Math.sin(segment.endAngle)
+    const outerStartX = centerX.value + animatedRadius * Math.cos(rotatedStartAngle)
+    const outerStartY = centerY.value + animatedRadius * Math.sin(rotatedStartAngle)
     
-    // Crear path del segmento
+    const outerEndX = centerX.value + animatedRadius * Math.cos(rotatedEndAngle)
+    const outerEndY = centerY.value + animatedRadius * Math.sin(rotatedEndAngle)
+    
     const largeArcFlag = 0
     const path = `
       M ${startX} ${startY}
@@ -241,10 +245,11 @@ const animatedSegments = computed(() => {
   })
 })
 
-// Generar líneas radiales
 const radialLines = computed(() => {
+  const rotationAngle = -Math.PI * (1 - rotationProgress.value)
+  
   return chartData.value.map((_, index) => {
-    const angle = index * anglePerSegment.value - Math.PI / 2
+    const angle = index * anglePerSegment.value - Math.PI / 2 + rotationAngle
     return {
       x: centerX.value + maxRadius.value * Math.cos(angle),
       y: centerY.value + maxRadius.value * Math.sin(angle)
@@ -264,20 +269,22 @@ const handleMouseEnter = (index, segment, event) => {
   }
 }
 
+const handleMouseMove = (event) => {
+  if (tooltip.value.visible) {
+    tooltip.value.x = event.clientX
+    tooltip.value.y = event.clientY
+  }
+}
+
 const handleMouseLeave = () => {
   hoveredIndex.value = null
   tooltip.value.visible = false
 }
 
 const tooltipStyle = computed(() => {
-  if (!tooltip.value.visible) return { display: 'none' }
-  
   return {
-    position: 'fixed',
     left: `${tooltip.value.x + 15}px`,
-    top: `${tooltip.value.y - 40}px`,
-    pointerEvents: 'none',
-    zIndex: 1000
+    top: `${tooltip.value.y - 50}px`
   }
 })
 </script>
@@ -288,6 +295,7 @@ const tooltipStyle = computed(() => {
   height: 100%;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 .chart-container {
@@ -296,7 +304,6 @@ const tooltipStyle = computed(() => {
   min-height: 0;
 }
 
-/* Leyendas de la gráfica */
 .legend {
   display: flex;
   flex-direction: row;
@@ -317,63 +324,67 @@ const tooltipStyle = computed(() => {
 .legend-color {
   width: 10px;
   height: 4px;
-
 }
 
 .legend-label {
- padding-top: 0px;
+  padding-top: 0px;
   font-weight: 100;
 }
 
-/* Segmentos de la grafica */
 .segment {
   cursor: pointer;
   transition: opacity 0.2s ease;
+  stroke: transparent;
+  stroke-width: 5;
 }
 
 .segment:hover {
   opacity: 0.8;
+  stroke: rgba(255, 255, 255, 0.3);
 }
 
 .segment.hovered {
   filter: brightness(1.1);
 }
-/* Tooltip */
+
 .tooltip {
+  position: fixed;
   background: rgba(0, 0, 0, 0.85);
   color: white;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 12px;
+  padding: 4px 6px; 
+  border-radius: 4px; 
+  font-size: 8px; 
   white-space: nowrap;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  z-index: 999999;
 }
 
 .tooltip-content {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 5px; 
 }
 
 .tooltip-color {
-  width: 12px;
-  height: 12px;
+  width: 8px; 
+  height: 8px; 
   border-radius: 2px;
 }
 
 .tooltip-info {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px; 
 }
 
 .tooltip-label {
   font-weight: 600;
-  font-size: 11px;
+  font-size: 7px; 
 }
 
 .tooltip-value {
-  font-size: 10px;
+  font-size: 6px; 
   opacity: 0.9;
 }
 </style>

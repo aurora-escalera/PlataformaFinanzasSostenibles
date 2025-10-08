@@ -33,7 +33,7 @@
         :key="'legend-' + variable.key"
         class="legend-item"
       >
-        <span :class="['legend-dot', variable.colorClass]"></span>
+        <span class="legend-dot":style="{ backgroundColor: getBarColor(variable) }"></span>
         <span class="legend-label">{{ variable.label }}</span>
       </div>
     </div>
@@ -205,12 +205,12 @@ const getBarColor = (variable) => {
 }
 
 .chart-title {
-  margin: 0;
-  letter-spacing: -0.5px;
-  font-size: 7px;
+  margin-top: 4px;
+  letter-spacing: -0.2px;
+  font-size: 6px;
   text-align:center;
-  font-weight: 400;
-  color: #484d56;
+  font-weight: 200;
+  color: #535353;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 }
 
@@ -218,26 +218,32 @@ const getBarColor = (variable) => {
 .variable-filters {
   display: flex;
   flex-direction: row;
-  height: 10px;
-  padding-top: 2px 0 2px 0;
+  height: 12px;
+  padding: 2px 0;
   border-radius: 24px;
   flex-wrap: nowrap;
   justify-content: center;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); 
-  gap:2px;
+  gap: 2px;
+  margin-bottom: 1px;
+  flex-shrink: 0;
+  background-color: white;
 }
 
 .filter-btn {
   flex: 0 1 auto;
   border: none;
-  padding: 1px 3px;
+  padding: 0px 4px;
   border-radius: 24px;
   cursor: pointer;
   font-size: 4.9px;
-  font-weight: 100;
+  font-weight: 200;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   background: white;
-  transition: all 0.3s ease;
+  transition: all 0.5s ease;
+  height: 100%;
+  justify-content: center;
+  align-content: center;
 }
 
 .filter-btn:hover {
@@ -264,7 +270,7 @@ const getBarColor = (variable) => {
   flex: 0 1 auto;
   display: flex;
   align-items: center;
-  font-size: 5px;
+  font-size: 4px;
   gap: 3px;
   color: #4b5563;
   padding: 2px;
@@ -290,9 +296,10 @@ const getBarColor = (variable) => {
 .bars-container {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 1px;
   flex: 1;
   width: 100%;
+  padding: 4px 0px 4px 0px;
   position: relative;
 
 }
@@ -307,6 +314,7 @@ const getBarColor = (variable) => {
   align-items: center;
   animation: slideUp 0.5s ease;
   transition: width 0.4s ease;
+  border-radius:0  2px 2px 0;
 }
 
 @keyframes slideIn {
@@ -335,8 +343,7 @@ const getBarColor = (variable) => {
 .bar-wrapper-horizontal {
   width: 100%; 
   height: 100%;
-  background: #f3f4f6;
-  border-radius:0  15px 15px 0;
+  background: white;
   overflow: hidden;
   position: relative;
 }
@@ -346,6 +353,7 @@ const getBarColor = (variable) => {
   height: 100%;
   transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
+  border-radius:0  3px 3px 0;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 

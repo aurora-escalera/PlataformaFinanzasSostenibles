@@ -99,7 +99,9 @@ const endAngle = 90
 
 // Animar al montar el componente
 onMounted(() => {
-  animateNeedle()
+  setTimeout(() => {
+    animateNeedle()
+  }, 800)
 })
 
 // Animar cuando cambie el valor
