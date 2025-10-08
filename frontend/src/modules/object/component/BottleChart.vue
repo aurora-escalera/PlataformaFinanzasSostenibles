@@ -58,9 +58,9 @@ const getBottleImage = (index) => {
 .bottle-chart {
   width: 100%;
   height: 100%;
-    display: flex;
+  display: flex;
   flex-direction: column;
-  overflow: hidden; /* Previene desbordamiento */
+  overflow: hidden;
   background: white;
 }
 

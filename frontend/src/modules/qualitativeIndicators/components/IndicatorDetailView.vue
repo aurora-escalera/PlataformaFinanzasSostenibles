@@ -173,7 +173,7 @@
                       :variables="advancedData"
                       width="100%"
                       height="100%"
-                      title="Indicadores Ambientales"
+                      title="Incendios forestales en hectáreas en 2024"
                       :showFilters="true"
                       :showLegend="true"
                       barHeight="20px"
@@ -194,7 +194,6 @@
                     </div>
                   </div>
                 </div>
-
                 <div class="right-card-container">
                   <div class="top-right-card-container"> 
                     <div class="area-chart card">
@@ -222,12 +221,16 @@
                   </div>
                   <div class="bottom-right-card-container">
                     <div class="bottom-bar-graph card">
-                      <!--
-                      <BarChart 
-                        :data="presupuestosData"
-                        :title="selectedYear ? `Superficie estimada de Áreas Naturales Protegidas en hectáreas en- ${selectedYear}` : 'Superficie estimada de Áreas Naturales Protegidas en hectáreas'"
-                      />
-                      -->
+                    <VerticalBarChart
+                      :variables="advancedData"
+                      width="100%"
+                      height="100%"
+                      title="Incendios forestales en hectáreas en 2024"
+                      :showFilters="true"
+                      :showLegend="true"
+                      barHeight="20px"
+                      barGap="1px"
+                    />
                     </div>
                   </div>
                 </div>
@@ -235,9 +238,6 @@
             </div>
           </div>
         </div>
- 
-        <!-- CHARTS SECTION - SIEMPRE VISIBLE -->
-        
       </div>
 
       <!-- State Details Panel -->
@@ -282,6 +282,7 @@ import BottleChart from '../../object/component/bottleChart.vue'
 import AreaChart from '@/modules/charts/components/AreaChart.vue'
 import HorizontalBarChart from '@/modules/charts/components/HorizontalBarChart.vue'
 import ChartsComponent from '@/modules/charts/components/ChartsComponent.vue'
+import VerticalBarChart from '../../charts/components/VerticalBarChart.vue'
 
 // Datos para Presupuestos (Barras)
 const presupuestosData = computed(() => {
@@ -1149,15 +1150,15 @@ h2{
 .body-bottle{
  display: flex;
  flex-direction: row;
-  overflow: hidden;  /* ✅ AGREGAR */
-  padding: 4px;  /* ✅ AGREGAR si necesitas espacio interno */
+  overflow: hidden;  
+  padding: 4px; 
   
 }
 
 .bottle-graph{
   width: 100%; 
   height: 100%;
-  overflow: hidden;  /* ✅ AGREGAR */
+  overflow: hidden; 
 }
 
 .number{

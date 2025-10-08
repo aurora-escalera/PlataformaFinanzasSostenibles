@@ -187,12 +187,16 @@ const formatValue = (value) => {
 
 /* Filtros  de bar chart 1 */
 .variable-filters {
+  background-color: red;
   display: flex;
   flex-direction: row;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 1px;
+  border-radius: 24px;
+  flex-wrap: nowrap;
   justify-content: center;
-  margin-bottom: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); 
+  padding: 2px;
+  background: white;
   
 }
 
@@ -255,7 +259,6 @@ const formatValue = (value) => {
   height: 5px;
   border-radius: 50%;
   flex-shrink: 0;
-  
 }
 
 .legend-dot.gray {
