@@ -299,7 +299,7 @@ const getBarColor = (variable) => {
   gap: 1px;
   flex: 1;
   width: 100%;
-  padding: 4px 0px 4px 0px;
+  padding: 8px 0px 0px 0px;
   position: relative;
 
 }
@@ -314,7 +314,7 @@ const getBarColor = (variable) => {
   align-items: center;
   animation: slideUp 0.5s ease;
   transition: width 0.4s ease;
-  border-radius:0  2px 2px 0;
+  
 }
 
 @keyframes slideIn {
@@ -353,8 +353,8 @@ const getBarColor = (variable) => {
   height: 100%;
   transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
-  border-radius:0  3px 3px 0;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-radius:0 2px 2px 0;
 }
 
 .empty-state {
