@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import MapsPage from '@/pages/MapsPage.vue'
 import QualitativePanel from '../../pages/QualitativePanel.vue'
 import IndicatorView from '../../pages/IndicatorView.vue'
+import RankingView from '../../pages/RankingView.vue'
 
 const routes = [
   // Ruta por defecto (opcional)
@@ -34,6 +35,14 @@ const routes = [
     component: IndicatorView,
     meta: {
       title: 'Cualitativos - Finanzas Sostenibles'
+    }
+  },
+  {
+    path: '/finanzas/ranking',
+    name: 'RankingView',
+    component: RankingView,
+    meta: {
+      title: 'RankingView - Finanzas Sostenibles'
     }
   }
 ]

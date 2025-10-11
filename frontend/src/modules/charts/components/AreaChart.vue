@@ -61,7 +61,6 @@
       </svg>
     </div>
     
-    <!-- ✅ Tooltip más pequeño -->
     <Teleport to="body">
       <div 
         v-if="tooltip.visible"
