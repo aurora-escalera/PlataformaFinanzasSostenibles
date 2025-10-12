@@ -1,21 +1,8 @@
 <!-- src/modules/maps/components/RankingSlider.vue -->
 <template>
   <div class="ifss-slider-container">
-    <!-- Etiquetas superiores -->
-    <div class="slider-labels">
-      <span 
-        v-for="(label, index) in labels" 
-        :key="index"
-        class="label"
-        :class="{ 'active': isInRange(index) }"
-      >
-        {{ label }}
-      </span>
-    </div>
-
     <!-- Slider de rango -->
     <div class="slider-wrapper">
-
 
       <!-- Rango activo (overlay) -->
       <div 
@@ -65,7 +52,6 @@
 
     <!-- Gráfica de barras filtrada -->
     <div class="chart-container">
-      <h3 class="chart-title">Estados por clasificación IFSS</h3>
       <div class="bars-wrapper">
         <div 
           v-for="(item, index) in filteredChartData" 
@@ -84,20 +70,6 @@
           <span class="bar-label">{{ item.label }}</span>
         </div>
       </div>
-    </div>
-
-    <!-- Info del rango seleccionado -->
-    <div class="range-info">
-      <p>
-        <strong>Rango seleccionado:</strong> 
-        {{ labels[minValue] }} ({{ valueRanges[minValue].min }}-{{ valueRanges[minValue].max }}) 
-        - 
-        {{ labels[maxValue] }} ({{ valueRanges[maxValue].min }}-{{ valueRanges[maxValue].max }})
-      </p>
-      <p>
-        <strong>Estados en rango:</strong> 
-        {{ filteredStatesCount }} de {{ totalStates }}
-      </p>
     </div>
   </div>
 </template>
@@ -275,6 +247,8 @@ watch(() => props.statesData, () => {
 
 <style scoped>
 .ifss-slider-container {
+  display: flex;
+  flex-direction: column;
   width: 100%;
   height: 100%;
   padding: 30px 20px;
@@ -283,57 +257,20 @@ watch(() => props.statesData, () => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* Etiquetas superiores */
-.slider-labels {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 10px;
-  padding: 0 10px;
-}
-
-.label {
-  font-size: 11px;
-  color: #999;
-  text-align: center;
-  flex: 1;
-  transition: all 0.3s ease;
-  font-weight: 400; 
-}
-
-.label.active {
-  color: #2c3e50;
-  font-weight: 600;
-}
-
 /* Contenedor del slider */
 .slider-wrapper {
   position: relative;
+  width: 100%;
   height: 60px;
-  margin: 20px 0;
   padding: 0 10px;
-}
-
-/* Track con segmentos de colores */
-.slider-track {
-  position: absolute;
-  top: 24px;
-  left: 10px;
-  right: 10px;
-  height: 8px;
-  border-radius: 4px;
-  display: flex;
-  overflow: hidden;
-}
-
-.track-segment {
-  height: 100%;
-  transition: opacity 0.3s ease;
+  margin-bottom: -20px; /* Superpone con las barras */
+  z-index: 10; /* Encima de las barras */
 }
 
 /* Rango activo (overlay) */
 .active-range {
   position: absolute;
-  top: 22px;
+  top: 24px;
   height: 12px;
   background: rgba(33, 150, 243, 0.2);
   border: 2px solid #2196F3;
@@ -354,7 +291,7 @@ watch(() => props.statesData, () => {
   appearance: none;
   background: transparent;
   pointer-events: none;
-  z-index: 2;
+  z-index: 0;
 }
 
 .slider-input::-webkit-slider-thumb {
@@ -424,26 +361,21 @@ watch(() => props.statesData, () => {
 
 /* Gráfica de barras */
 .chart-container {
-  margin-top: 40px;
-  padding: 20px;
-  background: #f8f9fa;
-  border-radius: 8px;
-}
-
-.chart-title {
-  text-align: center;
-  font-size: 14px;
-  color: #2c3e50;
-  margin: 0 0 20px 0;
-  font-weight: 600;
+  flex: 1;
+  background: transparent; /* CAMBIADO */
+  border-radius: 0; /* CAMBIADO */
+  padding: 0; /* CAMBIADO */
+  position: relative; /* NUEVO */
+  z-index: 1;
 }
 
 .bars-wrapper {
   display: flex;
   align-items: flex-end;
   justify-content: space-around;
-  height: 200px;
+  height: 100%; /* CAMBIADO */
   gap: 8px;
+  padding-top: 40px;
 }
 
 .bar-item {
@@ -480,37 +412,4 @@ watch(() => props.statesData, () => {
   line-height: 1.2;
 }
 
-/* Info del rango */
-.range-info {
-  margin-top: 20px;
-  padding: 15px;
-  background: #e3f2fd;
-  border-radius: 8px;
-  border-left: 4px solid #2196F3;
-}
-
-.range-info p {
-  margin: 5px 0;
-  font-size: 13px;
-  color: #1976D2;
-}
-
-.range-info strong {
-  color: #0d47a1;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .slider-labels {
-    font-size: 9px;
-  }
-
-  .bars-wrapper {
-    height: 150px;
-  }
-
-  .bar-label {
-    font-size: 9px;
-  }
-}
 </style>
