@@ -158,13 +158,11 @@ const visibleStates = computed(() => {
 // Ancho dinámico de las barras según cantidad visible
 const barWidth = computed(() => {
   const visibleCount = visibleStates.value.length
-  
   if (visibleCount === 0) return '30px'
   
-  const gapSize = 3
+  const gapSize = 0 // ← 0 o 1 según elijas
   const totalGaps = (visibleCount - 1) * gapSize
   
-  // Cálculo simple: 100% del contenedor menos los gaps, dividido entre barras
   return `calc((100% - ${totalGaps}px) / ${visibleCount})`
 })
 
@@ -319,7 +317,7 @@ watch(() => props.statesData, () => {
   width: 100%;
   height: 100%;
   max-height: 100%; /* Evitar crecimiento excesivo */
-  padding: 15px; /* Reducido de 20px */
+  padding: 15px;
   background: white;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -330,9 +328,7 @@ watch(() => props.statesData, () => {
 .slider-wrapper {
   position: relative;
   width: 100%;
-  height: 50px; /* Reducido de 60px */
-  padding: 0 10px;
-  margin-bottom: 8px; /* Reducido de 10px */
+  height: 45px; 
   z-index: 10;
   flex-shrink: 0; /* No permitir encogimiento */
 }
@@ -446,18 +442,18 @@ watch(() => props.statesData, () => {
   align-items: flex-end;
   justify-content: space-between;
   height: 100%;
-  width: 100%;
-  padding: 5px 0px 25px 0px;   
-  gap: 2px;
+  width: 100%; 
+  padding-bottom: 5px;   
   box-sizing: border-box;
+  gap: 1px;
 }
 
 .bar-item {
   flex: 1 1 auto; /* ← CAMBIO: permitir que crezcan para llenar espacio */
-  width: 30px;
+  
   display: flex;
   flex-direction: column;
-  align-items: center;
+  
   justify-content: flex-end; /* Alinear al fondo */
   gap: 4px;
   cursor: pointer;
