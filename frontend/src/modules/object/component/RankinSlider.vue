@@ -149,36 +149,34 @@ const tooltip = ref({
 
 //Computed para el estilo del tooltip
 const tooltipStyle = computed(() => {
+  // Usar un offset fijo basado en la altura máxima del contenedor
+  const minOffset = 100 // Distancia mínima fija desde el top de la barra
+  
   return {
     left: `${tooltip.value.x}px`,
-    top: `${tooltip.value.y - 60}px`,
-    transform: 'translateX(-50%)' // ✅ Centrar horizontalmente
+    top: `${tooltip.value.y - minOffset}px`, // Offset fijo
+    transform: 'translateX(-50%)'
   }
 })
+
 
 //Manejadores de eventos del tooltip
 const handleMouseEnter = (state, event) => {
   hoveredBarKey.value = state.region // Cambiar de item.key a state.region
 
-  //Obtener la posición del elemento de la barra
-  const barElement = event.currentTarget
+  // Obtener la posición del elemento .bar (la barra de color interna)
+  const barElement = event.currentTarget.querySelector('.bar')
   const rect = barElement.getBoundingClientRect()
 
   tooltip.value = {
     visible: true,
-    x: rect.left + (rect.width / 2), // ✅ Centro de la barra en X
-    y: rect.top, // ✅ Parte superior de la barra en Y
+    x: rect.left + (rect.width / 2), // Centro de la barra en X
+    y: rect.top, // Parte superior de la barra en Y
     label: getStateAbbreviation(state.region), // Nombre del estado
     value: `IFSS: ${state.value}`, // Valor IFSS
     color: getColorForValue(state.value), // Usar tu función existente para el color
-    classification: getClassificationForValue(state.value)
-  }
-}
-
-const handleMouseMove = (event) => {
-  if (tooltip.value.visible) {
-    tooltip.value.x = event.clientX
-    tooltip.value.y = event.clientY
+    classification: getClassificationForValue(state.value),
+    barHeight: rect.height //Guardar la altura de la barra
   }
 }
 
@@ -667,6 +665,18 @@ watch(() => props.statesData, () => {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   pointer-events: none;
   z-index: 999999;
+}
+
+
+/* Triangulo apuntando hacia abajo */
+.tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%; /* Posicionar debajo del tooltip */
+  left: 50%;
+  transform: translateX(-50%);
+  border: 8px solid transparent; 
+  border-top-color: rgba(30, 30, 30, 0.95); 
 }
 
 .tooltip-content {
