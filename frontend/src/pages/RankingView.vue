@@ -614,7 +614,7 @@ onMounted(async () => {
 .ranking-panel{
  display: flex;
  flex-direction: column;
- height: 220px;
+ height: 240px;
  width: 1225.6px;
  background: white;
  border: 1px solid #ddd;

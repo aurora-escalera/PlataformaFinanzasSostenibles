@@ -62,6 +62,8 @@
           }"
           :style="{ width: barWidth }"
           @click="handleBarClick(state.region)"
+          @mouseenter="handleMouseEnter(state, $event)"
+          @mouseleave="handleMouseLeave"
         >
           <div 
             class="bar"
@@ -70,12 +72,31 @@
               backgroundColor: getColorForValue(state.value)
             }"
           >
-            <span class="bar-value">{{ state.value }}</span>
           </div>
           <span class="bar-label">{{ getStateAbbreviation(state.region) }}</span>
         </div>
       </div>
     </div>
+
+    <!-- ✅ Tooltip con Teleport -->
+    <Teleport to="body">
+      <div 
+        v-if="tooltip.visible"
+        class="tooltip"
+        :style="tooltipStyle"
+      >
+        <div class="tooltip-content">
+          <div class="tooltip-color" :style="{ backgroundColor: tooltip.color }">
+            <span class="color-label">{{ tooltip.classification }}</span>
+          </div>
+          <div class="tooltip-info">
+            <div class="tooltip-label">{{ tooltip.label }}</div>
+            <div class="tooltip-value">{{ tooltip.value }}</div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
 
     <!-- Info del estado seleccionado -->
     <div v-if="selectedStateName" class="selected-info">
@@ -86,10 +107,15 @@
       </div>
     </div>
   </div>
+
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted} from 'vue'
+
+// Añadir ref al template
+const barsWrapperRef = ref(null)
+const containerWidth = ref(1200)
 
 const props = defineProps({
   statesData: {
@@ -107,6 +133,59 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['range-change', 'filter-change', 'state-click'])
+//Estado Reactivo del tooltip
+// Estado del hover
+const hoveredBarKey = ref(null)
+
+// Estado del tooltip
+const tooltip = ref({
+  visible: false,
+  x: 0,
+  y: 0,
+  label: '',
+  value: '',
+  color: ''
+})
+
+//Computed para el estilo del tooltip
+const tooltipStyle = computed(() => {
+  return {
+    left: `${tooltip.value.x}px`,
+    top: `${tooltip.value.y - 60}px`,
+    transform: 'translateX(-50%)' // ✅ Centrar horizontalmente
+  }
+})
+
+//Manejadores de eventos del tooltip
+const handleMouseEnter = (state, event) => {
+  hoveredBarKey.value = state.region // Cambiar de item.key a state.region
+
+  //Obtener la posición del elemento de la barra
+  const barElement = event.currentTarget
+  const rect = barElement.getBoundingClientRect()
+
+  tooltip.value = {
+    visible: true,
+    x: rect.left + (rect.width / 2), // ✅ Centro de la barra en X
+    y: rect.top, // ✅ Parte superior de la barra en Y
+    label: getStateAbbreviation(state.region), // Nombre del estado
+    value: `IFSS: ${state.value}`, // Valor IFSS
+    color: getColorForValue(state.value), // Usar tu función existente para el color
+    classification: getClassificationForValue(state.value)
+  }
+}
+
+const handleMouseMove = (event) => {
+  if (tooltip.value.visible) {
+    tooltip.value.x = event.clientX
+    tooltip.value.y = event.clientY
+  }
+}
+
+const handleMouseLeave = () => {
+  hoveredBarKey.value = null
+  tooltip.value.visible = false
+}
 
 // Etiquetas de clasificación
 const labels = [
@@ -155,17 +234,24 @@ const visibleStates = computed(() => {
   return sortedStates.value.filter(state => isStateInCurrentRange(state))
 })
 
+onMounted(() => {
+  if (barsWrapperRef.value) {
+    containerWidth.value = barsWrapperRef.value.offsetWidth
+  }
+})
+
 // Ancho dinámico de las barras según cantidad visible
 const barWidth = computed(() => {
   const visibleCount = visibleStates.value.length
   if (visibleCount === 0) return '30px'
   
-  const gapSize = 0 // ← 0 o 1 según elijas
+  const gapSize = 1
   const totalGaps = (visibleCount - 1) * gapSize
+  const availableWidth = containerWidth.value - totalGaps
+  const barWidthPx = availableWidth / visibleCount
   
-  return `calc((100% - ${totalGaps}px) / ${visibleCount})`
+  return `${barWidthPx.toFixed(3)}px` // 3 decimales de precisión
 })
-
 // Valor máximo para calcular altura de barras
 const maxIFSSValue = computed(() => {
   if (props.statesData.length === 0) return 3.0
@@ -317,7 +403,7 @@ watch(() => props.statesData, () => {
   width: 100%;
   height: 100%;
   max-height: 100%; /* Evitar crecimiento excesivo */
-  padding: 15px;
+  padding: 15px 15px 5px 15px;
   background: white;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -440,23 +526,23 @@ watch(() => props.statesData, () => {
 .bars-wrapper {
   display: flex;
   align-items: flex-end;
-  justify-content: space-between;
+  justify-content: flex-start; 
   height: 100%;
   width: 100%; 
-  padding-bottom: 5px;   
+  padding-bottom: 5px 0 25px 0;
   box-sizing: border-box;
-  gap: 1px;
+  gap: 3px;
 }
 
 .bar-item {
-  flex: 1 1 auto; /* ← CAMBIO: permitir que crezcan para llenar espacio */
-  
+  flex: 1; /* ← SIMPLE: cada barra toma 1 fracción igual */
+  min-width: 0; /* Permitir encogimiento */
+  max-width: none; /* Sin límite */
   display: flex;
   flex-direction: column;
-  
+  align-items: center;
   justify-content: flex-end; /* Alinear al fondo */
   gap: 4px;
-  cursor: pointer;
   transition: all 0.3s ease;
   opacity: 1;
   height: 100%; /* Altura completa del contenedor */
@@ -465,19 +551,28 @@ watch(() => props.statesData, () => {
 /* Estado seleccionado - opacidad completa */
 .bar-item.is-selected {
   opacity: 1;
-  transform: scale(1.05);
   z-index: 10;
+}
+
+/* Estado seleccionado - opacidad completa */
+.bar-item:hover {
+  opacity: 1;
+  filter: saturate(150%);
+}
+
+/* Cuando alguna barra tiene hover, las demás se atenúan */
+.bars-wrapper:hover .bar-item:not(:hover) {
+  opacity: 0.4;
+  transform: none;
 }
 
 /* Estados no seleccionados - opacidad reducida */
 .bar-item.is-dimmed {
-  opacity: 0.3;
+  opacity: 0.1;
 }
 
 /* Estados fuera del rango del slider - REMOVIDO ya que no se muestran */
-
 .bar-item:hover:not(.is-dimmed) {
-  transform: scale(1.08);
   opacity: 1;
   z-index: 5;
 }
@@ -486,7 +581,7 @@ watch(() => props.statesData, () => {
   width: 100%;
   min-height: 15px; /* Reducido de 20px */
   max-height: 100%; /* Permitir crecer hasta el máximo */
-  border-radius: 4px 4px 0 0;
+  border-radius: 2px 2px 0 0;
   position: relative;
   transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
@@ -494,14 +589,6 @@ watch(() => props.statesData, () => {
   justify-content: center;
   padding-top: 6px; /* Reducido de 8px */
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.bar-value {
-  font-size: 10px; /* Reducido de 11px */
-  font-weight: 700;
-  color: white;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-  line-height: 1;
 }
 
 .bar-label {
@@ -566,5 +653,70 @@ watch(() => props.statesData, () => {
 
 .chart-container::-webkit-scrollbar-thumb:hover {
   background: #a0aec0;
+}
+
+/* Estilos del tooltip */
+.tooltip {
+  position: fixed;
+  background: rgba(30, 30, 30, 0.95); /* Fondo más oscuro */
+  color: white;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  z-index: 999999;
+}
+
+.tooltip-content {
+  display: flex;
+  flex-direction: column; /* Cambiar a vertical */
+  align-items: center; /* Centrar contenido */
+  gap: 6px;
+}
+
+.tooltip-color {
+  width: 100%;
+  min-height: 18px; /* ✅ Altura mínima */
+  height: auto; /* ✅ Altura automática según contenido */
+  padding: 5px 8px; /* ✅ Padding para dar espacio */
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.tooltip-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Centrar texto */
+  gap: 2px;
+}
+
+.tooltip-label {
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.3px;
+}
+
+.tooltip-value {
+  font-size: 10px;
+  opacity: 0.95;
+  font-weight: 500;
+}
+
+.color-label{
+  color: black;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3);
+  z-index: 1;
+  line-height: 1.2; /* ✅ Altura de línea ajustada */
+  text-align: center;
+  white-space: nowrap; /* ✅ Evitar saltos de línea */
 }
 </style>
