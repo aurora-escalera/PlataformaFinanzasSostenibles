@@ -614,7 +614,7 @@ onMounted(async () => {
 .ranking-panel{
  display: flex;
  flex-direction: column;
- height: 277.6px;
+ height: 220px;
  width: 1225.6px;
  background: white;
  border: 1px solid #ddd;
@@ -657,7 +657,6 @@ h2{
 /* Ranking panel: Body */
 .body-ranking-panel{
  height: 85%;
-
 }
 
 .slider-ranking-panel{

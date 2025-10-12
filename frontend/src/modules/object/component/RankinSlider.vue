@@ -3,7 +3,6 @@
   <div class="ifss-slider-container">
     <!-- Slider de rango -->
     <div class="slider-wrapper">
-
       <!-- Rango activo (overlay) -->
       <div 
         class="active-range"
@@ -50,25 +49,40 @@
       </div>
     </div>
 
-    <!-- Gráfica de barras filtrada -->
+    <!-- Gráfica de barras con TODOS los estados ordenados -->
     <div class="chart-container">
       <div class="bars-wrapper">
         <div 
-          v-for="(item, index) in filteredChartData" 
-          :key="index"
+          v-for="(state, index) in visibleStates" 
+          :key="state.region"
           class="bar-item"
+          :class="{ 
+            'is-selected': state.region === selectedStateName,
+            'is-dimmed': selectedStateName && state.region !== selectedStateName
+          }"
+          :style="{ width: barWidth }"
+          @click="handleBarClick(state.region)"
         >
           <div 
             class="bar"
             :style="{ 
-              height: `${(item.count / maxCount) * 100}%`,
-              backgroundColor: item.color
+              height: `${getBarHeight(state.value)}%`,
+              backgroundColor: getColorForValue(state.value)
             }"
           >
-            <span class="bar-value">{{ item.count }}</span>
+            <span class="bar-value">{{ state.value }}</span>
           </div>
-          <span class="bar-label">{{ item.label }}</span>
+          <span class="bar-label">{{ getStateAbbreviation(state.region) }}</span>
         </div>
+      </div>
+    </div>
+
+    <!-- Info del estado seleccionado -->
+    <div v-if="selectedStateName" class="selected-info">
+      <div class="info-content">
+        <span class="info-label">{{ selectedStateName }}</span>
+        <span class="info-value">IFSS: {{ selectedStateIFSS }}</span>
+        <span class="info-position">Posición: #{{ getStatePosition(selectedStateName) }}</span>
       </div>
     </div>
   </div>
@@ -85,10 +99,14 @@ const props = defineProps({
   selectedStateValue: {
     type: Number,
     default: null
+  },
+  selectedStateName: {
+    type: String,
+    default: null
   }
 })
 
-const emit = defineEmits(['range-change', 'filter-change'])
+const emit = defineEmits(['range-change', 'filter-change', 'state-click'])
 
 // Etiquetas de clasificación
 const labels = [
@@ -101,32 +119,60 @@ const labels = [
   'Muy bajo'
 ]
 
-// Rangos de valores IFSS basados en los datos reales (0.5 a 2.9)
-// Ordenados de mayor a menor para coincidir con las imágenes
+// Rangos de valores IFSS
 const valueRanges = [
-  { min: 2.5, max: 3.0, label: 'Muy alto' },    // 0 - Verde oscuro
-  { min: 2.0, max: 2.4, label: 'Alto' },        // 1 - Verde medio
-  { min: 1.7, max: 1.9, label: 'Medio alto' },  // 2 - Verde claro
-  { min: 1.3, max: 1.6, label: 'Medio' },       // 3 - Amarillo
-  { min: 1.0, max: 1.2, label: 'Medio bajo' },  // 4 - Naranja claro
-  { min: 0.7, max: 0.9, label: 'Bajo' },        // 5 - Naranja
-  { min: 0.0, max: 0.6, label: 'Muy bajo' }     // 6 - Rojo
+  { min: 2.5, max: 3.0, label: 'Muy alto' },
+  { min: 2.0, max: 2.4, label: 'Alto' },
+  { min: 1.7, max: 1.9, label: 'Medio alto' },
+  { min: 1.3, max: 1.6, label: 'Medio' },
+  { min: 1.0, max: 1.2, label: 'Medio bajo' },
+  { min: 0.7, max: 0.9, label: 'Bajo' },
+  { min: 0.0, max: 0.6, label: 'Muy bajo' }
 ]
 
-// Colores exactos de tu leyenda (de mejor a peor)
-const colorSegments = [
-  { color: '#6ac952' }, // Muy alto
-  { color: '#94d351' }, // Alto
-  { color: '#bddc50' }, // Medio alto
-  { color: '#e6d64f' }, // Medio
-  { color: '#e6a74c' }, // Medio bajo
-  { color: '#e67849' }, // Bajo
-  { color: '#e52845' }  // Muy bajo
-]
+// Colores según clasificación IFSS
+const colorMap = {
+  'Muy alto': '#6ac952',
+  'Alto': '#94d351',
+  'Medio alto': '#bddc50',
+  'Medio': '#e6d64f',
+  'Medio bajo': '#e6a74c',
+  'Bajo': '#e67849',
+  'Muy bajo': '#e52845'
+}
 
-// Valores del slider (índices de 0 a 6)
+// Valores del slider
 const minValue = ref(0)
 const maxValue = ref(6)
+
+// Estados ordenados de mayor a menor IFSS
+const sortedStates = computed(() => {
+  return [...props.statesData].sort((a, b) => b.value - a.value)
+})
+
+// Estados visibles según el rango del slider
+const visibleStates = computed(() => {
+  return sortedStates.value.filter(state => isStateInCurrentRange(state))
+})
+
+// Ancho dinámico de las barras según cantidad visible
+const barWidth = computed(() => {
+  const visibleCount = visibleStates.value.length
+  
+  if (visibleCount === 0) return '30px'
+  
+  const gapSize = 3
+  const totalGaps = (visibleCount - 1) * gapSize
+  
+  // Cálculo simple: 100% del contenedor menos los gaps, dividido entre barras
+  return `calc((100% - ${totalGaps}px) / ${visibleCount})`
+})
+
+// Valor máximo para calcular altura de barras
+const maxIFSSValue = computed(() => {
+  if (props.statesData.length === 0) return 3.0
+  return Math.max(...props.statesData.map(s => s.value || 0))
+})
 
 // Estilo del rango activo
 const activeRangeStyle = computed(() => {
@@ -138,16 +184,88 @@ const activeRangeStyle = computed(() => {
   }
 })
 
-// Verificar si un índice está en el rango
-const isInRange = (index) => {
-  return index >= minValue.value && index <= maxValue.value
+// Obtener clasificación según valor IFSS
+const getClassificationForValue = (value) => {
+  for (let range of valueRanges) {
+    if (value >= range.min && value <= range.max) {
+      return range.label
+    }
+  }
+  return value > valueRanges[0].max ? 'Muy alto' : 'Muy bajo'
 }
 
-const isSegmentInRange = (index) => {
-  return index >= minValue.value && index <= maxValue.value
+// Obtener color según valor IFSS
+const getColorForValue = (value) => {
+  const classification = getClassificationForValue(value)
+  return colorMap[classification] || '#e0e0e0'
 }
 
-// Handlers para evitar que los sliders se crucen
+// Calcular altura de barra (proporcional al valor IFSS)
+const getBarHeight = (value) => {
+  // Usar el rango completo de 0 a 3 para mejor visualización
+  const percentage = (value / 3) * 100
+  return Math.max(percentage, 10) // Mínimo 10% para visibilidad
+}
+
+// Verificar si estado está en rango actual
+const isStateInCurrentRange = (state) => {
+  const classification = getClassificationForValue(state.value)
+  const classIndex = labels.indexOf(classification)
+  return classIndex >= minValue.value && classIndex <= maxValue.value
+}
+
+// Obtener abreviación del estado
+const getStateAbbreviation = (stateName) => {
+  const abbreviations = {
+    'Aguascalientes': 'AGS',
+    'Baja California': 'BC',
+    'Baja California Sur': 'BCS',
+    'Campeche': 'CAMP',
+    'Chiapas': 'CHIS',
+    'Chihuahua': 'CHIH',
+    'Ciudad de México': 'CDMX',
+    'Coahuila': 'COAH',
+    'Colima': 'COL',
+    'Durango': 'DGO',
+    'Estado de México': 'MEX',
+    'Guanajuato': 'GTO',
+    'Guerrero': 'GRO',
+    'Hidalgo': 'HGO',
+    'Jalisco': 'JAL',
+    'Michoacán': 'MICH',
+    'Morelos': 'MOR',
+    'Nayarit': 'NAY',
+    'Nuevo León': 'NL',
+    'Oaxaca': 'OAX',
+    'Puebla': 'PUE',
+    'Querétaro': 'QRO',
+    'Quintana Roo': 'QROO',
+    'San Luis Potosí': 'SLP',
+    'Sinaloa': 'SIN',
+    'Sonora': 'SON',
+    'Tabasco': 'TAB',
+    'Tamaulipas': 'TAMPS',
+    'Tlaxcala': 'TLAX',
+    'Veracruz': 'VER',
+    'Yucatán': 'YUC',
+    'Zacatecas': 'ZAC'
+  }
+  return abbreviations[stateName] || stateName.substring(0, 3).toUpperCase()
+}
+
+// Obtener posición del estado en el ranking
+const getStatePosition = (stateName) => {
+  const index = sortedStates.value.findIndex(s => s.region === stateName)
+  return index !== -1 ? index + 1 : '-'
+}
+
+// Obtener posición dentro de los estados visibles
+const getVisibleStatePosition = (stateName) => {
+  const index = visibleStates.value.findIndex(s => s.region === stateName)
+  return index !== -1 ? index + 1 : '-'
+}
+
+// Handlers
 const handleMinChange = () => {
   if (minValue.value > maxValue.value) {
     minValue.value = maxValue.value
@@ -162,52 +280,10 @@ const handleMaxChange = () => {
   emitChanges()
 }
 
-// Función para obtener el índice de clasificación según el valor IFSS
-const getClassificationIndex = (value) => {
-  for (let i = 0; i < valueRanges.length; i++) {
-    if (value >= valueRanges[i].min && value <= valueRanges[i].max) {
-      return i
-    }
-  }
-  // Si el valor está fuera de rango, asignar al más cercano
-  if (value > valueRanges[0].max) return 0
-  return 6
+const handleBarClick = (stateName) => {
+  emit('state-click', stateName)
 }
 
-// Datos de la gráfica filtrados
-const chartData = computed(() => {
-  const data = Array(7).fill(0).map((_, index) => ({
-    label: labels[index],
-    count: 0,
-    color: colorSegments[index].color
-  }))
-
-  // Contar estados por clasificación
-  props.statesData.forEach(state => {
-    const index = getClassificationIndex(state.value || 0)
-    data[index].count++
-  })
-
-  return data
-})
-
-const filteredChartData = computed(() => {
-  return chartData.value.filter((_, index) => isInRange(index))
-})
-
-const maxCount = computed(() => {
-  return Math.max(...chartData.value.map(d => d.count), 1)
-})
-
-const filteredStatesCount = computed(() => {
-  return filteredChartData.value.reduce((sum, item) => sum + item.count, 0)
-})
-
-const totalStates = computed(() => {
-  return props.statesData.length
-})
-
-// Emitir cambios
 const emitChanges = () => {
   const range = {
     min: valueRanges[minValue.value].min,
@@ -220,7 +296,6 @@ const emitChanges = () => {
   
   emit('range-change', range)
   
-  // Filtrar estados en el rango
   const filteredStates = props.statesData.filter(state => {
     const value = state.value || 0
     return value >= range.min && value <= range.max
@@ -228,14 +303,6 @@ const emitChanges = () => {
   
   emit('filter-change', filteredStates)
 }
-
-// Watch para cambios externos
-watch(() => props.selectedStateValue, (newValue) => {
-  if (newValue !== null) {
-    const index = getClassificationIndex(newValue)
-    console.log(`Estado seleccionado con valor ${newValue} está en: ${labels[index]}`)
-  }
-})
 
 // Emitir estado inicial
 watch(() => props.statesData, () => {
@@ -251,23 +318,26 @@ watch(() => props.statesData, () => {
   flex-direction: column;
   width: 100%;
   height: 100%;
-  padding: 30px 20px;
+  max-height: 100%; /* Evitar crecimiento excesivo */
+  padding: 15px; /* Reducido de 20px */
   background: white;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden; /* Evitar desbordamiento */
 }
 
 /* Contenedor del slider */
 .slider-wrapper {
   position: relative;
   width: 100%;
-  height: 60px;
+  height: 50px; /* Reducido de 60px */
   padding: 0 10px;
-  margin-bottom: -20px; /* Superpone con las barras */
-  z-index: 10; /* Encima de las barras */
+  margin-bottom: 8px; /* Reducido de 10px */
+  z-index: 10;
+  flex-shrink: 0; /* No permitir encogimiento */
 }
 
-/* Rango activo (overlay) */
+/* Rango activo */
 .active-range {
   position: absolute;
   top: 24px;
@@ -280,7 +350,7 @@ watch(() => props.statesData, () => {
   z-index: 1;
 }
 
-/* Inputs de rango (invisibles) */
+/* Inputs de rango */
 .slider-input {
   position: absolute;
   width: calc(100% - 20px);
@@ -291,7 +361,7 @@ watch(() => props.statesData, () => {
   appearance: none;
   background: transparent;
   pointer-events: none;
-  z-index: 0;
+  z-index: 2;
 }
 
 .slider-input::-webkit-slider-thumb {
@@ -332,7 +402,6 @@ watch(() => props.statesData, () => {
   border: 3px solid #2196F3;
   border-radius: 50%;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-  cursor: pointer;
 }
 
 .thumb-label {
@@ -362,54 +431,144 @@ watch(() => props.statesData, () => {
 /* Gráfica de barras */
 .chart-container {
   flex: 1;
-  background: transparent; /* CAMBIADO */
-  border-radius: 0; /* CAMBIADO */
-  padding: 0; /* CAMBIADO */
-  position: relative; /* NUEVO */
-  z-index: 1;
+  background: transparent;
+  padding: 0;
+  position: relative;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  min-height: 100px; /* Reducido para evitar desbordamiento */
+  max-height: 220px; /* Límite máximo */
+  width: 100%;
 }
 
 .bars-wrapper {
   display: flex;
   align-items: flex-end;
-  justify-content: space-around;
-  height: 100%; /* CAMBIADO */
-  gap: 8px;
-  padding-top: 40px;
+  justify-content: space-between;
+  height: 100%;
+  width: 100%;
+  padding: 5px 0px 25px 0px;   
+  gap: 2px;
+  box-sizing: border-box;
 }
 
 .bar-item {
-  flex: 1;
+  flex: 1 1 auto; /* ← CAMBIO: permitir que crezcan para llenar espacio */
+  width: 30px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  justify-content: flex-end; /* Alinear al fondo */
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  opacity: 1;
+  height: 100%; /* Altura completa del contenedor */
+}
+
+/* Estado seleccionado - opacidad completa */
+.bar-item.is-selected {
+  opacity: 1;
+  transform: scale(1.05);
+  z-index: 10;
+}
+
+/* Estados no seleccionados - opacidad reducida */
+.bar-item.is-dimmed {
+  opacity: 0.3;
+}
+
+/* Estados fuera del rango del slider - REMOVIDO ya que no se muestran */
+
+.bar-item:hover:not(.is-dimmed) {
+  transform: scale(1.08);
+  opacity: 1;
+  z-index: 5;
 }
 
 .bar {
   width: 100%;
-  min-height: 20px;
+  min-height: 15px; /* Reducido de 20px */
+  max-height: 100%; /* Permitir crecer hasta el máximo */
   border-radius: 4px 4px 0 0;
   position: relative;
-  transition: all 0.3s ease;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding-top: 5px;
+  padding-top: 6px; /* Reducido de 8px */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .bar-value {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 10px; /* Reducido de 11px */
+  font-weight: 700;
   color: white;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  line-height: 1;
 }
 
 .bar-label {
-  font-size: 10px;
+  font-size: 8px; /* Reducido de 9px */
   color: #666;
   text-align: center;
   line-height: 1.2;
+  font-weight: 500;
+  writing-mode: horizontal-tb;
+  margin-top: 2px;
 }
 
+.bar-item.is-selected .bar-label {
+  color: #2196F3;
+  font-weight: 700;
+}
+
+/* Info del estado seleccionado */
+.selected-info {
+  margin-top: 10px; /* Reducido de 15px */
+  padding: 10px; /* Reducido de 12px */
+  background: #e3f2fd;
+  border-radius: 8px;
+  border-left: 4px solid #2196F3;
+  flex-shrink: 0; /* No permitir encogimiento */
+}
+
+.info-content {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.info-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1976D2;
+}
+
+.info-value,
+.info-position {
+  font-size: 12px;
+  color: #424242;
+}
+
+/* Scrollbar personalizado */
+.chart-container::-webkit-scrollbar {
+  height: 6px;
+}
+
+.chart-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.chart-container::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 3px;
+}
+
+.chart-container::-webkit-scrollbar-thumb:hover {
+  background: #a0aec0;
+}
 </style>
