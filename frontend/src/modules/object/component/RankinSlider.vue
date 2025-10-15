@@ -13,10 +13,11 @@
       <input
         type="range"
         min="0"
-        max="6"
+        max="5"
         step="1"
         v-model.number="minValue"
         class="slider-input slider-min"
+        :class="{ 'z-top': minValue >= maxValue - 5 }"
         @input="handleMinChange"
       >
 
@@ -24,17 +25,18 @@
       <input
         type="range"
         min="0"
-        max="6"
+        max="5"
         step="1"
         v-model.number="maxValue"
         class="slider-input slider-max"
+        :class="{ 'z-top': maxValue <= minValue + 5 }"
         @input="handleMaxChange"
       >
 
       <!-- Thumbs personalizados -->
       <div 
         class="custom-thumb thumb-min"
-        :style="{ left: `${(minValue / 6) * 100}%` }"
+        :style="{ left: `${(minValue / 5) * 100}%` }"
       >
         <div class="thumb-circle"></div>
         <div class="thumb-label">{{ labels[minValue] }}</div>
@@ -42,7 +44,7 @@
 
       <div 
         class="custom-thumb thumb-max"
-        :style="{ left: `${(maxValue / 6) * 100}%` }"
+        :style="{ left: `${(maxValue / 5) * 100}%` }"
       >
         <div class="thumb-circle"></div>
         <div class="thumb-label">{{ labels[maxValue] }}</div>
@@ -220,7 +222,7 @@ const colorMap = {
 
 // Valores del slider
 const minValue = ref(0)
-const maxValue = ref(6)
+const maxValue = ref(5)
 
 // Estados ordenados de mayor a menor IFSS
 const sortedStates = computed(() => {
@@ -258,8 +260,8 @@ const maxIFSSValue = computed(() => {
 
 // Estilo del rango activo
 const activeRangeStyle = computed(() => {
-  const left = (minValue.value / 6) * 100
-  const width = ((maxValue.value - minValue.value) / 6) * 100
+  const left = (minValue.value / 5) * 100
+  const width = ((maxValue.value - minValue.value) / 5) * 100
   return {
     left: `${left}%`,
     width: `${width}%`
@@ -438,7 +440,7 @@ watch(() => props.statesData, () => {
   position: absolute;
   width: 100%; /* Cambiado de: width: calc(100% - 20px); */
   height: 40px;
-  top: 24px;
+  top: 5px;
   left: 0px;
   -webkit-appearance: none;
   appearance: none;
@@ -468,6 +470,31 @@ watch(() => props.statesData, () => {
   border: none;
   border-radius: 50%;
   transition: background 0.2s ease;
+}
+
+.slider-min {
+  z-index: 3;
+}
+
+.slider-max {
+  z-index: 4;
+}
+
+.slider-min.z-top {
+  z-index: 5;
+}
+
+.slider-max.z-top {
+  z-index: 5;
+}
+
+/* NUEVO - Cuando está activo (siendo arrastrado), máxima prioridad */
+.slider-min:active {
+  z-index: 10 !important;
+}
+
+.slider-max:active {
+  z-index: 10 !important;
 }
 
 /* Thumbs personalizados */
