@@ -627,7 +627,7 @@ onMounted(async () => {
 .header-ranking-panel{
  display: flex;
  flex-direction: row; 
- height: 15%;
+ height: 20%;
  width: 100%;
  padding: 10px;
 

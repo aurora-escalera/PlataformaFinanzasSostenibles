@@ -405,15 +405,19 @@ watch(() => props.statesData, () => {
   background: white;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  overflow: hidden; /* Evitar desbordamiento */
+  gap: 40px;
+  overflow: visible; /* Evitar desbordamiento */
 }
 
 /* Contenedor del slider */
 .slider-wrapper {
   position: relative;
+  padding: 0px 0px 0px 5px;
   width: 100%;
-  height: 45px; 
+  height: 0px; 
   z-index: 10;
+  margin-top: 0px;
+  margin-bottom: 10px;
   flex-shrink: 0; /* No permitir encogimiento */
 }
 
@@ -422,8 +426,7 @@ watch(() => props.statesData, () => {
   position: absolute;
   top: 24px;
   height: 12px;
-  background: rgba(33, 150, 243, 0.2);
-  border: 2px solid #2196F3;
+  background: rgba(117, 124, 131, 0.2);
   border-radius: 6px;
   pointer-events: none;
   transition: all 0.3s ease;
@@ -433,10 +436,10 @@ watch(() => props.statesData, () => {
 /* Inputs de rango */
 .slider-input {
   position: absolute;
-  width: calc(100% - 20px);
-  height: 8px;
+  width: 100%; /* Cambiado de: width: calc(100% - 20px); */
+  height: 40px;
   top: 24px;
-  left: 10px;
+  left: 0px;
   -webkit-appearance: none;
   appearance: none;
   background: transparent;
@@ -447,28 +450,30 @@ watch(() => props.statesData, () => {
 .slider-input::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 20px;
-  height: 20px;
+  width: 40px;
+  height: 40px;
   background: transparent;
   cursor: pointer;
   pointer-events: auto;
   border-radius: 50%;
+  transition: background 0.2s ease;
 }
 
 .slider-input::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
+  width: 40px;
+  height: 40px;
   background: transparent;
   cursor: pointer;
   pointer-events: auto;
   border: none;
   border-radius: 50%;
+  transition: background 0.2s ease;
 }
 
 /* Thumbs personalizados */
 .custom-thumb {
   position: absolute;
-  top: 16px;
+  top: 18px;
   transform: translateX(-50%);
   pointer-events: none;
   transition: left 0.15s ease;
@@ -479,9 +484,23 @@ watch(() => props.statesData, () => {
   width: 20px;
   height: 20px;
   background: white;
-  border: 3px solid #2196F3;
+  border: 1px solid #E2E4E8;
   border-radius: 50%;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  transition: background 0.2s ease;
+}
+
+.slider-min:hover ~ .thumb-min .thumb-circle {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.752);
+}
+
+.slider-max:hover ~ .thumb-max .thumb-circle {
+  border: 2px solid #1a111108;
+}
+
+.slider-min:hover ~ .active-range,
+.slider-max:hover ~ .active-range {
+  background: rgba(33, 150, 243, 0.1);
 }
 
 .thumb-label {
@@ -489,23 +508,14 @@ watch(() => props.statesData, () => {
   top: -30px;
   left: 50%;
   transform: translateX(-50%);
-  background: #2196F3;
-  color: white;
+  border: 1px solid #E2E4E8;
+  background: white;
+  color: black;
   padding: 4px 8px;
   border-radius: 4px;
   font-size: 10px;
   white-space: nowrap;
   font-weight: 600;
-}
-
-.thumb-label::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 4px solid transparent;
-  border-top-color: #2196F3;
 }
 
 /* Gráfica de barras */
@@ -577,20 +587,20 @@ watch(() => props.statesData, () => {
 
 .bar {
   width: 100%;
-  min-height: 15px; /* Reducido de 20px */
-  max-height: 100%; /* Permitir crecer hasta el máximo */
+  min-height: 15px; 
+  max-height: 100%; 
   border-radius: 2px 2px 0 0;
   position: relative;
   transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding-top: 6px; /* Reducido de 8px */
+  padding-top: 6px; 
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .bar-label {
-  font-size: 8px; /* Reducido de 9px */
+  font-size: 8px;
   color: #666;
   text-align: center;
   line-height: 1.2;
@@ -600,18 +610,18 @@ watch(() => props.statesData, () => {
 }
 
 .bar-item.is-selected .bar-label {
-  color: #2196F3;
+  color: #E2E4E8;
   font-weight: 700;
 }
 
 /* Info del estado seleccionado */
 .selected-info {
-  margin-top: 10px; /* Reducido de 15px */
-  padding: 10px; /* Reducido de 12px */
+  margin-top: 10px; 
+  padding: 10px;
   background: #e3f2fd;
   border-radius: 8px;
-  border-left: 4px solid #2196F3;
-  flex-shrink: 0; /* No permitir encogimiento */
+  border-left: 4px solid #E2E4E8;
+  flex-shrink: 0; 
 }
 
 .info-content {
@@ -625,7 +635,7 @@ watch(() => props.statesData, () => {
 .info-label {
   font-size: 14px;
   font-weight: 600;
-  color: #1976D2;
+  color: #E2E4E8;
 }
 
 .info-value,
@@ -656,7 +666,7 @@ watch(() => props.statesData, () => {
 /* Estilos del tooltip */
 .tooltip {
   position: fixed;
-  background: rgba(30, 30, 30, 0.95); /* Fondo más oscuro */
+  background: rgba(30, 30, 30, 0.95);
   color: white;
   padding: 8px 10px;
   border-radius: 6px;
@@ -668,11 +678,11 @@ watch(() => props.statesData, () => {
 }
 
 
-/* Triangulo apuntando hacia abajo */
+/* Triangulo apuntando hacia abajo, por debajo del tooltip */
 .tooltip::after {
   content: '';
   position: absolute;
-  top: 100%; /* Posicionar debajo del tooltip */
+  top: 100%; 
   left: 50%;
   transform: translateX(-50%);
   border: 8px solid transparent; 
@@ -681,16 +691,16 @@ watch(() => props.statesData, () => {
 
 .tooltip-content {
   display: flex;
-  flex-direction: column; /* Cambiar a vertical */
-  align-items: center; /* Centrar contenido */
+  flex-direction: column; 
+  align-items: center;
   gap: 6px;
 }
 
 .tooltip-color {
   width: 100%;
-  min-height: 18px; /* ✅ Altura mínima */
-  height: auto; /* ✅ Altura automática según contenido */
-  padding: 5px 8px; /* ✅ Padding para dar espacio */
+  min-height: 18px; 
+  height: auto;
+  padding: 5px 8px;
   border-radius: 3px;
   display: flex;
   align-items: center;
@@ -701,7 +711,7 @@ watch(() => props.statesData, () => {
 .tooltip-info {
   display: flex;
   flex-direction: column;
-  align-items: center; /* Centrar texto */
+  align-items: center; 
   gap: 2px;
 }
 
@@ -725,8 +735,8 @@ watch(() => props.statesData, () => {
   letter-spacing: 0.5px;
   text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3);
   z-index: 1;
-  line-height: 1.2; /* ✅ Altura de línea ajustada */
+  line-height: 1.2; 
   text-align: center;
-  white-space: nowrap; /* ✅ Evitar saltos de línea */
+  white-space: nowrap; /*Evitar saltos de línea */
 }
 </style>
