@@ -54,29 +54,31 @@
     <!-- Gráfica de barras con TODOS los estados ordenados -->
     <div class="chart-container">
       <div class="bars-wrapper">
-        <div 
-          v-for="(state, index) in visibleStates" 
-          :key="state.region"
-          class="bar-item"
-          :class="{ 
-            'is-selected': state.region === selectedStateName,
-            'is-dimmed': selectedStateName && state.region !== selectedStateName
-          }"
-          :style="{ width: barWidth }"
-          @click="handleBarClick(state.region)"
-          @mouseenter="handleMouseEnter(state, $event)"
-          @mouseleave="handleMouseLeave"
-        >
+        <TransitionGroup name="bar-slide">
           <div 
-            class="bar"
-            :style="{ 
-              height: `${getBarHeight(state.value)}%`,
-              backgroundColor: getColorForValue(state.value)
+            v-for="(state, index) in visibleStates" 
+            :key="state.region"
+            class="bar-item"
+            :class="{ 
+              'is-selected': state.region === selectedStateName,
+              'is-dimmed': selectedStateName && state.region !== selectedStateName
             }"
+            :style="{ width: barWidth }"
+            @click="handleBarClick(state.region)"
+            @mouseenter="handleMouseEnter(state, $event)"
+            @mouseleave="handleMouseLeave"
           >
+            <div 
+              class="bar"
+              :style="{ 
+                height: `${getBarHeight(state.value)}%`,
+                backgroundColor: getColorForValue(state.value)
+              }"
+            >
+            </div>
+            <span class="bar-label">{{ getStateAbbreviation(state.region) }}</span>
           </div>
-          <span class="bar-label">{{ getStateAbbreviation(state.region) }}</span>
-        </div>
+        </TransitionGroup>
       </div>
     </div>
 
@@ -118,6 +120,10 @@ import { ref, computed, watch, onMounted} from 'vue'
 // Añadir ref al template
 const barsWrapperRef = ref(null)
 const containerWidth = ref(1200)
+
+// Detectar dirección del cambio
+const previousRange = ref({ min: 0, max: 6 })
+const slideDirection = ref('left')
 
 const props = defineProps({
   statesData: {
@@ -349,11 +355,19 @@ const getVisibleStatePosition = (stateName) => {
   return index !== -1 ? index + 1 : '-'
 }
 
-// Handlers
+// Modificar handleMinChange y handleMaxChange
 const handleMinChange = () => {
   if (minValue.value > maxValue.value) {
     minValue.value = maxValue.value
   }
+  
+  // Detectar dirección
+  if (minValue.value > previousRange.value.min) {
+    slideDirection.value = 'left' // Filtrando hacia arriba (mayor IFSS)
+  } else {
+    slideDirection.value = 'right' // Filtrando hacia abajo (menor IFSS)
+  }
+  
   emitChanges()
 }
 
@@ -361,8 +375,17 @@ const handleMaxChange = () => {
   if (maxValue.value < minValue.value) {
     maxValue.value = minValue.value
   }
+  
+  // Detectar dirección
+  if (maxValue.value < previousRange.value.max) {
+    slideDirection.value = 'left' // Filtrando hacia arriba (mayor IFSS)
+  } else {
+    slideDirection.value = 'right' // Filtrando hacia abajo (menor IFSS)
+  }
+  
   emitChanges()
 }
+
 
 const handleBarClick = (stateName) => {
   emit('state-click', stateName)
@@ -377,6 +400,8 @@ const emitChanges = () => {
     minIndex: minValue.value,
     maxIndex: maxValue.value
   }
+  
+  previousRange.value = { min: minValue.value, max: maxValue.value }
   
   emit('range-change', range)
   
@@ -765,5 +790,32 @@ watch(() => props.statesData, () => {
   line-height: 1.2; 
   text-align: center;
   white-space: nowrap; /*Evitar saltos de línea */
+}
+
+/* Animaciones de entrada y salida */
+.bar-slide-enter-active {
+  transition: all 0.5s ease;
+}
+
+.bar-slide-leave-active {
+  transition: all 0.5s ease;
+  position: absolute;
+}
+
+/* Entrada desde la izquierda (valores altos) */
+.bar-slide-enter-from {
+  opacity: 0;
+  transform: translateX(-30px);
+}
+
+/* Salida hacia la izquierda (valores altos que desaparecen) */
+.bar-slide-leave-to {
+  opacity: 0;
+  transform: translateX(-30px);
+}
+
+/* Movimiento suave de las barras existentes */
+.bar-slide-move {
+  transition: all 0.5s ease;
 }
 </style>
