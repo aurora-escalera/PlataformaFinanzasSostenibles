@@ -54,7 +54,7 @@
     <!-- Gráfica de barras con TODOS los estados ordenados -->
     <div class="chart-container">
       <div class="bars-wrapper">
-        <TransitionGroup name="bar-slide">
+        <TransitionGroup :name="transitionName">
           <div 
             v-for="(state, index) in visibleStates" 
             :key="state.region"
@@ -122,8 +122,27 @@ const barsWrapperRef = ref(null)
 const containerWidth = ref(1200)
 
 // Detectar dirección del cambio
-const previousRange = ref({ min: 0, max: 6 })
-const slideDirection = ref('left')
+const previousRange = ref({ min: 0, max: 5 })
+
+// Detectar qué thumb se movió Y en qué dirección
+const lastMovedThumb = ref('none')
+
+// Computed para el nombre de la transición
+const transitionName = computed(() => {
+  // Thumb MIN: siempre animación hacia la izquierda
+  if (lastMovedThumb.value === 'min') {
+    return 'bar-slide-min'
+  }
+  
+  // Thumb MAX: depende de la dirección del movimiento
+  if (lastMovedThumb.value === 'max-left') {
+    return 'bar-slide-max-left' // Thumb MAX se movió hacia la IZQUIERDA
+  } else if (lastMovedThumb.value === 'max-right') {
+    return 'bar-slide-max-right' // Thumb MAX se movió hacia la DERECHA
+  }
+  
+  return 'bar-slide-min' // default
+})
 
 const props = defineProps({
   statesData: {
@@ -355,18 +374,14 @@ const getVisibleStatePosition = (stateName) => {
   return index !== -1 ? index + 1 : '-'
 }
 
-// Modificar handleMinChange y handleMaxChange
+// Handlers
 const handleMinChange = () => {
   if (minValue.value > maxValue.value) {
     minValue.value = maxValue.value
   }
   
-  // Detectar dirección
-  if (minValue.value > previousRange.value.min) {
-    slideDirection.value = 'left' // Filtrando hacia arriba (mayor IFSS)
-  } else {
-    slideDirection.value = 'right' // Filtrando hacia abajo (menor IFSS)
-  }
+  // Marcar que se movió el thumb MIN (sin importar dirección)
+  lastMovedThumb.value = 'min'
   
   emitChanges()
 }
@@ -376,11 +391,11 @@ const handleMaxChange = () => {
     maxValue.value = minValue.value
   }
   
-  // Detectar dirección
+  // Detectar dirección del movimiento del thumb MAX
   if (maxValue.value < previousRange.value.max) {
-    slideDirection.value = 'left' // Filtrando hacia arriba (mayor IFSS)
-  } else {
-    slideDirection.value = 'right' // Filtrando hacia abajo (menor IFSS)
+    lastMovedThumb.value = 'max-left' // Se movió hacia la IZQUIERDA
+  } else if (maxValue.value > previousRange.value.max) {
+    lastMovedThumb.value = 'max-right' // Se movió hacia la DERECHA
   }
   
   emitChanges()
@@ -401,8 +416,6 @@ const emitChanges = () => {
     maxIndex: maxValue.value
   }
   
-  previousRange.value = { min: minValue.value, max: maxValue.value }
-  
   emit('range-change', range)
   
   const filteredStates = props.statesData.filter(state => {
@@ -411,6 +424,9 @@ const emitChanges = () => {
   })
   
   emit('filter-change', filteredStates)
+  
+  // Actualizar previousRange DESPUÉS de emitir
+  previousRange.value = { min: minValue.value, max: maxValue.value }
 }
 
 // Emitir estado inicial
@@ -792,30 +808,84 @@ watch(() => props.statesData, () => {
   white-space: nowrap; /*Evitar saltos de línea */
 }
 
-/* Animaciones de entrada y salida */
-.bar-slide-enter-active {
+/* ============================================
+   ANIMACIONES PARA THUMB MIN (izquierdo)
+   ============================================ */
+.bar-slide-min-enter-active,
+.bar-slide-min-leave-active,
+.bar-slide-min-move {
   transition: all 0.5s ease;
 }
 
-.bar-slide-leave-active {
-  transition: all 0.5s ease;
+.bar-slide-min-leave-active {
   position: absolute;
 }
 
-/* Entrada desde la izquierda (valores altos) */
-.bar-slide-enter-from {
+.bar-slide-min-enter-from {
   opacity: 0;
-  transform: translateX(-30px);
+  transform: translateX(-50px); /* Entran desde la IZQUIERDA */
 }
 
-/* Salida hacia la izquierda (valores altos que desaparecen) */
-.bar-slide-leave-to {
+.bar-slide-min-leave-to {
   opacity: 0;
-  transform: translateX(-30px);
+  transform: translateX(-50px); /* Salen hacia la IZQUIERDA */
 }
 
-/* Movimiento suave de las barras existentes */
-.bar-slide-move {
+/* ============================================
+   ANIMACIONES PARA THUMB MAX HACIA LA IZQUIERDA
+   (Entran y salen por la DERECHA)
+   ============================================ */
+.bar-slide-max-left-enter-active,
+.bar-slide-max-left-leave-active,
+.bar-slide-max-left-move {
   transition: all 0.5s ease;
+}
+
+.bar-slide-max-left-leave-active {
+  position: absolute;
+}
+
+.bar-slide-max-left-enter-from {
+  opacity: 0;
+  transform: translateX(50px); /* Entran desde la DERECHA */
+}
+
+.bar-slide-max-left-leave-to {
+  opacity: 0;
+  transform: translateX(50px); /* Salen hacia la DERECHA */
+}
+
+/* ============================================
+   ANIMACIONES PARA THUMB MAX HACIA LA DERECHA
+   (Entran y salen por la IZQUIERDA)
+   ============================================ */
+.bar-slide-max-right-enter-active,
+.bar-slide-max-right-leave-active,
+.bar-slide-max-right-move {
+  transition: all 0.5s ease;
+}
+
+.bar-slide-max-right-leave-active {
+  position: absolute;
+}
+
+.bar-slide-max-right-enter-from {
+  opacity: 0;
+  transform: translateX(50px); /* Entran desde la IZQUIERDA */
+}
+
+.bar-slide-max-right-leave-to {
+  opacity: 0;
+  transform: translateX(-50px); /* Salen hacia la IZQUIERDA */
+}
+
+.bar-slide-max-left-enter-from {
+  opacity: 0;
+  transform: translateX(-50px); /* Cambia este valor */
+}
+
+.bar-slide-max-left-leave-to {
+  opacity: 0;
+  transform: translateX(50px); /* Y este también */
 }
 </style>
