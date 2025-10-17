@@ -253,12 +253,12 @@ onMounted(async () => {
 }
 
 .charts-btn {
-  background: #2196F3;
+
   margin-left: 10px;
 }
 
 .charts-btn:hover {
-  background: #1976D2;
+
 }
 
 .stats-grid {

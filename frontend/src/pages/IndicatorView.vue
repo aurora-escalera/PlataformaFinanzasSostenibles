@@ -246,7 +246,7 @@ onMounted(async () => {
 }
 
 .charts-btn:hover {
-  background: #1976D2;
+
 }
 
 .stats-grid {
