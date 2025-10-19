@@ -120,26 +120,11 @@
         <!-- Líneas y áreas -->
         <g class="lines">
           <g v-for="variable in visibleVariables" :key="`line-${variable}`">
-            <!-- Definir gradiente para el área -->
-            <defs>
-              <linearGradient :id="`gradient-${getVariableId(variable)}`" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" :stop-color="getVariableColor(variable)" stop-opacity="0.2"/>
-                <stop offset="100%" :stop-color="getVariableColor(variable)" stop-opacity="0.02"/>
-              </linearGradient>
-            </defs>
-
-            <!-- Área bajo la línea -->
-            <path
-              :d="getAreaPath(variable)"
-              :fill="`url(#gradient-${getVariableId(variable)})`"
-              class="area-path"
-            />
-
             <!-- Línea principal con animación -->
             <path
               :d="getLinePath(variable)"
               :stroke="getVariableColor(variable)"
-              stroke-width="3"
+              stroke-width="1.5"
               fill="none"
               stroke-linecap="round"
               stroke-linejoin="round"
@@ -153,10 +138,8 @@
                 :key="`point-${variable}-${i}`"
                 :cx="getXPosition(i)"
                 :cy="getY(point)"
-                :r="hoverState.visible && hoverState.index === i ? 7 : 5"
+                :r="hoverState.visible && hoverState.index === i ? 3 : 2"
                 :fill="getVariableColor(variable)"
-                :stroke="'white'"
-                :stroke-width="2"
                 :class="['data-point', { 'is-hovered': hoverState.visible && hoverState.index === i }]"
               />
             </g>
@@ -329,7 +312,7 @@ const tooltipFixedStyle = computed(() => {
   
   return {
     left: `${hoverState.value.x}px`,
-    top: `${highestPoint.value - 150}px`  // 10px arriba del punto más alto
+    top: `${highestPoint.value - 200}px`  // 10px arriba del punto más alto
   }
 })
 
@@ -613,7 +596,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .chart-header {
@@ -796,6 +779,7 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   padding-bottom: 0;
+  overflow: visible;
 }
 
 .line-chart {
@@ -806,7 +790,7 @@ onUnmounted(() => {
 }
 
 .grid-line {
-  stroke: #f3f4f6;
+  stroke: #e5e7eb;
   stroke-width: 1;
 }
 
@@ -851,9 +835,8 @@ onUnmounted(() => {
 }
 
 .data-point {
-  opacity: 0;
+  opacity: 1;
   transform-origin: center;
-  animation: popIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
   transition: all 0.2s ease;
 }
 
@@ -873,42 +856,22 @@ onUnmounted(() => {
   }
 }
 
-@keyframes popIn {
-  0% {
-    opacity: 0;
-    transform: scale(0);
-  }
-  50% {
-    transform: scale(1.3);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-/* Escalonar animación de puntos */
-.data-point:nth-child(1) { animation-delay: 0.8s; }
-.data-point:nth-child(2) { animation-delay: 0.9s; }
-.data-point:nth-child(3) { animation-delay: 1s; }
-.data-point:nth-child(4) { animation-delay: 1.1s; }
-.data-point:nth-child(5) { animation-delay: 1.2s; }
-.data-point:nth-child(6) { animation-delay: 1.3s; }
-.data-point:nth-child(7) { animation-delay: 1.4s; }
-.data-point:nth-child(8) { animation-delay: 1.5s; }
-
 /* Tooltip fijo */
 .tooltip-fixed {
   position: absolute;
   background: #1f2937;
   color: white;
   border-radius: 6px;
-  padding: 6px 8px;
+  padding: 12px;
   pointer-events: none;
   z-index: 1000;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-  min-width: 100px;
+  width: 300px;
+  min-height: 150px;
+  opacity: 95%;
   transform: translateX(-50%);
+  white-space: normal;
+  text-align: center;
 }
 
 .tooltip-fixed::after {
@@ -922,8 +885,7 @@ onUnmounted(() => {
 }
 
 .tooltip-year {
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 15px;
   color: white;
   margin-bottom: 6px;
   padding-bottom: 4px;
@@ -934,38 +896,46 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 5px;
+  padding-top: 10px;
 }
 
 .tooltip-item {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .tooltip-item-header {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
 }
 
 .tooltip-dot {
-  width: 10px;
+  width: 6px;
   height: 6px;
   border-radius: 50%;
   flex-shrink: 0;
+
 }
 
 .tooltip-variable {
-  font-size: 11px;
-  font-weight: 100;
+  font-size: 14px;
+  font-weight: 500;
   color: rgba(255, 255, 255, 0.8);
+  padding-left: 5px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  letter-spacing: -0.5px;
 }
 
 .tooltip-value {
-  font-size: 11px;
-  font-weight: 100;
+  font-size: 14px;
+  font-weight: 500;
   color: white;
-  padding-left: 10px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  letter-spacing: -0.5px;
 }
 
 /* Transiciones */
