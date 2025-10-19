@@ -88,6 +88,7 @@
         :width="dimensions.width" 
         :height="dimensions.height"
         class="line-chart"
+        @mousemove="handleMouseMove"
         @mouseleave="hideTooltip"
       >
         <!-- Grid lines horizontales -->
@@ -102,6 +103,19 @@
             class="grid-line"
           />
         </g>
+
+        <!-- Línea vertical punteada del hover -->
+        <line
+          v-if="hoverState.visible"
+          :x1="hoverState.x"
+          :y1="padding.top"
+          :x2="hoverState.x"
+          :y2="dimensions.height - padding.bottom"
+          class="hover-line"
+          stroke="#9ca3af"
+          stroke-width="1.5"
+          stroke-dasharray="4 4"
+        />
 
         <!-- Líneas y áreas -->
         <g class="lines">
@@ -139,36 +153,57 @@
                 :key="`point-${variable}-${i}`"
                 :cx="getXPosition(i)"
                 :cy="getY(point)"
-                r="5"
+                :r="hoverState.visible && hoverState.index === i ? 7 : 5"
                 :fill="getVariableColor(variable)"
                 :stroke="'white'"
                 :stroke-width="2"
-                class="data-point"
-                @mouseenter="showTooltip($event, variable, i, point)"
-                @mousemove="updateTooltip($event)"
+                :class="['data-point', { 'is-hovered': hoverState.visible && hoverState.index === i }]"
               />
             </g>
           </g>
         </g>
+
+        <!-- Áreas interactivas invisibles para detectar hover -->
+        <g class="interaction-areas">
+          <rect
+            v-for="(label, i) in props.xLabels"
+            :key="`interaction-${i}`"
+            :x="getInteractionX(i)"
+            :y="padding.top"
+            :width="getInteractionWidth()"
+            :height="dimensions.height - padding.top - padding.bottom"
+            fill="transparent"
+            class="interaction-rect"
+            @mouseenter="showTooltipForIndex(i)"
+          />
+        </g>
       </svg>
 
-      <!-- Tooltip -->
+      <!-- Tooltip fijo en la parte superior -->
       <transition name="tooltip-fade">
         <div 
-          v-if="tooltip.visible" 
-          class="tooltip"
-          :style="tooltipStyle"
+          v-if="hoverState.visible" 
+          class="tooltip-fixed"
+          :style="tooltipFixedStyle"
         >
-          <div class="tooltip-header">
+          <div class="tooltip-year">{{ hoverState.label }}</div>
+          <div class="tooltip-items">
             <div 
-              class="tooltip-dot" 
-              :style="{ backgroundColor: tooltip.color }"
-            ></div>
-            <span class="tooltip-variable">{{ tooltip.variable }}</span>
-          </div>
-          <div class="tooltip-body">
-            <div class="tooltip-label">{{ tooltip.label }}</div>
-            <div class="tooltip-value">{{ formatValue(tooltip.value) }}</div>
+              v-for="variable in visibleVariables"
+              :key="`tooltip-${variable}`"
+              class="tooltip-item"
+            >
+              <div class="tooltip-item-header">
+                <div 
+                  class="tooltip-dot" 
+                  :style="{ backgroundColor: getVariableColor(variable) }"
+                ></div>
+                <span class="tooltip-variable">{{ variable }}</span>
+              </div>
+              <div class="tooltip-value">
+                {{ formatValue(getVariableData(variable)[hoverState.index]) }}
+              </div>
+            </div>
           </div>
         </div>
       </transition>
@@ -200,7 +235,6 @@ const props = defineProps({
     type: String,
     default: ''
   },
-  // Datos: { 'Variable 1': [val1, val2, ...], 'Variable 2': [...] }
   data: {
     type: Object,
     default: () => ({
@@ -208,22 +242,18 @@ const props = defineProps({
       'Financ. para desarrollo total': [23456.8, 48123.4, 52341.9, 54234.5, 55678.2]
     })
   },
-  // Etiquetas del eje X (años)
   xLabels: {
     type: Array,
     default: () => ['2020', '2021', '2022', '2023', '2024']
   },
-  // Mostrar leyenda
   showLegend: {
     type: Boolean,
     default: true
   },
-  // Número de líneas de grid
   gridLines: {
     type: Number,
     default: 5
   },
-  // Formato de valores
   valueFormatter: {
     type: Function,
     default: null
@@ -237,19 +267,27 @@ const isMenuOpen = ref(false)
 const chartWrapper = ref(null)
 const dimensions = ref({ width: 600, height: 300 })
 
+// Estado del hover
+const hoverState = ref({
+  visible: false,
+  x: 0,
+  index: -1,
+  label: ''
+})
+
 // Configuración de padding
 const padding = { top: 0, right: 40, bottom: 50, left: 20 }
 
 // Paleta de colores
 const colorPalette = [
-  '#10b981', // Verde (como en la imagen para IS Total)
-  '#a3e635', // Verde lima (para Financ. desarrollo)
-  '#3b82f6', // Azul
-  '#8b5cf6', // Violeta
-  '#f59e0b', // Ámbar
-  '#ec4899', // Rosa
-  '#06b6d4', // Cian
-  '#ef4444', // Rojo
+  '#10b981',
+  '#a3e635',
+  '#3b82f6',
+  '#8b5cf6',
+  '#f59e0b',
+  '#ec4899',
+  '#06b6d4',
+  '#ef4444',
 ]
 
 // Variables disponibles y visibles
@@ -264,22 +302,36 @@ watch(() => props.data, (newData) => {
   }
 }, { immediate: true })
 
-// Tooltip
-const tooltip = ref({
-  visible: false,
-  x: 0,
-  y: 0,
-  variable: '',
-  label: '',
-  value: 0,
-  color: ''
+// Calcular el punto más alto de la gráfica (valor Y mínimo en píxeles)
+const highestPoint = computed(() => {
+  if (!hoverState.value.visible) return padding.top
+  
+  let minY = Infinity
+  visibleVariables.value.forEach(variable => {
+    const data = getVariableData(variable)
+    if (data[hoverState.value.index] !== null && 
+        data[hoverState.value.index] !== undefined && 
+        !isNaN(data[hoverState.value.index])) {
+      const y = getY(data[hoverState.value.index])
+      if (y < minY) {
+        minY = y
+      }
+    }
+  })
+  
+  return minY === Infinity ? padding.top : minY
 })
 
-const tooltipStyle = computed(() => ({
-  left: `${tooltip.value.x}px`,
-  top: `${tooltip.value.y}px`,
-  transform: 'translate(-50%, -100%)'
-}))
+// Estilo del tooltip fijo
+const tooltipFixedStyle = computed(() => {
+  const rect = chartWrapper.value?.getBoundingClientRect()
+  if (!rect) return {}
+  
+  return {
+    left: `${hoverState.value.x}px`,
+    top: `${highestPoint.value - 150}px`  // 10px arriba del punto más alto
+  }
+})
 
 // Dimensiones del gráfico
 const chartHeight = computed(() => dimensions.value.height - padding.top - padding.bottom)
@@ -299,7 +351,6 @@ const getXPositionPercentage = (index) => {
   const dataLength = props.xLabels.length
   if (dataLength <= 1) return 0
   
-  // Calcular el porcentaje considerando los paddings
   const totalWidth = dimensions.value.width
   const usableWidth = chartWidth.value
   const leftPaddingPercentage = (padding.left / totalWidth) * 100
@@ -307,6 +358,24 @@ const getXPositionPercentage = (index) => {
   
   const step = usableWidthPercentage / (dataLength - 1)
   return leftPaddingPercentage + (index * step)
+}
+
+// Área de interacción para cada punto
+const getInteractionX = (index) => {
+  const dataLength = props.xLabels.length
+  if (index === 0) return padding.left
+  
+  const currentX = getXPosition(index)
+  const prevX = getXPosition(index - 1)
+  return prevX + (currentX - prevX) / 2
+}
+
+const getInteractionWidth = () => {
+  const dataLength = props.xLabels.length
+  if (dataLength <= 1) return chartWidth.value
+  
+  const step = chartWidth.value / (dataLength - 1)
+  return step
 }
 
 // Calcular todos los valores visibles
@@ -323,25 +392,15 @@ const allVisibleValues = computed(() => {
 // Rango de valores
 const minValue = computed(() => {
   const min = Math.min(...allVisibleValues.value)
-  return Math.floor(min * 0.95) // 5% de margen inferior
+  return Math.floor(min * 0.95)
 })
 
 const maxValue = computed(() => {
   const max = Math.max(...allVisibleValues.value)
-  return Math.ceil(max * 1.05) // 5% de margen superior
+  return Math.ceil(max * 1.05)
 })
 
 const valueRange = computed(() => maxValue.value - minValue.value || 1)
-
-// Etiquetas del eje Y
-const yAxisLabels = computed(() => {
-  const labels = []
-  for (let i = 0; i < props.gridLines; i++) {
-    const value = maxValue.value - (i * valueRange.value / (props.gridLines - 1))
-    labels.push(value)
-  }
-  return labels
-})
 
 // Verificar si hay datos
 const hasData = computed(() => {
@@ -419,7 +478,6 @@ const getAreaPath = (variable) => {
   let path = ''
   let points = []
 
-  // Recopilar puntos válidos
   for (let i = 0; i < data.length; i++) {
     if (data[i] !== null && data[i] !== undefined && !isNaN(data[i])) {
       points.push({
@@ -432,7 +490,6 @@ const getAreaPath = (variable) => {
 
   if (points.length === 0) return ''
 
-  // Crear path del área
   path = `M ${points[0].x} ${getY(minValue.value)}`
   path += ` L ${points[0].x} ${points[0].y}`
   
@@ -456,29 +513,51 @@ const formatValue = (value) => {
   })
 }
 
-const showTooltip = (event, variable, index, value) => {
+const handleMouseMove = (event) => {
+  if (!chartWrapper.value) return
+  
   const rect = chartWrapper.value.getBoundingClientRect()
-  tooltip.value = {
-    visible: true,
-    x: event.clientX - rect.left,
-    y: event.clientY - rect.top - 15,
-    variable: variable,
-    label: props.xLabels[index] || `Punto ${index + 1}`,
-    value: value,
-    color: getVariableColor(variable)
+  const mouseX = event.clientX - rect.left
+  
+  // Encontrar el índice más cercano
+  let closestIndex = -1
+  let minDistance = Infinity
+  
+  for (let i = 0; i < props.xLabels.length; i++) {
+    const pointX = getXPosition(i)
+    const distance = Math.abs(mouseX - pointX)
+    
+    if (distance < minDistance) {
+      minDistance = distance
+      closestIndex = i
+    }
+  }
+  
+  // Solo mostrar si está dentro del área de interacción
+  const interactionThreshold = getInteractionWidth() / 2
+  if (minDistance < interactionThreshold) {
+    showTooltipForIndex(closestIndex)
+  } else {
+    hideTooltip()
   }
 }
 
-const updateTooltip = (event) => {
-  if (tooltip.value.visible) {
-    const rect = chartWrapper.value.getBoundingClientRect()
-    tooltip.value.x = event.clientX - rect.left
-    tooltip.value.y = event.clientY - rect.top - 15
+const showTooltipForIndex = (index) => {
+  hoverState.value = {
+    visible: true,
+    x: getXPosition(index),
+    index: index,
+    label: props.xLabels[index]
   }
 }
 
 const hideTooltip = () => {
-  tooltip.value.visible = false
+  hoverState.value = {
+    visible: false,
+    x: 0,
+    index: -1,
+    label: ''
+  }
 }
 
 const handleResize = () => {
@@ -505,7 +584,6 @@ onMounted(() => {
   window.addEventListener('resize', handleResize)
   document.addEventListener('click', handleClickOutside)
   
-  // Observer para detectar cambios en el tamaño del contenedor
   if (chartWrapper.value) {
     const resizeObserver = new ResizeObserver(() => {
       handleResize()
@@ -732,20 +810,13 @@ onUnmounted(() => {
   stroke-width: 1;
 }
 
-.axis-label {
-  font-size: 12px;
-  fill: #9ca3af;
-  text-anchor: middle;
-  font-weight: 500;
+.hover-line {
+  transition: opacity 0.15s ease;
+  pointer-events: none;
 }
 
-.y-axis .axis-label {
-  text-anchor: end;
-}
-
-.axis-label-year {
-  font-weight: 600;
-  fill: #6b7280;
+.interaction-rect {
+  cursor: pointer;
 }
 
 /* Eje X externo */
@@ -783,13 +854,11 @@ onUnmounted(() => {
   opacity: 0;
   transform-origin: center;
   animation: popIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
-  cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 }
 
-.data-point:hover {
-  r: 7;
-  filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.3));
+.data-point.is-hovered {
+  filter: drop-shadow(0 0 6px rgba(0, 0, 0, 0.3));
 }
 
 @keyframes drawLine {
@@ -828,63 +897,75 @@ onUnmounted(() => {
 .data-point:nth-child(7) { animation-delay: 1.4s; }
 .data-point:nth-child(8) { animation-delay: 1.5s; }
 
-/* Tooltip */
-.tooltip {
+/* Tooltip fijo */
+.tooltip-fixed {
   position: absolute;
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 12px;
+  background: #1f2937;
+  color: white;
+  border-radius: 6px;
+  padding: 6px 8px;
   pointer-events: none;
   z-index: 1000;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  min-width: 140px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  min-width: 100px;
+  transform: translateX(-50%);
 }
 
-.tooltip::after {
+.tooltip-fixed::after {
   content: '';
   position: absolute;
   top: 100%;
   left: 50%;
   transform: translateX(-50%);
-  border: 6px solid transparent;
-  border-top-color: white;
+  border: 4px solid transparent;
+  border-top-color: #1f2937;
 }
 
-.tooltip-header {
+.tooltip-year {
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.tooltip-items {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  flex-direction: column;
+  gap: 5px;
 }
 
-.tooltip-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
-.tooltip-variable {
-  font-size: 13px;
-  font-weight: 600;
-  color: #111827;
-}
-
-.tooltip-body {
+.tooltip-item {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.tooltip-label {
-  font-size: 12px;
-  color: #6b7280;
+.tooltip-item-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tooltip-dot {
+  width: 10px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.tooltip-variable {
+  font-size: 11px;
+  font-weight: 100;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .tooltip-value {
-  font-size: 16px;
-  font-weight: 700;
-  color: #111827;
+  font-size: 11px;
+  font-weight: 100;
+  color: white;
+  padding-left: 10px;
 }
 
 /* Transiciones */
@@ -901,12 +982,12 @@ onUnmounted(() => {
 
 .tooltip-fade-enter-active,
 .tooltip-fade-leave-active {
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
 }
 
 .tooltip-fade-enter-from,
 .tooltip-fade-leave-to {
   opacity: 0;
-  transform: translate(-50%, calc(-100% - 5px));
+  transform: translateX(-50%) translateY(-5px);
 }
 </style>
