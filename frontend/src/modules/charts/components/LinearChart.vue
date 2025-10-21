@@ -6,69 +6,23 @@
         <h3 class="chart-title">{{ title }}</h3>
         <p v-if="subtitle" class="chart-subtitle">{{ subtitle }}</p>
       </div>
-      
-      <!-- Botón de menú -->
-      <div class="chart-controls">
-        <button 
-          class="menu-button" 
-          @click.stop="toggleMenu"
-          :class="{ 'is-open': isMenuOpen }"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="1"/>
-            <circle cx="12" cy="5" r="1"/>
-            <circle cx="12" cy="19" r="1"/>
-          </svg>
-        </button>
-
-        <!-- Menú desplegable -->
-        <transition name="menu-fade">
-          <div v-if="isMenuOpen" class="dropdown-menu" @click.stop>
-            <div class="menu-section">
-              <div class="menu-section-title">Variables visibles</div>
-              <div 
-                v-for="variable in availableVariables" 
-                :key="variable"
-                class="menu-item"
-                @click="toggleVariable(variable)"
-              >
-                <div class="checkbox-wrapper">
-                  <input 
-                    type="checkbox" 
-                    :checked="visibleVariables.includes(variable)"
-                    :id="`var-${variable}`"
-                    class="menu-checkbox"
-                    @click.stop
-                  />
-                  <label :for="`var-${variable}`" class="menu-label">
-                    {{ variable }}
-                  </label>
-                </div>
-                <div 
-                  class="color-indicator" 
-                  :style="{ backgroundColor: getVariableColor(variable) }"
-                ></div>
-              </div>
-            </div>
-          </div>
-        </transition>
-      </div>
     </div>
 
-    <!-- Leyenda de variables -->
-    <div v-if="showLegend && visibleVariables.length > 0" class="chart-legend">
-      <div 
-        v-for="variable in visibleVariables"
-        :key="`legend-${variable}`"
-        class="legend-item"
+    <!-- Filtros de variables (botones) -->
+    <div v-if="availableVariables.length > 0" class="variable-filters">
+      <button 
+        v-for="variable in availableVariables" 
+        :key="variable"
         @click="toggleVariable(variable)"
+        :class="['filter-btn', { 'active': visibleVariables.includes(variable) }]"
+        :style="{ 
+          '--btn-color': getVariableColor(variable),
+          backgroundColor: visibleVariables.includes(variable) ? getVariableColor(variable) : 'white',
+          color: visibleVariables.includes(variable) ? 'white' : '#6b7280'
+        }"
       >
-        <div 
-          class="legend-dot" 
-          :style="{ backgroundColor: getVariableColor(variable) }"
-        ></div>
-        <span class="legend-label">{{ variable }}</span>
-      </div>
+        {{ variable }}
+      </button>
     </div>
 
     <!-- Mensaje si no hay datos -->
@@ -246,7 +200,6 @@ const props = defineProps({
 const emit = defineEmits(['variable-toggle'])
 
 // Estado
-const isMenuOpen = ref(false)
 const chartWrapper = ref(null)
 const dimensions = ref({ width: 600, height: 300 })
 
@@ -259,7 +212,7 @@ const hoverState = ref({
 })
 
 // Configuración de padding
-const padding = { top: 0, right: 40, bottom: 50, left: 20 }
+const padding = { top: 20, right: 100, bottom: 130, left: 40 }
 
 // Paleta de colores
 const colorPalette = [
@@ -273,17 +226,30 @@ const colorPalette = [
   '#ef4444',
 ]
 
-// Variables disponibles y visibles
+// Variables disponibles y visibles (inicialmente TODAS inactivas)
 const availableVariables = computed(() => Object.keys(props.data))
 const visibleVariables = ref([])
 
-// Inicializar variables visibles
+// Estado de animación para cada variable
+const animatedData = ref({})
+
+// Inicializar variables TODAS inactivas
 watch(() => props.data, (newData) => {
   const vars = Object.keys(newData)
-  if (vars.length > 0 && visibleVariables.value.length === 0) {
-    visibleVariables.value = [...vars]
+  
+  // Inicializar datos animados en el mínimo valor
+  vars.forEach(variable => {
+    if (!animatedData.value[variable]) {
+      animatedData.value[variable] = new Array(props.xLabels.length).fill(null)
+    }
+  })
+  
+  // Solo inicializar visibleVariables si está vacío (primera carga)
+  if (visibleVariables.value.length === 0) {
+    // Dejar todas inactivas inicialmente
+    visibleVariables.value = []
   }
-}, { immediate: true })
+}, { immediate: true, deep: true })
 
 // Calcular el punto más alto de la gráfica (valor Y mínimo en píxeles)
 const highestPoint = computed(() => {
@@ -312,7 +278,7 @@ const tooltipFixedStyle = computed(() => {
   
   return {
     left: `${hoverState.value.x}px`,
-    top: `${highestPoint.value - 200}px`  // 10px arriba del punto más alto
+    top: `${highestPoint.value - 200}px`
   }
 })
 
@@ -343,20 +309,24 @@ const getXPositionPercentage = (index) => {
   return leftPaddingPercentage + (index * step)
 }
 
-// Área de interacción para cada punto
+// Área de interacción para cada punto (alineada con el espacio de las líneas)
 const getInteractionX = (index) => {
   const dataLength = props.xLabels.length
-  if (index === 0) return padding.left
   
-  const currentX = getXPosition(index)
-  const prevX = getXPosition(index - 1)
-  return prevX + (currentX - prevX) / 2
+  // Para el primer punto
+  if (index === 0) {
+    return padding.left
+  }
+  
+  // Para el resto, el área comienza desde el punto anterior
+  return getXPosition(index - 1)
 }
 
 const getInteractionWidth = () => {
   const dataLength = props.xLabels.length
   if (dataLength <= 1) return chartWidth.value
   
+  // El ancho es exactamente la distancia entre dos puntos consecutivos
   const step = chartWidth.value / (dataLength - 1)
   return step
 }
@@ -393,20 +363,83 @@ const hasData = computed(() => {
 })
 
 // Funciones
-const toggleMenu = () => {
-  isMenuOpen.value = !isMenuOpen.value
+const toggleVariable = async (variable) => {
+  const index = visibleVariables.value.indexOf(variable)
+  
+  if (index > -1) {
+    // Desactivar: animar hacia el mínimo
+    await animateVariableOut(variable)
+    visibleVariables.value.splice(index, 1)
+  } else {
+    // Activar: agregar y animar desde el mínimo
+    visibleVariables.value.push(variable)
+    await animateVariableIn(variable)
+  }
+  
+  emit('variable-toggle', visibleVariables.value)
 }
 
-const toggleVariable = (variable) => {
-  const index = visibleVariables.value.indexOf(variable)
-  if (index > -1) {
-    if (visibleVariables.value.length > 1) {
-      visibleVariables.value.splice(index, 1)
-    }
-  } else {
-    visibleVariables.value.push(variable)
+// Animar entrada de variable (desde mínimo hacia valores reales)
+const animateVariableIn = async (variable) => {
+  const realData = props.data[variable] || []
+  const steps = 50 // Pasos de animación
+  const duration = 600 // ms total
+  const stepDuration = duration / steps
+  
+  // Inicializar en el valor mínimo
+  animatedData.value[variable] = new Array(realData.length).fill(minValue.value)
+  
+  // Animar cada paso
+  for (let step = 0; step <= steps; step++) {
+    const progress = step / steps
+    const easedProgress = easeOutCubic(progress)
+    
+    animatedData.value[variable] = realData.map((value, i) => {
+      if (value === null || value === undefined || isNaN(value)) return null
+      return minValue.value + (value - minValue.value) * easedProgress
+    })
+    
+    await new Promise(resolve => setTimeout(resolve, stepDuration))
   }
-  emit('variable-toggle', visibleVariables.value)
+  
+  // Asegurar valores finales exactos
+  animatedData.value[variable] = [...realData]
+}
+
+// Animar salida de variable (desde valores reales hacia mínimo)
+const animateVariableOut = async (variable) => {
+  const realData = props.data[variable] || []
+  const currentData = animatedData.value[variable] || realData
+  const steps = 20
+  const duration = 400 // ms total (más rápido para salida)
+  const stepDuration = duration / steps
+  
+  // Animar cada paso hacia el mínimo
+  for (let step = 0; step <= steps; step++) {
+    const progress = step / steps
+    const easedProgress = easeInCubic(progress)
+    
+    animatedData.value[variable] = currentData.map((value, i) => {
+      if (value === null || value === undefined || isNaN(value)) return null
+      const realValue = realData[i]
+      if (realValue === null || realValue === undefined || isNaN(realValue)) return null
+      return realValue - (realValue - minValue.value) * easedProgress
+    })
+    
+    await new Promise(resolve => setTimeout(resolve, stepDuration))
+  }
+  
+  // Finalizar en null para ocultar
+  animatedData.value[variable] = new Array(realData.length).fill(null)
+}
+
+// Funciones de easing
+const easeOutCubic = (t) => {
+  return 1 - Math.pow(1 - t, 3)
+}
+
+const easeInCubic = (t) => {
+  return Math.pow(t, 3)
 }
 
 const getVariableColor = (variable) => {
@@ -419,7 +452,8 @@ const getVariableId = (variable) => {
 }
 
 const getVariableData = (variable) => {
-  return props.data[variable] || []
+  // Retornar datos animados si existen, sino los datos reales
+  return animatedData.value[variable] || props.data[variable] || []
 }
 
 const getY = (value) => {
@@ -555,17 +589,10 @@ const handleResize = () => {
   }
 }
 
-const handleClickOutside = (e) => {
-  if (!e.target.closest('.chart-controls')) {
-    isMenuOpen.value = false
-  }
-}
-
 // Lifecycle
 onMounted(() => {
   handleResize()
   window.addEventListener('resize', handleResize)
-  document.addEventListener('click', handleClickOutside)
   
   if (chartWrapper.value) {
     const resizeObserver = new ResizeObserver(() => {
@@ -581,7 +608,6 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
-  document.removeEventListener('click', handleClickOutside)
 })
 </script>
 
@@ -617,6 +643,7 @@ onUnmounted(() => {
   color: #111827;
   margin: 0 0 4px 0;
   line-height: 1.4;
+  text-align: center;
 }
 
 .chart-subtitle {
@@ -624,131 +651,57 @@ onUnmounted(() => {
   color: #6b7280;
   margin: 0;
   line-height: 1.4;
+  text-align: center;
+}
+
+/* Filtros de variables */
+.variable-filters {
+  display: flex;
+  flex-direction: row;
+  height: 32px;
+  padding: 4px;
+  border-radius: 24px;
+  flex-wrap: wrap;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); 
+  gap: 6px;
+  margin-bottom: 16px;
+  flex-shrink: 0;
+  background-color: white;
+}
+
+.filter-btn {
+  flex: 0 1 auto;
+  border: 1px solid #e5e7eb;
+  padding: 4px 12px;
+  border-radius: 24px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: white;
+  transition: all 0.3s ease;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: -0.2px;
+}
+
+.filter-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.filter-btn.active {
+  border-color: transparent;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  font-weight: 600;
 }
 
 .chart-controls {
   position: relative;
   margin-left: 16px;
-}
-
-.menu-button {
-  padding: 6px;
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #6b7280;
-}
-
-.menu-button:hover,
-.menu-button.is-open {
-  background: #f9fafb;
-  border-color: #d1d5db;
-  color: #111827;
-}
-
-.dropdown-menu {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
-  min-width: 220px;
-  z-index: 100;
-}
-
-.menu-section {
-  padding: 8px;
-}
-
-.menu-section-title {
-  padding: 8px 12px;
-  font-size: 11px;
-  font-weight: 600;
-  color: #9ca3af;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.menu-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.menu-item:hover {
-  background: #f9fafb;
-}
-
-.checkbox-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex: 1;
-}
-
-.menu-checkbox {
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-  accent-color: #10b981;
-}
-
-.menu-label {
-  font-size: 14px;
-  color: #374151;
-  cursor: pointer;
-  user-select: none;
-}
-
-.color-indicator {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.chart-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-  margin-bottom: 20px;
-  padding: 12px 0;
-  flex-shrink: 0;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-.legend-item:hover {
-  opacity: 0.7;
-}
-
-.legend-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-}
-
-.legend-label {
-  font-size: 13px;
-  color: #374151;
-  font-weight: 500;
 }
 
 .no-data {
@@ -866,8 +819,8 @@ onUnmounted(() => {
   pointer-events: none;
   z-index: 1000;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-  width: 300px;
-  min-height: 150px;
+  width: 280px;
+  min-height: 120px;
   opacity: 95%;
   transform: translateX(-50%);
   white-space: normal;
@@ -939,17 +892,6 @@ onUnmounted(() => {
 }
 
 /* Transiciones */
-.menu-fade-enter-active,
-.menu-fade-leave-active {
-  transition: all 0.2s ease;
-}
-
-.menu-fade-enter-from,
-.menu-fade-leave-to {
-  opacity: 0;
-  transform: translateY(-8px);
-}
-
 .tooltip-fade-enter-active,
 .tooltip-fade-leave-active {
   transition: all 0.2s ease;
