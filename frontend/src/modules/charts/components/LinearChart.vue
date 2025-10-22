@@ -212,7 +212,7 @@ const hoverState = ref({
 })
 
 // Configuración de padding
-const padding = { top: 20, right: 100, bottom: 130, left: 40 }
+const padding = { top: 20, right: 100, bottom: 10, left: 40 }
 
 // Paleta de colores
 const colorPalette = [
@@ -382,7 +382,7 @@ const toggleVariable = async (variable) => {
 // Animar entrada de variable (desde mínimo hacia valores reales)
 const animateVariableIn = async (variable) => {
   const realData = props.data[variable] || []
-  const steps = 50 // Pasos de animación
+  const steps = 20 // Pasos de animación
   const duration = 600 // ms total
   const stepDuration = duration / steps
   

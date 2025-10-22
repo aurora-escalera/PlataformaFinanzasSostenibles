@@ -11,7 +11,17 @@
               :xLabels="years"
            />
         </div>
-        <div class="IIC-anual-linear-chart"></div>
+        <div class="IIC-anual-linear-chart">
+            <StackedArea
+              title="Tu título"
+              :data="{
+                'Variable 1': [10, 20, 30, 25, 35],
+                'Variable 2': [15, 25, 20, 30, 28]
+              }"
+              :xLabels="['Ene', 'Feb', 'Mar', 'Abr', 'May']"
+              :valueFormatter="(val) => `$${val}`"
+           />
+        </div>
       </div>
       <div class="row-2">
         <div class="IIC-anual-bar-chart"></div>
@@ -31,6 +41,7 @@
 <script setup>
 import { ref, computed, watch, onMounted} from 'vue'
 import LinearChart from '../../charts/components/LinearChart.vue';
+import StackedArea from '../../charts/components/StackedArea.vue';
 
 //HorizontalBarChart
 // Datos avanzados con más opciones
