@@ -75,9 +75,9 @@
         <line
           v-if="hoverState.visible"
           :x1="hoverState.x"
-          :y1="padding.top"
+          :y1="0"
           :x2="hoverState.x"
-          :y2="dimensions.height - padding.bottom"
+          :y2="dimensions.height"
           class="hover-line"
           stroke="#9ca3af"
           stroke-width="0.5"
@@ -87,14 +87,13 @@
         <!-- Línea horizontal punteada del hover (desde eje Y hasta el punto) -->
         <line
           v-if="hoverState.visible && hoverState.yValue !== null"
-          :x1="padding.left"
+          :x1="0"
           :y1="hoverState.yPosition"
-          :x2="hoverState.x"
+          :x2="dimensions.width"
           :y2="hoverState.yPosition"
           class="hover-line"
           stroke="#9ca3af"
           stroke-width="0.8"
-
         />
 
         <!-- Áreas apiladas (de abajo hacia arriba) -->
@@ -1253,12 +1252,12 @@ onUnmounted(() => {
   background: #1f2937;
   color: white;
   border-radius: 6px;
-  padding: 6px;
+  padding: 2px;
   pointer-events: none;
   z-index: 1000;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-  width: 100px;
-  min-height: 75px;
+  width: 90px;
+  min-height: 55px;
   opacity: 95%;
   transform: translateX(-50%);
   white-space: normal;
@@ -1277,7 +1276,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 5px;
-  padding-top: 10px;
+
 }
 
 .tooltip-item {
@@ -1302,8 +1301,8 @@ onUnmounted(() => {
 }
 
 .tooltip-variable {
-  font-size: 9px;
-  font-weight: 200;
+  font-size: 8px;
+  font-weight: 100;
   color: rgba(255, 255, 255, 0.8);
   padding-left: 5px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -1311,8 +1310,8 @@ onUnmounted(() => {
 }
 
 .tooltip-value {
-  font-size: 9px;
-  font-weight: 200;
+  font-size: 8px;
+  font-weight: 100;
   color: white;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   letter-spacing: -0.5px;
