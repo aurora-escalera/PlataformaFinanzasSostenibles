@@ -80,7 +80,7 @@
           :y2="dimensions.height - padding.bottom"
           class="hover-line"
           stroke="#9ca3af"
-          stroke-width="1.5"
+          stroke-width="0.5"
           stroke-dasharray="4 4"
         />
 
@@ -93,8 +93,8 @@
           :y2="hoverState.yPosition"
           class="hover-line"
           stroke="#9ca3af"
-          stroke-width="1.5"
-          stroke-dasharray="4 4"
+          stroke-width="0.8"
+
         />
 
         <!-- Áreas apiladas (de abajo hacia arriba) -->
@@ -367,15 +367,14 @@ const highestPoint = computed(() => {
 
 // Estilo del tooltip fijo
 const tooltipFixedStyle = computed(() => {
-  const rect = chartWrapper.value?.getBoundingClientRect()
-  if (!rect) return {}
+  if (!hoverState.value.visible) return {}
   
   return {
     left: `${hoverState.value.x}px`,
-    top: `${highestPoint.value - 200}px`
+    top: `${hoverState.value.yPosition - 20}px`,  // 20px arriba del punto
+    transform: 'translate(-50%, -100%)'  // Centrado horizontal y arriba del cursor
   }
 })
-
 // Estilo del tooltip Y (a la izquierda)
 const tooltipYStyle = computed(() => {
   return {
@@ -1228,12 +1227,12 @@ onUnmounted(() => {
   background: #1f2937;
   color: white;
   border-radius: 6px;
-  padding: 12px;
+  padding: 6px;
   pointer-events: none;
   z-index: 1000;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-  width: 280px;
-  min-height: 120px;
+  width: 100px;
+  min-height: 75px;
   opacity: 95%;
   transform: translateX(-50%);
   white-space: normal;
@@ -1251,10 +1250,10 @@ onUnmounted(() => {
 }
 
 .tooltip-year {
-  font-size: 15px;
+  font-size: 9px;
   color: white;
-  margin-bottom: 6px;
-  padding-bottom: 4px;
+  margin-bottom: 2px;
+  padding-bottom: 2px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
 }
 
@@ -1287,8 +1286,8 @@ onUnmounted(() => {
 }
 
 .tooltip-variable {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 9px;
+  font-weight: 200;
   color: rgba(255, 255, 255, 0.8);
   padding-left: 5px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -1296,8 +1295,8 @@ onUnmounted(() => {
 }
 
 .tooltip-value {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 9px;
+  font-weight: 200;
   color: white;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   letter-spacing: -0.5px;
@@ -1306,30 +1305,23 @@ onUnmounted(() => {
 /* Tooltip Y (a la izquierda) */
 .tooltip-y {
   position: absolute;
-  background: #1f2937;
-  color: white;
+  background: #F0F0F2;
+  border: 1px solid #C5CBCE;
+  color: black;
   border-radius: 4px;
   padding: 4px 8px;
   pointer-events: none;
   z-index: 1000;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 200;
   transform: translate(-100%, -50%);
   white-space: nowrap;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+
   letter-spacing: -0.3px;
 }
 
-.tooltip-y::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  right: -4px;
-  transform: translateY(-50%);
-  border: 4px solid transparent;
-  border-left-color: #1f2937;
-}
 
 /* Transiciones */
 .tooltip-fade-enter-active,
