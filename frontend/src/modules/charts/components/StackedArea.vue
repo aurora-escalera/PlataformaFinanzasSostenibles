@@ -213,6 +213,17 @@
       </transition>
     </div>
 
+    <!-- Tooltip X (en el eje inferior) -->
+    <transition name="tooltip-x-fade">
+      <div 
+        v-if="hoverState.visible" 
+        class="tooltip-x"
+        :style="tooltipXStyle"
+      >
+        {{ hoverState.label }}
+      </div>
+    </transition>
+
     <!-- Eje X externo (fuera del SVG) -->
     <div v-if="hasData" class="x-axis-container">
       <div 
@@ -350,6 +361,19 @@ const getStackedValues = computed(() => {
   return stacked
 })
 
+const tooltipXStyle = computed(() => {
+  if (!hoverState.value.visible) return {}
+  
+  // Usar la misma función que usa el eje X para consistencia
+  const percentage = getXPositionPercentage(hoverState.value.index)
+  
+  return {
+    left: `${percentage}%`,
+    bottom: '70px', // 20px desde abajo del contenedor (sobre el eje X)
+    transform: 'translateX(-6%)'
+  }
+})
+
 // Calcular el punto más alto de la gráfica (valor Y mínimo en píxeles)
 const highestPoint = computed(() => {
   if (!hoverState.value.visible) return padding.top
@@ -370,8 +394,8 @@ const tooltipFixedStyle = computed(() => {
   if (!hoverState.value.visible) return {}
   
   return {
-    left: `${hoverState.value.x}px`,
-    top: `${hoverState.value.yPosition - 20}px`,  // 20px arriba del punto
+    left: `${hoverState.value.x + 70}px`,
+    top: `${hoverState.value.yPosition + 65}px`,  // 20px arriba del punto
     transform: 'translate(-50%, -100%)'  // Centrado horizontal y arriba del cursor
   }
 })
@@ -1029,11 +1053,13 @@ onUnmounted(() => {
   background: white;
   border-radius: 12px;
   padding: 24px;
+  padding-bottom: 60px; /* Espacio extra para tooltip X */
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
   overflow: visible;
+  position: relative; /* Para que el tooltip X se posicione correctamente */
 }
 
 .chart-header {
@@ -1239,16 +1265,6 @@ onUnmounted(() => {
   text-align: center;
 }
 
-.tooltip-fixed::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 4px solid transparent;
-  border-top-color: #1f2937;
-}
-
 .tooltip-year {
   font-size: 9px;
   color: white;
@@ -1322,6 +1338,55 @@ font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, O
   letter-spacing: -0.3px;
 }
 
+/* Tooltip X (en el eje inferior) */
+.tooltip-x {
+  position: absolute;
+  background: #F0F0F2;
+  border: 1px solid #C5CBCE;
+  color: black;
+  border-radius: 4px;
+  padding: 4px 10px;
+  pointer-events: none;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  letter-spacing: -0.3px;
+}
+
+/* Flecha del tooltip X (apunta hacia arriba) */
+.tooltip-x::after {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 5px 5px 5px;
+  border-color: transparent transparent #F0F0F2 transparent;
+  filter: blur(0.3px);
+}
+
+/* Borde de la flecha */
+.tooltip-x::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 6px 6px 6px;
+  border-color: transparent transparent #C5CBCE transparent;
+  filter: blur(0.3px);
+  z-index: -1;
+  margin-bottom: -1px;
+}
 
 /* Transiciones */
 .tooltip-fade-enter-active,
@@ -1333,5 +1398,17 @@ font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, O
 .tooltip-fade-leave-to {
   opacity: 0;
   transform: translateX(-50%) translateY(-5px);
+}
+
+/* Transición específica para tooltip X */
+.tooltip-x-fade-enter-active,
+.tooltip-x-fade-leave-active {
+  transition: all 0.2s ease;
+}
+
+.tooltip-x-fade-enter-from,
+.tooltip-x-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-50%);
 }
 </style>
