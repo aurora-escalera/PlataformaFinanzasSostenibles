@@ -58,61 +58,108 @@
           />
         </g>
 
+        <!-- Etiquetas del eje Y -->
+        <g class="y-axis-labels">
+          <text
+            v-for="i in gridLines"
+            :key="`y-label-${i}`"
+            :x="padding.left - 10"
+            :y="padding.top + (i - 1) * gridSpacing + 4"
+            class="y-axis-label"
+            text-anchor="end"
+          >
+            {{ formatYAxisValue(getYAxisValue(i - 1)) }}
+          </text>
+        </g>
+
         <!-- Línea vertical punteada del hover -->
         <line
           v-if="hoverState.visible"
           :x1="hoverState.x"
-          :y1="padding.top"
+          :y1="0"
           :x2="hoverState.x"
-          :y2="dimensions.height - padding.bottom"
+          :y2="dimensions.height"
           class="hover-line"
           stroke="#9ca3af"
-          stroke-width="1.5"
+          stroke-width="0.5"
           stroke-dasharray="4 4"
         />
 
-        <!-- Líneas y áreas -->
+        <!-- Línea horizontal punteada del hover -->
+        <line
+          v-if="hoverState.visible && hoverState.yValue !== null"
+          :x1="0"
+          :y1="hoverState.yPosition"
+          :x2="dimensions.width"
+          :y2="hoverState.yPosition"
+          class="hover-line"
+          stroke="#9ca3af"
+          stroke-width="0.8"
+        />
+
+        <!-- Líneas -->
         <g class="lines">
-          <g v-for="variable in visibleVariables" :key="`line-${variable}`">
-            <!-- Línea principal con animación -->
+          <g v-for="(variable, idx) in visibleVariables" :key="`line-${variable}`">
+            <!-- Línea principal -->
             <path
               :d="getLinePath(variable)"
               :stroke="getVariableColor(variable)"
-              stroke-width="1.5"
+              stroke-width="2"
               fill="none"
               stroke-linecap="round"
               stroke-linejoin="round"
-              class="line-path"
+              :class="['line-path', { 'line-exit': animatingVariables.has(variable) }]"
+              :style="{ 
+                animationDelay: animatingVariables.has(variable) ? '400ms' : `${idx * 0.1}s`,
+                animationDuration: animatingVariables.has(variable) ? '300ms' : '1.5s'
+              }"
             />
 
-            <!-- Puntos de datos -->
+            <!-- Puntos animados que se mueven (prioridad durante animación) -->
+            <g class="animated-data-points">
+              <circle
+                v-if="hoverState.visible && animatingPoints[`${variable}-x`] !== undefined"
+                :cx="getAnimatedPointX(variable)"
+                :cy="getAnimatedPointY(variable)"
+                :r="5"
+                :fill="getDarkerColor(variable)"
+                class="data-point animated-point"
+                :style="{ 
+                  filter: `drop-shadow(0 0 8px ${getDarkerColor(variable)})`,
+                  opacity: 1
+                }"
+              />
+            </g>
+
+            <!-- Puntos de datos permanentes (siempre visibles) -->
+            <g class="permanent-data-points">
+              <circle
+                v-for="(point, i) in getVariableData(variable)"
+                :key="`permanent-point-${variable}-${i}`"
+                :cx="getXPosition(i)"
+                :cy="getAnimatedY(variable, i)"
+                :r="2"
+                :fill="getVariableColor(variable)"
+                class="data-point-permanent"
+              />
+            </g>
+
+            <!-- Puntos de datos con hover (solo cuando NO hay animación de movimiento) -->
             <g class="data-points">
               <circle
                 v-for="(point, i) in getVariableData(variable)"
                 :key="`point-${variable}-${i}`"
                 :cx="getXPosition(i)"
-                :cy="getY(point)"
-                :r="hoverState.visible && hoverState.index === i ? 3 : 2"
+                :cy="getAnimatedY(variable, i)"
+                :r="hoverState.visible && hoverState.index === i && animatingPoints[`${variable}-x`] === undefined ? 5 : 0"
                 :fill="getVariableColor(variable)"
                 :class="['data-point', { 'is-hovered': hoverState.visible && hoverState.index === i }]"
+                :style="{ 
+                  filter: `drop-shadow(0 0 8px ${getVariableColor(variable)})`
+                }"
               />
             </g>
           </g>
-        </g>
-
-        <!-- Áreas interactivas invisibles para detectar hover -->
-        <g class="interaction-areas">
-          <rect
-            v-for="(label, i) in props.xLabels"
-            :key="`interaction-${i}`"
-            :x="getInteractionX(i)"
-            :y="padding.top"
-            :width="getInteractionWidth()"
-            :height="dimensions.height - padding.top - padding.bottom"
-            fill="transparent"
-            class="interaction-rect"
-            @mouseenter="showTooltipForIndex(i)"
-          />
         </g>
       </svg>
 
@@ -144,6 +191,28 @@
           </div>
         </div>
       </transition>
+
+      <!-- Tooltip Y (a la izquierda) -->
+      <transition name="tooltip-fade">
+        <div 
+          v-if="hoverState.visible && hoverState.yValue !== null" 
+          class="tooltip-y"
+          :style="tooltipYStyle"
+        >
+          {{ formatValue(hoverState.yValue) }}
+        </div>
+      </transition>
+
+      <!-- Tooltip X (en el eje inferior) -->
+      <transition name="tooltip-x-fade">
+        <div 
+          v-if="hoverState.visible" 
+          class="tooltip-x"
+          :style="tooltipXStyle"
+        >
+          {{ hoverState.label }}
+        </div>
+      </transition>
     </div>
 
     <!-- Eje X externo (fuera del SVG) -->
@@ -161,7 +230,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 
 const props = defineProps({
   title: {
@@ -208,17 +277,23 @@ const hoverState = ref({
   visible: false,
   x: 0,
   index: -1,
-  label: ''
+  label: '',
+  yValue: null,
+  yPosition: 0,
+  previousIndex: -1
 })
 
-// Configuración de padding
-const padding = { top: 20, right: 100, bottom: 10, left: 40 }
+// Estado para la animación de los puntos
+const animatingPoints = ref({})
 
-// Paleta de colores
+// Configuración de padding
+const padding = { top: 10, right: 20, bottom: 70, left: 20 }
+
+// Paleta de colores (igual que StackedArea)
 const colorPalette = [
   '#10b981',
-  '#a3e635',
   '#3b82f6',
+  '#a3e635',
   '#8b5cf6',
   '#f59e0b',
   '#ec4899',
@@ -232,60 +307,83 @@ const visibleVariables = ref([])
 
 // Estado de animación para cada variable
 const animatedData = ref({})
+const animatingVariables = ref(new Set())
 
 // Inicializar variables TODAS inactivas
 watch(() => props.data, (newData) => {
   const vars = Object.keys(newData)
   
-  // Inicializar datos animados en el mínimo valor
+  // Inicializar datos animados en valores reales (para que estén listos)
   vars.forEach(variable => {
     if (!animatedData.value[variable]) {
-      animatedData.value[variable] = new Array(props.xLabels.length).fill(null)
+      animatedData.value[variable] = [...(newData[variable] || [])]
     }
   })
-  
-  // Solo inicializar visibleVariables si está vacío (primera carga)
+
+  // Si no hay variables visibles, no mostrar ninguna por defecto
   if (visibleVariables.value.length === 0) {
-    // Dejar todas inactivas inicialmente
     visibleVariables.value = []
   }
 }, { immediate: true, deep: true })
-
-// Calcular el punto más alto de la gráfica (valor Y mínimo en píxeles)
-const highestPoint = computed(() => {
-  if (!hoverState.value.visible) return padding.top
-  
-  let minY = Infinity
-  visibleVariables.value.forEach(variable => {
-    const data = getVariableData(variable)
-    if (data[hoverState.value.index] !== null && 
-        data[hoverState.value.index] !== undefined && 
-        !isNaN(data[hoverState.value.index])) {
-      const y = getY(data[hoverState.value.index])
-      if (y < minY) {
-        minY = y
-      }
-    }
-  })
-  
-  return minY === Infinity ? padding.top : minY
-})
-
-// Estilo del tooltip fijo
-const tooltipFixedStyle = computed(() => {
-  const rect = chartWrapper.value?.getBoundingClientRect()
-  if (!rect) return {}
-  
-  return {
-    left: `${hoverState.value.x}px`,
-    top: `${highestPoint.value - 200}px`
-  }
-})
 
 // Dimensiones del gráfico
 const chartHeight = computed(() => dimensions.value.height - padding.top - padding.bottom)
 const chartWidth = computed(() => dimensions.value.width - padding.left - padding.right)
 const gridSpacing = computed(() => chartHeight.value / (props.gridLines - 1))
+
+// Calcular todos los valores visibles
+const allVisibleValues = computed(() => {
+  const values = []
+  visibleVariables.value.forEach(variable => {
+    if (props.data[variable] && Array.isArray(props.data[variable])) {
+      values.push(...props.data[variable].filter(v => v !== null && v !== undefined && !isNaN(v)))
+    }
+  })
+  return values.length > 0 ? values : [0]
+})
+
+// Máximo y mínimo de los datos visibles
+const maxValue = computed(() => Math.max(...allVisibleValues.value, 0))
+const minValue = computed(() => Math.min(...allVisibleValues.value, 0))
+
+// Calcular la escala Y
+const yScale = computed(() => {
+  const range = maxValue.value - minValue.value
+  return range > 0 ? chartHeight.value / range : 1
+})
+
+// Verificar si hay datos
+const hasData = computed(() => {
+  return visibleVariables.value.length > 0 && 
+         visibleVariables.value.some(v => props.data[v] && props.data[v].length > 0)
+})
+
+// Obtener datos de una variable
+const getVariableData = (variable) => {
+  return props.data[variable] || []
+}
+
+// Obtener color de una variable
+const getVariableColor = (variable) => {
+  const index = availableVariables.value.indexOf(variable)
+  return colorPalette[index % colorPalette.length]
+}
+
+// Obtener ID único para la variable (para gradientes)
+const getVariableId = (variable) => {
+  return variable.replace(/\s+/g, '-').toLowerCase()
+}
+
+// Obtener color más oscuro para puntos animados
+const getDarkerColor = (variable) => {
+  const color = getVariableColor(variable)
+  // Convertir hex a rgb y oscurecer
+  const hex = color.replace('#', '')
+  const r = Math.max(0, parseInt(hex.substr(0, 2), 16) - 30)
+  const g = Math.max(0, parseInt(hex.substr(2, 2), 16) - 30)
+  const b = Math.max(0, parseInt(hex.substr(4, 2), 16) - 30)
+  return `rgb(${r}, ${g}, ${b})`
+}
 
 // Calcular posición X para cada punto
 const getXPosition = (index) => {
@@ -309,262 +407,272 @@ const getXPositionPercentage = (index) => {
   return leftPaddingPercentage + (index * step)
 }
 
-// Área de interacción para cada punto (alineada con el espacio de las líneas)
-const getInteractionX = (index) => {
-  const dataLength = props.xLabels.length
-  
-  // Para el primer punto
-  if (index === 0) {
-    return padding.left
-  }
-  
-  // Para el resto, el área comienza desde el punto anterior
-  return getXPosition(index - 1)
-}
-
-const getInteractionWidth = () => {
-  const dataLength = props.xLabels.length
-  if (dataLength <= 1) return chartWidth.value
-  
-  // El ancho es exactamente la distancia entre dos puntos consecutivos
-  const step = chartWidth.value / (dataLength - 1)
-  return step
-}
-
-// Calcular todos los valores visibles
-const allVisibleValues = computed(() => {
-  const values = []
-  visibleVariables.value.forEach(variable => {
-    if (props.data[variable] && Array.isArray(props.data[variable])) {
-      values.push(...props.data[variable].filter(v => v !== null && v !== undefined && !isNaN(v)))
-    }
-  })
-  return values.length > 0 ? values : [0]
-})
-
-// Rango de valores
-const minValue = computed(() => {
-  const min = Math.min(...allVisibleValues.value)
-  return Math.floor(min * 0.95)
-})
-
-const maxValue = computed(() => {
-  const max = Math.max(...allVisibleValues.value)
-  return Math.ceil(max * 1.05)
-})
-
-const valueRange = computed(() => maxValue.value - minValue.value || 1)
-
-// Verificar si hay datos
-const hasData = computed(() => {
-  return availableVariables.value.length > 0 && 
-         visibleVariables.value.length > 0 &&
-         allVisibleValues.value.length > 0
-})
-
-// Funciones
-const toggleVariable = async (variable) => {
-  const index = visibleVariables.value.indexOf(variable)
-  
-  if (index > -1) {
-    // Desactivar: animar hacia el mínimo
-    await animateVariableOut(variable)
-    visibleVariables.value.splice(index, 1)
-  } else {
-    // Activar: agregar y animar desde el mínimo
-    visibleVariables.value.push(variable)
-    await animateVariableIn(variable)
-  }
-  
-  emit('variable-toggle', visibleVariables.value)
-}
-
-// Animar entrada de variable (desde mínimo hacia valores reales)
-const animateVariableIn = async (variable) => {
-  const realData = props.data[variable] || []
-  const steps = 20 // Pasos de animación
-  const duration = 600 // ms total
-  const stepDuration = duration / steps
-  
-  // Inicializar en el valor mínimo
-  animatedData.value[variable] = new Array(realData.length).fill(minValue.value)
-  
-  // Animar cada paso
-  for (let step = 0; step <= steps; step++) {
-    const progress = step / steps
-    const easedProgress = easeOutCubic(progress)
-    
-    animatedData.value[variable] = realData.map((value, i) => {
-      if (value === null || value === undefined || isNaN(value)) return null
-      return minValue.value + (value - minValue.value) * easedProgress
-    })
-    
-    await new Promise(resolve => setTimeout(resolve, stepDuration))
-  }
-  
-  // Asegurar valores finales exactos
-  animatedData.value[variable] = [...realData]
-}
-
-// Animar salida de variable (desde valores reales hacia mínimo)
-const animateVariableOut = async (variable) => {
-  const realData = props.data[variable] || []
-  const currentData = animatedData.value[variable] || realData
-  const steps = 20
-  const duration = 400 // ms total (más rápido para salida)
-  const stepDuration = duration / steps
-  
-  // Animar cada paso hacia el mínimo
-  for (let step = 0; step <= steps; step++) {
-    const progress = step / steps
-    const easedProgress = easeInCubic(progress)
-    
-    animatedData.value[variable] = currentData.map((value, i) => {
-      if (value === null || value === undefined || isNaN(value)) return null
-      const realValue = realData[i]
-      if (realValue === null || realValue === undefined || isNaN(realValue)) return null
-      return realValue - (realValue - minValue.value) * easedProgress
-    })
-    
-    await new Promise(resolve => setTimeout(resolve, stepDuration))
-  }
-  
-  // Finalizar en null para ocultar
-  animatedData.value[variable] = new Array(realData.length).fill(null)
-}
-
-// Funciones de easing
-const easeOutCubic = (t) => {
-  return 1 - Math.pow(1 - t, 3)
-}
-
-const easeInCubic = (t) => {
-  return Math.pow(t, 3)
-}
-
-const getVariableColor = (variable) => {
-  const index = availableVariables.value.indexOf(variable)
-  return colorPalette[index % colorPalette.length]
-}
-
-const getVariableId = (variable) => {
-  return variable.replace(/[^a-zA-Z0-9]/g, '-')
-}
-
-const getVariableData = (variable) => {
-  // Retornar datos animados si existen, sino los datos reales
-  return animatedData.value[variable] || props.data[variable] || []
-}
-
+// Calcular posición Y para un valor
 const getY = (value) => {
   if (value === null || value === undefined || isNaN(value)) {
-    return padding.top + chartHeight.value
+    return dimensions.value.height - padding.bottom
   }
-  const percentage = (value - minValue.value) / valueRange.value
-  return padding.top + chartHeight.value * (1 - percentage)
+  const normalizedValue = value - minValue.value
+  return dimensions.value.height - padding.bottom - (normalizedValue * yScale.value)
 }
 
-const getLinePath = (variable) => {
-  const data = getVariableData(variable)
-  if (data.length === 0) return ''
-
-  let path = ''
-  let isFirst = true
-
-  for (let i = 0; i < data.length; i++) {
-    if (data[i] !== null && data[i] !== undefined && !isNaN(data[i])) {
-      const x = getXPosition(i)
-      const y = getY(data[i])
-      
-      if (isFirst) {
-        path += `M ${x} ${y}`
-        isFirst = false
-      } else {
-        path += ` L ${x} ${y}`
-      }
-    }
-  }
-  
-  return path
+// Calcular posición Y usando datos animados
+const getAnimatedY = (variable, index) => {
+  const value = animatedData.value[variable]?.[index]
+  return getY(value)
 }
 
-const getAreaPath = (variable) => {
-  const data = getVariableData(variable)
-  if (data.length === 0) return ''
-
-  let path = ''
-  let points = []
-
-  for (let i = 0; i < data.length; i++) {
-    if (data[i] !== null && data[i] !== undefined && !isNaN(data[i])) {
-      points.push({
-        x: getXPosition(i),
-        y: getY(data[i]),
-        index: i
-      })
-    }
-  }
-
-  if (points.length === 0) return ''
-
-  path = `M ${points[0].x} ${getY(minValue.value)}`
-  path += ` L ${points[0].x} ${points[0].y}`
-  
-  for (let i = 1; i < points.length; i++) {
-    path += ` L ${points[i].x} ${points[i].y}`
-  }
-  
-  path += ` L ${points[points.length - 1].x} ${getY(minValue.value)}`
-  path += ' Z'
-  
-  return path
+// Obtener valor del eje Y para una línea de grid
+const getYAxisValue = (index) => {
+  const step = (maxValue.value - minValue.value) / (props.gridLines - 1)
+  return maxValue.value - (step * index)
 }
 
-const formatValue = (value) => {
+// Formatear valor del eje Y
+const formatYAxisValue = (value) => {
   if (props.valueFormatter) {
     return props.valueFormatter(value)
   }
-  return value.toLocaleString('es-MX', { 
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 1 
-  })
+  
+  if (value >= 1000000) {
+    return `${(value / 1000000).toFixed(1)}M`
+  } else if (value >= 1000) {
+    return `${(value / 1000).toFixed(1)}K`
+  }
+  return value.toFixed(0)
 }
 
-const handleMouseMove = (event) => {
-  if (!chartWrapper.value) return
+// Formatear valor para tooltip
+const formatValue = (value) => {
+  if (value === null || value === undefined) return 'N/A'
+  if (props.valueFormatter) {
+    return props.valueFormatter(value)
+  }
+  return new Intl.NumberFormat('es-MX', {
+    style: 'decimal',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(value)
+}
+
+// Generar path para una línea (usando datos animados)
+const getLinePath = (variable) => {
+  const data = animatedData.value[variable]
+  if (!data || data.length === 0) return ''
+
+  return data.map((value, i) => {
+    const x = getXPosition(i)
+    const y = getY(value)
+    return i === 0 ? `M ${x} ${y}` : `L ${x} ${y}`
+  }).join(' ')
+}
+
+// Toggle variable visibility
+const toggleVariable = (variable) => {
+  const index = visibleVariables.value.indexOf(variable)
   
-  const rect = chartWrapper.value.getBoundingClientRect()
-  const mouseX = event.clientX - rect.left
+  if (index > -1) {
+    // ====== ANIMACIÓN DE SALIDA ======
+    animatingVariables.value.add(variable)
+    
+    const data = props.data[variable]
+    if (data) {
+      const startValues = [...animatedData.value[variable]]
+      const range = maxValue.value - minValue.value
+      const endValue = minValue.value - (range * 0.5) // Caer al mismo nivel que empiezan
+      
+      const pointsDuration = 500 // Duración de caída de puntos
+      const lineDelay = 400 // Delay antes de que empiece a desaparecer la línea
+      const totalDuration = pointsDuration + 300 // Tiempo total incluyendo línea
+      
+      const startTime = Date.now()
+      
+      const animate = () => {
+        const elapsed = Date.now() - startTime
+        const progress = Math.min(elapsed / totalDuration, 1)
+        
+        // Fase 1: Caída de puntos (primeros 500ms)
+        if (elapsed < pointsDuration) {
+          const pointProgress = elapsed / pointsDuration
+          const easeProgress = 1 - Math.pow(1 - pointProgress, 3)
+          
+          // Animar puntos cayendo
+          animatedData.value[variable] = startValues.map(val => 
+            val - (val - endValue) * easeProgress
+          )
+        } else {
+          // Mantener puntos abajo mientras la línea desaparece
+          animatedData.value[variable] = new Array(data.length).fill(endValue)
+        }
+        
+        if (progress < 1) {
+          requestAnimationFrame(animate)
+        } else {
+          // Al terminar toda la animación, remover la variable
+          visibleVariables.value.splice(visibleVariables.value.indexOf(variable), 1)
+          animatingVariables.value.delete(variable)
+        }
+      }
+      
+      animate()
+    }
+  } else {
+    // ====== ANIMACIÓN DE ENTRADA ======
+    visibleVariables.value.push(variable)
+    animatingVariables.value.add(variable)
+    
+    const data = props.data[variable]
+    if (data) {
+      // Calcular un valor inicial muy abajo (más abajo que el mínimo visible)
+      const range = maxValue.value - minValue.value
+      const startValue = minValue.value - (range * 0.5) // ⭐ Empieza 50% más abajo del rango
+      
+      // Iniciar desde mucho más abajo
+      animatedData.value[variable] = new Array(data.length).fill(startValue)
+      
+      const duration = 800
+      const startTime = Date.now()
+      
+      const animate = () => {
+        const elapsed = Date.now() - startTime
+        const progress = Math.min(elapsed / duration, 1)
+        // Easing cúbico para efecto de "rebote suave"
+        const easeProgress = 1 - Math.pow(1 - progress, 3)
+        
+        // Animar desde muy abajo hacia el valor real
+        animatedData.value[variable] = data.map((val, i) => {
+          const start = startValue
+          const end = val
+          return start + (end - start) * easeProgress
+        })
+        
+        if (progress < 1) {
+          requestAnimationFrame(animate)
+        } else {
+          // Asegurar valores finales exactos
+          animatedData.value[variable] = [...data]
+          animatingVariables.value.delete(variable)
+        }
+      }
+      
+      animate()
+    }
+  }
+  
+  emit('variable-toggle', variable, visibleVariables.value.includes(variable))
+}
+
+// Estilo del tooltip fijo
+const tooltipFixedStyle = computed(() => {
+  return {
+    left: `${hoverState.value.x}px`,
+    top: `5px`
+  }
+})
+
+// Estilo del tooltip Y
+const tooltipYStyle = computed(() => {
+  return {
+    left: `${padding.left - 15}px`,
+    top: `${hoverState.value.yPosition}px`
+  }
+})
+
+// Estilo del tooltip X
+const tooltipXStyle = computed(() => {
+  return {
+    left: `${hoverState.value.x}px`,
+    top: `${dimensions.value.height - padding.bottom + 10}px`,
+    transform: 'translateX(-50%)'
+  }
+})
+
+// Obtener posición X animada del punto
+const getAnimatedPointX = (variable) => {
+  return animatingPoints.value[`${variable}-x`] || 0
+}
+
+// Obtener posición Y animada del punto
+const getAnimatedPointY = (variable) => {
+  return animatingPoints.value[`${variable}-y`] || 0
+}
+
+// Manejar movimiento del mouse
+const handleMouseMove = (event) => {
+  const svg = event.currentTarget
+  const rect = svg.getBoundingClientRect()
+  const x = event.clientX - rect.left
   
   // Encontrar el índice más cercano
-  let closestIndex = -1
+  let closestIndex = 0
   let minDistance = Infinity
   
-  for (let i = 0; i < props.xLabels.length; i++) {
+  props.xLabels.forEach((_, i) => {
     const pointX = getXPosition(i)
-    const distance = Math.abs(mouseX - pointX)
-    
+    const distance = Math.abs(x - pointX)
     if (distance < minDistance) {
       minDistance = distance
       closestIndex = i
     }
-  }
+  })
   
-  // Solo mostrar si está dentro del área de interacción
-  const interactionThreshold = getInteractionWidth() / 2
-  if (minDistance < interactionThreshold) {
-    showTooltipForIndex(closestIndex)
-  } else {
-    hideTooltip()
-  }
-}
-
-const showTooltipForIndex = (index) => {
+  const previousIndex = hoverState.value.index
+  const pointX = getXPosition(closestIndex)
+  
+  // Calcular el valor Y del punto más alto en este índice (usando datos animados)
+  let highestY = null
+  let highestYPosition = 0
+  
+  visibleVariables.value.forEach(variable => {
+    const value = animatedData.value[variable]?.[closestIndex]
+    if (value !== null && value !== undefined && !isNaN(value)) {
+      const y = getY(value)
+      if (highestY === null || value > highestY) {
+        highestY = value
+        highestYPosition = y
+      }
+    }
+  })
+  
   hoverState.value = {
     visible: true,
-    x: getXPosition(index),
-    index: index,
-    label: props.xLabels[index]
+    x: pointX,
+    index: closestIndex,
+    label: props.xLabels[closestIndex],
+    yValue: highestY,
+    yPosition: highestYPosition,
+    previousIndex: previousIndex
+  }
+  
+  // Animar el movimiento de los puntos si cambió el índice
+  if (previousIndex !== closestIndex && previousIndex !== -1) {
+    visibleVariables.value.forEach(variable => {
+      const startX = getXPosition(previousIndex)
+      const endX = getXPosition(closestIndex)
+      const startY = getAnimatedY(variable, previousIndex)
+      const endY = getAnimatedY(variable, closestIndex)
+      
+      const duration = 200
+      const startTime = Date.now()
+      
+      const animate = () => {
+        const elapsed = Date.now() - startTime
+        const progress = Math.min(elapsed / duration, 1)
+        const easeProgress = 1 - Math.pow(1 - progress, 3)
+        
+        animatingPoints.value[`${variable}-x`] = startX + (endX - startX) * easeProgress
+        animatingPoints.value[`${variable}-y`] = startY + (endY - startY) * easeProgress
+        
+        if (progress < 1) {
+          requestAnimationFrame(animate)
+        } else {
+          delete animatingPoints.value[`${variable}-x`]
+          delete animatingPoints.value[`${variable}-y`]
+        }
+      }
+      
+      animate()
+    })
   }
 }
 
@@ -573,8 +681,12 @@ const hideTooltip = () => {
     visible: false,
     x: 0,
     index: -1,
-    label: ''
+    label: '',
+    yValue: null,
+    yPosition: 0,
+    previousIndex: -1
   }
+  animatingPoints.value = {}
 }
 
 const handleResize = () => {
@@ -629,7 +741,7 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 16px;
+  margin-bottom: 5px;
   flex-shrink: 0;
 }
 
@@ -638,12 +750,13 @@ onUnmounted(() => {
 }
 
 .chart-title {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 100;
   color: #111827;
   margin: 0 0 4px 0;
   line-height: 1.4;
   text-align: center;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .chart-subtitle {
@@ -658,26 +771,25 @@ onUnmounted(() => {
 .variable-filters {
   display: flex;
   flex-direction: row;
-  height: 32px;
-  padding: 4px;
+  height: 15px;
   border-radius: 24px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: center;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); 
-  gap: 6px;
-  margin-bottom: 16px;
+  gap: 2px;
+  margin-bottom: 5px;
   flex-shrink: 0;
   background-color: white;
 }
 
 .filter-btn {
   flex: 0 1 auto;
-  border: 1px solid #e5e7eb;
-  padding: 4px 12px;
+  border: none;
+  padding: 5px 4px 5px 4px;
   border-radius: 24px;
   cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 9px;
+  font-weight: 100;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background: white;
   transition: all 0.3s ease;
@@ -696,12 +808,7 @@ onUnmounted(() => {
 .filter-btn.active {
   border-color: transparent;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  font-weight: 600;
-}
-
-.chart-controls {
-  position: relative;
-  margin-left: 16px;
+  font-weight: 200;
 }
 
 .no-data {
@@ -747,6 +854,15 @@ onUnmounted(() => {
   stroke-width: 1;
 }
 
+/* Estilos para las etiquetas del eje Y */
+.y-axis-label {
+  font-size: 9px;
+  font-weight: 200;
+  fill: #6b7280;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  user-select: none;
+}
+
 .hover-line {
   transition: opacity 0.15s ease;
   pointer-events: none;
@@ -768,8 +884,8 @@ onUnmounted(() => {
 .x-axis-label {
   position: absolute;
   transform: translateX(-50%);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 9px;
+  font-weight: 200;
   color: #6b7280;
   white-space: nowrap;
   user-select: none;
@@ -779,22 +895,36 @@ onUnmounted(() => {
 .line-path {
   stroke-dasharray: 3000;
   stroke-dashoffset: 3000;
-  animation: drawLine 2s ease-out forwards;
+  animation: drawLine 1.5s ease-out forwards;
 }
 
-.area-path {
-  opacity: 0;
-  animation: fadeInArea 1.5s ease-out 0.3s forwards;
+/* Animación de salida para líneas */
+.line-path.line-exit {
+  animation: fadeLine 300ms ease-out forwards;
+  stroke-dasharray: none;
+  stroke-dashoffset: 0;
+}
+
+.data-point-permanent {
+  opacity: 1;
+  transform-origin: center;
+  transition: cy 0.05s ease;
 }
 
 .data-point {
   opacity: 1;
   transform-origin: center;
-  transition: all 0.2s ease;
+  transition: r 0.2s ease, cy 0.05s ease;
+}
+
+.animated-point {
+  transition: none !important;
+  animation: none !important;
 }
 
 .data-point.is-hovered {
-  filter: drop-shadow(0 0 6px rgba(0, 0, 0, 0.3));
+  opacity: 1;
+  filter: drop-shadow(0 0 6px rgba(0, 0, 0, 0.4));
 }
 
 @keyframes drawLine {
@@ -803,9 +933,12 @@ onUnmounted(() => {
   }
 }
 
-@keyframes fadeInArea {
-  to {
+@keyframes fadeLine {
+  from {
     opacity: 1;
+  }
+  to {
+    opacity: 0;
   }
 }
 
@@ -815,33 +948,23 @@ onUnmounted(() => {
   background: #1f2937;
   color: white;
   border-radius: 6px;
-  padding: 12px;
+  padding: 2px;
   pointer-events: none;
   z-index: 1000;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-  width: 280px;
-  min-height: 120px;
+  width: 90px;
+  min-height: 55px;
   opacity: 95%;
   transform: translateX(-50%);
   white-space: normal;
   text-align: center;
 }
 
-.tooltip-fixed::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 4px solid transparent;
-  border-top-color: #1f2937;
-}
-
 .tooltip-year {
-  font-size: 15px;
+  font-size: 9px;
   color: white;
-  margin-bottom: 6px;
-  padding-bottom: 4px;
+  margin-bottom: 2px;
+  padding-bottom: 2px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
 }
 
@@ -849,7 +972,6 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 5px;
-  padding-top: 10px;
 }
 
 .tooltip-item {
@@ -871,12 +993,11 @@ onUnmounted(() => {
   height: 6px;
   border-radius: 50%;
   flex-shrink: 0;
-
 }
 
 .tooltip-variable {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 8px;
+  font-weight: 100;
   color: rgba(255, 255, 255, 0.8);
   padding-left: 5px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -884,11 +1005,80 @@ onUnmounted(() => {
 }
 
 .tooltip-value {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 8px;
+  font-weight: 100;
   color: white;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   letter-spacing: -0.5px;
+}
+
+/* Tooltip Y (a la izquierda) */
+.tooltip-y {
+  position: absolute;
+  background: #F0F0F2;
+  border: 1px solid #C5CBCE;
+  color: black;
+  border-radius: 4px;
+  padding: 4px 8px;
+  pointer-events: none;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  font-size: 9px;
+  font-weight: 200;
+  transform: translate(-100%, -50%);
+  white-space: nowrap;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  letter-spacing: -0.3px;
+}
+
+/* Tooltip X (en el eje inferior) */
+.tooltip-x {
+  position: absolute;
+  background: #F0F0F2;
+  border: 1px solid #C5CBCE;
+  color: black;
+  border-radius: 4px;
+  padding: 4px 10px;
+  pointer-events: none;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  font-size: 9px;
+  font-weight: 200;
+  white-space: nowrap;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  letter-spacing: -0.3px;
+}
+
+/* Flecha del tooltip X (apunta hacia arriba) */
+.tooltip-x::after {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 5px 5px 5px;
+  border-color: transparent transparent #F0F0F2 transparent;
+  filter: blur(0.3px);
+}
+
+/* Borde de la flecha */
+.tooltip-x::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 6px 6px 6px;
+  border-color: transparent transparent #C5CBCE transparent;
+  filter: blur(0.3px);
+  z-index: -1;
+  margin-bottom: -1px;
 }
 
 /* Transiciones */
@@ -901,5 +1091,17 @@ onUnmounted(() => {
 .tooltip-fade-leave-to {
   opacity: 0;
   transform: translateX(-50%) translateY(-5px);
+}
+
+/* Transición específica para tooltip X */
+.tooltip-x-fade-enter-active,
+.tooltip-x-fade-leave-active {
+  transition: all 0.2s ease;
+}
+
+.tooltip-x-fade-enter-from,
+.tooltip-x-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-50%);
 }
 </style>

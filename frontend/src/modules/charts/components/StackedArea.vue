@@ -292,7 +292,7 @@ const hoverState = ref({
 const animatingPoints = ref({})
 
 // Configuración de padding
-const padding = { top: 10, right: 100, bottom: 130, left: 40 }
+const padding = { top: 10, right: 20, bottom: 70, left: 20 }
 
 // Paleta de colores
 const colorPalette = [
@@ -795,11 +795,14 @@ onUnmounted(() => {
 }
 
 .chart-title {
-  font-size: 20px;
-  font-weight: 600;
-  color: #1f2937;
-  margin: 0 0 4px 0;
-  line-height: 1.3;
+  margin-top: 4px;
+  letter-spacing: -0.2px;
+  font-size: 10px;
+  text-align:center;
+  font-weight: 200;
+  color: #535353;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+
 }
 
 .chart-subtitle {
@@ -814,26 +817,26 @@ onUnmounted(() => {
 .variable-filters {
   display: flex;
   flex-direction: row;
-  height: 32px;
-  padding: 4px;
+  height: 15px;
+
   border-radius: 24px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: center;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); 
-  gap: 6px;
-  margin-bottom: 16px;
+  gap: 2px;
+  margin-bottom: 5px;
   flex-shrink: 0;
   background-color: white;
 }
 
 .filter-btn {
   flex: 0 1 auto;
-  border: 1px solid #e5e7eb;
-  padding: 4px 12px;
+  border: none;
+  padding: 5px 4px 5px 4px;
   border-radius: 24px;
   cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 9px;
+  font-weight: 100;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background: white;
   transition: all 0.3s ease;
@@ -852,7 +855,7 @@ onUnmounted(() => {
 .filter-btn.active {
   border-color: transparent;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  font-weight: 600;
+  font-weight: 200;
 }
 
 .no-data {
