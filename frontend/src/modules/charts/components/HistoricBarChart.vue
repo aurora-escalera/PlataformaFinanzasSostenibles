@@ -1,29 +1,42 @@
-<!-- src/modules/charts/components/VerticalBarChart.vue -->
+<!-- src/modules/charts/components/HistoricBarChart.vue -->
 <template>
   <div class="vertical-bar-chart-container">
     <!-- Header con título -->
     <div class="chart-header">
       <div class="header-content">
         <h3 class="chart-title">{{ title }}</h3>
-        <p v-if="subtitle" class="chart-subtitle">{{ subtitle }}</p>
       </div>
     </div>
 
     <!-- Filtros de variables (botones) -->
-    <div v-if="availableVariables.length > 0" class="variable-filters">
+    <div v-if="showFilters && availableVariables.length > 0" class="variable-filters">
       <button 
         v-for="variable in availableVariables" 
-        :key="variable"
-        @click="toggleVariable(variable)"
-        :class="['filter-btn', { 'active': visibleVariables.includes(variable) }]"
+        :key="variable.key"
+        @click="toggleVariable(variable.key)"
+        :class="['filter-btn', { 'active': visibleVariables.includes(variable.key) }]"
         :style="{ 
-          '--btn-color': getVariableColor(variable),
-          backgroundColor: visibleVariables.includes(variable) ? getVariableColor(variable) : 'white',
-          color: visibleVariables.includes(variable) ? 'white' : '#6b7280'
+          backgroundColor: visibleVariables.includes(variable.key) ? variable.color : 'white',
+          color: visibleVariables.includes(variable.key) ? 'white' : '#6b7280'
         }"
       >
-        {{ variable }}
+        {{ variable.label }}
       </button>
+    </div>
+
+    <!-- Leyenda -->
+    <div v-if="showLegend && availableVariables.length > 0" class="chart-legend">
+      <div 
+        v-for="variable in availableVariables" 
+        :key="'legend-' + variable.key"
+        class="legend-item"
+      >
+        <span 
+          class="legend-dot" 
+          :style="{ backgroundColor: variable.color }"
+        ></span>
+        <span class="legend-label">{{ variable.label }}</span>
+      </div>
     </div>
 
     <!-- Mensaje si no hay datos -->
@@ -74,36 +87,25 @@
         <!-- Grupos de barras por año -->
         <g class="bars">
           <g 
-            v-for="(year, yearIndex) in xLabels" 
+            v-for="(yearData, yearIndex) in data" 
             :key="`year-${yearIndex}`"
             class="bar-group"
           >
-            <!-- Barra 1 (primera variable visible) -->
+            <!-- Barra para cada variable visible -->
             <rect
-              v-if="visibleVariables[0] && data[visibleVariables[0]]"
-              :x="getBarX(yearIndex, 0)"
-              :y="getBarY(data[visibleVariables[0]][yearIndex])"
-              :width="barWidth"
-              :height="getBarHeight(data[visibleVariables[0]][yearIndex])"
-              :fill="getVariableColor(visibleVariables[0])"
+              v-for="(variable, varIndex) in getVisibleVariablesForYear(yearData)"
+              :key="`bar-${yearIndex}-${varIndex}`"
+              :x="getBarX(yearIndex, varIndex)"
+              :y="getBarY(variable.value)"
+              :width="dynamicBarWidth"
+              :height="getBarHeight(variable.value)"
+              :fill="variable.color"
               class="bar bar-animated"
-              :style="{ animationDelay: `${yearIndex * 0.1}s` }"
-              @mouseenter="handleBarHover(visibleVariables[0], data[visibleVariables[0]][yearIndex], year, $event)"
-              @mousemove="handleBarMove($event)"
-              @mouseleave="handleBarLeave"
-            />
-
-            <!-- Barra 2 (segunda variable visible) -->
-            <rect
-              v-if="visibleVariables[1] && data[visibleVariables[1]]"
-              :x="getBarX(yearIndex, 1)"
-              :y="getBarY(data[visibleVariables[1]][yearIndex])"
-              :width="barWidth"
-              :height="getBarHeight(data[visibleVariables[1]][yearIndex])"
-              :fill="getVariableColor(visibleVariables[1])"
-              class="bar bar-animated"
-              :style="{ animationDelay: `${yearIndex * 0.1}s` }"
-              @mouseenter="handleBarHover(visibleVariables[1], data[visibleVariables[1]][yearIndex], year, $event)"
+              :style="{ 
+                animationDelay: `${yearIndex * 0.1}s`,
+                transition: 'width 0.3s ease, x 0.3s ease'
+              }"
+              @mouseenter="handleBarHover(variable, yearData.year, $event)"
               @mousemove="handleBarMove($event)"
               @mouseleave="handleBarLeave"
             />
@@ -115,12 +117,12 @@
     <!-- Eje X externo (fuera del SVG) -->
     <div v-if="hasData" class="x-axis-container">
       <div 
-        v-for="(label, i) in xLabels"
+        v-for="(yearData, i) in data"
         :key="`x-label-${i}`"
         class="x-axis-label"
         :style="{ left: `${getXLabelPosition(i)}%` }"
       >
-        {{ label }}
+        {{ yearData.year }}
       </div>
     </div>
 
@@ -154,32 +156,25 @@ const props = defineProps({
     type: String,
     default: 'Gráfica de barras'
   },
-  subtitle: {
-    type: String,
-    default: ''
-  },
+  // Array de objetos: [{ year: '2020', variables: [{ key, label, value, color }] }]
   data: {
-    type: Object,
-    default: () => ({
-      'Variable 1': [49640774480, 28392898350, 10994972955, 15806164249, 11434847973],
-      'Variable 2': [15368642388, 13882525752, 2850000000, 2976737887, 385705374]
-    })
-  },
-  xLabels: {
     type: Array,
-    default: () => ['2020', '2021', '2022', '2023', '2024']
+    required: true,
+    default: () => []
+  },
+  showFilters: {
+    type: Boolean,
+    default: false
+  },
+  showLegend: {
+    type: Boolean,
+    default: false
   },
   gridLines: {
     type: Number,
     default: 5
-  },
-  valueFormatter: {
-    type: Function,
-    default: null
   }
 })
-
-const emit = defineEmits(['variable-toggle'])
 
 // Estado
 const chartWrapper = ref(null)
@@ -199,30 +194,40 @@ const tooltip = ref({
 // Configuración de padding
 const padding = { top: 20, right: 40, bottom: 10, left: 80 }
 
-// Paleta de colores (mismos del componente original)
-const colorPalette = [
-  '#9ca3af', // Gris claro
-  '#6b7280', // Gris oscuro
-  '#DC143C', // Rojo
-  '#7cb342', // Verde
-  '#3b82f6', // Azul
-  '#eab308', // Amarillo
-  '#a78bfa', // Púrpura
-  '#fb923c', // Naranja
-]
-
-// Variables disponibles y visibles
-const availableVariables = computed(() => Object.keys(props.data))
+// Variables visibles (para filtros)
 const visibleVariables = ref([])
 
-// Inicializar con las primeras 2 variables visibles (sin delay)
+// Obtener todas las variables únicas disponibles
+const availableVariables = computed(() => {
+  if (props.data.length === 0) return []
+  
+  const varsMap = new Map()
+  props.data.forEach(yearData => {
+    yearData.variables.forEach(variable => {
+      if (!varsMap.has(variable.key)) {
+        varsMap.set(variable.key, {
+          key: variable.key,
+          label: variable.label,
+          color: variable.color
+        })
+      }
+    })
+  })
+  
+  return Array.from(varsMap.values())
+})
+
+// Inicializar con todas las variables visibles
 watch(() => props.data, (newData) => {
-  const vars = Object.keys(newData)
-  if (visibleVariables.value.length === 0 && vars.length > 0) {
-    // Mostrar inmediatamente las primeras 2 variables para que se vea la animación
-    visibleVariables.value = vars.slice(0, 2)
+  if (newData.length > 0 && visibleVariables.value.length === 0) {
+    visibleVariables.value = availableVariables.value.map(v => v.key)
   }
 }, { immediate: true, deep: true })
+
+// Obtener variables visibles para un año específico
+const getVisibleVariablesForYear = (yearData) => {
+  return yearData.variables.filter(v => visibleVariables.value.includes(v.key))
+}
 
 // Dimensiones del gráfico
 const chartHeight = computed(() => dimensions.value.height - padding.top - padding.bottom)
@@ -232,10 +237,12 @@ const gridSpacing = computed(() => chartHeight.value / (props.gridLines - 1))
 // Calcular todos los valores visibles
 const allVisibleValues = computed(() => {
   const values = []
-  visibleVariables.value.forEach(variable => {
-    if (props.data[variable] && Array.isArray(props.data[variable])) {
-      values.push(...props.data[variable].filter(v => v !== null && v !== undefined && !isNaN(v)))
-    }
+  props.data.forEach(yearData => {
+    yearData.variables.forEach(variable => {
+      if (visibleVariables.value.includes(variable.key)) {
+        values.push(variable.value)
+      }
+    })
   })
   return values.length > 0 ? values : [0]
 })
@@ -255,17 +262,30 @@ const valueRange = computed(() => maxValue.value - minValue.value || 1)
 
 // Verificar si hay datos
 const hasData = computed(() => {
-  return availableVariables.value.length > 0 && 
+  return props.data.length > 0 && 
          visibleVariables.value.length > 0 &&
          allVisibleValues.value.length > 0
 })
 
-// Ancho de cada barra
-const barWidth = computed(() => {
-  const groupWidth = chartWidth.value / props.xLabels.length
-  const barSpacing = 2 // ⭐ Gap de 2px entre barras del mismo año
-  const groupPadding = 30 // ⭐ Espacio entre grupos de años (más gap)
-  return (groupWidth - groupPadding - barSpacing * 3) / 2 // 2 barras por grupo
+// ✅ Ancho dinámico de cada barra según número de variables visibles
+const dynamicBarWidth = computed(() => {
+  const numBars = visibleVariables.value.length
+  if (numBars === 0) return 0
+  
+  const groupWidth = chartWidth.value / props.data.length
+  const barSpacing = 2
+  
+  // ✅ Padding dinámico: más pequeño cuando hay pocas variables (barras más anchas)
+  let groupPadding
+  if (numBars === 1) {
+    groupPadding = 50  // Barras más anchas para 1 variable
+  } else if (numBars === 2) {
+    groupPadding = 40  // Barras medianas para 2 variables
+  } else {
+    groupPadding = 30  // Barras más pequeñas para 3+ variables
+  }
+  
+  return (groupWidth - groupPadding - barSpacing * (numBars - 1)) / numBars
 })
 
 // Etiquetas del eje Y
@@ -279,35 +299,34 @@ const yAxisLabels = computed(() => {
 })
 
 // Funciones
-const toggleVariable = (variable) => {
-  const index = visibleVariables.value.indexOf(variable)
+const toggleVariable = (variableKey) => {
+  const index = visibleVariables.value.indexOf(variableKey)
   
   if (index > -1) {
     visibleVariables.value.splice(index, 1)
   } else {
-    if (visibleVariables.value.length < 2) {
-      visibleVariables.value.push(variable)
-    } else {
-      visibleVariables.value[1] = variable // Reemplaza la segunda
-    }
+    visibleVariables.value.push(variableKey)
+  }
+}
+
+// ✅ Calcular posición X de una barra con width dinámico
+const getBarX = (yearIndex, barIndex) => {
+  const numBars = visibleVariables.value.length
+  const groupWidth = chartWidth.value / props.data.length
+  const groupStart = padding.left + yearIndex * groupWidth
+  const barSpacing = 2
+  
+  // Padding dinámico igual que en dynamicBarWidth
+  let groupPadding
+  if (numBars === 1) {
+    groupPadding = 50
+  } else if (numBars === 2) {
+    groupPadding = 40
+  } else {
+    groupPadding = 30
   }
   
-  emit('variable-toggle', visibleVariables.value)
-}
-
-const getVariableColor = (variable) => {
-  const index = availableVariables.value.indexOf(variable)
-  return colorPalette[index % colorPalette.length]
-}
-
-// Calcular posición X de una barra
-const getBarX = (yearIndex, barIndex) => {
-  const groupWidth = chartWidth.value / props.xLabels.length
-  const groupStart = padding.left + yearIndex * groupWidth
-  const barSpacing = 2 // ⭐ Gap de 2px entre barras del mismo año
-  const groupPadding = 30 // ⭐ Padding lateral para centrar el grupo
-  
-  return groupStart + groupPadding/2 + barIndex * (barWidth.value + barSpacing)
+  return groupStart + groupPadding/2 + barIndex * (dynamicBarWidth.value + barSpacing)
 }
 
 // Calcular posición Y de una barra
@@ -328,28 +347,20 @@ const getBarHeight = (value) => {
   return chartHeight.value * percentage
 }
 
-// Posición de etiquetas del eje X
+// Calcular posición del label X
 const getXLabelPosition = (index) => {
-  const totalWidth = dimensions.value.width
-  const usableWidth = chartWidth.value
-  const leftPaddingPercentage = (padding.left / totalWidth) * 100
-  const usableWidthPercentage = (usableWidth / totalWidth) * 100
-  
-  const groupWidth = usableWidthPercentage / props.xLabels.length
-  return leftPaddingPercentage + (index * groupWidth) + (groupWidth / 2)
+  const groupWidth = 100 / props.data.length
+  return (groupWidth * index) + (groupWidth / 2) + (padding.left / dimensions.value.width * 100)
 }
 
+// Formatear valores
 const formatValue = (value) => {
-  if (props.valueFormatter) {
-    return props.valueFormatter(value)
-  }
-  
   if (value >= 1000000000) {
-    return (value / 1000000000).toFixed(1).replace(/\.0$/, '') + 'B'
+    return '$' + (value / 1000000000).toFixed(1) + 'B'
   } else if (value >= 1000000) {
-    return (value / 1000000).toFixed(1).replace(/\.0$/, '') + 'M'
+    return '$' + (value / 1000000).toFixed(1) + 'M'
   } else if (value >= 1000) {
-    return (value / 1000).toFixed(1).replace(/\.0$/, '') + 'K'
+    return '$' + (value / 1000).toFixed(1) + 'K'
   }
   
   return value.toLocaleString('es-MX', { 
@@ -367,15 +378,15 @@ const tooltipStyle = computed(() => {
 })
 
 // Manejadores de tooltip
-const handleBarHover = (variable, value, year, event) => {
+const handleBarHover = (variable, year, event) => {
   tooltip.value = {
     visible: true,
     x: event.clientX,
     y: event.clientY,
-    variable: variable,
-    value: value,
+    variable: variable.label,
+    value: variable.value,
     year: year,
-    color: getVariableColor(variable)
+    color: variable.color
   }
 }
 
@@ -459,14 +470,6 @@ onUnmounted(() => {
   text-align: center;
 }
 
-.chart-subtitle {
-  font-size: 13px;
-  color: #6b7280;
-  margin: 0;
-  line-height: 1.4;
-  text-align: center;
-}
-
 /* Filtros de variables */
 .variable-filters {
   display: flex;
@@ -510,6 +513,36 @@ onUnmounted(() => {
   border-color: transparent;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   font-weight: 600;
+}
+
+/* Leyenda */
+.chart-legend {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  font-size: 11px;
+  gap: 6px;
+  color: #4b5563;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legend-label {
+  font-weight: 500;
 }
 
 .no-data {

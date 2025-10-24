@@ -7,7 +7,7 @@
         <div class="IS-anual-linear-chart">
             <LinearChart
               title="Análisis histórico de los Ingresos Sostenibles (IS)"
-              :data="chartData"
+              :data="chartDataLinear"
               :xLabels="years"
            />
         </div>
@@ -27,16 +27,11 @@
         <div class="IIC-anual-bar-chart">
           <HistoricBarChart
             title="Ingresos de Inversión en Contribución (IIC)"
-            :variables="iicBarData"
+            :data="chartDataBar"
             :showFilters="true"
             :showLegend="true"
-            :autoSelectCount="4"
-            :animationDelay="800"
-            width="100%"
-            height="100%"
           />
         </div>
-        <div class="IS-anual-bar-chart"></div>
       </div>
       <div class="row-3">
         <div class="PS-PIC-anual-linear-chart"></div>
@@ -67,8 +62,7 @@ const props = defineProps({
 })
 
 // Datos para LinearChart
-const chartData = computed(() => {
-  // Aquí puedes procesar tus statesData para el formato del LinearChart
+const chartDataLinear = computed(() => {
   return {
     'IS Total': [45234.5, 52341.2, 58123.7, 61456.8, 67234.9],
     'Financ. para desarrollo': [23456.8, 48123.4, 52341.9, 54234.5, 55678.2]
@@ -79,79 +73,53 @@ const years = computed(() => {
   return ['2020', '2021', '2022', '2023', '2024']
 })
 
-// Datos para HistoricBarChart - IIC
-const iicBarData = ref([
+// ✅ Datos para HistoricBarChart - Estructura correcta
+const chartDataBar = ref([
   { 
-    key: 'iic-federal', 
-    label: 'Federal', 
-    value: 45234.5, 
-    color: '#0F3759'
+    year: '2020', 
+    variables: [
+      { key: 'federal', label: 'Federal', value: 45234.5, color: '#0F3759' },
+      { key: 'estatal', label: 'Estatal', value: 52341.2, color: '#3B5A70' }
+    ]
   },
   { 
-    key: 'iic-estatal', 
-    label: 'Estatal', 
-    value: 52341.2, 
-    color: '#3B5A70'
+    year: '2021', 
+    variables: [
+      { key: 'federal', label: 'Federal', value: 48123.4, color: '#0F3759' },
+      { key: 'estatal', label: 'Estatal', value: 55678.2, color: '#3B5A70' }
+    ]
   },
   { 
-    key: 'iic-municipal', 
-    label: 'Municipal', 
-    value: 38123.7, 
-    color: '#4E6D82'
+    year: '2022', 
+    variables: [
+      { key: 'federal', label: 'Federal', value: 52341.9, color: '#0F3759' },
+      { key: 'estatal', label: 'Estatal', value: 58234.7, color: '#3B5A70' }
+    ]
   },
   { 
-    key: 'iic-otros', 
-    label: 'Otros', 
-    value: 28456.8, 
-    color: '#627A8E'
+    year: '2023', 
+    variables: [
+      { key: 'federal', label: 'Federal', value: 54234.5, color: '#0F3759' },
+      { key: 'estatal', label: 'Estatal', value: 61456.8, color: '#3B5A70' }
+    ]
+  },
+  { 
+    year: '2024', 
+    variables: [
+      { key: 'federal', label: 'Federal', value: 55678.2, color: '#0F3759' },
+      { key: 'estatal', label: 'Estatal', value: 67234.9, color: '#3B5A70' }
+    ]
   }
 ])
 
-// Datos adicionales (puedes usarlos para las otras gráficas)
-const advancedData = [
-  { 
-    key: 'incendios', 
-    label: 'Total (hectáreas)', 
-    value: 1200, 
-    color: '#0F3759', 
-    active: true 
-  },
-  { 
-    key: 'residuos', 
-    label: 'Arbolado Adulto', 
-    value: 3500, 
-    color: '#3B5A70', 
-    active: true 
-  },
-  { 
-    key: 'emisiones', 
-    label: 'Renuevo', 
-    value: 850, 
-    color: '#4E6D82', 
-    active: false 
-  },
-  { 
-    key: 'Arbustivo', 
-    label: 'Arbustivo', 
-    value: 3500, 
-    color: '#D6D6D6', 
-    active: true 
-  },
-  { 
-    key: 'Herbaceo', 
-    label: 'Herbaceo', 
-    value: 250, 
-    color: '#A1A1A1', 
-    active: false 
-  },
-  { 
-    key: 'Hojarasca', 
-    label: 'Hojarasca', 
-    value: 1050, 
-    color: '#B0B0B0', 
-    active: false 
-  }
-]
+// DEBUG: Mostrar datos en consola
+onMounted(() => {
+  console.log('📊 chartDataBar:', chartDataBar.value)
+  console.log('📊 Número de años:', chartDataBar.value.length)
+  chartDataBar.value.forEach(year => {
+    console.log(`  ${year.year}:`, year.variables)
+  })
+})
 </script>
 
 <style scoped>
@@ -195,7 +163,8 @@ const advancedData = [
   width: 50%;
   height: 100%;
   border-radius: 8px;
-  overflow: hidden;
+  overflow: visible; /* Para que el tooltip no se corte */
+  border: 1px solid #ccc;
 }
 
 /* Gráfica que ocupa 100% del ancho */
