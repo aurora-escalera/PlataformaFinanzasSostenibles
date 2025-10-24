@@ -28,8 +28,8 @@
           <HistoricBarChart
             title="Ingresos de Inversión en Contribución (IIC)"
             :variables="iicBarData"
-            :showFilters="false"
-            :showLegend="false"
+            :showFilters="true"
+            :showLegend="true"
             :autoSelectCount="4"
             :animationDelay="800"
             width="100%"
