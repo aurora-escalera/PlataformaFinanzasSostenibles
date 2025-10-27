@@ -1,34 +1,42 @@
 <!-- src/modules/charts/components/HistoricBarChart.vue -->
 <template>
   <div class="bar-chart-container">
-    <!-- Header con título y filtros -->
-    <div class="chart-header">
+    <!-- 1. TÍTULO -->
+    <div class="chart-title-section">
       <h3 class="chart-title">{{ title }}</h3>
-      
-      <!-- Filtros de variables -->
-      <div v-if="showFilters" class="filters-container">
+    </div>
+
+    <!-- 2. FILTROS/VARIABLES CON CONTENEDOR (estilo LinearChart) -->
+    <div v-if="showFilters" class="filters-wrapper">
+      <div class="filters-section">
         <button
           v-for="variable in uniqueVariables"
           :key="variable.key"
           @click="toggleFilter(variable.key)"
           class="filter-btn"
           :class="{ 
-            'active': activeFilters[variable.key] !== false,
-            'inactive': activeFilters[variable.key] === false
-          }"
-          :style="{
-            borderColor: activeFilters[variable.key] !== false ? variable.color : '#ccc'
+            'filter-active': activeFilters[variable.key] !== false,
+            'filter-inactive': activeFilters[variable.key] === false
           }"
         >
-          <span class="filter-indicator" 
-                :style="{ backgroundColor: activeFilters[variable.key] !== false ? variable.color : '#ccc' }">
-          </span>
           {{ variable.label }}
         </button>
       </div>
     </div>
 
-    <!-- Área del gráfico -->
+    <!-- 3. LEYENDA CON CÍRCULOS (puntos) -->
+    <div v-if="showLegend" class="legend-section">
+      <div 
+        v-for="variable in uniqueVariables"
+        :key="variable.key"
+        class="legend-item"
+      >
+        <span class="legend-color-dot" :style="{ backgroundColor: variable.color }"></span>
+        <span class="legend-label">{{ variable.label }}</span>
+      </div>
+    </div>
+
+    <!-- 4. ÁREA DEL GRÁFICO -->
     <div class="chart-area">
       <!-- Eje Y con escala dinámica -->
       <div class="y-axis">
@@ -44,7 +52,7 @@
       </div>
 
       <!-- Barras agrupadas -->
-      <div class="bars-container">
+      <div class="bars-container" ref="barsContainerRef">
         <div 
           v-for="yearData in data" 
           :key="yearData.year"
@@ -61,7 +69,7 @@
                 <div 
                   class="bar"
                   :style="{
-                    height: `${getBarHeight(variable.value)}%`,
+                    height: `${getBarHeight(variable.value)}px`,
                     backgroundColor: variable.color,
                     width: `${barWidth}px`
                   }"
@@ -80,38 +88,33 @@
       </div>
     </div>
 
-    <!-- Leyenda (opcional) -->
-    <div v-if="showLegend" class="legend">
-      <div 
-        v-for="variable in uniqueVariables"
-        :key="variable.key"
-        class="legend-item"
-      >
-        <span class="legend-color" :style="{ backgroundColor: variable.color }"></span>
-        <span class="legend-label">{{ variable.label }}</span>
-      </div>
-    </div>
-
-    <!-- Tooltip Global con position: fixed -->
+    <!-- Tooltip Global con position: fixed (estilo LinearChart) -->
     <Teleport to="body">
       <div 
         v-if="hoveredBar"
-        class="tooltip-fixed"
+        class="tooltip-container"
         :style="{
           left: `${tooltipPosition.x}px`,
           top: `${tooltipPosition.y}px`
         }"
       >
-        <div class="tooltip-title">{{ hoveredBar.variable.label }}</div>
-        <div class="tooltip-value">{{ formatCurrency(hoveredBar.variable.value) }}</div>
-        <div class="tooltip-year">{{ hoveredBar.year }}</div>
+        <div class="tooltip-header">
+          <span class="tooltip-year-label">{{ hoveredBar.year }}</span>
+        </div>
+        <div class="tooltip-content">
+          <div class="tooltip-item">
+            <span class="tooltip-color-indicator" :style="{ backgroundColor: hoveredBar.variable.color }"></span>
+            <span class="tooltip-variable-name">{{ hoveredBar.variable.label }}:</span>
+            <span class="tooltip-variable-value">{{ formatCurrency(hoveredBar.variable.value) }}</span>
+          </div>
+        </div>
       </div>
     </Teleport>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
 
 const props = defineProps({
   title: {
@@ -136,6 +139,8 @@ const props = defineProps({
 const hoveredBar = ref(null)
 const activeFilters = ref({})
 const tooltipPosition = ref({ x: 0, y: 0 })
+const barsContainerRef = ref(null)
+const barsContainerHeight = ref(200) // Altura por defecto
 
 // Función para actualizar posición del tooltip
 const updateTooltipPosition = (event) => {
@@ -197,10 +202,13 @@ const maxVisibleValue = computed(() => {
   return maxValue > 0 ? maxValue * 1.25 : 100
 })
 
-// ✅ CALCULAR ALTURA DE BARRA (en porcentaje del contenedor)
+// ✅ CALCULAR ALTURA DE BARRA (en píxeles absolutos)
 const getBarHeight = (value) => {
   if (maxVisibleValue.value === 0) return 0
-  return (value / maxVisibleValue.value) * 100
+  const percentage = (value / maxVisibleValue.value) * 100
+  // Calcular píxeles basados en la altura del contenedor
+  const heightInPixels = (barsContainerHeight.value * percentage) / 100
+  return heightInPixels
 }
 
 // Calcular ticks del eje Y
@@ -250,6 +258,37 @@ const formatCurrency = (value) => {
   }
   return `$${value.toFixed(0)}`
 }
+
+// Actualizar altura del contenedor de barras
+const updateBarsContainerHeight = () => {
+  if (barsContainerRef.value) {
+    const height = barsContainerRef.value.clientHeight - 30 // Restar padding-bottom
+    if (height > 0) {
+      barsContainerHeight.value = height
+    }
+  }
+}
+
+// Observar cambios de tamaño
+onMounted(async () => {
+  await nextTick()
+  updateBarsContainerHeight()
+  
+  // Observer para cambios de tamaño
+  if (barsContainerRef.value) {
+    const resizeObserver = new ResizeObserver(() => {
+      updateBarsContainerHeight()
+    })
+    resizeObserver.observe(barsContainerRef.value)
+  }
+})
+
+// Actualizar cuando cambien los datos
+watch(() => props.data, () => {
+  nextTick(() => {
+    updateBarsContainerHeight()
+  })
+}, { deep: true })
 </script>
 
 <style scoped>
@@ -258,6 +297,7 @@ const formatCurrency = (value) => {
   height: 100%;
   display: flex;
   flex-direction: column;
+  align-items: center; /* ✅ Centra todos los elementos hijos */
   background: white;
   border-radius: 8px;
   padding: 16px;
@@ -265,12 +305,11 @@ const formatCurrency = (value) => {
   overflow: visible; /* ✅ Permite que los tooltips se vean fuera */
 }
 
-.chart-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-  flex-shrink: 0;
+/* 1. SECCIÓN DE TÍTULO */
+.chart-title-section {
+  margin-bottom: 12px;
+  width: 100%;
+  text-align: center; /* ✅ Título centrado */
 }
 
 .chart-title {
@@ -280,39 +319,81 @@ const formatCurrency = (value) => {
   color: #2c3e50;
 }
 
-.filters-container {
+/* 2. SECCIÓN DE FILTROS CON CONTENEDOR */
+.filters-wrapper {
+  background: #f5f5f5;
+  border-radius: 20px;
+  padding: 6px;
+  margin-bottom: 12px;
   display: flex;
-  gap: 8px;
+  justify-content: center; /* ✅ Centra el contenido */
+  width: 100%; /* ✅ Mismo ancho que legend-section */
+}
+
+.filters-section {
+  display: flex;
+  gap: 4px;
   flex-wrap: wrap;
+  justify-content: center; /* ✅ Centra los botones */
 }
 
 .filter-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  border: 2px solid;
-  border-radius: 20px;
-  background: white;
+  padding: 6px 14px;
+  border: none;
+  border-radius: 16px;
+  background: transparent;
+  color: #666;
   cursor: pointer;
   font-size: 11px;
+  font-weight: 500;
   transition: all 0.3s ease;
+}
+
+.filter-btn.filter-active {
+  background: white;
+  color: #2c3e50;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.filter-btn.filter-inactive {
+  background: transparent;
+  color: #999;
+  opacity: 0.7;
 }
 
 .filter-btn:hover {
   transform: scale(1.05);
 }
 
-.filter-btn.inactive {
-  opacity: 0.4;
-  background: #f5f5f5;
+/* 3. SECCIÓN DE LEYENDA CON CÍRCULOS */
+.legend-section {
+  display: flex;
+  justify-content: center; /* ✅ Centra horizontalmente */
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e0e0e0;
+  width: 100%; /* ✅ Ocupa todo el ancho */
 }
 
-.filter-indicator {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  transition: background-color 0.3s ease;
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #666;
+}
+
+.legend-color-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%; /* ✅ Círculo en vez de cuadrado */
+  flex-shrink: 0;
+}
+
+.legend-label {
+  white-space: nowrap;
 }
 
 /* ✅ ÁREA DEL GRÁFICO */
@@ -323,6 +404,7 @@ const formatCurrency = (value) => {
   min-height: 0; /* Permite que flex: 1 funcione correctamente */
   width: 100%; /* ✅ Ocupa todo el ancho disponible */
   overflow: visible; /* ✅ Permite que los tooltips se vean fuera del contenedor */
+  align-self: stretch; /* ✅ Se estira horizontalmente */
 }
 
 /* ✅ EJE Y */
@@ -363,13 +445,15 @@ const formatCurrency = (value) => {
   flex: 1;
   display: flex;
   align-items: flex-end;
-  gap: 12px; /* ✅ Gap reducido para mejor distribución */
-  padding: 0 16px 30px 16px;
-  overflow-x: auto; /* ✅ Scroll horizontal si es necesario */
-  overflow-y: visible; /* ✅ Permite que los tooltips se vean arriba */
+  gap: 12px;
+  padding: 0;
+
+  overflow-x: auto;
+  overflow-y: visible;
   position: relative;
-  min-width: 0; /* ✅ Permite que el contenedor se ajuste sin desbordarse */
-  width: 100%; /* ✅ Ocupa todo el ancho disponible */
+  min-width: 0;
+  width: 100%;
+  min-height: 200px; /* ✅ Altura mínima para referencia */
 }
 
 /* ✅ GRUPO DE AÑO */
@@ -378,22 +462,24 @@ const formatCurrency = (value) => {
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  height: 100%;
-  flex: 1; /* ✅ Cada año ocupa espacio igual */
-  min-width: 0; /* ✅ Permite que se comprima si es necesario */
-  justify-content: flex-end;
+  height: 100%; /* ✅ Ocupa toda la altura del contenedor */
+  flex: 1;
+  min-width: 0;
+  justify-content: flex-end; /* ✅ Alinea al fondo */
+  position: relative; /* ✅ Contexto para posicionamiento */
 }
 
 /* ✅ WRAPPER DE BARRAS - CRÍTICO */
 .bars-wrapper {
   display: flex;
   gap: 4px;
-  align-items: flex-end;
-  justify-content: center; /* ✅ Centra las barras horizontalmente */
-  flex: 1; /* Ocupa todo el espacio disponible */
-  min-height: 0; /* Permite calcular alturas correctamente */
-  min-width: 0; /* ✅ Evita desbordamiento */
+  align-items: flex-end; /* ✅ Las barras crecen desde abajo */
+  justify-content: center;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
   position: relative;
+  width: 100%; /* ✅ Ocupa todo el ancho disponible */
 }
 
 /* ✅ ITEM DE BARRA */
@@ -401,11 +487,11 @@ const formatCurrency = (value) => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-end;
-  height: 100%;
+  justify-content: flex-end; /* ✅ Justifica al final (abajo) */
   transition: opacity 0.3s ease;
-  position: relative; /* ✅ Contexto para posicionamiento del tooltip */
-  overflow: visible; /* ✅ Permite que el tooltip se salga */
+  position: relative;
+  overflow: visible;
+  /* ✅ NO height: 100% - deja que la barra defina su altura */
 }
 
 /* ✅ BARRA CON ANIMACIÓN */
@@ -420,6 +506,7 @@ const formatCurrency = (value) => {
     opacity 0.3s ease,
     transform 0.2s ease;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  /* ✅ CRÍTICO: La altura se calcula como porcentaje del bars-wrapper */
 }
 
 .bar:hover {
@@ -428,47 +515,74 @@ const formatCurrency = (value) => {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
-/* Tooltip con position: fixed (fuera del flujo) */
-.tooltip-fixed {
+/* Tooltip con estilo LinearChart */
+.tooltip-container {
   position: fixed;
-  transform: translate(-50%, -100%);
-  background: rgba(0, 0, 0, 0.9);
-  color: white;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 11px;
-  white-space: nowrap;
+  transform: translate(-50%, calc(-100% - 15px)); /* Un poco más arriba de la barra */
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   pointer-events: none;
-  z-index: 99999; /* ✅ Por encima de todo en el documento */
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 99999;
+  min-width: 150px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   transition: left 0.1s ease, top 0.1s ease;
 }
 
-.tooltip-fixed::after {
+.tooltip-container::after {
   content: '';
   position: absolute;
   top: 100%;
   left: 50%;
   transform: translateX(-50%);
-  border: 6px solid transparent;
-  border-top-color: rgba(0, 0, 0, 0.9);
+  border: 8px solid transparent;
+  border-top-color: white;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.1));
 }
 
-.tooltip-title {
+.tooltip-header {
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.tooltip-year-label {
+  font-size: 12px;
   font-weight: 600;
-  margin-bottom: 4px;
+  color: #333;
 }
 
-.tooltip-value {
-  font-size: 13px;
-  font-weight: bold;
-  color: #4CAF50;
+.tooltip-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.tooltip-year {
-  font-size: 10px;
-  color: #bbb;
-  margin-top: 2px;
+.tooltip-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.tooltip-color-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.tooltip-variable-name {
+  color: #666;
+  flex-shrink: 0;
+}
+
+.tooltip-variable-value {
+  color: #333;
+  font-weight: 600;
+  margin-left: auto;
 }
 
 .year-label {
@@ -479,30 +593,5 @@ const formatCurrency = (value) => {
   flex-shrink: 0;
   height: 20px;
   line-height: 20px;
-}
-
-/* Leyenda */
-.legend {
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-  margin-top: 16px;
-  padding-top: 12px;
-  border-top: 1px solid #e0e0e0;
-  flex-shrink: 0;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  color: #666;
-}
-
-.legend-color {
-  width: 12px;
-  height: 12px;
-  border-radius: 2px;
 }
 </style>
