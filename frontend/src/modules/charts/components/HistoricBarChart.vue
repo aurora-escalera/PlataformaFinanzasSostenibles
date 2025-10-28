@@ -47,8 +47,16 @@
           :style="{ bottom: `${tick.position}%` }"
         >
           <span class="tick-label">{{ formatCurrency(tick.value) }}</span>
-          <div class="tick-line"></div>
         </div>
+      </div>
+
+      <div class="grid-lines">
+        <div
+          v-for="tick in yAxisTicks"
+          :key="tick.value"
+          class="grid-line"
+          :style="{ bottom: `${tick.position}%` }"
+        ></div>
       </div>
 
       <!-- Barras agrupadas -->
@@ -78,15 +86,32 @@
                   @mouseleave="hoveredBar = null"
                 >
                 </div>
+                
               </div>
+              
             </template>
           </div>
           
           <!-- Año label -->
-          <div class="year-label">{{ yearData.year }}</div>
+        </div>
+      </div>
+      
+    </div>
+
+    <!-- ✅ ETIQUETAS DE AÑOS DEBAJO DEL GRÁFICO -->
+    <div class="x-axis-labels-container">
+      <div class="x-axis-spacer"></div>
+      <div class="x-axis-labels">
+        <div 
+          v-for="yearData in data" 
+          :key="yearData.year"
+          class="year-label"
+        >
+          {{ yearData.year }}
         </div>
       </div>
     </div>
+
 
     <!-- Tooltip Global con position: fixed (estilo LinearChart) -->
     <Teleport to="body">
@@ -199,7 +224,7 @@ const maxVisibleValue = computed(() => {
   })
   
   // Multiplicar por 1.25 para que la barra más alta ocupe 80% (100/80 = 1.25)
-  return maxValue > 0 ? maxValue * 1.25 : 100
+  return maxValue > 0 ? maxValue * 1 : 100
 })
 
 // ✅ CALCULAR ALTURA DE BARRA (en píxeles absolutos)
@@ -233,9 +258,19 @@ const barWidth = computed(() => {
   const totalYears = props.data?.length || 5
   const totalBars = totalYears * activeCount
   
+  // Caso especial: 1 sola barra activa → barras muy anchas
+  if (activeCount === 1) {
+    return 92
+  }
+  
+  // Caso especial: 2 barras activas → ancho reducido para buena separación
+  if (activeCount === 2) {
+    return 42 // ✅ Reducido de 42 a 32 para mejor separación
+  }
+
   // Ancho base que se ajusta según la cantidad de barras
   const baseWidth = 50
-  const minWidth = 25
+  const minWidth = 30
   const maxWidth = 80
   
   // Fórmula que reduce el ancho cuando hay más barras
@@ -373,7 +408,6 @@ watch(() => props.data, () => {
   flex-wrap: wrap;
   margin-bottom: 16px;
   padding-bottom: 12px;
-  border-bottom: 1px solid #e0e0e0;
   width: 100%; /* ✅ Ocupa todo el ancho */
 }
 
@@ -412,7 +446,6 @@ watch(() => props.data, () => {
   width: 60px;
   position: relative;
   flex-shrink: 0;
-  border-right: 1px solid #e0e0e0;
 }
 
 .y-tick {
@@ -433,27 +466,19 @@ watch(() => props.data, () => {
 }
 
 .tick-line {
-  width: 100%;
-  height: 1px;
-  background: #e0e0e0;
-  position: absolute;
-  right: 0;
+display: none; 
 }
 
 /* ✅ CONTENEDOR DE BARRAS */
 .bars-container {
   flex: 1;
   display: flex;
-  align-items: flex-end;
-  gap: 12px;
-  padding: 0;
-
+  align-items: stretch;
   overflow-x: auto;
   overflow-y: visible;
   position: relative;
-  min-width: 0;
-  width: 100%;
-  min-height: 200px; /* ✅ Altura mínima para referencia */
+  height: 100%; 
+  z-index: 2;
 }
 
 /* ✅ GRUPO DE AÑO */
@@ -461,25 +486,20 @@ watch(() => props.data, () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  height: 100%; /* ✅ Ocupa toda la altura del contenedor */
+  gap: 6px;
   flex: 1;
-  min-width: 0;
+  height: 100%;
   justify-content: flex-end; /* ✅ Alinea al fondo */
-  position: relative; /* ✅ Contexto para posicionamiento */
 }
 
 /* ✅ WRAPPER DE BARRAS - CRÍTICO */
 .bars-wrapper {
   display: flex;
-  gap: 4px;
-  align-items: flex-end; /* ✅ Las barras crecen desde abajo */
+  gap: 2px;
+  align-items: flex-end;
   justify-content: center;
   flex: 1;
-  min-height: 0;
-  min-width: 0;
-  position: relative;
-  width: 100%; /* ✅ Ocupa todo el ancho disponible */
+  width: 100%; 
 }
 
 /* ✅ ITEM DE BARRA */
@@ -585,13 +605,52 @@ watch(() => props.data, () => {
   margin-left: auto;
 }
 
+/* ✅ ETIQUETAS DE AÑOS DEBAJO DEL GRÁFICO */
+.x-axis-labels-container {
+  width: 100%;
+  display: flex;
+  height: 30px;
+  flex-shrink: 0;
+}
+
+.x-axis-spacer {
+  width: 60px; /* Mismo ancho que y-axis */
+  flex-shrink: 0;
+}
+
+.x-axis-labels {
+  flex: 1;
+  display: flex;
+  overflow-x: auto;
+}
+
 .year-label {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 11px;
   color: #666;
   font-weight: 500;
   text-align: center;
-  flex-shrink: 0;
-  height: 20px;
-  line-height: 20px;
+}
+
+/* Grid lines */
+.grid-lines {
+  position: absolute;
+  top: 0;
+  left: 60px; /* Mismo ancho que y-axis */
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.grid-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-color: #e0e0e0;
 }
 </style>
