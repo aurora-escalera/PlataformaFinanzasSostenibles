@@ -10,7 +10,7 @@
     <div v-if="showFilters" class="filters-wrapper">
       <div class="filters-section">
         <button
-          v-for="variable in uniqueVariables"
+          v-for="variable in visibleVariables"
           :key="variable.key"
           @click="toggleFilter(variable.key)"
           class="filter-btn"
@@ -27,7 +27,7 @@
     <!-- 3. LEYENDA CON CÍRCULOS (puntos) -->
     <div v-if="showLegend" class="legend-section">
       <div 
-        v-for="variable in uniqueVariables"
+        v-for="variable in visibleVariables"
         :key="variable.key"
         class="legend-item"
       >
@@ -65,10 +65,11 @@
           v-for="yearData in data" 
           :key="yearData.year"
           class="year-group"
+          :style="{ marginRight: yearGroupGap }"
         >
           <!-- Barras de ese año -->
           <div class="bars-wrapper">
-            <template v-for="variable in yearData.variables" :key="variable.key">
+            <template v-for="variable in getFilteredVariables(yearData)" :key="variable.key">
               <div
                 v-if="activeFilters[variable.key] !== false"
                 class="bar-item"
@@ -158,6 +159,24 @@ const props = defineProps({
   showLegend: {
     type: Boolean,
     default: false
+  },
+  // ✅ NUEVA PROP: Array de keys de variables que queremos mostrar
+  visibleVariableKeys: {
+    type: Array,
+    default: null,
+    // Ejemplo: ['ingresos', 'gastos'] - si es null, muestra todas
+  },
+  // ✅ NUEVA PROP: Configuración de variables desde archivo externo
+  variablesConfig: {
+    type: Object,
+    default: null,
+    // Estructura: { key: { label, color, order } }
+  },
+  // ✅ NUEVA PROP: Variables inicialmente activas
+  initialActiveVariables: {
+    type: Array,
+    default: null,
+    // Ejemplo: ['ingresos', 'utilidad'] - si es null, todas activas
   }
 })
 
@@ -176,7 +195,7 @@ const updateTooltipPosition = (event) => {
   }
 }
 
-// Extraer variables únicas
+// Extraer variables únicas con configuración externa si existe
 const uniqueVariables = computed(() => {
   if (!props.data || props.data.length === 0) return []
   
@@ -185,23 +204,96 @@ const uniqueVariables = computed(() => {
     if (yearData.variables && Array.isArray(yearData.variables)) {
       yearData.variables.forEach(variable => {
         if (!variablesMap.has(variable.key)) {
-          variablesMap.set(variable.key, {
-            key: variable.key,
-            label: variable.label,
-            color: variable.color
-          })
+          // Si hay configuración externa, usarla
+          if (props.variablesConfig && props.variablesConfig[variable.key]) {
+            const config = props.variablesConfig[variable.key]
+            variablesMap.set(variable.key, {
+              key: variable.key,
+              label: config.label || variable.label,
+              color: config.color || variable.color,
+              order: config.order || 0
+            })
+          } else {
+            // Usar configuración del dato
+            variablesMap.set(variable.key, {
+              key: variable.key,
+              label: variable.label,
+              color: variable.color,
+              order: 0
+            })
+          }
         }
       })
     }
   })
-  return Array.from(variablesMap.values())
+  
+  const variables = Array.from(variablesMap.values())
+  
+  // Ordenar por el campo 'order' si existe
+  variables.sort((a, b) => (a.order || 0) - (b.order || 0))
+  
+  return variables
 })
 
-// Inicializar filtros
-watch(uniqueVariables, (newVars) => {
+// ✅ NUEVO: Variables visibles después de aplicar filtro de visibleVariableKeys
+const visibleVariables = computed(() => {
+  if (!props.visibleVariableKeys || props.visibleVariableKeys.length === 0) {
+    return uniqueVariables.value
+  }
+  
+  // Filtrar solo las variables especificadas en visibleVariableKeys
+  return uniqueVariables.value.filter(variable => 
+    props.visibleVariableKeys.includes(variable.key)
+  )
+})
+
+// ✅ NUEVO: Función para obtener variables filtradas de un año específico
+const getFilteredVariables = (yearData) => {
+  if (!yearData.variables || !Array.isArray(yearData.variables)) return []
+  
+  // Si hay visibleVariableKeys, filtrar
+  if (props.visibleVariableKeys && props.visibleVariableKeys.length > 0) {
+    const filtered = yearData.variables.filter(v => 
+      props.visibleVariableKeys.includes(v.key)
+    )
+    
+    // Aplicar configuración si existe
+    if (props.variablesConfig) {
+      return filtered.map(v => ({
+        ...v,
+        label: props.variablesConfig[v.key]?.label || v.label,
+        color: props.variablesConfig[v.key]?.color || v.color,
+        order: props.variablesConfig[v.key]?.order || 0
+      })).sort((a, b) => (a.order || 0) - (b.order || 0))
+    }
+    
+    return filtered
+  }
+  
+  // Si no hay filtro, devolver todas aplicando configuración si existe
+  if (props.variablesConfig) {
+    return yearData.variables.map(v => ({
+      ...v,
+      label: props.variablesConfig[v.key]?.label || v.label,
+      color: props.variablesConfig[v.key]?.color || v.color,
+      order: props.variablesConfig[v.key]?.order || 0
+    })).sort((a, b) => (a.order || 0) - (b.order || 0))
+  }
+  
+  return yearData.variables
+}
+
+// Inicializar filtros con valores iniciales personalizados
+watch(visibleVariables, (newVars) => {
   newVars.forEach(variable => {
     if (!(variable.key in activeFilters.value)) {
-      activeFilters.value[variable.key] = true
+      // Si hay initialActiveVariables, usar ese valor
+      if (props.initialActiveVariables && Array.isArray(props.initialActiveVariables)) {
+        activeFilters.value[variable.key] = props.initialActiveVariables.includes(variable.key)
+      } else {
+        // Por defecto, todas activas
+        activeFilters.value[variable.key] = true
+      }
     }
   })
 }, { immediate: true })
@@ -213,7 +305,8 @@ const maxVisibleValue = computed(() => {
   let maxValue = 0
   props.data.forEach(yearData => {
     if (yearData.variables && Array.isArray(yearData.variables)) {
-      yearData.variables.forEach(variable => {
+      const filteredVars = getFilteredVariables(yearData)
+      filteredVars.forEach(variable => {
         if (activeFilters.value[variable.key] !== false && variable.value) {
           if (variable.value > maxValue) {
             maxValue = variable.value
@@ -224,7 +317,7 @@ const maxVisibleValue = computed(() => {
   })
   
   // Multiplicar por 1.25 para que la barra más alta ocupe 80% (100/80 = 1.25)
-  return maxValue > 0 ? maxValue * 1 : 100
+  return maxValue > 0 ? maxValue * 0.8 : 100
 })
 
 // ✅ CALCULAR ALTURA DE BARRA (en píxeles absolutos)
@@ -251,21 +344,25 @@ const yAxisTicks = computed(() => {
 
 // ✅ ANCHO DINÁMICO DE BARRAS
 const barWidth = computed(() => {
-  const activeCount = Object.values(activeFilters.value).filter(v => v !== false).length
-  if (activeCount === 0) return 40
-  
-  // Calcular ancho basado en el número de años y barras activas
+ const activeCount = Object.values(activeFilters.value).filter(v => v !== false).length  
   const totalYears = props.data?.length || 5
   const totalBars = totalYears * activeCount
   
-  // Caso especial: 1 sola barra activa → barras muy anchas
+  if (activeCount === 0) return 40
+  
+  // Caso especial: 1 sola barra activa
   if (activeCount === 1) {
     return 92
   }
   
-  // Caso especial: 2 barras activas → ancho reducido para buena separación
+  // Caso especial: 2 barras activas
   if (activeCount === 2) {
-    return 42 // ✅ Reducido de 42 a 32 para mejor separación
+    return 42
+  }
+
+  // ✅ NUEVO: Caso especial: 3 barras activas
+  if (activeCount === 3) {
+    return 28 // ✅ Ajusta este valor según necesites
   }
 
   // Ancho base que se ajusta según la cantidad de barras
@@ -273,10 +370,23 @@ const barWidth = computed(() => {
   const minWidth = 30
   const maxWidth = 80
   
-  // Fórmula que reduce el ancho cuando hay más barras
   const calculatedWidth = baseWidth / Math.sqrt(activeCount * 0.8)
   
   return Math.max(minWidth, Math.min(maxWidth, calculatedWidth))
+})
+
+// Gap dinámico entre grupos de años
+const yearGroupGap = computed(() => {
+  const activeCount = Object.values(activeFilters.value).filter(v => v !== false).length
+  const totalVariables = visibleVariables.value.length
+  
+  // Si todas las variables están activas, usar gap grande
+  if (activeCount === totalVariables && totalVariables > 0) {
+    return '10px' // Gap cuando todas están activas
+  }
+  
+  // Si solo algunas están activas, gap más pequeño
+  return '5px' // Gap reducido
 })
 
 // Toggle filtro
@@ -474,7 +584,7 @@ display: none;
   flex: 1;
   display: flex;
   align-items: stretch;
-  overflow-x: auto;
+  overflow-x:visible;
   overflow-y: visible;
   position: relative;
   height: 100%; 

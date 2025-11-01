@@ -1,7 +1,6 @@
-<!-- src/modules/maps/components/HistoricalCard.vue -->
+<!-- src/modules/object/component/HistoricalCard.vue -->
 <template>
   <div class="ifss-slider-container">
-    <!-- Slider de rango -->
     <div class="historic-table">
       <div class="row-1">
         <div class="IS-anual-linear-chart">
@@ -45,10 +44,12 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted} from 'vue'
-import LinearChart from '../../charts/components/LinearChart.vue';
-import StackedArea from '../../charts/components/StackedArea.vue';
-import HistoricBarChart from '../../charts/components/HistoricBarChart.vue';
+import { ref, computed, onMounted } from 'vue'
+import LinearChart from '../../charts/components/LinearChart.vue'
+import StackedArea from '../../charts/components/StackedArea.vue'
+import HistoricBarChart from '../../charts/components/HistoricBarChart.vue'
+import { useStorageData } from '@/dataConection/useStorageData'
+import { storageConfig } from '@/dataConection/storageConfig'
 
 const props = defineProps({
   statesData: {
@@ -61,7 +62,14 @@ const props = defineProps({
   }
 })
 
-// Datos para LinearChart
+// Composable de Google Sheets
+const { fetchData, transformToBarChartData } = useStorageData()
+
+// Datos para gráficas
+const chartDataBar = ref([])
+const years = ref(['2020', '2021', '2022', '2023', '2024'])
+
+// Datos temporales para LinearChart
 const chartDataLinear = computed(() => {
   return {
     'IS Total': [45234.5, 52341.2, 58123.7, 61456.8, 67234.9],
@@ -69,56 +77,53 @@ const chartDataLinear = computed(() => {
   }
 })
 
-const years = computed(() => {
-  return ['2020', '2021', '2022', '2023', '2024']
-})
-
-// ✅ Datos para HistoricBarChart - Estructura correcta
-const chartDataBar = ref([
-  { 
-    year: '2020', 
-    variables: [
-      { key: 'federal', label: 'Federal', value: 45234.5, color: '#0F3759' },
-      { key: 'estatal', label: 'Estatal', value: 52341.2, color: '#3B5A70' }
-    ]
-  },
-  { 
-    year: '2021', 
-    variables: [
-      { key: 'federal', label: 'Federal', value: 48123.4, color: '#0F3759' },
-      { key: 'estatal', label: 'Estatal', value: 55678.2, color: '#3B5A70' }
-    ]
-  },
-  { 
-    year: '2022', 
-    variables: [
-      { key: 'federal', label: 'Federal', value: 52341.9, color: '#0F3759' },
-      { key: 'estatal', label: 'Estatal', value: 58234.7, color: '#3B5A70' }
-    ]
-  },
-  { 
-    year: '2023', 
-    variables: [
-      { key: 'federal', label: 'Federal', value: 54234.5, color: '#0F3759' },
-      { key: 'estatal', label: 'Estatal', value: 61456.8, color: '#3B5A70' }
-    ]
-  },
-  { 
-    year: '2024', 
-    variables: [
-      { key: 'federal', label: 'Federal', value: 55678.2, color: '#0F3759' },
-      { key: 'estatal', label: 'Estatal', value: 67234.9, color: '#3B5A70' }
-    ]
+// Cargar datos de Google Sheets
+const loadData = async () => {
+  try {
+    console.log('📊 Cargando datos de Google Sheets...')
+    
+    // 1. Obtener datos raw del Google Sheet
+    const rawData = await fetchData('datosFinancieros', 'Hoja 1')
+    
+    console.log('✅ Datos raw obtenidos:', {
+      numFilas: rawData?.length || 0,
+      primeraFila: rawData?.[0] || 'No hay datos',
+      columnas: rawData?.[0] ? Object.keys(rawData[0]) : []
+    })
+    
+    if (!rawData || rawData.length === 0) {
+      console.error('❌ No se obtuvieron datos del Google Sheet')
+      return
+    }
+    
+    // 2. Transformar a formato de HistoricBarChart
+    const mapping = storageConfig.mappings.iicBarChart
+    chartDataBar.value = transformToBarChartData(rawData, mapping)
+    
+    // 3. Extraer años
+    years.value = rawData.map(row => row.Año?.toString() || '')
+    
+    console.log('✅ Datos transformados para BarChart:', {
+      numAños: chartDataBar.value?.length || 0,
+      datos: chartDataBar.value
+    })
+    console.log('✅ Años extraídos:', years.value)
+    
+  } catch (err) {
+    console.error('❌ Error cargando datos:', err)
+    console.error('Error completo:', err.message)
+    chartDataBar.value = []
   }
-])
+}
 
-// DEBUG: Mostrar datos en consola
-onMounted(() => {
-  console.log('📊 chartDataBar:', chartDataBar.value)
-  console.log('📊 Número de años:', chartDataBar.value.length)
-  chartDataBar.value.forEach(year => {
-    console.log(`  ${year.year}:`, year.variables)
-  })
+// Cargar datos al montar (con delay de 2 segundos)
+onMounted(async () => {
+  console.log('🎬 Componente HistoricalCard montado')
+  
+  setTimeout(async () => {
+    console.log('⏰ Iniciando carga después de 2 segundos...')
+    await loadData()
+  }, 2000)
 })
 </script>
 
@@ -163,7 +168,7 @@ onMounted(() => {
   width: 50%;
   height: 100%;
   border-radius: 8px;
-  overflow: visible; /* Para que el tooltip no se corte */
+  overflow: visible;
   border: 1px solid #ccc;
 }
 
