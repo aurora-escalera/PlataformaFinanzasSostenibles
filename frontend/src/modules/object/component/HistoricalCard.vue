@@ -30,14 +30,36 @@
             :showFilters="true"
             :showLegend="true"
           />
+          </div>
+          <div class="IS-anual-bar-chart">
+          <HistoricBarChart
+            title="Ingresos Sostenibles (IS) por Año"
+            :data="chartDataBarIS"
+            :showFilters="true"
+            :showLegend="true"
+          />
         </div>
       </div>
       <div class="row-3">
         <div class="PS-PIC-anual-linear-chart"></div>
       </div>
       <div class="row-4">
-        <div class="PIC-anual-bar-chart"></div>
-        <div class="PS-anual-bar-chart"></div>
+        <div class="PIC-anual-bar-chart">
+            <HistoricBarChart
+            title="Presupuestos Intensivos en Carbono (PIC)"
+            :data="chartDataBarPIC"
+            :showFilters="true"
+            :showLegend="true"
+          />
+        </div>
+        <div class="PS-anual-bar-chart">
+            <HistoricBarChart
+            title="Presupuestos Sostenibles (PS)"
+            :data="chartDataBarPS"
+            :showFilters="true"
+            :showLegend="true"
+          />
+        </div>
       </div>
     </div>
   </div>
@@ -67,6 +89,9 @@ const { fetchData, transformToBarChartData } = useStorageData()
 
 // Datos para gráficas
 const chartDataBar = ref([])
+const chartDataBarIS = ref([])
+const chartDataBarPIC = ref([])
+const chartDataBarPS = ref([])
 const years = ref(['2020', '2021', '2022', '2023', '2024'])
 
 // Datos temporales para LinearChart
@@ -82,7 +107,6 @@ const loadData = async () => {
   try {
     console.log('📊 Cargando datos de Google Sheets...')
     
-    // 1. Obtener datos raw del Google Sheet
     const rawData = await fetchData('datosFinancieros', 'Hoja 1')
     
     console.log('✅ Datos raw obtenidos:', {
@@ -96,23 +120,37 @@ const loadData = async () => {
       return
     }
     
-    // 2. Transformar a formato de HistoricBarChart
-    const mapping = storageConfig.mappings.iicBarChart
-    chartDataBar.value = transformToBarChartData(rawData, mapping)
+    // Transformar datos para IIC
+    const mappingIIC = storageConfig.mappings.iicBarChart
+    chartDataBar.value = transformToBarChartData(rawData, mappingIIC)
     
-    // 3. Extraer años
+    // Transformar datos para IS
+    const mappingIS = storageConfig.mappings.presupuestoBarChart
+    chartDataBarIS.value = transformToBarChartData(rawData, mappingIS)
+    
+    // Transformar datos para PIC
+    const mappingPIC = storageConfig.mappings.picBarChart
+    chartDataBarPIC.value = transformToBarChartData(rawData, mappingPIC)
+    
+    // Transformar datos para PS
+    const mappingPS = storageConfig.mappings.psBarChart
+    chartDataBarPS.value = transformToBarChartData(rawData, mappingPS)
+    
+    // Extraer años
     years.value = rawData.map(row => row.Año?.toString() || '')
     
-    console.log('✅ Datos transformados para BarChart:', {
-      numAños: chartDataBar.value?.length || 0,
-      datos: chartDataBar.value
-    })
-    console.log('✅ Años extraídos:', years.value)
+    console.log('✅ Datos transformados para IIC BarChart:', chartDataBar.value?.length || 0, 'años')
+    console.log('✅ Datos transformados para IS BarChart:', chartDataBarIS.value?.length || 0, 'años')
+    console.log('✅ Datos transformados para PIC BarChart:', chartDataBarPIC.value?.length || 0, 'años')
+    console.log('✅ Datos transformados para PS BarChart:', chartDataBarPS.value?.length || 0, 'años')
     
   } catch (err) {
     console.error('❌ Error cargando datos:', err)
     console.error('Error completo:', err.message)
     chartDataBar.value = []
+    chartDataBarIS.value = []
+    chartDataBarPIC.value = []
+    chartDataBarPS.value = []
   }
 }
 
