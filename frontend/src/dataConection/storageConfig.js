@@ -93,19 +93,14 @@ export const storageConfig = {
       yearColumn: 'Año',
       variableColumns: [
         {
-          key: 'isTotal',
-          column: 'IS Total',
+          key: 'IS_Total',
+          column: 'IS($)',
           label: 'IS Total'
         },
         {
-          key: 'financDesarrollo',
-          column: 'Financiamiento Desarrollo',
-          label: 'Financ. para desarrollo'
-        },
-        {
-          key: 'otrasFuentes',
-          column: 'Otras Fuentes',
-          label: 'Otras fuentes'
+          key: 'Financiemiento_Total',
+          column: 'FT ($)',
+          label: 'Financiamiento Total'
         }
       ]
     },

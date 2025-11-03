@@ -92,15 +92,21 @@ const chartDataBar = ref([])
 const chartDataBarIS = ref([])
 const chartDataBarPIC = ref([])
 const chartDataBarPS = ref([])
+const chartDataLinear = ref({})
 const years = ref(['2020', '2021', '2022', '2023', '2024'])
 
-// Datos temporales para LinearChart
-const chartDataLinear = computed(() => {
-  return {
-    'IS Total': [45234.5, 52341.2, 58123.7, 61456.8, 67234.9],
-    'Financ. para desarrollo': [23456.8, 48123.4, 52341.9, 54234.5, 55678.2]
-  }
-})
+// Función para transformar datos para LinearChart
+const transformToLinearData = (rawData, mapping) => {
+  const result = {}
+  
+  mapping.variableColumns.forEach(varConfig => {
+    result[varConfig.label] = rawData.map(row => 
+      parseFloat(row[varConfig.column]) || 0
+    )
+  })
+  
+  return result
+}
 
 // Cargar datos de Google Sheets
 const loadData = async () => {
@@ -136,6 +142,10 @@ const loadData = async () => {
     const mappingPS = storageConfig.mappings.psBarChart
     chartDataBarPS.value = transformToBarChartData(rawData, mappingPS)
     
+    // Transformar datos para LinearChart
+    const mappingLinear = storageConfig.mappings.isLinearChart
+    chartDataLinear.value = transformToLinearData(rawData, mappingLinear)
+
     // Extraer años
     years.value = rawData.map(row => row.Año?.toString() || '')
     
@@ -143,7 +153,8 @@ const loadData = async () => {
     console.log('✅ Datos transformados para IS BarChart:', chartDataBarIS.value?.length || 0, 'años')
     console.log('✅ Datos transformados para PIC BarChart:', chartDataBarPIC.value?.length || 0, 'años')
     console.log('✅ Datos transformados para PS BarChart:', chartDataBarPS.value?.length || 0, 'años')
-    
+    console.log('✅ Datos transformados para LinearChart:', chartDataLinear.value) 
+
   } catch (err) {
     console.error('❌ Error cargando datos:', err)
     console.error('Error completo:', err.message)
@@ -151,6 +162,7 @@ const loadData = async () => {
     chartDataBarIS.value = []
     chartDataBarPIC.value = []
     chartDataBarPS.value = []
+    chartDataLinear.value = []
   }
 }
 

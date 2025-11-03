@@ -1,5 +1,11 @@
 <template>
-  <div class="linear-chart-container">
+  <div 
+    class="linear-chart-container"
+    :style="{
+      minWidth: props.minWidth ? `${props.minWidth}px` : undefined,
+      minHeight: props.minHeight ? `${props.minHeight}px` : undefined
+    }"
+  >
     <!-- Header con título y controles -->
     <div class="chart-header">
       <div class="header-content">
@@ -63,7 +69,7 @@
           <text
             v-for="i in gridLines"
             :key="`y-label-${i}`"
-            :x="padding.left - 10"
+            :x="padding.left - 1"
             :y="padding.top + (i - 1) * gridSpacing + 4"
             class="y-axis-label"
             text-anchor="end"
@@ -221,7 +227,7 @@
         v-for="(label, i) in props.xLabels"
         :key="`x-label-external-${i}`"
         class="x-axis-label"
-        :style="{ left: `${getXPositionPercentage(i)}%` }"
+        :style="{ left: `${getXPosition(i)}px` }"
       >
         {{ label }}
       </div>
@@ -263,6 +269,23 @@ const props = defineProps({
   valueFormatter: {
     type: Function,
     default: null
+  },
+  // ✅ NUEVAS PROPS PARA CONTROLAR TAMAÑO
+  minWidth: {
+    type: Number,
+    default: null
+  },
+  minHeight: {
+    type: Number,
+    default: null
+  },
+  defaultWidth: {
+    type: Number,
+    default: 800
+  },
+  defaultHeight: {
+    type: Number,
+    default: 400
   }
 })
 
@@ -286,8 +309,8 @@ const hoverState = ref({
 // Estado para la animación de los puntos
 const animatingPoints = ref({})
 
-// Configuración de padding
-const padding = { top: 10, right: 20, bottom: 70, left: 20 }
+// Configuración de padding - Optimizado para espaciado equilibrado
+const padding = { top: 30, right: 15, bottom: 60, left: 60 }
 
 // Paleta de colores (igual que StackedArea)
 const colorPalette = [
@@ -342,9 +365,36 @@ const allVisibleValues = computed(() => {
   return values.length > 0 ? values : [0]
 })
 
-// Máximo y mínimo de los datos visibles
-const maxValue = computed(() => Math.max(...allVisibleValues.value, 0))
-const minValue = computed(() => Math.min(...allVisibleValues.value, 0))
+// ⭐ CAMBIO PRINCIPAL: Máximo y mínimo ajustados para usar 80-85% del espacio
+const maxValue = computed(() => {
+  if (allVisibleValues.value.length === 0) return 100
+  const max = Math.max(...allVisibleValues.value)
+  const min = Math.min(...allVisibleValues.value)
+  
+  // Si todos los valores son iguales, agregar un margen del 20%
+  if (max === min) {
+    return max > 0 ? max * 1.2 : max + 10
+  }
+  
+  const range = max - min
+  // Agregar 20% del rango arriba para que el punto más alto esté al 83% del espacio (100/120 = 83%)
+  return max + (range * 0.20)
+})
+
+const minValue = computed(() => {
+  if (allVisibleValues.value.length === 0) return 0
+  const max = Math.max(...allVisibleValues.value)
+  const min = Math.min(...allVisibleValues.value)
+  
+  // Si todos los valores son iguales, agregar un margen del 20%
+  if (max === min) {
+    return min > 0 ? min * 0.8 : min - 10
+  }
+  
+  const range = max - min
+  // Agregar 20% del rango abajo para espaciado inferior
+  return min - (range * 0.20)
+})
 
 // Calcular la escala Y
 const yScale = computed(() => {
@@ -389,22 +439,37 @@ const getDarkerColor = (variable) => {
 const getXPosition = (index) => {
   const dataLength = props.xLabels.length
   if (dataLength <= 1) return padding.left
-  const step = chartWidth.value / (dataLength - 1)
-  return padding.left + index * step
+  
+  // Usar chartWidth completo, distribuyendo uniformemente los puntos
+  const step = chartWidth.value / (dataLength - 1) * 0.8
+  const position = padding.left + index * step
+  
+  // Debug: descomentar para verificar las posiciones
+  // console.log(`Punto ${index} (${props.xLabels[index]}): ${position}px de ${dimensions.value.width}px`)
+  
+  return position
 }
 
-// Calcular posición X en porcentaje para las etiquetas externas
+// Calcular posición X en porcentaje para las etiquetas externas (relativo al contenedor padre, no al SVG)
 const getXPositionPercentage = (index) => {
   const dataLength = props.xLabels.length
-  if (dataLength <= 1) return 0
+  if (dataLength <= 1) {
+    // Si solo hay un dato, centrar al 50%
+    return 50
+  }
   
-  const totalWidth = dimensions.value.width
-  const usableWidth = chartWidth.value
-  const leftPaddingPercentage = (padding.left / totalWidth) * 100
-  const usableWidthPercentage = (usableWidth / totalWidth) * 100
+  // El x-axis-container tiene el mismo ancho que el contenedor padre (no el SVG)
+  // Necesitamos calcular la posición del punto como porcentaje del contenedor padre
   
-  const step = usableWidthPercentage / (dataLength - 1)
-  return leftPaddingPercentage + (index * step)
+  // Posición del punto en píxeles dentro del SVG
+  const step = chartWidth.value / (dataLength - 1)
+  const pointXInSVG = padding.left + index * step
+  
+  // Convertir a porcentaje del ancho TOTAL del contenedor (que incluye el padding del contenedor)
+  // El SVG ocupa todo el ancho disponible dentro del linear-chart-container
+  const percentage = (pointXInSVG / dimensions.value.width) * 100
+  
+  return percentage
 }
 
 // Calcular posición Y para un valor
@@ -412,8 +477,21 @@ const getY = (value) => {
   if (value === null || value === undefined || isNaN(value)) {
     return dimensions.value.height - padding.bottom
   }
+  
+  const range = maxValue.value - minValue.value
+  if (range === 0) {
+    // Si no hay rango, centrar verticalmente
+    return padding.top + chartHeight.value / 2
+  }
+  
   const normalizedValue = value - minValue.value
-  return dimensions.value.height - padding.bottom - (normalizedValue * yScale.value)
+  const percentage = normalizedValue / range
+  
+  // Calcular Y desde arriba: padding.top es 0%, padding.top + chartHeight es 100%
+  const y = padding.top + chartHeight.value * (1 - percentage)
+  
+  // Limitar al rango válido para evitar que salga del área
+  return Math.max(padding.top, Math.min(dimensions.value.height - padding.bottom, y))
 }
 
 // Calcular posición Y usando datos animados
@@ -424,22 +502,19 @@ const getAnimatedY = (variable, index) => {
 
 // Obtener valor del eje Y para una línea de grid
 const getYAxisValue = (index) => {
-  const step = (maxValue.value - minValue.value) / (props.gridLines - 1)
+  const range = maxValue.value - minValue.value
+  const step = range / (props.gridLines - 1)
   return maxValue.value - (step * index)
 }
 
 // Formatear valor del eje Y
 const formatYAxisValue = (value) => {
-  if (props.valueFormatter) {
-    return props.valueFormatter(value)
+  if (Math.abs(value) >= 1000000) {
+    return `$${(value / 1000000).toFixed(1)}M` 
+  } else if (Math.abs(value) >= 1000) {
+    return `$${(value / 1000).toFixed(1)}K`
   }
-  
-  if (value >= 1000000) {
-    return `${(value / 1000000).toFixed(1)}M`
-  } else if (value >= 1000) {
-    return `${(value / 1000).toFixed(1)}K`
-  }
-  return value.toFixed(0)
+  return `$${Math.round(value)}`
 }
 
 // Formatear valor para tooltip
@@ -691,12 +766,20 @@ const hideTooltip = () => {
 
 const handleResize = () => {
   if (chartWrapper.value) {
-    const parentWidth = chartWrapper.value.offsetWidth
-    const parentHeight = chartWrapper.value.offsetHeight
+    let parentWidth = chartWrapper.value.offsetWidth
+    let parentHeight = chartWrapper.value.offsetHeight
+    
+    // Aplicar dimensiones mínimas si están definidas
+    if (props.minWidth && parentWidth < props.minWidth) {
+      parentWidth = props.minWidth
+    }
+    if (props.minHeight && parentHeight < props.minHeight) {
+      parentHeight = props.minHeight
+    }
     
     dimensions.value = {
-      width: parentWidth || 600,
-      height: parentHeight || 300
+      width: parentWidth || props.defaultWidth,
+      height: parentHeight || props.defaultHeight
     }
   }
 }
@@ -729,19 +812,19 @@ onUnmounted(() => {
   height: 100%;
   background: white;
   border-radius: 12px;
-  padding: 24px;
+  padding: 16px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  overflow: visible;
+  overflow: visible; 
 }
 
 .chart-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 5px;
+  margin-bottom: 12px;
   flex-shrink: 0;
 }
 
@@ -750,9 +833,9 @@ onUnmounted(() => {
 }
 
 .chart-title {
-  font-size: 10px;
-  font-weight: 100;
-  color: #111827;
+  font-size: 14px;
+  font-weight: 600;
+  color: #2c3e50;
   margin: 0 0 4px 0;
   line-height: 1.4;
   text-align: center;
@@ -779,25 +862,21 @@ onUnmounted(() => {
   gap: 2px;
   margin-bottom: 5px;
   flex-shrink: 0;
-  background-color: white;
+  background: #f5f5f5; 
 }
 
 .filter-btn {
-  flex: 0 1 auto;
+  padding: 6px 14px;
   border: none;
-  padding: 5px 4px 5px 4px;
-  border-radius: 24px;
+  border-radius: 16px;
   cursor: pointer;
-  font-size: 9px;
-  font-weight: 100;
+  font-size: 11px;
+  font-weight: 500;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: white;
   transition: all 0.3s ease;
-  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  letter-spacing: -0.2px;
 }
 
 .filter-btn:hover {
@@ -836,10 +915,9 @@ onUnmounted(() => {
   flex: 1;
   min-height: 0;
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
-  padding-bottom: 0;
-  overflow: visible;
+  overflow: visible; /* Permitir tooltips y elementos fuera del área */
 }
 
 .line-chart {
@@ -847,6 +925,7 @@ onUnmounted(() => {
   height: 100%;
   max-width: 100%;
   max-height: 100%;
+  display: block; /* Eliminar espacio en blanco debajo del SVG */
 }
 
 .grid-line {
@@ -879,6 +958,9 @@ onUnmounted(() => {
   height: 30px;
   margin-top: 8px;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  overflow: visible; /* Permitir que las etiquetas se vean aunque salgan del contenedor */
 }
 
 .x-axis-label {
