@@ -6,7 +6,7 @@
       <h3 class="chart-title">{{ title }}</h3>
     </div>
 
-    <!-- 2. FILTROS/VARIABLES CON CONTENEDOR (estilo LinearChart) -->
+    <!-- 2. FILTROS/VARIABLES CON CONTENEDOR -->
     <div v-if="showFilters" class="filters-wrapper">
       <div class="filters-section">
         <button
@@ -19,24 +19,13 @@
             'filter-inactive': activeFilters[variable.key] === false
           }"
         >
+          <span class="btn-color-dot" :style="{ backgroundColor: variable.color }"></span>
           {{ variable.label }}
         </button>
       </div>
     </div>
 
-    <!-- 3. LEYENDA CON CÍRCULOS (puntos) -->
-    <div v-if="showLegend" class="legend-section">
-      <div 
-        v-for="variable in visibleVariables"
-        :key="variable.key"
-        class="legend-item"
-      >
-        <span class="legend-color-dot" :style="{ backgroundColor: variable.color }"></span>
-        <span class="legend-label">{{ variable.label }}</span>
-      </div>
-    </div>
-
-    <!-- 4. ÁREA DEL GRÁFICO -->
+    <!-- 3. ÁREA DEL GRÁFICO -->
     <div class="chart-area">
       <!-- Eje Y con escala dinámica -->
       <div class="y-axis">
@@ -442,19 +431,19 @@ watch(() => props.data, () => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  align-items: center; /* ✅ Centra todos los elementos hijos */
+  align-items: center;
   background: white;
   border-radius: 8px;
   padding: 16px;
   box-sizing: border-box;
-  overflow: visible; /* ✅ Permite que los tooltips se vean fuera */
+  overflow: visible;
 }
 
 /* 1. SECCIÓN DE TÍTULO */
 .chart-title-section {
   margin-bottom: 12px;
   width: 100%;
-  text-align: center; /* ✅ Título centrado */
+  text-align: center;
 }
 
 .chart-title {
@@ -471,15 +460,15 @@ watch(() => props.data, () => {
   padding: 6px;
   margin-bottom: 12px;
   display: flex;
-  justify-content: center; /* ✅ Centra el contenido */
-  width: 100%; /* ✅ Mismo ancho que legend-section */
+  justify-content: center; 
+  width: 100%; 
 }
 
 .filters-section {
   display: flex;
   gap: 4px;
   flex-wrap: wrap;
-  justify-content: center; /* ✅ Centra los botones */
+  justify-content: center; 
 }
 
 .filter-btn {
@@ -492,6 +481,17 @@ watch(() => props.data, () => {
   font-size: 11px;
   font-weight: 500;
   transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.btn-color-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .filter-btn.filter-active {
@@ -510,45 +510,16 @@ watch(() => props.data, () => {
   transform: scale(1.05);
 }
 
-/* 3. SECCIÓN DE LEYENDA CON CÍRCULOS */
-.legend-section {
-  display: flex;
-  justify-content: center; /* ✅ Centra horizontalmente */
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  width: 100%; /* ✅ Ocupa todo el ancho */
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  color: #666;
-}
-
-.legend-color-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%; /* ✅ Círculo en vez de cuadrado */
-  flex-shrink: 0;
-}
-
-.legend-label {
-  white-space: nowrap;
-}
-
 /* ✅ ÁREA DEL GRÁFICO */
 .chart-area {
+  margin-top: 20px;
   flex: 1;
   display: flex;
   position: relative;
-  min-height: 0; /* Permite que flex: 1 funcione correctamente */
-  width: 100%; /* ✅ Ocupa todo el ancho disponible */
-  overflow: visible; /* ✅ Permite que los tooltips se vean fuera del contenedor */
-  align-self: stretch; /* ✅ Se estira horizontalmente */
+  min-height: 0;
+  width: 100%;
+  overflow: visible;
+  align-self: stretch;
 }
 
 /* ✅ EJE Y */
@@ -564,7 +535,7 @@ watch(() => props.data, () => {
   width: 100%;
   display: flex;
   align-items: center;
-  transition: bottom 0.6s cubic-bezier(0.4, 0, 0.2, 1); /* ✅ Animación del eje */
+  transition: bottom 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .tick-label {
@@ -599,7 +570,7 @@ display: none;
   gap: 6px;
   flex: 1;
   height: 100%;
-  justify-content: flex-end; /* ✅ Alinea al fondo */
+  justify-content: flex-end;
 }
 
 /* ✅ WRAPPER DE BARRAS - CRÍTICO */
@@ -617,26 +588,24 @@ display: none;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-end; /* ✅ Justifica al final (abajo) */
+  justify-content: flex-end;
   transition: opacity 0.3s ease;
   position: relative;
   overflow: visible;
-  /* ✅ NO height: 100% - deja que la barra defina su altura */
 }
 
 /* ✅ BARRA CON ANIMACIÓN */
 .bar {
-  min-height: 2px; /* Siempre visible */
+  min-height: 2px;
   border-radius: 4px 4px 0 0;
   position: relative;
   cursor: pointer;
   transition: 
-    height 0.6s cubic-bezier(0.4, 0, 0.2, 1), /* ✅ Animación suave de altura */
-    width 0.3s ease, /* ✅ Animación de ancho */
+    height 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.3s ease,
     opacity 0.3s ease,
     transform 0.2s ease;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  /* ✅ CRÍTICO: La altura se calcula como porcentaje del bars-wrapper */
 }
 
 .bar:hover {
@@ -648,7 +617,7 @@ display: none;
 /* Tooltip con estilo LinearChart */
 .tooltip-container {
   position: fixed;
-  transform: translate(-50%, calc(-100% - 15px)); /* Un poco más arriba de la barra */
+  transform: translate(-50%, calc(-100% - 15px));
   background: white;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
@@ -724,7 +693,7 @@ display: none;
 }
 
 .x-axis-spacer {
-  width: 60px; /* Mismo ancho que y-axis */
+  width: 60px;
   flex-shrink: 0;
 }
 
@@ -749,7 +718,7 @@ display: none;
 .grid-lines {
   position: absolute;
   top: 0;
-  left: 60px; /* Mismo ancho que y-axis */
+  left: 60px;
   right: 0;
   bottom: 0;
   pointer-events: none;

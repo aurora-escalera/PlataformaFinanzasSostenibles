@@ -20,13 +20,13 @@
         v-for="variable in availableVariables" 
         :key="variable"
         @click="toggleVariable(variable)"
-        :class="['filter-btn', { 'active': visibleVariables.includes(variable) }]"
-        :style="{ 
-          '--btn-color': getVariableColor(variable),
-          backgroundColor: visibleVariables.includes(variable) ? getVariableColor(variable) : 'white',
-          color: visibleVariables.includes(variable) ? 'white' : '#6b7280'
+        class="filter-btn"
+        :class="{ 
+          'filter-active': visibleVariables.includes(variable),
+          'filter-inactive': !visibleVariables.includes(variable)
         }"
       >
+        <span class="btn-color-dot" :style="{ backgroundColor: getVariableColor(variable) }"></span>
         {{ variable }}
       </button>
     </div>
@@ -852,17 +852,15 @@ onUnmounted(() => {
 
 /* Filtros de variables */
 .variable-filters {
+  background: #f5f5f5;
+  border-radius: 20px;
+  padding: 6px;
+  margin-bottom: 12px;
   display: flex;
-  flex-direction: row;
-  height: 15px;
-  border-radius: 24px;
-  flex-wrap: nowrap;
-  justify-content: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); 
-  gap: 2px;
-  margin-bottom: 5px;
-  flex-shrink: 0;
-  background: #f5f5f5; 
+  justify-content: center; 
+  width: 100%; 
+  gap: 4px;
+  flex-wrap: wrap;
 }
 
 .filter-btn {
@@ -873,21 +871,38 @@ onUnmounted(() => {
   font-size: 11px;
   font-weight: 500;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  transition: all 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
+  background: transparent;
+  color: #666;
+  transition: all 0.3s ease;
 }
 
-.filter-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+.btn-color-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .filter-btn.active {
   border-color: transparent;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   font-weight: 200;
+}
+
+.filter-btn.filter-active {
+  background: white;      
+  color: #2c3e50;        
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.filter-btn.filter-inactive {
+  background: transparent; 
+  color: #999;            
+  opacity: 0.7;
 }
 
 .no-data {
@@ -917,7 +932,7 @@ onUnmounted(() => {
   display: flex;
   align-items: stretch;
   justify-content: center;
-  overflow: visible; /* Permitir tooltips y elementos fuera del área */
+  overflow: visible;
 }
 
 .line-chart {
@@ -925,7 +940,7 @@ onUnmounted(() => {
   height: 100%;
   max-width: 100%;
   max-height: 100%;
-  display: block; /* Eliminar espacio en blanco debajo del SVG */
+  display: block;
 }
 
 .grid-line {
@@ -951,6 +966,16 @@ onUnmounted(() => {
   cursor: pointer;
 }
 
+.filters-wrapper {
+  background: #f5f5f5;
+  border-radius: 20px;
+  padding: 6px;
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
 /* Eje X externo */
 .x-axis-container {
   position: relative;
@@ -960,7 +985,7 @@ onUnmounted(() => {
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  overflow: visible; /* Permitir que las etiquetas se vean aunque salgan del contenedor */
+  overflow: visible;
 }
 
 .x-axis-label {
