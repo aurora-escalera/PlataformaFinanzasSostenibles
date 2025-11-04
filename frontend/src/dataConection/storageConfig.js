@@ -89,6 +89,7 @@ export const storageConfig = {
       ]
     },
     
+    // Gráfica lineal IS
     isLinearChart: {
       yearColumn: 'Año',
       variableColumns: [
@@ -101,6 +102,28 @@ export const storageConfig = {
           key: 'Financiemiento_Total',
           column: 'FT ($)',
           label: 'Financiamiento Total'
+        }
+      ]
+    },
+    
+    // ✅ CORREGIDO: Gráfica lineal GT-PS-PIC (3 líneas)
+    pspicLinearChart: {
+      yearColumn: 'Año',
+      variableColumns: [
+        {
+          key: 'GT',
+          column: 'GT ($)',
+          label: 'Gasto Total'
+        },
+        {
+          key: 'PS',
+          column: 'PS ($)',
+          label: 'Presupuestos Sostenibles'
+        },
+        {
+          key: 'PIC',
+          column: 'PIC ($)',
+          label: 'Presupuestos Intensivos en Carbono'
         }
       ]
     },

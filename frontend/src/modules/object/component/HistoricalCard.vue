@@ -41,7 +41,13 @@
         </div>
       </div>
       <div class="row-3">
-        <div class="PS-PIC-anual-linear-chart"></div>
+        <div class="PS-PIC-anual-linear-chart">
+          <LinearChart
+            title="Análisis histórico de los Intensivos en Carbono y Presupuestos Sostenibles (PS-PIC)"
+            :data="chartDataLinearPSPIC"
+            :xLabels="years"
+          />
+        </div>
       </div>
       <div class="row-4">
         <div class="PIC-anual-bar-chart">
@@ -93,6 +99,7 @@ const chartDataBarIS = ref([])
 const chartDataBarPIC = ref([])
 const chartDataBarPS = ref([])
 const chartDataLinear = ref({})
+const chartDataLinearPSPIC = ref({}) // ✅ NUEVO
 const years = ref(['2020', '2021', '2022', '2023', '2024'])
 
 // Cargar datos de Google Sheets
@@ -107,13 +114,6 @@ const loadData = async () => {
       primeraFila: rawData?.[0] || 'No hay datos',
       columnas: rawData?.[0] ? Object.keys(rawData[0]) : []
     })
-    
-    // 🔍 DEBUG: Ver valores crudos
-    console.log('🔍 PRIMERA FILA COMPLETA:', rawData[0])
-    console.log('🔍 Valor de IS($) en primera fila:', rawData[0]['IS($)'])
-    console.log('🔍 Tipo de IS($):', typeof rawData[0]['IS($)'])
-    console.log('🔍 Valor de FT ($) en primera fila:', rawData[0]['FT ($)'])
-    console.log('🔍 Tipo de FT ($):', typeof rawData[0]['FT ($)'])
     
     if (!rawData || rawData.length === 0) {
       console.error('❌ No se obtuvieron datos del Google Sheet')
@@ -136,17 +136,9 @@ const loadData = async () => {
     const mappingPS = storageConfig.mappings.psBarChart
     chartDataBarPS.value = transformToBarChartData(rawData, mappingPS)
     
-    // Transformar datos para LinearChart usando el composable
+    // Transformar datos para LinearChart IS
     const mappingLinear = storageConfig.mappings.isLinearChart
-    console.log('🔍 mappingLinear:', mappingLinear)
-    
     const linearResult = transformToLinearChartData(rawData, mappingLinear)
-    console.log('🔍 linearResult COMPLETO:', linearResult)
-    console.log('🔍 linearResult.data:', linearResult.data)
-    if (linearResult.data && linearResult.data.length > 0) {
-      console.log('🔍 linearResult.data[0].data (primeros valores):', linearResult.data[0]?.data)
-      console.log('🔍 linearResult.data[0].label:', linearResult.data[0]?.label)
-    }
     
     // Convertir formato: { data: [...], labels: [...] } → { 'Variable 1': [...], 'Variable 2': [...] }
     const formattedData = {}
@@ -154,18 +146,32 @@ const loadData = async () => {
       formattedData[series.label] = series.data
     })
     
-    console.log('🔍 formattedData FINAL:', formattedData)
-    console.log('🔍 Primer valor de IS Total:', formattedData['IS Total']?.[0])
-    console.log('🔍 Tipo del primer valor:', typeof formattedData['IS Total']?.[0])
-    
     chartDataLinear.value = formattedData
     years.value = linearResult.labels
+    
+    // ✅ NUEVO: Transformar datos para LinearChart PS-PIC
+    const mappingPSPIC = storageConfig.mappings.pspicLinearChart
+    console.log('🔍 mappingPSPIC:', mappingPSPIC)
+    console.log('🔍 Valor de GT ($) en primera fila:', rawData[0]['GT ($)'])
+    console.log('🔍 Tipo de GT ($):', typeof rawData[0]['GT ($)'])
+    
+    const linearResultPSPIC = transformToLinearChartData(rawData, mappingPSPIC)
+    console.log('🔍 linearResultPSPIC:', linearResultPSPIC)
+    
+    const formattedDataPSPIC = {}
+    linearResultPSPIC.data.forEach(series => {
+      formattedDataPSPIC[series.label] = series.data
+      console.log(`🔍 Serie "${series.label}":`, series.data)
+    })
+    
+    chartDataLinearPSPIC.value = formattedDataPSPIC
     
     console.log('✅ Datos transformados para IIC BarChart:', chartDataBar.value?.length || 0, 'años')
     console.log('✅ Datos transformados para IS BarChart:', chartDataBarIS.value?.length || 0, 'años')
     console.log('✅ Datos transformados para PIC BarChart:', chartDataBarPIC.value?.length || 0, 'años')
     console.log('✅ Datos transformados para PS BarChart:', chartDataBarPS.value?.length || 0, 'años')
-    console.log('✅ Datos transformados para LinearChart:', chartDataLinear.value) 
+    console.log('✅ Datos transformados para LinearChart IS:', chartDataLinear.value)
+    console.log('✅ Datos transformados para LinearChart PS-PIC:', chartDataLinearPSPIC.value) // ✅ NUEVO
 
   } catch (err) {
     console.error('❌ Error cargando datos:', err)
@@ -175,6 +181,7 @@ const loadData = async () => {
     chartDataBarPIC.value = []
     chartDataBarPS.value = []
     chartDataLinear.value = {}
+    chartDataLinearPSPIC.value = {} // ✅ NUEVO
   }
 }
 
@@ -239,6 +246,7 @@ onMounted(async () => {
   width: 100%;
   height: 100%;
   border-radius: 8px;
-  overflow: hidden;
+  overflow: visible;
+  border: 1px solid #ccc;
 }
 </style>

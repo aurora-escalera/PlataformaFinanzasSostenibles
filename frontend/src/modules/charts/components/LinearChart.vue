@@ -310,7 +310,7 @@ const hoverState = ref({
 const animatingPoints = ref({})
 
 // Configuración de padding - Optimizado para espaciado equilibrado
-const padding = { top: 30, right: 15, bottom: 90, left: 60 }
+const padding = { top: 30, right: 40, bottom: 90, left: 60 }
 
 // Paleta de colores (igual que StackedArea)
 const colorPalette = [
@@ -446,12 +446,14 @@ const getXPosition = (index) => {
   const dataLength = props.xLabels.length
   if (dataLength <= 1) return padding.left
   
-  // Usar chartWidth completo, distribuyendo uniformemente los puntos
-  const step = chartWidth.value / (dataLength - 1) * 0.8
+  // ✅ Usar chartWidth completo (100%), distribuyendo uniformemente los puntos
+  const step = chartWidth.value / (dataLength - 1)
   const position = padding.left + index * step
   
-  // Debug: descomentar para verificar las posiciones
-  // console.log(`Punto ${index} (${props.xLabels[index]}): ${position}px de ${dimensions.value.width}px`)
+  // Debug temporal
+  if (index === 0 || index === dataLength - 1) {
+    console.log(`🔍 Punto ${index}: position=${position.toFixed(0)}, chartWidth=${chartWidth.value.toFixed(0)}, dimensions.width=${dimensions.value.width.toFixed(0)}, step=${step.toFixed(0)}`)
+  }
   
   return position
 }
@@ -777,6 +779,12 @@ const handleResize = () => {
     let parentWidth = chartWrapper.value.offsetWidth
     let parentHeight = chartWrapper.value.offsetHeight
     
+    // ✅ Si parentHeight es muy pequeño, usar el contenedor padre
+    if (parentHeight < 200 && chartWrapper.value.parentElement) {
+      const grandParent = chartWrapper.value.parentElement
+      parentHeight = grandParent.offsetHeight - 120 // Restar espacio para header/filters
+    }
+    
     // Aplicar dimensiones mínimas si están definidas
     if (props.minWidth && parentWidth < props.minWidth) {
       parentWidth = props.minWidth
@@ -785,16 +793,32 @@ const handleResize = () => {
       parentHeight = props.minHeight
     }
     
+    // Asegurar altura mínima razonable
+    if (parentHeight < 250) {
+      parentHeight = 300 // Altura mínima por defecto
+    }
+    
+    // ✅ FIX: Solo usar defaultWidth/Height si parentWidth/Height es realmente 0
+    // Esto evita que se use un ancho fijo cuando el contenedor tiene tamaño
     dimensions.value = {
-      width: parentWidth || props.defaultWidth,
-      height: parentHeight || props.defaultHeight
+      width: parentWidth > 0 ? parentWidth : props.defaultWidth,
+      height: parentHeight > 0 ? parentHeight : props.defaultHeight
     }
   }
 }
 
 // Lifecycle
-onMounted(() => {
-  handleResize()
+onMounted(async () => {
+  // ✅ Esperar a que el DOM esté completamente renderizado
+  await nextTick()
+  
+  // ✅ Llamar handleResize múltiples veces con delays incrementales
+  // Esto asegura que capture el tamaño correcto incluso si el layout tarda en aplicarse
+  handleResize() // Inmediato
+  setTimeout(() => handleResize(), 50)  // 50ms
+  setTimeout(() => handleResize(), 150) // 150ms
+  setTimeout(() => handleResize(), 300) // 300ms
+  
   window.addEventListener('resize', handleResize)
   
   if (chartWrapper.value) {
@@ -825,7 +849,8 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  overflow: visible; 
+  overflow: visible;
+  max-width: 100%; /* ✅ Asegurar que no se salga */
 }
 
 .chart-header {
@@ -935,12 +960,14 @@ onUnmounted(() => {
 .chart-wrapper {
   position: relative;
   width: 100%;
+  max-width: 100%; /* ✅ Asegurar que no se salga */
   flex: 1;
   min-height: 0;
   display: flex;
   align-items: stretch;
-  justify-content: center;
+  /* justify-content: center; */ /* ❌ REMOVIDO: Esto centraba el SVG y no dejaba usar todo el ancho */
   overflow: visible;
+  box-sizing: border-box; /* ✅ Incluir padding/border en el ancho */
 }
 
 .line-chart {

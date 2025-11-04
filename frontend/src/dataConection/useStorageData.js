@@ -110,7 +110,7 @@ export function useStorageData() {
     }
   }
   
-  // Transformar a formato de gráfica de barras
+  // ✅ CORREGIDO: Transformar a formato de gráfica de barras (limpia comas de strings)
   const transformToBarChartData = (rawData, mapping) => {
     if (!rawData || rawData.length === 0) {
       console.warn('⚠️ No hay datos para transformar')
@@ -123,13 +123,25 @@ export function useStorageData() {
     const transformed = rawData.map(row => {
       const year = row[yearColumn]?.toString() || ''
       
-      const variables = variableColumns.map(varConfig => ({
-        key: varConfig.key,
-        label: varConfig.label,
-        value: parseFloat(row[varConfig.column]) || 0,
-        color: varConfig.color,
-        order: varConfig.order || 0
-      }))
+      const variables = variableColumns.map(varConfig => {
+        const rawValue = row[varConfig.column]
+        
+        // ✅ FIX: Limpiar comas Y puntos si el valor es un string
+        // Google Sheets puede devolver números con diferentes formatos:
+        // - Con comas: '3,680,000,000' (formato US)
+        // - Con puntos: '301.611.481.578' (formato ES/MX)
+        const cleanValue = typeof rawValue === 'string' 
+          ? rawValue.replace(/[,.]/g, '')  // ✅ Quita comas Y puntos
+          : rawValue
+        
+        return {
+          key: varConfig.key,
+          label: varConfig.label,
+          value: parseFloat(cleanValue) || 0,
+          color: varConfig.color,
+          order: varConfig.order || 0
+        }
+      })
       
       return { year, variables }
     })
@@ -138,44 +150,45 @@ export function useStorageData() {
     return transformed
   }
   
-  // Transformar a formato de gráfica lineal
-const transformToLinearChartData = (rawData, mapping) => {
-  if (!rawData || rawData.length === 0) {
-    console.warn('⚠️ No hay datos para transformar')
-    return { data: [], labels: [] }
-  }
-  
-  const yearColumn = mapping.yearColumn
-  const variableColumns = mapping.variableColumns
-  
-  const labels = rawData.map(row => row[yearColumn]?.toString() || '')
-  
-  const data = variableColumns.map(varConfig => {
-    const values = rawData.map(row => {
-      const rawValue = row[varConfig.column]
+  // ✅ CORREGIDO: Transformar a formato de gráfica lineal (limpia comas de strings)
+  const transformToLinearChartData = (rawData, mapping) => {
+    if (!rawData || rawData.length === 0) {
+      console.warn('⚠️ No hay datos para transformar')
+      return { data: [], labels: [] }
+    }
+    
+    const yearColumn = mapping.yearColumn
+    const variableColumns = mapping.variableColumns
+    
+    const labels = rawData.map(row => row[yearColumn]?.toString() || '')
+    
+    const data = variableColumns.map(varConfig => {
+      const values = rawData.map(row => {
+        const rawValue = row[varConfig.column]
+        
+        // ✅ FIX: Limpiar comas Y puntos si el valor es un string
+        // Google Sheets puede devolver números con diferentes formatos:
+        // - Con comas: '3,680,000,000' (formato US)
+        // - Con puntos: '301.611.481.578' (formato ES/MX)
+        // parseFloat se detiene en el primer separador, por eso limpiamos todo
+        const cleanValue = typeof rawValue === 'string' 
+          ? rawValue.replace(/[,.]/g, '')  // ✅ Quita comas Y puntos
+          : rawValue
+        
+        return parseFloat(cleanValue) || 0
+      })
       
-      // ✅ FIX: Limpiar comas si el valor es un string
-      // Google Sheets puede devolver números grandes como '3,680,000,000'
-      // parseFloat('3,680,000,000') solo lee hasta la primera coma = 3
-      // Por eso limpiamos las comas primero
-      const cleanValue = typeof rawValue === 'string' 
-        ? rawValue.replace(/,/g, '')   // ← ESTO ES LO NUEVO
-        : rawValue
-      
-      return parseFloat(cleanValue) || 0
+      return {
+        key: varConfig.key,
+        label: varConfig.label,
+        data: values,
+        color: varConfig.color
+      }
     })
     
-    return {
-      key: varConfig.key,
-      label: varConfig.label,
-      data: values,
-      color: varConfig.color
-    }
-  })
-  
-  console.log('✅ Datos transformados para LinearChart:', data.length, 'series')
-  return { data, labels }
-}
+    console.log('✅ Datos transformados para LinearChart:', data.length, 'series')
+    return { data, labels }
+  }
   
   const transformToStackedAreaData = (rawData, mapping) => {
     return transformToLinearChartData(rawData, mapping)
