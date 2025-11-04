@@ -353,6 +353,12 @@ watch(() => props.data, (newData) => {
       }, 900) // 900ms después para que se vea la animación de la primera
     }
   }
+  
+  // ✅ FIX: Recalcular dimensiones cuando lleguen los datos
+  // Esto asegura que use el tamaño correcto del contenedor
+  nextTick(() => {
+    handleResize()
+  })
 }, { immediate: true, deep: true })
 
 // Dimensiones del gráfico
