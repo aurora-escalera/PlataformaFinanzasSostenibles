@@ -310,18 +310,12 @@ const hoverState = ref({
 const animatingPoints = ref({})
 
 // Configuración de padding - Optimizado para espaciado equilibrado
-const padding = { top: 30, right: 15, bottom: 60, left: 60 }
+const padding = { top: 30, right: 15, bottom: 90, left: 60 }
 
 // Paleta de colores (igual que StackedArea)
 const colorPalette = [
-  '#10b981',
-  '#3b82f6',
-  '#a3e635',
-  '#8b5cf6',
-  '#f59e0b',
-  '#ec4899',
-  '#06b6d4',
-  '#ef4444',
+  '#0F3759',
+  '#6B8FA3'
 ]
 
 // Variables disponibles y visibles (inicialmente TODAS inactivas)
