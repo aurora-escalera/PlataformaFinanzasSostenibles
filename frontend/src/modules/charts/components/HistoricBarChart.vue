@@ -272,7 +272,9 @@ const getFilteredVariables = (yearData) => {
   return yearData.variables
 }
 
-// Inicializar filtros con valores iniciales personalizados
+// ✅ MODIFICADO: Inicializar filtros con activación automática secuencial
+const autoActivationDone = ref(false)
+
 watch(visibleVariables, (newVars) => {
   newVars.forEach(variable => {
     if (!(variable.key in activeFilters.value)) {
@@ -280,11 +282,30 @@ watch(visibleVariables, (newVars) => {
       if (props.initialActiveVariables && Array.isArray(props.initialActiveVariables)) {
         activeFilters.value[variable.key] = props.initialActiveVariables.includes(variable.key)
       } else {
-        // Por defecto, todas activas
-        activeFilters.value[variable.key] = true
+        // ✅ NUEVO: Por defecto, todas INACTIVAS
+        activeFilters.value[variable.key] = false
       }
     }
   })
+  
+  // ✅ NUEVO: Activar automáticamente las primeras dos variables en secuencia
+  if (!autoActivationDone.value && newVars.length > 0) {
+    autoActivationDone.value = true
+    
+    // Activar la primera variable inmediatamente
+    if (newVars[0]) {
+      setTimeout(() => {
+        activeFilters.value[newVars[0].key] = true
+      }, 100)
+    }
+    
+    // Activar la segunda variable con delay
+    if (newVars[1]) {
+      setTimeout(() => {
+        activeFilters.value[newVars[1].key] = true
+      }, 400) // 400ms después
+    }
+  }
 }, { immediate: true })
 
 // ✅ CÁLCULO DINÁMICO DEL MÁXIMO (barra más alta = 80% del espacio)
@@ -383,11 +404,11 @@ const toggleFilter = (key) => {
   activeFilters.value[key] = !activeFilters.value[key]
 }
 
-// Formatear moneda
+// ✅ Formatear moneda (solo millones, sin billions)
 const formatCurrency = (value) => {
-  if (value >= 1000000) {
+  if (Math.abs(value) >= 1000000) {
     return `$${(value / 1000000).toFixed(1)}M`
-  } else if (value >= 1000) {
+  } else if (Math.abs(value) >= 1000) {
     return `$${(value / 1000).toFixed(1)}K`
   }
   return `$${value.toFixed(0)}`

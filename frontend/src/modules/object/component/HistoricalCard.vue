@@ -84,8 +84,8 @@ const props = defineProps({
   }
 })
 
-// Composable de Google Sheets
-const { fetchData, transformToBarChartData } = useStorageData()
+// Composable de Google Sheets - Importar transformToLinearChartData
+const { fetchData, transformToBarChartData, transformToLinearChartData } = useStorageData()
 
 // Datos para gráficas
 const chartDataBar = ref([])
@@ -94,19 +94,6 @@ const chartDataBarPIC = ref([])
 const chartDataBarPS = ref([])
 const chartDataLinear = ref({})
 const years = ref(['2020', '2021', '2022', '2023', '2024'])
-
-// Función para transformar datos para LinearChart
-const transformToLinearData = (rawData, mapping) => {
-  const result = {}
-  
-  mapping.variableColumns.forEach(varConfig => {
-    result[varConfig.label] = rawData.map(row => 
-      parseFloat(row[varConfig.column]) || 0
-    )
-  })
-  
-  return result
-}
 
 // Cargar datos de Google Sheets
 const loadData = async () => {
@@ -120,6 +107,13 @@ const loadData = async () => {
       primeraFila: rawData?.[0] || 'No hay datos',
       columnas: rawData?.[0] ? Object.keys(rawData[0]) : []
     })
+    
+    // 🔍 DEBUG: Ver valores crudos
+    console.log('🔍 PRIMERA FILA COMPLETA:', rawData[0])
+    console.log('🔍 Valor de IS($) en primera fila:', rawData[0]['IS($)'])
+    console.log('🔍 Tipo de IS($):', typeof rawData[0]['IS($)'])
+    console.log('🔍 Valor de FT ($) en primera fila:', rawData[0]['FT ($)'])
+    console.log('🔍 Tipo de FT ($):', typeof rawData[0]['FT ($)'])
     
     if (!rawData || rawData.length === 0) {
       console.error('❌ No se obtuvieron datos del Google Sheet')
@@ -142,12 +136,30 @@ const loadData = async () => {
     const mappingPS = storageConfig.mappings.psBarChart
     chartDataBarPS.value = transformToBarChartData(rawData, mappingPS)
     
-    // Transformar datos para LinearChart
+    // Transformar datos para LinearChart usando el composable
     const mappingLinear = storageConfig.mappings.isLinearChart
-    chartDataLinear.value = transformToLinearData(rawData, mappingLinear)
-
-    // Extraer años
-    years.value = rawData.map(row => row.Año?.toString() || '')
+    console.log('🔍 mappingLinear:', mappingLinear)
+    
+    const linearResult = transformToLinearChartData(rawData, mappingLinear)
+    console.log('🔍 linearResult COMPLETO:', linearResult)
+    console.log('🔍 linearResult.data:', linearResult.data)
+    if (linearResult.data && linearResult.data.length > 0) {
+      console.log('🔍 linearResult.data[0].data (primeros valores):', linearResult.data[0]?.data)
+      console.log('🔍 linearResult.data[0].label:', linearResult.data[0]?.label)
+    }
+    
+    // Convertir formato: { data: [...], labels: [...] } → { 'Variable 1': [...], 'Variable 2': [...] }
+    const formattedData = {}
+    linearResult.data.forEach(series => {
+      formattedData[series.label] = series.data
+    })
+    
+    console.log('🔍 formattedData FINAL:', formattedData)
+    console.log('🔍 Primer valor de IS Total:', formattedData['IS Total']?.[0])
+    console.log('🔍 Tipo del primer valor:', typeof formattedData['IS Total']?.[0])
+    
+    chartDataLinear.value = formattedData
+    years.value = linearResult.labels
     
     console.log('✅ Datos transformados para IIC BarChart:', chartDataBar.value?.length || 0, 'años')
     console.log('✅ Datos transformados para IS BarChart:', chartDataBarIS.value?.length || 0, 'años')
@@ -162,7 +174,7 @@ const loadData = async () => {
     chartDataBarIS.value = []
     chartDataBarPIC.value = []
     chartDataBarPS.value = []
-    chartDataLinear.value = []
+    chartDataLinear.value = {}
   }
 }
 

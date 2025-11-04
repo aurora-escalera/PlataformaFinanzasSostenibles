@@ -326,7 +326,7 @@ const visibleVariables = ref([])
 const animatedData = ref({})
 const animatingVariables = ref(new Set())
 
-// Inicializar variables TODAS inactivas
+// Inicializar variables TODAS inactivas, luego activar automáticamente las primeras dos
 watch(() => props.data, (newData) => {
   const vars = Object.keys(newData)
   
@@ -337,9 +337,21 @@ watch(() => props.data, (newData) => {
     }
   })
 
-  // Si no hay variables visibles, no mostrar ninguna por defecto
-  if (visibleVariables.value.length === 0) {
-    visibleVariables.value = []
+  // ✅ NUEVO: Activar automáticamente las primeras dos variables en secuencia
+  if (visibleVariables.value.length === 0 && vars.length > 0) {
+    // Activar la primera variable inmediatamente
+    if (vars[0]) {
+      setTimeout(() => {
+        toggleVariable(vars[0])
+      }, 100)
+    }
+    
+    // Activar la segunda variable con delay
+    if (vars[1]) {
+      setTimeout(() => {
+        toggleVariable(vars[1])
+      }, 900) // 900ms después para que se vea la animación de la primera
+    }
   }
 }, { immediate: true, deep: true })
 
@@ -501,7 +513,7 @@ const getYAxisValue = (index) => {
   return maxValue.value - (step * index)
 }
 
-// Formatear valor del eje Y
+// Formatear valor del eje Y (solo millones, sin billions)
 const formatYAxisValue = (value) => {
   if (Math.abs(value) >= 1000000) {
     return `$${(value / 1000000).toFixed(1)}M` 
@@ -511,17 +523,19 @@ const formatYAxisValue = (value) => {
   return `$${Math.round(value)}`
 }
 
-// Formatear valor para tooltip
+// Formatear valor para tooltip (solo millones, sin billions)
 const formatValue = (value) => {
   if (value === null || value === undefined) return 'N/A'
   if (props.valueFormatter) {
     return props.valueFormatter(value)
   }
-  return new Intl.NumberFormat('es-MX', {
-    style: 'decimal',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(value)
+  // Solo millones, miles y unidades (sin billions)
+  if (Math.abs(value) >= 1000000) {
+    return `$${(value / 1000000).toFixed(1)}M`
+  } else if (Math.abs(value) >= 1000) {
+    return `$${(value / 1000).toFixed(1)}K`
+  }
+  return `$${value.toFixed(0)}`
 }
 
 // Generar path para una línea (usando datos animados)

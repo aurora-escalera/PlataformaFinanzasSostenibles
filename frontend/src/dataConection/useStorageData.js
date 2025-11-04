@@ -139,31 +139,43 @@ export function useStorageData() {
   }
   
   // Transformar a formato de gráfica lineal
-  const transformToLinearChartData = (rawData, mapping) => {
-    if (!rawData || rawData.length === 0) {
-      console.warn('⚠️ No hay datos para transformar')
-      return { data: [], labels: [] }
-    }
-    
-    const yearColumn = mapping.yearColumn
-    const variableColumns = mapping.variableColumns
-    
-    const labels = rawData.map(row => row[yearColumn]?.toString() || '')
-    
-    const data = variableColumns.map(varConfig => {
-      const values = rawData.map(row => parseFloat(row[varConfig.column]) || 0)
+const transformToLinearChartData = (rawData, mapping) => {
+  if (!rawData || rawData.length === 0) {
+    console.warn('⚠️ No hay datos para transformar')
+    return { data: [], labels: [] }
+  }
+  
+  const yearColumn = mapping.yearColumn
+  const variableColumns = mapping.variableColumns
+  
+  const labels = rawData.map(row => row[yearColumn]?.toString() || '')
+  
+  const data = variableColumns.map(varConfig => {
+    const values = rawData.map(row => {
+      const rawValue = row[varConfig.column]
       
-      return {
-        key: varConfig.key,
-        label: varConfig.label,
-        data: values,
-        color: varConfig.color
-      }
+      // ✅ FIX: Limpiar comas si el valor es un string
+      // Google Sheets puede devolver números grandes como '3,680,000,000'
+      // parseFloat('3,680,000,000') solo lee hasta la primera coma = 3
+      // Por eso limpiamos las comas primero
+      const cleanValue = typeof rawValue === 'string' 
+        ? rawValue.replace(/,/g, '')   // ← ESTO ES LO NUEVO
+        : rawValue
+      
+      return parseFloat(cleanValue) || 0
     })
     
-    console.log('✅ Datos transformados para LinearChart:', data.length, 'series')
-    return { data, labels }
-  }
+    return {
+      key: varConfig.key,
+      label: varConfig.label,
+      data: values,
+      color: varConfig.color
+    }
+  })
+  
+  console.log('✅ Datos transformados para LinearChart:', data.length, 'series')
+  return { data, labels }
+}
   
   const transformToStackedAreaData = (rawData, mapping) => {
     return transformToLinearChartData(rawData, mapping)
