@@ -357,9 +357,11 @@ watch(() => props.data, (newData) => {
   // ✅ FIX: Recalcular dimensiones cuando lleguen los datos
   // Esto asegura que use el tamaño correcto del contenedor
   nextTick(() => {
-    handleResize()
+    setTimeout(() => {
+      handleResize()
+    }, 100) // Pequeño delay para asegurar que el DOM esté completamente renderizado
   })
-}, { immediate: true, deep: true })
+}, { deep: true }) // ❌ REMOVIDO: immediate: true
 
 // Dimensiones del gráfico
 const chartHeight = computed(() => dimensions.value.height - padding.top - padding.bottom)
@@ -781,28 +783,38 @@ const hideTooltip = () => {
 }
 
 const handleResize = () => {
+  console.log('⚡⚡⚡ handleResize llamado - INICIO')
   if (chartWrapper.value) {
     let parentWidth = chartWrapper.value.offsetWidth
     let parentHeight = chartWrapper.value.offsetHeight
+    
+    console.log('⚡ parentWidth:', parentWidth, 'parentHeight:', parentHeight)
     
     // ✅ Si parentHeight es muy pequeño, usar el contenedor padre
     if (parentHeight < 200 && chartWrapper.value.parentElement) {
       const grandParent = chartWrapper.value.parentElement
       parentHeight = grandParent.offsetHeight - 120 // Restar espacio para header/filters
+      console.log('⚡ Usando grandParent height:', parentHeight)
     }
     
     // Aplicar dimensiones mínimas si están definidas
     if (props.minWidth && parentWidth < props.minWidth) {
       parentWidth = props.minWidth
+      console.log('⚡ Aplicando minWidth:', parentWidth)
     }
     if (props.minHeight && parentHeight < props.minHeight) {
       parentHeight = props.minHeight
+      console.log('⚡ Aplicando minHeight:', parentHeight)
     }
     
     // Asegurar altura mínima razonable
     if (parentHeight < 250) {
       parentHeight = 300 // Altura mínima por defecto
+      console.log('⚡ Aplicando altura mínima:', parentHeight)
     }
+    
+    const oldWidth = dimensions.value.width
+    const oldHeight = dimensions.value.height
     
     // ✅ FIX: Solo usar defaultWidth/Height si parentWidth/Height es realmente 0
     // Esto evita que se use un ancho fijo cuando el contenedor tiene tamaño
@@ -810,6 +822,12 @@ const handleResize = () => {
       width: parentWidth > 0 ? parentWidth : props.defaultWidth,
       height: parentHeight > 0 ? parentHeight : props.defaultHeight
     }
+    
+    console.log('⚡ dimensions ANTES:', { width: oldWidth, height: oldHeight })
+    console.log('⚡ dimensions DESPUÉS:', dimensions.value)
+    console.log('⚡⚡⚡ handleResize - FIN')
+  } else {
+    console.log('⚡ chartWrapper.value es null')
   }
 }
 
