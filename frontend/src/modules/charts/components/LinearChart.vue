@@ -69,7 +69,7 @@
           <text
             v-for="i in gridLines"
             :key="`y-label-${i}`"
-            :x="padding.left - 1"
+            :x="padding.left - 10"
             :y="padding.top + (i - 1) * gridSpacing + 4"
             class="y-axis-label"
             text-anchor="end"
@@ -812,15 +812,7 @@ onMounted(async () => {
   // ✅ Esperar a que el DOM esté completamente renderizado
   await nextTick()
   
-  // ✅ Llamar handleResize múltiples veces con delays incrementales
-  // Esto asegura que capture el tamaño correcto incluso si el layout tarda en aplicarse
-  handleResize() // Inmediato
-  setTimeout(() => handleResize(), 50)  // 50ms
-  setTimeout(() => handleResize(), 150) // 150ms
-  setTimeout(() => handleResize(), 300) // 300ms
-  
-  window.addEventListener('resize', handleResize)
-  
+  // Configurar ResizeObserver PRIMERO (es más confiable que los timeouts)
   if (chartWrapper.value) {
     const resizeObserver = new ResizeObserver(() => {
       handleResize()
@@ -829,8 +821,17 @@ onMounted(async () => {
     
     onUnmounted(() => {
       resizeObserver.disconnect()
+      window.removeEventListener('resize', handleResize)
     })
   }
+  
+  // ✅ Llamar handleResize con delays más largos para asegurar que el layout esté aplicado
+  setTimeout(() => handleResize(), 100)  // 100ms
+  setTimeout(() => handleResize(), 300)  // 300ms
+  setTimeout(() => handleResize(), 600)  // 600ms
+  setTimeout(() => handleResize(), 1000) // 1s (como último recurso)
+  
+  window.addEventListener('resize', handleResize)
 })
 
 onUnmounted(() => {
