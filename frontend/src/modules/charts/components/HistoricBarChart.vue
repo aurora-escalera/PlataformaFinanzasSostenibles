@@ -352,32 +352,34 @@ const yAxisTicks = computed(() => {
   ]
 })
 
-// ✅ ANCHO DINÁMICO DE BARRAS
+// ✅ ANCHO DINÁMICO DE BARRAS - AJUSTADO AL ESPACIO DISPONIBLE
 const barWidth = computed(() => {
- const activeCount = Object.values(activeFilters.value).filter(v => v !== false).length  
+  const activeCount = Object.values(activeFilters.value).filter(v => v !== false).length  
   const totalYears = props.data?.length || 5
-  const totalBars = totalYears * activeCount
   
   if (activeCount === 0) return 40
   
+  // En lugar de anchos fijos, calcular basado en porcentaje del espacio
+  const totalBarsPerYear = activeCount
+  
   // Caso especial: 1 sola barra activa
   if (activeCount === 1) {
-    return 92
+    return 80 // Reducido de 92
   }
   
   // Caso especial: 2 barras activas
   if (activeCount === 2) {
-    return 42
+    return 38 // Reducido de 42
   }
 
-  // ✅ NUEVO: Caso especial: 3 barras activas
+  // Caso especial: 3 barras activas
   if (activeCount === 3) {
-    return 28 // ✅ Ajusta este valor según necesites
+    return 25 // Reducido de 28
   }
 
-  // Ancho base que se ajusta según la cantidad de barras
+  // Para más de 3 barras, escalar proporcionalmente
   const baseWidth = 50
-  const minWidth = 30
+  const minWidth = 20
   const maxWidth = 80
   
   const calculatedWidth = baseWidth / Math.sqrt(activeCount * 0.8)
@@ -450,6 +452,7 @@ watch(() => props.data, () => {
 .bar-chart-container {
   width: 100%;
   height: 100%;
+  max-width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -539,6 +542,7 @@ watch(() => props.data, () => {
   position: relative;
   min-height: 0;
   width: 100%;
+  max-width: 100%;
   overflow: visible;
   align-self: stretch;
 }
@@ -574,9 +578,10 @@ display: none;
 /* ✅ CONTENEDOR DE BARRAS */
 .bars-container {
   flex: 1;
+  max-width: 100%;
   display: flex;
   align-items: stretch;
-  overflow-x:visible;
+  overflow-x: visible;
   overflow-y: visible;
   position: relative;
   height: 100%; 
@@ -590,8 +595,10 @@ display: none;
   align-items: center;
   gap: 6px;
   flex: 1;
+  max-width: 100%;
   height: 100%;
   justify-content: flex-end;
+  min-width: 0;
 }
 
 /* ✅ WRAPPER DE BARRAS - CRÍTICO */
@@ -601,7 +608,9 @@ display: none;
   align-items: flex-end;
   justify-content: center;
   flex: 1;
-  width: 100%; 
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 /* ✅ ITEM DE BARRA */
