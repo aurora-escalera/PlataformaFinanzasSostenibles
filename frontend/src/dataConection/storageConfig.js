@@ -47,6 +47,24 @@ export const storageConfig = {
       ]
     },
     
+    //Grafica de area 
+    iicStackedArea: {
+      yearColumn: 'Año',
+      variableColumns: [
+        {
+          key: 'IIC Total',
+          column: 'IIC ($)',
+          label: 'IIC Total',
+          color: '#3B5A70',
+        },
+        {
+          key: 'Ingreso Total',
+          column: 'IT ($)',
+          label: 'Ingreso Total',
+          color: '#0F3759'
+        }
+      ]
+    },
     // Grafica de barras IS por año
     presupuestoBarChart: {
       yearColumn: 'Año',
@@ -106,7 +124,7 @@ export const storageConfig = {
       ]
     },
     
-    // ✅ CORREGIDO: Gráfica lineal GT-PS-PIC (3 líneas)
+    // Gráfica lineal GT-PS-PIC (3 líneas)
     pspicLinearChart: {
       yearColumn: 'Año',
       variableColumns: [
@@ -128,7 +146,7 @@ export const storageConfig = {
       ]
     },
     
-    // Gráfica de Barras Presupuesto Detallado (RENOMBRADO)
+    // Gráfica de Barras Presupuesto Detallado
     presupuestoDetalleBarChart: {
       yearColumn: 'Año',
       variableColumns: [

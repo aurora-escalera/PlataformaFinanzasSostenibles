@@ -12,13 +12,9 @@
         </div>
         <div class="IIC-anual-linear-chart">
             <StackedArea
-              title="Tu título"
-              :data="{
-                'Variable 1': [10, 20, 30, 25, 35],
-                'Variable 2': [15, 25, 20, 30, 28]
-              }"
-              :xLabels="['Ene', 'Feb', 'Mar', 'Abr', 'May']"
-              :valueFormatter="(val) => `$${val}`"
+              title="Análisis de IIC e Ingreso Total"
+              :data="chartDataStackedArea"
+              :xLabels="years"
            />
         </div>
       </div>
@@ -91,15 +87,15 @@ const props = defineProps({
 })
 
 // Composable de Google Sheets - Importar transformToLinearChartData
-const { fetchData, transformToBarChartData, transformToLinearChartData } = useStorageData()
-
+const { fetchData, transformToBarChartData, transformToLinearChartData, transformToStackedAreaData } = useStorageData()
 // Datos para gráficas
 const chartDataBar = ref([])
 const chartDataBarIS = ref([])
 const chartDataBarPIC = ref([])
 const chartDataBarPS = ref([])
 const chartDataLinear = ref({})
-const chartDataLinearPSPIC = ref({}) // ✅ NUEVO
+const chartDataLinearPSPIC = ref({}) 
+const chartDataStackedArea = ref({})
 const years = ref(['2020', '2021', '2022', '2023', '2024'])
 
 // Cargar datos de Google Sheets
@@ -140,6 +136,9 @@ const loadData = async () => {
     const mappingLinear = storageConfig.mappings.isLinearChart
     const linearResult = transformToLinearChartData(rawData, mappingLinear)
     
+    const mappingStackedArea = storageConfig.mappings.iicStackedArea
+    chartDataStackedArea.value = transformToStackedAreaData(rawData, mappingStackedArea)
+
     // Convertir formato: { data: [...], labels: [...] } → { 'Variable 1': [...], 'Variable 2': [...] }
     const formattedData = {}
     linearResult.data.forEach(series => {
@@ -181,7 +180,8 @@ const loadData = async () => {
     chartDataBarPIC.value = []
     chartDataBarPS.value = []
     chartDataLinear.value = {}
-    chartDataLinearPSPIC.value = {} // ✅ NUEVO
+    chartDataLinearPSPIC.value = {} 
+    chartDataStackedArea.value = {}
   }
 }
 

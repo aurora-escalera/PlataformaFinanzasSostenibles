@@ -190,9 +190,39 @@ export function useStorageData() {
     return { data, labels }
   }
   
-  const transformToStackedAreaData = (rawData, mapping) => {
-    return transformToLinearChartData(rawData, mapping)
+const transformToStackedAreaData = (rawData, mapping) => {
+  if (!rawData || rawData.length === 0) {
+    console.warn('⚠️ No hay datos para transformar')
+    return {}
   }
+  
+  const yearColumn = mapping.yearColumn
+  const variableColumns = mapping.variableColumns
+  
+  const transformed = {}
+  
+  // Inicializar arrays para cada variable
+  variableColumns.forEach(varConfig => {
+    transformed[varConfig.label] = []
+  })
+  
+  // Llenar datos para cada año
+  rawData.forEach(row => {
+    variableColumns.forEach(varConfig => {
+      const rawValue = row[varConfig.column]
+      
+      // Limpiar comas Y puntos si el valor es un string
+      const cleanValue = typeof rawValue === 'string' 
+        ? rawValue.replace(/[,.]/g, '')
+        : rawValue
+      
+      transformed[varConfig.label].push(parseFloat(cleanValue) || 0)
+    })
+  })
+  
+  console.log('✅ Datos transformados para StackedArea:', Object.keys(transformed).length, 'series')
+  return transformed
+}
   
   const transform = (rawData, mapping, chartType = 'bar') => {
     switch (chartType) {
