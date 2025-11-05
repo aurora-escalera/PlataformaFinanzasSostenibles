@@ -291,8 +291,8 @@ const hoverState = ref({
 // Estado para la animación de los puntos
 const animatingPoints = ref({})
 
-// Configuración de padding
-const padding = { top: 10, right: 20, bottom: 70, left: 20 }
+// Configuración de padding - IGUAL QUE LinearChart
+const padding = { top: 30, right: 40, bottom: 90, left: 60 }
 
 // Paleta de colores
 const colorPalette = [
@@ -776,16 +776,19 @@ onUnmounted(() => {
   flex-direction: column;
   background: white;
   border-radius: 12px;
-  padding: 20px;
+  padding: 16px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  box-sizing: border-box;
+  overflow: visible;
+  max-width: 100%;
 }
 
 .chart-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
   gap: 16px;
   flex-shrink: 0;
 }
@@ -795,14 +798,14 @@ onUnmounted(() => {
 }
 
 .chart-title {
-  margin-top: 4px;
+  margin: 0 0 4px 0;
   letter-spacing: -0.2px;
-  font-size: 10px;
-  text-align:center;
-  font-weight: 200;
-  color: #535353;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-
+  font-size: 14px;
+  text-align: center;
+  font-weight: 600;
+  color: #2c3e50;
+  line-height: 1.4;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 }
 
 .chart-subtitle {
@@ -818,7 +821,6 @@ onUnmounted(() => {
   display: flex;
   flex-direction: row;
   height: 15px;
-
   border-radius: 24px;
   flex-wrap: nowrap;
   justify-content: center;
@@ -880,13 +882,14 @@ onUnmounted(() => {
 .chart-wrapper {
   position: relative;
   width: 100%;
+  max-width: 100%;
   flex: 1;
   min-height: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: stretch;
   padding-bottom: 0;
   overflow: visible;
+  box-sizing: border-box;
 }
 
 .area-chart {
@@ -894,6 +897,7 @@ onUnmounted(() => {
   height: 100%;
   max-width: 100%;
   max-height: 100%;
+  display: block;
 }
 
 .grid-line {
@@ -926,6 +930,9 @@ onUnmounted(() => {
   height: 30px;
   margin-top: 8px;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  overflow: visible;
 }
 
 .x-axis-label {
@@ -1008,7 +1015,6 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 5px;
-
 }
 
 .tooltip-item {
@@ -1064,8 +1070,7 @@ onUnmounted(() => {
   font-weight: 200;
   transform: translate(-100%, -50%);
   white-space: nowrap;
-font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   letter-spacing: -0.3px;
 }
 
