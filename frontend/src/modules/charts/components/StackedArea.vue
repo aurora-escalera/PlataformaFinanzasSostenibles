@@ -39,7 +39,7 @@
     <!-- Gráfica SVG -->
     <div v-else class="chart-wrapper" ref="chartWrapper">
       <svg 
-        :width="dimensions.width" 
+        :width="dimensions.width"
         :height="dimensions.height"
         class="area-chart"
         @mousemove="handleMouseMove"
@@ -101,9 +101,9 @@
         <!-- Línea horizontal punteada del hover (desde eje Y hasta el punto) -->
         <line
           v-if="hoverState.visible && hoverState.yValue !== null"
-          :x1="0"
+          :x1="padding.left"
           :y1="hoverState.yPosition"
-          :x2="dimensions.width"
+          :x2="dimensions.width - padding.right"
           :y2="hoverState.yPosition"
           class="hover-line"
           stroke="#9ca3af"
@@ -167,7 +167,10 @@
           </g>
         </g>
       </svg>
+    </div>
 
+    <!-- Tooltips con Teleport -->
+    <Teleport to="body">
       <!-- Tooltip fijo en la parte superior -->
       <transition name="tooltip-fade">
         <div 
@@ -218,18 +221,21 @@
           {{ hoverState.label }}
         </div>
       </transition>
-    </div>
+    </Teleport>
 
     <!-- Eje X externo (fuera del SVG) -->
-    <div v-if="hasData" class="x-axis-container">
-      <div 
-        v-for="(label, i) in props.xLabels"
-        :key="`x-label-external-${i}`"
-        class="x-axis-label"
-        :style="{ left: `${getXPositionPercentage(i)}%` }"
-      >
-        {{ label }}
+    <div v-if="hasData" class="x-axis-labels-container">
+      <div class="x-axis-spacer"></div>
+      <div class="x-axis-labels">
+        <div 
+          v-for="(label, i) in props.xLabels"
+          :key="`x-label-external-${i}`"
+          class="x-axis-label"
+        >
+          {{ label }}
+        </div>
       </div>
+      <div class="x-axis-spacer-right"></div>
     </div>
   </div>
 </template>
@@ -275,7 +281,7 @@ const emit = defineEmits(['variable-toggle'])
 
 // Estado
 const chartWrapper = ref(null)
-const dimensions = ref({ width: 600, height: 300 })
+const dimensions = ref({ width: 800, height: 300 })
 
 // Estado del hover
 const hoverState = ref({
@@ -336,6 +342,14 @@ const hasData = computed(() => {
          visibleVariables.value.some(v => props.data[v] && props.data[v].length > 0)
 })
 
+// Actualizar dimensiones cuando cambien los datos visibles
+watch(hasData, async (newVal) => {
+  if (newVal) {
+    await nextTick()
+    updateDimensions()
+  }
+}, { immediate: true })
+
 // Máximo valor Y
 const maxY = computed(() => {
   if (!hasData.value) return 100
@@ -363,9 +377,9 @@ const getYAxisValue = (index) => {
 // Función para formatear los valores del eje Y
 const formatYAxisValue = (value) => {
   if (value >= 1000000) {
-    return `${(value / 1000000).toFixed(1)}M`
+    return `$${(value / 1000000).toFixed(1)}M`
   } else if (value >= 1000) {
-    return `${(value / 1000).toFixed(0)}K`
+    return `$${(value / 1000).toFixed(0)}K`
   }
   return value.toFixed(0)
 }
@@ -481,10 +495,12 @@ const getXPosition = (index) => {
 
 // Posición X en porcentaje para etiquetas externas
 const getXPositionPercentage = (index) => {
-  const effectiveWidth = dimensions.value.width - padding.left - padding.right
-  const step = effectiveWidth / (props.xLabels.length - 1)
-  const xPos = padding.left + index * step
-  return (xPos / dimensions.value.width) * 100
+  const dataLength = props.xLabels.length
+  if (dataLength <= 1) return 50
+  
+  const step = (dimensions.value.width - padding.left - padding.right) / (dataLength - 1)
+  const pointXInSVG = padding.left + index * step
+  return (pointXInSVG / dimensions.value.width) * 100
 }
 
 // Posición Y para un valor
@@ -708,25 +724,31 @@ const hideTooltip = () => {
   animatingPoints.value = {}
 }
 
-// Estilos de tooltips
+// Estilos de tooltips - POSITION FIXED
 const tooltipFixedStyle = computed(() => {
+  if (!chartWrapper.value) return {}
+  const rect = chartWrapper.value.getBoundingClientRect()
   return {
-    left: `${hoverState.value.x + 70}px`,
-    top: '10px'
+    left: `${rect.left + hoverState.value.x + 70}px`,
+    top: `${rect.top + 10}px`
   }
 })
 
 const tooltipYStyle = computed(() => {
+  if (!chartWrapper.value) return {}
+  const rect = chartWrapper.value.getBoundingClientRect()
   return {
-    left: `${padding.left - 8}px`,
-    top: `${hoverState.value.yPosition}px`
+    left: `${rect.left + padding.left - 8}px`,
+    top: `${rect.top + hoverState.value.yPosition}px`
   }
 })
 
 const tooltipXStyle = computed(() => {
+  if (!chartWrapper.value) return {}
+  const rect = chartWrapper.value.getBoundingClientRect()
   return {
-    left: `${hoverState.value.x}px`,
-    top: `${dimensions.value.height - 130}px`,
+    left: `${rect.left + hoverState.value.x}px`,
+    top: `${rect.top + dimensions.value.height - 130}px`,
     transform: 'translateX(-50%)'
   }
 })
@@ -745,26 +767,44 @@ const formatValue = (value) => {
   return `$${value.toFixed(2)}`
 }
 
-// Resize observer
+// Resize observer - EXACTAMENTE COMO LinearChart
+// Resize observer - SIMPLIFICADO
 const updateDimensions = () => {
-  if (chartWrapper.value) {
+  if (chartWrapper.value && chartWrapper.value.parentElement) {
     const container = chartWrapper.value.parentElement
-    if (container) {
-      dimensions.value = {
-        width: container.clientWidth,
-        height: Math.max(300, container.clientHeight - 50)
-      }
+    dimensions.value = {
+      width: container.clientWidth,
+      height: Math.max(300, container.clientHeight - 50)
     }
   }
 }
 
-onMounted(() => {
+let resizeObserver = null
+
+onMounted(async () => {
+  await nextTick()
+  await nextTick() // Double nextTick para asegurar que el DOM esté completamente renderizado
   updateDimensions()
+  
+  // Agregar ResizeObserver
+  if (chartWrapper.value) {
+    resizeObserver = new ResizeObserver(() => {
+      requestAnimationFrame(() => {
+        updateDimensions()
+      })
+    })
+    resizeObserver.observe(chartWrapper.value.parentElement)
+  }
+  
   window.addEventListener('resize', updateDimensions)
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', updateDimensions)
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+    resizeObserver = null
+  }
 })
 </script>
 
@@ -777,11 +817,9 @@ onUnmounted(() => {
   background: white;
   border-radius: 12px;
   padding: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   box-sizing: border-box;
-  overflow: visible;
-  max-width: 100%;
+  overflow: hidden;
 }
 
 .chart-header {
@@ -887,16 +925,13 @@ onUnmounted(() => {
   min-height: 0;
   display: flex;
   align-items: stretch;
-  padding-bottom: 0;
-  overflow: visible;
+  overflow: hidden;
   box-sizing: border-box;
 }
 
 .area-chart {
   width: 100%;
   height: 100%;
-  max-width: 100%;
-  max-height: 100%;
   display: block;
 }
 
@@ -924,20 +959,35 @@ onUnmounted(() => {
 }
 
 /* Eje X externo */
-.x-axis-container {
-  position: relative;
+.x-axis-labels-container {
   width: 100%;
-  height: 30px;
-  margin-top: 8px;
-  flex-shrink: 0;
   display: flex;
-  align-items: center;
-  overflow: visible;
+  height: 30px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.x-axis-spacer {
+  width: 60px;
+  flex-shrink: 0;
+}
+
+.x-axis-spacer-right {
+  width: 40px;
+  flex-shrink: 0;
+}
+
+.x-axis-labels {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
 }
 
 .x-axis-label {
-  position: absolute;
-  transform: translateX(-50%);
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 9px;
   font-weight: 200;
   color: #6b7280;
@@ -987,7 +1037,7 @@ onUnmounted(() => {
 
 /* Tooltip fijo */
 .tooltip-fixed {
-  position: absolute;
+  position: fixed;
   background: #1f2937;
   color: white;
   border-radius: 6px;
@@ -1057,7 +1107,7 @@ onUnmounted(() => {
 
 /* Tooltip Y (a la izquierda) */
 .tooltip-y {
-  position: absolute;
+  position: fixed;
   background: #F0F0F2;
   border: 1px solid #C5CBCE;
   color: black;
@@ -1076,7 +1126,7 @@ onUnmounted(() => {
 
 /* Tooltip X (en el eje inferior) */
 .tooltip-x {
-  position: absolute;
+  position: fixed;
   background: #F0F0F2;
   border: 1px solid #C5CBCE;
   color: black;
