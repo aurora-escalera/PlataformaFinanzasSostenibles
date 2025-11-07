@@ -2,7 +2,11 @@
 <template>
   <div class="map-wrapper">
     <!-- CARD FLOTANTE CON INFO DEL ESTADO/NACIONAL -->
-    <div class="map-info-card" :class="{ 'state-selected': selectedState }">
+    <div 
+      v-if="showInfoCard"
+      class="map-info-card" 
+      :class="{ 'state-selected': selectedState }"
+    >
       <div class="card-content">
         <!-- Título de la posición del país-->
         <div class="card-position-title">
@@ -31,7 +35,10 @@
         </div>
 
         <!-- FLEX 2: Dos filas (IFS Regional + Datos federales) -->
-        <div class="card-bottom-stack">
+        <div 
+          v-if="showNavigation"
+          class="card-bottom-stack"
+        >
           <div 
             class="card-label-pill" 
             :class="{ 'active': !selectedState }"
@@ -102,6 +109,8 @@
       :width="mapConfig.width" 
       :height="mapConfig.height"
       class="mexico-map"
+      viewBox="0 0 591.8 344.3"
+      preserveAspectRatio="xMidYMid meet"
     >
       <g>
         <path
@@ -174,6 +183,16 @@ const props = defineProps({
   getIFSSLabel: {
     type: Function,
     required: true
+  },
+  // Prop para controlar la visibilidad del card-bottom-stack
+  showNavigation: {
+    type: Boolean,
+    default: true
+  },
+  // Nueva prop para controlar la visibilidad de todo el map-info-card
+  showInfoCard: {
+    type: Boolean,
+    default: true
   }
 })
 
@@ -286,14 +305,17 @@ const tooltipStyle = computed(() => {
 </script>
 
 <style scoped>
+/* Mismo estilo que IS-anual-linear-chart en HistoricalCard */
 .map-wrapper {
   position: relative;
-  width: 591.8px; 
-  height: 344.3px;
+  width: 48%;
+  height: 100%;
   flex-shrink: 0;
   background-color: white;
-  border-radius: 15px;
-  box-shadow: 1px 1px 1px #666;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #ccc;
+  overflow: visible;
   z-index: 2;
 }
 
@@ -301,7 +323,7 @@ const tooltipStyle = computed(() => {
 .map-info-card {
   position: absolute;
   top: 21px;
-  left: 410px;
+  right: 20px;
   background: white;
   border-radius: 12px;
   padding: 12px;
@@ -314,7 +336,6 @@ const tooltipStyle = computed(() => {
 
 .map-info-card.state-selected {
   box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
-
 }
 
 .card-content {
@@ -408,12 +429,12 @@ const tooltipStyle = computed(() => {
   color: white;
 }
 
-/* Porcentaje dinamico left: 19.6px;*/
+/* Porcentaje dinamico */
 .hover-info-box {
   position: absolute;
   height: 50px;
-  top: 180px;
-  left: 70px;
+  top: 40%;
+  left: 10%;
   z-index: 15;
   backdrop-filter: blur(10px);
   font-family: Arial, Helvetica, sans-serif;
@@ -424,8 +445,9 @@ const tooltipStyle = computed(() => {
 /* Barra de colores */
 .color-legend {
   position: absolute;
-  top: 270px;
-  left: 35px;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
   background: rgba(255, 255, 255, 0.95);
   border: none;
   border-radius: 8px;
@@ -497,6 +519,9 @@ const tooltipStyle = computed(() => {
 
 .mexico-map {
   background: white;
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .state-path {
@@ -555,9 +580,13 @@ svg g:hover .state-path:hover {
 }
 
 @media (max-width: 1200px) {
+  .map-wrapper {
+    width: 100%;
+  }
+  
   .map-info-card {
     top: 20px;
-    left: 20px;
+    right: 20px;
   }
 }
 

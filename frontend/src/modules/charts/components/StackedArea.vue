@@ -14,13 +14,13 @@
         v-for="variable in availableVariables" 
         :key="variable"
         @click="toggleVariable(variable)"
-        :class="['filter-btn', { 'active': visibleVariables.includes(variable) }]"
-        :style="{ 
-          '--btn-color': getVariableColor(variable),
-          backgroundColor: visibleVariables.includes(variable) ? getVariableColor(variable) : 'white',
-          color: visibleVariables.includes(variable) ? 'white' : '#6b7280'
+        class="filter-btn"
+        :class="{ 
+          'filter-active': visibleVariables.includes(variable),
+          'filter-inactive': !visibleVariables.includes(variable)
         }"
       >
+        <span class="btn-color-dot" :style="{ backgroundColor: getVariableColor(variable) }"></span>
         {{ variable }}
       </button>
     </div>
@@ -854,48 +854,54 @@ onUnmounted(() => {
   text-align: center;
 }
 
-/* Filtros de variables */
+/* Filtros de variables - ESTILO IDÉNTICO A LinearChart */
 .variable-filters {
+  background: #f5f5f5;
+  border-radius: 20px;
+  padding: 6px;
+  margin-bottom: 12px;
   display: flex;
-  flex-direction: row;
-  height: 15px;
-  border-radius: 24px;
-  flex-wrap: nowrap;
-  justify-content: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); 
-  gap: 2px;
-  margin-bottom: 5px;
+  justify-content: center; 
+  width: 100%; 
+  gap: 4px;
+  flex-wrap: wrap;
   flex-shrink: 0;
-  background-color: white;
 }
 
 .filter-btn {
-  flex: 0 1 auto;
+  padding: 6px 14px;
   border: none;
-  padding: 5px 4px 5px 4px;
-  border-radius: 24px;
+  border-radius: 16px;
   cursor: pointer;
-  font-size: 9px;
-  font-weight: 100;
+  font-size: 11px;
+  font-weight: 500;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: white;
-  transition: all 0.3s ease;
-  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  letter-spacing: -0.2px;
+  gap: 6px;
+  background: transparent;
+  color: #666;
+  transition: all 0.3s ease;
 }
 
-.filter-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+.btn-color-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
-.filter-btn.active {
-  border-color: transparent;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  font-weight: 200;
+.filter-btn.filter-active {
+  background: white;      
+  color: #2c3e50;        
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.filter-btn.filter-inactive {
+  background: transparent; 
+  color: #999;            
+  opacity: 0.7;
 }
 
 .no-data {

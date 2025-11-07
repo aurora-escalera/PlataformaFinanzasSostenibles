@@ -48,6 +48,7 @@
           :getStateColor="getStateColor"
           :getStateInfo="getStateInfo"
           :getIFSSLabel="getIFSSLabel"
+          :show-info-card="false"
           @state-click="handleStateClickWithEmit"
           @state-hover="handleStateHover"
           @state-leave="handleStateLeave"
@@ -281,10 +282,11 @@ onMounted(async () => {
   align-items: flex-start;
   gap: 0px;
   padding: 19.6px;  
-  background: radial-gradient(circle at bottom left, #d6d6d6 0%, white 50%);
   border-radius: 11px;
   height: 383.5px;
-  width: 1242.4px;
+  background-color: white;
+  width: 1225.4px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.182);
 }
 
 .retractable-view {
@@ -293,7 +295,7 @@ onMounted(async () => {
   height: 344.3px;
   background-color: #053759;
   border-radius: 15px;
-  left: -40px;
+  left: -10px;
   z-index: 1;
 }
 
@@ -301,7 +303,7 @@ onMounted(async () => {
   position: absolute;
   font-size: 15px;
   color: white;
-  left: 43px;
+  left: 10px;
   top: 3px;
   width: 18px;
   height: 18px;
@@ -326,11 +328,10 @@ onMounted(async () => {
 }
 
 .charts-section {
-  position: relative;
-  width: 591.8px;
+  width: 1400px;
   height: 344.3px;
   border-radius: 15px;
-  box-shadow: 1px 1px 1px #666;
+  transform: translateX(0px);
 }
 
 .charts-container {
