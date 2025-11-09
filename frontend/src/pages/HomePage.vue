@@ -37,26 +37,24 @@
     <!-- Map Content -->
     <div v-if="!loading && !error" class="map-content">
       <!-- Contenedor principal con mapa y charts lado a lado -->
-      <div class="map-and-charts-wrapper">
-        
-        <!-- Componente del Mapa SVG -->
-        <MexicoMapSVG
-          :geoData="geoData"
-          :selectedState="selectedState"
-          :hoveredState="hoveredState"
-          :mapConfig="mapConfig"
-          :nationalIFSS="nationalIFSS"
-          :getStateColor="getStateColor"
-          :getStateInfo="getStateInfo"
-          :getIFSSLabel="getIFSSLabel"
-          :show-info-card="false"
-          @state-click="handleStateClickWithEmit"
-          @state-hover="handleStateHover"
-          @state-leave="handleStateLeave"
-          @navigate-regional="handleIFSRegionalClick"
-          @navigate-federal="handleDatosFederalesClick"
-        />
-
+      <div class="map-and-charts-wrapper" @click="handleMapContainerClick">
+          <!-- Componente del Mapa SVG -->
+          <MexicoMapSVG
+            :geoData="geoData"
+            :selectedState="selectedState"
+            :hoveredState="hoveredState"
+            :mapConfig="mapConfig"
+            :nationalIFSS="nationalIFSS"
+            :getStateColor="getStateColor"
+            :getStateInfo="getStateInfo"
+            :getIFSSLabel="getIFSSLabel"
+            :show-info-card="false"
+            @state-click="handleStateClickWithEmit"
+            @state-hover="handleStateHover"
+            @state-leave="handleStateLeave"
+            @navigate-regional="handleIFSRegionalClick"
+            @navigate-federal="handleDatosFederalesClick"
+          />
         <!-- Botón retráctil -->
         <div class="retractable-view">
           <div class="expand-retractable-btn" @click="handleDatosCualitativosClick">+</div>
@@ -85,6 +83,7 @@
                 title="Ranking IFSS por Estado"
                 :showAllBars="true"
                 :animationDelay="0"
+                :selectedState="selectedState"
               />
               
               <div v-else class="charts-empty-state">
@@ -225,6 +224,13 @@ const handleFiltersChange = (filters) => {
 }
 
 const handleStateClickWithEmit = async (stateName) => {
+  // Si stateName es null, deseleccionar
+  if (!stateName) {
+    resetSelection()
+    emit('region-selected', null)
+    return
+  }
+  
   handleStateClick(stateName)
   await nextTick()
   if (selectedState.value === stateName) {
@@ -234,7 +240,6 @@ const handleStateClickWithEmit = async (stateName) => {
     emit('region-selected', null)
   }
 }
-
 const handleIFSRegionalClick = () => {
   console.log('Navegando a datos regionales...')
   if (selectedState.value) {
@@ -250,6 +255,16 @@ const handleDatosFederalesClick = () => {
 const handleDatosCualitativosClick = () => {
   console.log('Navegando a cualitativos...')
   router.push('/finanzas/cualitativos')
+}
+
+const handleMapContainerClick = (event) => {
+  // Verificar si el click fue directamente en el contenedor (no en un estado)
+  if (event.target.classList.contains('map-svg-container') || 
+      event.target.tagName === 'svg' ||
+      event.target.classList.contains('map-background')) {
+    resetSelection()
+    emit('region-selected', null)
+  }
 }
 
 watch(selectedState, (newState, oldState) => {

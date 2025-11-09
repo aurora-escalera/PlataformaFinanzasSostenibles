@@ -1,4 +1,4 @@
-<!-- HorizontalRankingChart.vue - Altura dinámica sin scroll -->
+<!-- HorizontalRankingChart.vue - Con selección de estado -->
 <template>
   <div class="horizontal-bar-chart" :style="{ width: width, height: height }">
     <!-- Título -->
@@ -9,14 +9,14 @@
     <!-- Contenedor principal -->
     <div class="chart-content">
       <!-- Contenedor de barras con labels -->
-      <div class="bars-container" :class="{ 'has-hover': hoveredBarKey !== null }">
+      <div class="bars-container" :class="{ 'has-hover': hoveredBarKey !== null || selectedState !== null }">
         <div 
           v-for="variable in activeVariables" 
           :key="variable.key"
           class="bar-row"
           :class="{ 
-            'is-hovered': hoveredBarKey === variable.key,
-            'is-dimmed': hoveredBarKey !== null && hoveredBarKey !== variable.key
+            'is-hovered': hoveredBarKey === variable.key || isSelected(variable),
+            'is-dimmed': (hoveredBarKey !== null && hoveredBarKey !== variable.key) || (selectedState !== null && !isSelected(variable))
           }"
           @mouseenter="handleMouseEnter(variable, $event)"
           @mousemove="handleMouseMove($event)"
@@ -105,7 +105,8 @@ const props = defineProps({
   animationDelay: { type: Number, default: 800 },
   showAllBars: { type: Boolean, default: false },
   initialBarsCount: { type: Number, default: 4 },
-  valueFormatter: { type: Function, default: null }
+  valueFormatter: { type: Function, default: null },
+  selectedState: { type: String, default: null }  // Nuevo prop
 })
 
 const hoveredBarKey = ref(null)
@@ -158,6 +159,12 @@ onMounted(() => {
 const activeVariables = computed(() => {
   return internalVariables.value.filter(v => v.active)
 })
+
+// Verificar si una barra está seleccionada
+const isSelected = (variable) => {
+  if (!props.selectedState) return false
+  return variable.label === props.selectedState || variable.key === props.selectedState
+}
 
 // Cálculo dinámico de altura por barra
 const dynamicBarHeight = computed(() => {
