@@ -1,25 +1,65 @@
 // src/dataConection/storageConfig.js
 
 console.log('API Key:', import.meta.env.VITE_GOOGLE_SHEETS_API_KEY)
-console.log('Sheet ID:', import.meta.env.VITE_GOOGLE_SHEET_ID)
+console.log('Sheet ID Principal:', import.meta.env.VITE_GOOGLE_SHEET_ID)
+console.log('Sheet ID Cuantitativos:', import.meta.env.VITE_GOOGLE_SHEET_ID_CUANTITATIVOS)
 console.log('Provider:', import.meta.env.VITE_STORAGE_PROVIDER)
+
 export const storageConfig = {
   provider: import.meta.env.VITE_STORAGE_PROVIDER || 'googlesheets',
   
   googlesheets: {
     apiKey: import.meta.env.VITE_GOOGLE_SHEETS_API_KEY,
-    sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID,
     
+    // ✅ NUEVO: Soporte para múltiples sheets
+    sheets: {
+      // Sheet principal (tu sheet original)
+      principal: {
+        sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID,
+        files: {
+          datosFinancieros: 'Hoja 1',
+          presupuesto: 'Hoja 1',
+          indicadores: 'Indicadores',
+          gastos: 'Gastos',
+          estados: 'Estados'
+        }
+      },
+      // Sheet de datos cuantitativos (tu sheet nuevo)
+      cuantitativos: {
+        sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_CUANTITATIVOS,
+        files: {
+          datosCuantitativos: 'Datos_Cuantitativos'
+        }
+      }
+    },
+    
+    // ⚠️ BACKWARD COMPATIBILITY: Mantener la forma antigua
+    sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID,
     files: {
       datosFinancieros: 'Hoja 1',
       presupuesto: 'Hoja 1',
       indicadores: 'Indicadores',
       gastos: 'Gastos',
-      estados: 'Estados'
+      estados: 'Estados',
+      datosCuantitativos: 'Datos_Cuantitativos'
     }
   },
   
   mappings: {
+    rankingCuantitativo: {
+      stateColumn: 'Entidad Federativa',
+      variableColumns: [
+        {
+          key: 'IFSS',
+          column: 'IFSS',
+          label: 'IFSS',
+          color: '#0F3759',
+          colorClass: 'blue',
+          order: 1
+        }
+      ]
+    },
+    
     iicBarChart: {
       yearColumn: 'Año',
       variableColumns: [
@@ -47,7 +87,6 @@ export const storageConfig = {
       ]
     },
     
-    //Grafica de area 
     iicStackedArea: {
       yearColumn: 'Año',
       variableColumns: [
@@ -65,7 +104,7 @@ export const storageConfig = {
         }
       ]
     },
-    // Grafica de barras IS por año
+    
     presupuestoBarChart: {
       yearColumn: 'Año',
       variableColumns: [
@@ -79,7 +118,6 @@ export const storageConfig = {
       ]
     },
     
-    //Gráfica de barras PIC
     picBarChart: {
       yearColumn: 'Año',
       variableColumns: [
@@ -93,7 +131,6 @@ export const storageConfig = {
       ]
     },
     
-    // Gráfica de barras PS
     psBarChart: {
       yearColumn: 'Año',
       variableColumns: [
@@ -107,7 +144,6 @@ export const storageConfig = {
       ]
     },
     
-    // Gráfica lineal IS
     isLinearChart: {
       yearColumn: 'Año',
       variableColumns: [
@@ -124,7 +160,6 @@ export const storageConfig = {
       ]
     },
     
-    // Gráfica lineal GT-PS-PIC (3 líneas)
     pspicLinearChart: {
       yearColumn: 'Año',
       variableColumns: [
@@ -146,7 +181,6 @@ export const storageConfig = {
       ]
     },
     
-    // Gráfica de Barras Presupuesto Detallado
     presupuestoDetalleBarChart: {
       yearColumn: 'Año',
       variableColumns: [
@@ -271,6 +305,26 @@ export function getCurrentConfig() {
   }
 }
 
+// ✅ NUEVA FUNCIÓN: Obtener Sheet ID específico según el archivo
+export function getSheetIdForFile(fileKey) {
+  const config = storageConfig.googlesheets
+  
+  // Si hay configuración de múltiples sheets
+  if (config.sheets) {
+    // Buscar en qué sheet está el archivo
+    for (const [sheetKey, sheetConfig] of Object.entries(config.sheets)) {
+      if (sheetConfig.files && sheetConfig.files[fileKey]) {
+        console.log(`📄 Archivo "${fileKey}" encontrado en sheet "${sheetKey}"`)
+        return sheetConfig.sheetId
+      }
+    }
+  }
+  
+  // Fallback: usar el sheet principal
+  console.log(`📄 Usando sheet principal para "${fileKey}"`)
+  return config.sheetId
+}
+
 export function getMapping(mappingName) {
   const mapping = storageConfig.mappings[mappingName]
   if (!mapping) throw new Error(`Mapeo no encontrado: ${mappingName}`)
@@ -299,8 +353,11 @@ export function validateConfig() {
   const config = storageConfig[provider]
   if (!config) return { valid: false, error: `Configuración no encontrada para ${provider}` }
   if (provider === 'googlesheets') {
-    if (!config.apiKey || !config.sheetId) {
-      return { valid: false, error: 'Google Sheets: faltan apiKey o sheetId' }
+    if (!config.apiKey) {
+      return { valid: false, error: 'Google Sheets: falta apiKey' }
+    }
+    if (!config.sheetId && !config.sheets) {
+      return { valid: false, error: 'Google Sheets: falta sheetId o sheets' }
     }
   }
   return { valid: true }

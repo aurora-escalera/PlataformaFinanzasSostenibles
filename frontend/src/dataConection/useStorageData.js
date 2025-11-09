@@ -127,11 +127,8 @@ export function useStorageData() {
         const rawValue = row[varConfig.column]
         
         // ✅ FIX: Limpiar comas Y puntos si el valor es un string
-        // Google Sheets puede devolver números con diferentes formatos:
-        // - Con comas: '3,680,000,000' (formato US)
-        // - Con puntos: '301.611.481.578' (formato ES/MX)
         const cleanValue = typeof rawValue === 'string' 
-          ? rawValue.replace(/[,.]/g, '')  // ✅ Quita comas Y puntos
+          ? rawValue.replace(/[,.]/g, '')
           : rawValue
         
         return {
@@ -167,12 +164,8 @@ export function useStorageData() {
         const rawValue = row[varConfig.column]
         
         // ✅ FIX: Limpiar comas Y puntos si el valor es un string
-        // Google Sheets puede devolver números con diferentes formatos:
-        // - Con comas: '3,680,000,000' (formato US)
-        // - Con puntos: '301.611.481.578' (formato ES/MX)
-        // parseFloat se detiene en el primer separador, por eso limpiamos todo
         const cleanValue = typeof rawValue === 'string' 
-          ? rawValue.replace(/[,.]/g, '')  // ✅ Quita comas Y puntos
+          ? rawValue.replace(/[,.]/g, '')
           : rawValue
         
         return parseFloat(cleanValue) || 0
@@ -190,41 +183,94 @@ export function useStorageData() {
     return { data, labels }
   }
   
-const transformToStackedAreaData = (rawData, mapping) => {
-  if (!rawData || rawData.length === 0) {
-    console.warn('⚠️ No hay datos para transformar')
-    return {}
+  const transformToStackedAreaData = (rawData, mapping) => {
+    if (!rawData || rawData.length === 0) {
+      console.warn('⚠️ No hay datos para transformar')
+      return {}
+    }
+    
+    const yearColumn = mapping.yearColumn
+    const variableColumns = mapping.variableColumns
+    
+    const transformed = {}
+    
+    // Inicializar arrays para cada variable
+    variableColumns.forEach(varConfig => {
+      transformed[varConfig.label] = []
+    })
+    
+    // Llenar datos para cada año
+    rawData.forEach(row => {
+      variableColumns.forEach(varConfig => {
+        const rawValue = row[varConfig.column]
+        
+        // Limpiar comas Y puntos si el valor es un string
+        const cleanValue = typeof rawValue === 'string' 
+          ? rawValue.replace(/[,.]/g, '')
+          : rawValue
+        
+        transformed[varConfig.label].push(parseFloat(cleanValue) || 0)
+      })
+    })
+    
+    console.log('✅ Datos transformados para StackedArea:', Object.keys(transformed).length, 'series')
+    return transformed
   }
   
-  const yearColumn = mapping.yearColumn
-  const variableColumns = mapping.variableColumns
-  
-  const transformed = {}
-  
-  // Inicializar arrays para cada variable
-  variableColumns.forEach(varConfig => {
-    transformed[varConfig.label] = []
-  })
-  
-  // Llenar datos para cada año
-  rawData.forEach(row => {
-    variableColumns.forEach(varConfig => {
-      const rawValue = row[varConfig.column]
+  // ✅ NUEVO: Transformar a formato de gráfica de ranking horizontal
+  const transformToRankingData = (rawData, mapping, stateFilter = null) => {
+    if (!rawData || rawData.length === 0) {
+      console.warn('⚠️ No hay datos para transformar')
+      return []
+    }
+    
+    const stateColumn = mapping.stateColumn
+    const variableColumns = mapping.variableColumns
+    
+    // Filtrar por estado si se proporciona
+    let dataToProcess = rawData
+    if (stateFilter) {
+      dataToProcess = rawData.filter(row => row[stateColumn] === stateFilter)
+    }
+    
+    if (dataToProcess.length === 0) {
+      console.warn(`⚠️ No hay datos para el estado: ${stateFilter}`)
+      return []
+    }
+    
+    // Tomar la primera fila (o última, dependiendo de tu estructura)
+    const dataRow = dataToProcess[0]
+    
+    // Transformar cada variable a formato de HorizontalRankingChart
+    const transformed = variableColumns.map(varConfig => {
+      const rawValue = dataRow[varConfig.column]
       
-      // Limpiar comas Y puntos si el valor es un string
+      // ✅ Limpiar comas Y puntos si el valor es un string
       const cleanValue = typeof rawValue === 'string' 
         ? rawValue.replace(/[,.]/g, '')
         : rawValue
       
-      transformed[varConfig.label].push(parseFloat(cleanValue) || 0)
+      return {
+        key: varConfig.key,
+        label: varConfig.label,
+        value: parseFloat(cleanValue) || 0,
+        colorClass: varConfig.colorClass || 'default',
+        color: varConfig.color || null
+      }
     })
-  })
+    
+    // Ordenar por orden si existe
+    transformed.sort((a, b) => {
+      const orderA = variableColumns.find(v => v.key === a.key)?.order || 999
+      const orderB = variableColumns.find(v => v.key === b.key)?.order || 999
+      return orderA - orderB
+    })
+    
+    console.log(`✅ Datos transformados para Ranking: ${transformed.length} variables`)
+    return transformed
+  }
   
-  console.log('✅ Datos transformados para StackedArea:', Object.keys(transformed).length, 'series')
-  return transformed
-}
-  
-  const transform = (rawData, mapping, chartType = 'bar') => {
+  const transform = (rawData, mapping, chartType = 'bar', options = {}) => {
     switch (chartType) {
       case 'bar':
         return transformToBarChartData(rawData, mapping)
@@ -232,6 +278,8 @@ const transformToStackedAreaData = (rawData, mapping) => {
         return transformToLinearChartData(rawData, mapping)
       case 'stacked':
         return transformToStackedAreaData(rawData, mapping)
+      case 'ranking':
+        return transformToRankingData(rawData, mapping, options.stateFilter)
       default:
         console.warn(`Tipo de gráfica no reconocido: ${chartType}`)
         return rawData
@@ -282,6 +330,7 @@ const transformToStackedAreaData = (rawData, mapping) => {
     transformToBarChartData,
     transformToLinearChartData,
     transformToStackedAreaData,
+    transformToRankingData,  // ✅ Nueva función exportada
     transform,
     clearError,
     getProvider,

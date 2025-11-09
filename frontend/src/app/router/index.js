@@ -5,6 +5,8 @@ import QualitativePanel from '../../pages/QualitativePanel.vue'
 import IndicatorView from '../../pages/IndicatorView.vue'
 import RankingView from '../../pages/RankingView.vue'
 import HistoricalView from '../../pages/HistoricalView.vue'
+import HomePage from '../../pages/HomePage.vue'
+import TestRanking from '../../pages/TestRanking.vue'
 
 const routes = [
   // Ruta por defecto (opcional)
@@ -52,6 +54,22 @@ const routes = [
     component: HistoricalView,
     meta: {
       title: 'HistoricalView - Finanzas Sostenibles'
+    }
+  },
+  {
+    path: '/finanzas/home',
+    name: 'HomePage',
+    component: HomePage,
+    meta: {
+      title: 'Home- Finanzas Sostenibles'
+    }
+  },
+  {
+    path: '/finanzas/testRanking',
+    name: 'TestRanking',
+    component: TestRanking,
+    meta: {
+      title: 'Home- Finanzas Sostenibles'
     }
   }
 ]
