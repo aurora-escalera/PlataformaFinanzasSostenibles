@@ -1,4 +1,4 @@
-<!-- HorizontalRankingChart.vue - CON EJE X NUMÉRICO -->
+<!-- HorizontalRankingChart.vue - Altura dinámica sin scroll -->
 <template>
   <div class="horizontal-bar-chart" :style="{ width: width, height: height }">
     <!-- Título -->
@@ -141,7 +141,7 @@ const activateBarsWithAnimation = async () => {
     await new Promise(resolve => setTimeout(resolve, 50))
     const targetWidth = getBarWidth(internalVariables.value[i].value)
     animatedWidths.value[internalVariables.value[i].key] = targetWidth
-    const delay = props.showAllBars && count > 10 ? 50 : 200
+    const delay = props.showAllBars && count > 10 ? 20 : 200
     await new Promise(resolve => setTimeout(resolve, delay))
   }
 }
@@ -159,11 +159,21 @@ const activeVariables = computed(() => {
   return internalVariables.value.filter(v => v.active)
 })
 
+// Cálculo dinámico de altura por barra
 const dynamicBarHeight = computed(() => {
   const count = activeVariables.value.length
   if (count === 0) return '100%'
-  if (props.showAllBars && count > 10) return '22px'  // ✅ Reducido de 30px a 22px
-  return `${100 / count}%`
+  
+  // Alturas fijas en píxeles
+  const titleHeight = 30  // Altura del título + margen
+  const xAxisHeight = 36  // Altura del eje X + márgenes
+  const gapSize = 3       // Gap entre barras en px
+  
+  // Total de gaps = cantidad de barras - 1
+  const totalGaps = (count - 1) * gapSize
+  
+  // Calcular: (100% - título - eje X - gaps) / número de barras
+  return `calc((100% - ${titleHeight}px - ${xAxisHeight}px - ${totalGaps}px) / ${count})`
 })
 
 const maxValue = computed(() => {
@@ -245,20 +255,22 @@ const formatValue = (value) => {
   flex-direction: column;
   background: white;
   border-radius: 12px;
-  padding: 10px;  /* ✅ Reducido de 15px a 10px */
+  padding: 8px;
   box-sizing: border-box;
   height: 100%;
   width: 100%;
 }
 
 .chart-header {
-  margin-bottom: 10px;  /* ✅ Reducido de 15px a 10px */
+  margin-bottom: 8px;
   text-align: center;
+  flex-shrink: 0;
+  height: 22px;
 }
 
 .chart-title {
   margin: 0;
-  font-size: 16px;  /* ✅ Reducido de 18px a 16px */
+  font-size: 14px;
   font-weight: 600;
   color: #2c3e50;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -269,27 +281,28 @@ const formatValue = (value) => {
   flex-direction: column;
   flex: 1;
   overflow: hidden;
+  min-height: 0;
 }
 
 .bars-container {
   display: flex;
   flex-direction: column;
-  gap: 2px;  /* ✅ Reducido de 4px a 2px */
+  gap: 3px;
   flex: 1;
   width: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding-bottom: 5px;  /* ✅ Reducido de 10px a 5px */
+  overflow: hidden;
+  min-height: 0;
 }
 
 .bar-row {
   display: grid;
-  grid-template-columns: 180px 1fr;
-  gap: 12px;
+  grid-template-columns: 140px 1fr;
+  gap: 10px;
   align-items: center;
   height: v-bind(dynamicBarHeight);
-  min-height: 22px;  /* ✅ Reducido de 30px a 22px */
-  padding: 1px 0;  /* ✅ Reducido de 2px a 1px */
+  min-height: 12px;
+  flex-shrink: 0;
+  padding: 0;
   transition: opacity 0.3s ease, transform 0.2s ease;
   cursor: pointer;
 }
@@ -306,15 +319,16 @@ const formatValue = (value) => {
 
 /* Label del estado */
 .state-label {
-  font-size: 11px;  /* ✅ Reducido de 12px a 11px */
+  font-size: 10px;
   font-weight: 500;
   color: #374151;
   text-align: right;
-  padding-right: 8px;
+  padding-right: 6px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.2;
 }
 
 /* Área de la barra con grid */
@@ -322,7 +336,7 @@ const formatValue = (value) => {
   position: relative;
   width: 100%;
   height: 100%;
-  min-height: 20px;  /* ✅ Reducido de 28px a 20px */
+  min-height: 12px;
 }
 
 .grid-lines {
@@ -348,44 +362,47 @@ const formatValue = (value) => {
   height: 100%;
   background: #f3f4f6;
   overflow: visible;
-  border-radius: 4px;  /* ✅ Reducido de 6px a 4px */
-  min-height: 20px;  /* ✅ Reducido de 28px a 20px */
+  border-radius: 4px;
+  min-height: 12px;
 }
 
 .bar-horizontal {
   height: 100%;
   transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
-  border-radius: 6px;
+  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding-right: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding-right: 6px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .bar-row.is-hovered .bar-horizontal {
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
 /* Valor dentro de la barra */
 .bar-value {
-  font-size: 11px;
+  font-size: 9px;
   font-weight: 600;
   color: white;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
   white-space: nowrap;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1;
 }
 
 /* Eje X */
 .x-axis {
   display: grid;
-  grid-template-columns: 180px 1fr;
-  gap: 12px;
-  margin-top: 8px;
-  padding-top: 8px;
+  grid-template-columns: 140px 1fr;
+  gap: 10px;
+  margin-top: 6px;
+  padding-top: 6px;
   border-top: 2px solid #e5e7eb;
+  flex-shrink: 0;
+  height: 28px;
 }
 
 .x-axis-spacer {
@@ -394,7 +411,7 @@ const formatValue = (value) => {
 
 .x-axis-labels {
   position: relative;
-  height: 30px;
+  height: 22px;
 }
 
 .x-axis-tick {
@@ -406,10 +423,10 @@ const formatValue = (value) => {
 }
 
 .tick-label {
-  font-size: 11px;
+  font-size: 9px;
   font-weight: 500;
   color: #6b7280;
-  margin-top: 4px;
+  margin-top: 3px;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
@@ -462,24 +479,5 @@ const formatValue = (value) => {
 .tooltip-value {
   font-size: 11px;
   opacity: 0.9;
-}
-
-/* Scrollbar personalizado */
-.bars-container::-webkit-scrollbar {
-  width: 8px;
-}
-
-.bars-container::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
-}
-
-.bars-container::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
-}
-
-.bars-container::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
 }
 </style>
