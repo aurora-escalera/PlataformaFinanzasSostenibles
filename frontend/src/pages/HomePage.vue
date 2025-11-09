@@ -1,8 +1,22 @@
 <!-- src/modules/maps/components/HomePage.vue -->
-<!-- src/modules/maps/components/HomePage.vue -->
 <template>
   <div class="filters-toggles-row">
-    <!-- ... tu código existente de filtros ... -->
+    <!-- Columna izquierda: Filtros -->
+    <div class="filters-column">
+      <RetractableFilterBar 
+        :entities="entitiesData"
+        :loading="loading"
+        @entity-change="handleEntityChange"
+        @year-change="handleYearChange" 
+        @variable-change="handleVariableChange"
+        @filters-change="handleFiltersChange"
+      />
+    </div>
+    
+    <!-- Columna derecha: Toggles -->
+    <div class="toggles-column">
+      <DataToggleComponent />
+    </div>
   </div>
   
   <div class="map-container">
@@ -48,7 +62,7 @@
           <div class="expand-retractable-btn" @click="handleDatosCualitativosClick">+</div>
         </div>
 
-        <!-- ✅ CAMBIADO: RANKING CHART SECTION - Ahora al lado del mapa -->
+        <!-- RANKING CHART SECTION - Al lado del mapa -->
         <div class="charts-section">
           <div class="charts-container">
             <!-- Gráfica de Ranking Horizontal con datos de Google Sheets -->
@@ -83,7 +97,7 @@
         </div>
       </div>
 
-      <!-- ✅ CAMBIADO: Panel de Charts Component - Ahora abajo -->
+      <!-- Panel de Charts Component - Abajo -->
       <div v-if="selectedState" class="ranking-panel">
         <div class="header-ranking-panel">
           <h2>Análisis de {{ selectedState }}</h2>
@@ -186,6 +200,30 @@ const {
 
 const router = useRouter()
 
+// Data para entidades (puedes ajustar según tus necesidades)
+const entitiesData = ref([])
+
+// Manejadores de eventos para los filtros
+const handleEntityChange = (entity) => {
+  console.log('Entidad seleccionada:', entity)
+  // Implementa la lógica para cambiar la entidad
+}
+
+const handleYearChange = (year) => {
+  console.log('Año seleccionado:', year)
+  // Implementa la lógica para cambiar el año
+}
+
+const handleVariableChange = (variable) => {
+  console.log('Variable seleccionada:', variable)
+  // Implementa la lógica para cambiar la variable
+}
+
+const handleFiltersChange = (filters) => {
+  console.log('Filtros aplicados:', filters)
+  // Implementa la lógica para aplicar los filtros
+}
+
 const handleStateClickWithEmit = async (stateName) => {
   handleStateClick(stateName)
   await nextTick()
@@ -199,7 +237,6 @@ const handleStateClickWithEmit = async (stateName) => {
 
 const handleIFSRegionalClick = () => {
   console.log('Navegando a datos regionales...')
-  // Mantener en la misma página o hacer algo específico
   if (selectedState.value) {
     resetSelection()
   }
@@ -241,9 +278,10 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+/* Contenedor principal - casi todo el ancho de la pantalla */
 .map-container {
-  width: 100%;
-  max-width: 1520px;
+  width: 95%;
+  max-width: 2000px;
   margin: 0 auto;
   padding: 0;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -287,33 +325,38 @@ onMounted(async () => {
   background: #d32f2f;
 }
 
+/* Wrapper principal - ocupa todo el ancho disponible */
 .map-and-charts-wrapper {
   display: flex;
   align-items: flex-start;
-  gap: 0px;
+  gap: 10px;
   padding: 19.6px;  
   border-radius: 11px;
   height: 383.5px;
   background-color: white;
-  width: 1225.4px;
+  width: 100%;
+  height: 100%;
+  margin: 0 auto;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.182);
+  box-sizing: border-box;
 }
 
 .retractable-view {
   position: relative;
-  width: 68.6px;
-  height: 344.3px;
+  width: 70px;
+  height: 600px;
   background-color: #053759;
   border-radius: 15px;
-  left: -10px;
+  flex-shrink: 0;
   z-index: 1;
+  transform: translateX(-55px);
 }
 
 .expand-retractable-btn {
   position: absolute;
   font-size: 15px;
   color: white;
-  left: 10px;
+  left: 48px;
   top: 3px;
   width: 18px;
   height: 18px;
@@ -323,8 +366,8 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   box-shadow: 
-    inset 0 3px 6px rgba(0, 0, 0, 0.4),  /* Sombra interior superior (efecto hundido) */
-    inset 0 -2px 4px rgba(255, 255, 255, 0.1), /* Luz interior inferior */
+    inset 0 3px 6px rgba(0, 0, 0, 0.4),
+    inset 0 -2px 4px rgba(255, 255, 255, 0.1),
     0 1px 2px rgba(242, 241, 241, 0.369); 
   transition: all 0.1s ease;
 }
@@ -337,11 +380,12 @@ onMounted(async () => {
   transform: translateY(1px);
 }
 
+/* Charts section - usa flex para ocupar el espacio restante */
 .charts-section {
-  width: 1400px;
-  height: 344.3px;
+  flex: 1;
+  height: 605px;
   border-radius: 15px;
-  transform: translateX(0px);
+  min-width: 0;
 }
 
 .charts-container {
@@ -351,6 +395,41 @@ onMounted(async () => {
   padding: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   height: 100%;
+  width: 100%;
+}
+
+.ranking-loading, .ranking-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 40px;
+}
+
+.spinner-small {
+  width: 30px;
+  height: 30px;
+  border: 3px solid rgb(203, 199, 199);
+  border-top: 3px solid #4CAF50;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 15px;
+}
+
+.retry-btn-small {
+  background: #f44336;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  margin-top: 10px;
+}
+
+.retry-btn-small:hover {
+  background: #d32f2f;
 }
 
 .charts-empty-state {
@@ -464,51 +543,45 @@ onMounted(async () => {
   line-height: 1.6;
 }
 
-@media (max-width: 1200px) {
-  .map-and-charts-wrapper {
-    flex-direction: column;
-  }
-  
-  .charts-section {
-    width: 100%;
-  }
-}
-
+/* Filtros y toggles - también ocupan 95% */
 .filters-toggles-row {
   display: flex;
   gap: 20px;
   height: 90px;
-  max-width: 1520px;
-  margin: 0 auto;
+  width: 95%;
+  max-width: 2000px;
+  margin: 0 auto 20px auto;
+  align-items: center;
 }
 
 .filters-column {
-  width: 613.5px;
-  flex-shrink: 0;
-  padding: 0;
+  flex: 1;
+  min-width: 300px;
+  max-width: 650px;
 }
 
 .toggles-column {
-  width: 700px;
-  flex-shrink: 0;
+  flex: 1;
+  max-width: 700px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding: 0;
 }
 
 .map-section {
   margin: 0 auto;
   padding: 0; 
-  max-width: 1520px; 
+  width: 95%;
+  max-width: 2000px;
 }
 
 .filter-stats-panel {
   background: white;
   border-radius: 12px;
   padding: 20px;
-  margin: 20px 2rem;
+  margin: 20px auto;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  width: 100%;
 }
 
 .stats-header {
@@ -540,18 +613,13 @@ onMounted(async () => {
 }
 
 .charts-btn {
- 
   margin-left: 10px;
-}
-
-.charts-btn:hover {
-
 }
 
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 0px;
+  gap: 15px;
   margin-bottom: 20px;
 }
 
@@ -576,7 +644,6 @@ onMounted(async () => {
   background: #e3f2fd;
   padding: 15px;
   border-radius: 8px;
- 
 }
 
 .current-filter h4 {
@@ -594,8 +661,9 @@ onMounted(async () => {
   border: 1px solid #f44336;
   border-radius: 8px;
   padding: 20px;
-  margin: 20px 2rem;
+  margin: 20px auto;
   text-align: center;
+  width: 100%;
 }
 
 .error-panel h3 {
@@ -608,44 +676,32 @@ onMounted(async () => {
   margin-bottom: 15px;
 }
 
-.retry-btn {
-  background: #f44336;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.retry-btn:hover {
-  background: #d32f2f;
-}
-
-/* Ranking panel */
-.ranking-panel{
- display: flex;
- flex-direction: column;
- height: 1540px;
- width: 1225.6px;
- background: white;
- border: 1px solid #ddd;
- border-radius: 12px;
- padding: 12px;
- box-shadow: 0 4px 20px rgba(0, 0, 0, 0.182);
+/* Ranking panel - ocupa todo el ancho disponible */
+.ranking-panel {
+  display: flex;
+  flex-direction: column;
+  height: 1540px;
+  width: 100%;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.182);
+  margin-top: 20px;
+  box-sizing: border-box;
 }
 
 /* Ranking panel: Header */
-.header-ranking-panel{
- display: flex;
- flex-direction: row; 
- height: 3%;
- width: 100%;
- padding: 10px;
- margin-bottom: 10px;
+.header-ranking-panel {
+  display: flex;
+  flex-direction: row; 
+  height: 3%;
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
 }
 
-h2{
+h2 {
   padding: 4px 0 2px 0;
   text-align: center;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -658,21 +714,81 @@ h2{
   margin-right: auto; 
 }
 
-.ranking-hamburger-menu{
+.ranking-hamburger-menu {
   margin-left: auto;
 }
 
-.hamburger-icon{
+.hamburger-icon {
   height: 80%;
 }
 
 /* Ranking panel: Body */
-.body-ranking-panel{
- height: 97%;
+.body-ranking-panel {
+  height: 97%;
+  width: 100%;
 }
 
-.slider-ranking-panel{
- height: 100%;
- width: 100%;
+.slider-ranking-panel {
+  height: 100%;
+  width: 100%;
+}
+
+/* Media Queries para responsive */
+@media (max-width: 1400px) {
+  .map-and-charts-wrapper {
+    flex-direction: column;
+    height: auto;
+  }
+  
+  .retractable-view {
+    width: 100%;
+    height: 60px;
+  }
+  
+  .charts-section {
+    width: 100%;
+    height: auto;
+    min-height: 400px;
+  }
+}
+
+@media (max-width: 992px) {
+  .filters-toggles-row {
+    flex-direction: column;
+    height: auto;
+  }
+  
+  .filters-column,
+  .toggles-column {
+    width: 100%;
+    max-width: 100%;
+    justify-content: center;
+  }
+  
+  h2 {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .map-container {
+    width: 98%;
+  }
+  
+  .filters-toggles-row {
+    width: 98%;
+  }
+  
+  .map-and-charts-wrapper {
+    padding: 15px;
+  }
+  
+  .ranking-panel {
+    padding: 15px;
+  }
+  
+  h2 {
+    font-size: 14px;
+  }
 }
 </style>
