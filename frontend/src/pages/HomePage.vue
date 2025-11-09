@@ -240,6 +240,7 @@ const handleStateClickWithEmit = async (stateName) => {
     emit('region-selected', null)
   }
 }
+
 const handleIFSRegionalClick = () => {
   console.log('Navegando a datos regionales...')
   if (selectedState.value) {

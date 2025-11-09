@@ -1,6 +1,6 @@
 <!-- src/modules/maps/components/MexicoMapSVG.vue -->
 <template>
-  <div class="map-wrapper">
+  <div class="map-wrapper" @click="handleBackgroundClick">
     <!-- CARD FLOTANTE CON INFO DEL ESTADO/NACIONAL -->
     <div 
       v-if="showInfoCard"
@@ -42,13 +42,13 @@
           <div 
             class="card-label-pill" 
             :class="{ 'active': !selectedState }"
-            @click="handleIFSRegionalClick"
+            @click.stop="handleIFSRegionalClick"
           >
             IFS Regional
           </div>
           <div 
             class="card-label-pill"
-            @click="handleDatosFederalesClick"
+            @click.stop="handleDatosFederalesClick"
           >
             Datos federales
           </div>
@@ -111,6 +111,7 @@
       class="mexico-map"
       viewBox="0 0 591.8 344.3"
       preserveAspectRatio="xMidYMid meet"
+      @click="handleSvgClick"
     >
       <g>
         <path
@@ -120,8 +121,8 @@
           :fill="getStateColor(feature.properties.state_name)"
           :stroke="getStrokeColor(feature.properties.state_name)"
           :stroke-width="getStrokeWidth(feature.properties.state_name)"
-          class="state-path"
-          @click="handleStateClick(feature.properties.state_name)"
+          :class="getStateClass(feature.properties.state_name)"
+          @click.stop="handleStateClick(feature.properties.state_name)"
           @mouseenter="handleMouseHover(feature.properties.state_name, $event)"
           @mouseleave="handleMouseLeave"
         />
@@ -225,8 +226,25 @@ const getPathData = (feature) => {
   return pathGenerator.value(feature)
 }
 
+// Nueva función para obtener las clases CSS del estado
+const getStateClass = (stateName) => {
+  const classes = ['state-path']
+  
+  if (props.selectedState === stateName) {
+    classes.push('state-selected')
+  } else if (props.hoveredState === stateName) {
+    classes.push('state-hovered')
+  }
+  
+  if (props.selectedState && props.selectedState !== stateName) {
+    classes.push('state-dimmed')
+  }
+  
+  return classes.join(' ')
+}
+
 const getStrokeColor = (stateName) => {
-  if (props.selectedState === stateName) return '#FFFFFF'
+  if (props.selectedState === stateName) return '#1a202c'
   if (props.hoveredState === stateName) return '#555555'
   return '#555555'
 }
@@ -278,6 +296,20 @@ const handleMouseLeave = () => {
 
 const handleStateClick = (stateName) => {
   emit('state-click', stateName)
+}
+
+const handleBackgroundClick = (event) => {
+  // Si el click es en el wrapper (no en SVG o estados)
+  if (event.target.classList.contains('map-wrapper')) {
+    emit('state-click', null)
+  }
+}
+
+const handleSvgClick = (event) => {
+  // Si el click es directamente en el SVG (no en un path)
+  if (event.target.tagName === 'svg' || event.target.tagName === 'g') {
+    emit('state-click', null)
+  }
 }
 
 const handleIFSRegionalClick = () => {
@@ -524,9 +556,10 @@ const tooltipStyle = computed(() => {
   display: block;
 }
 
+/* Estilos base del path */
 .state-path {
   cursor: pointer;
-  transition: all 0.05s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   opacity: 1;
   stroke-width: .5;
   vector-effect: non-scaling-stroke;
@@ -534,25 +567,42 @@ const tooltipStyle = computed(() => {
   stroke-linecap: round;
 }
 
-.state-path:hover {
-  filter: brightness(1.3);
-  opacity: 0.95;
-  stroke-width: 0.5;
-  vector-effect: non-scaling-stroke;
-  stroke-linejoin: round;
-  stroke-linecap: round;
-}
-
-svg g:hover .state-path {
-  opacity: 0.8;
-}
-
-svg g:hover .state-path:hover {
+/* Estado seleccionado - mantiene el estilo visual */
+.state-path.state-selected {
   opacity: 1;
   filter: saturate(1.8) contrast(1.3);
-  stroke-width: 0.4;
+  stroke-width: 0.5;  /* ✅ Borde delgado */
   filter: drop-shadow(0 0 6px rgba(10, 10, 10, 0.8));
   transform-origin: center;
+}
+
+/* Estado en hover (solo si no está seleccionado) */
+.state-path.state-hovered:not(.state-selected) {
+  filter: brightness(1.3);
+  opacity: 0.95;
+  stroke-width: 2;
+}
+
+/* Estados atenuados cuando hay uno seleccionado */
+.state-path.state-dimmed {
+  opacity: 0.5;
+  filter: brightness(0.8);
+}
+
+/* Hover sobre estados atenuados */
+.state-path.state-dimmed:hover {
+  opacity: 0.7;
+  filter: brightness(1);
+}
+
+/* Asegurar que hover funcione sobre estado seleccionado */
+.state-path.state-selected:hover {
+  opacity: 1;
+  filter: saturate(1.8) contrast(1.3);
+  stroke-width: 0.4;  /* ✅ Borde muy delgado */
+  filter: drop-shadow(0 0 6px rgba(10, 10, 10, 0.8));
+  transform-origin: center;
+
 }
 
 .tooltip {
