@@ -5,14 +5,13 @@
     <div class="filters-column">
       <RetractableFilterBar 
         :entities="entitiesData"
-        :loading="loading"
+        :loading="entitiesLoading"
         @entity-change="handleEntityChange"
         @year-change="handleYearChange" 
         @variable-change="handleVariableChange"
         @filters-change="handleFiltersChange"
       />
     </div>
-
   </div>
   
   <div class="map-container">
@@ -104,6 +103,7 @@
           <!-- ChartsComponent con gráficas del estado seleccionado -->
           <ChartsComponent 
             :selectedState="selectedState"
+            :selectedVariable="selectedVariable"
             :ifssData="getStateInfo(selectedState)"
           />
         </div>
@@ -126,6 +126,8 @@ import RankingSlider from '../modules/object/component/RankinSlider.vue'
 import HistoricalCard from '../modules/object/component/HistoricalCard.vue'
 import { useSlider } from '@/composables/useSlider'
 import { useStateRanking } from '@/composables/useStateRanking'
+import { useStorageData } from '@/dataConection/useStorageData'
+import { getMapping } from '@/dataConection/storageConfig'
 
 const props = defineProps({
   title: {
@@ -193,33 +195,67 @@ const {
 } = useStateRanking()
 
 const router = useRouter()
+const selectedVariable = ref(null)
+const { fetchData: fetchEntities } = useStorageData()
 
-// Data para entidades (puedes ajustar según tus necesidades)
 const entitiesData = ref([])
+const entitiesLoading = ref(false)
+const entitiesError = ref(null)
 
-// Manejadores de eventos para los filtros
+const loadEntitiesFromSheet = async () => {
+  try {
+    console.log('📥 Cargando entidades desde Google Sheets...')
+    entitiesLoading.value = true
+    entitiesError.value = null
+    
+    const presupuestosMapping = getMapping('chartsPresupuestos')
+    const rawData = await fetchEntities('chartsPresupuestos', 'Datos_Cuantitativos')
+    
+    console.log(`✅ Datos cargados: ${rawData.length} filas`)
+    
+    const stateColumn = presupuestosMapping.stateColumn
+    const uniqueEntities = [...new Set(rawData.map(row => row[stateColumn]))]
+      .filter(entity => entity && entity.trim() !== '')
+      .sort()
+    
+    entitiesData.value = uniqueEntities.map(entity => ({
+      name: entity,
+      value: null
+    }))
+    
+    console.log('✅ entitiesData actualizado:', entitiesData.value.length, 'entidades')
+    
+  } catch (err) {
+    console.error('❌ Error cargando entidades:', err)
+    entitiesError.value = err.message
+  } finally {
+    entitiesLoading.value = false
+  }
+}
+
 const handleEntityChange = (entity) => {
-  console.log('Entidad seleccionada:', entity)
-  // Implementa la lógica para cambiar la entidad
+  console.log('🔍 Entidad seleccionada:', entity)
+  if (entity) {
+    handleStateClick(entity)
+  } else {
+    resetSelection()
+  }
 }
 
 const handleYearChange = (year) => {
-  console.log('Año seleccionado:', year)
-  // Implementa la lógica para cambiar el año
+  console.log('📅 Año seleccionado:', year)
 }
 
 const handleVariableChange = (variable) => {
-  console.log('Variable seleccionada:', variable)
-  // Implementa la lógica para cambiar la variable
+  console.log('📊 Variable seleccionada:', variable)
+  selectedVariable.value = variable
 }
 
 const handleFiltersChange = (filters) => {
-  console.log('Filtros aplicados:', filters)
-  // Implementa la lógica para aplicar los filtros
+  console.log('🔧 Filtros aplicados:', filters)
 }
 
 const handleStateClickWithEmit = async (stateName) => {
-  // Si stateName es null, deseleccionar
   if (!stateName) {
     resetSelection()
     emit('region-selected', null)
@@ -245,7 +281,6 @@ const handleIFSRegionalClick = () => {
 
 const handleDatosFederalesClick = () => {
   console.log('Navegando a federales...')
-  // router.push('/finanzas/federales')
 }
 
 const handleDatosCualitativosClick = () => {
@@ -254,7 +289,6 @@ const handleDatosCualitativosClick = () => {
 }
 
 const handleMapContainerClick = (event) => {
-  // Verificar si el click fue directamente en el contenedor (no en un estado)
   if (event.target.classList.contains('map-svg-container') || 
       event.target.tagName === 'svg' ||
       event.target.classList.contains('map-background')) {
@@ -283,13 +317,15 @@ watch(error, (newError) => {
 })
 
 onMounted(async () => {
+  console.log('\n🚀 ===== INICIALIZANDO HomePage =====')
+  await loadEntitiesFromSheet()
   await initializeSlider()
   await loadAllStatesRanking()
+  console.log('✅ HomePage inicializado\n')
 })
 </script>
 
 <style scoped>
-/* Contenedor principal - casi todo el ancho de la pantalla */
 .map-container {
   width: 95%;
   max-width: 2000px;
@@ -336,7 +372,6 @@ onMounted(async () => {
   background: #d32f2f;
 }
 
-/* Wrapper principal - ocupa todo el ancho disponible */
 .map-and-charts-wrapper {
   display: flex;
   align-items: flex-start;
@@ -350,6 +385,7 @@ onMounted(async () => {
   margin: 0 auto;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.182);
   box-sizing: border-box;
+  z-index: 2;
 }
 
 .retractable-view {
@@ -391,7 +427,6 @@ onMounted(async () => {
   transform: translateY(1px);
 }
 
-/* Charts section - usa flex para ocupar el espacio restante */
 .charts-section {
   flex: 1;
   height: 605px;
@@ -469,96 +504,10 @@ onMounted(async () => {
   font-size: 14px;
 }
 
-.details-panel {
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
-  margin-top: 20px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-}
-
-.details-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 15px;
-  border-bottom: 2px solid #e0e0e0;
-}
-
-.details-header h3 {
-  margin: 0;
-  color: #2c3e50;
-  font-size: 24px;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: #666;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: background 0.2s;
-}
-
-.close-btn:hover {
-  background: #f0f0f0;
-}
-
-.details-content {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-  margin-bottom: 20px;
-}
-
-.metric-card {
-  background: #f8f9fa;
-  padding: 20px;
-  border-radius: 8px;
-  text-align: center;
-}
-
-.metric-value {
-  font-size: 36px;
-  font-weight: bold;
-  color: #2c3e50;
-  margin-bottom: 8px;
-}
-
-.metric-label {
-  font-size: 14px;
-  color: #666;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.metric-classification {
-  font-size: 16px;
-  font-weight: 600;
-  margin-top: 8px;
-}
-
-.description {
-  background: #f8f9fa;
-  padding: 15px;
-  border-radius: 8px;
-  border-left: 4px solid #4CAF50;
-}
-
-.description p {
-  margin: 0;
-  color: #666;
-  line-height: 1.6;
-}
-
-/* Filtros y toggles - también ocupan 95% */
 .filters-toggles-row {
   display: flex;
   gap: 20px;
-  height: 90px;
+  height: 110px;
   width: 95%;
   max-width: 2000px;
   margin: 0 auto 0px auto;
@@ -571,132 +520,13 @@ onMounted(async () => {
   max-width: 650px;
 }
 
-.toggles-column {
-  flex: 1;
-  max-width: 700px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-}
-
-.map-section {
-  margin: 0 auto;
-  padding: 0; 
-  width: 95%;
-  max-width: 2000px;
-}
-
-.filter-stats-panel {
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
-  margin: 20px auto;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  width: 100%;
-}
-
-.stats-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
-}
-
-.stats-header h3 {
-  margin: 0;
-  color: #2c3e50;
-}
-
-.export-btn, .charts-btn {
-  background: #4CAF50;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background 0.2s;
-  margin-top: 10px;
-}
-
-.export-btn:hover, .charts-btn:hover {
-  background: #45a049;
-}
-
-.charts-btn {
-  margin-left: 10px;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 15px;
-  margin-bottom: 20px;
-}
-
-.stat-item {
-  display: flex;
-  justify-content: space-between;
-  padding: 10px;
-  background: #f8f9fa;
-  border-radius: 6px;
-}
-
-.stat-item span:first-child {
-  color: #666;
-}
-
-.stat-item span:last-child {
-  font-weight: bold;
-  color: #4CAF50;
-}
-
-.current-filter {
-  background: #e3f2fd;
-  padding: 15px;
-  border-radius: 8px;
-}
-
-.current-filter h4 {
-  margin: 0 0 8px 0;
-  color: #1976D2;
-}
-
-.current-filter p {
-  margin: 4px 0;
-  color: #424242;
-}
-
-.error-panel {
-  background: #ffebee;
-  border: 1px solid #f44336;
-  border-radius: 8px;
-  padding: 20px;
-  margin: 20px auto;
-  text-align: center;
-  width: 100%;
-}
-
-.error-panel h3 {
-  color: #d32f2f;
-  margin-bottom: 10px;
-}
-
-.error-panel p {
-  color: #666;
-  margin-bottom: 15px;
-}
-
-/* Ranking panel - ocupa todo el ancho disponible */
 .ranking-panel {
   display: flex;
   flex-direction: column;
   height: 1040px;
   width: 100%;
-
 }
 
-/* Ranking panel: Header */
 .header-ranking-panel {
   display: flex;
   flex-direction: row; 
@@ -727,18 +557,11 @@ h2 {
   height: 80%;
 }
 
-/* Ranking panel: Body */
 .body-ranking-panel {
   height: 100%;
   width: 100%;
 }
 
-.slider-ranking-panel {
-  height: 100%;
-  width: 100%;
-}
-
-/* Media Queries para responsive */
 @media (max-width: 1400px) {
   .map-and-charts-wrapper {
     flex-direction: column;
@@ -763,8 +586,7 @@ h2 {
     height: auto;
   }
   
-  .filters-column,
-  .toggles-column {
+  .filters-column {
     width: 100%;
     max-width: 100%;
     justify-content: center;

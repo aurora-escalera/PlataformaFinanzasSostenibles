@@ -1,8 +1,9 @@
 <!-- src/modules/charts/components/ChartsComponent.vue -->
 <template>
-  <div class="charts-wrapper">
+  <div class="charts-wrapper" :class="{ 'single-card': showingSingleCard }">
     <!-- CARD 1: PRESUPUESTOS -->
-    <div class="chart-card">
+    <!-- ✅ NUEVO: Solo visible si no hay variable O si variable es PS o PIC -->
+    <div v-if="!selectedVariable || selectedVariable.key === 'PS' || selectedVariable.key === 'PIC'" class="chart-card">
       <div class="chart-card-header">
         <h4 class="card-title">{{ selectedState ? `Presupuestos - ${selectedState}` : 'Selecciona un estado' }}</h4>
       </div>
@@ -66,7 +67,8 @@
     </div>
 
     <!-- CARD 2: INGRESOS -->
-    <div class="chart-card">
+    <!-- ✅ NUEVO: Solo visible si no hay variable O si variable es IS o IIC -->
+    <div v-if="!selectedVariable || selectedVariable.key === 'IS' || selectedVariable.key === 'IIC'" class="chart-card">
       <div class="chart-card-header">
         <h4 class="card-title">Ingresos</h4>
       </div>
@@ -147,10 +149,21 @@ const props = defineProps({
     type: String,
     default: null
   },
+  // ✅ NUEVA PROP: Variable seleccionada
+  selectedVariable: {
+    type: Object,
+    default: null
+  },
   ifssData: {
     type: Object,
     default: () => ({})
   }
+})
+
+// ✅ NUEVO: Computed para saber si solo se muestra una card
+const showingSingleCard = computed(() => {
+  if (!props.selectedVariable) return false
+  return true // Si hay variable seleccionada, solo se muestra una card
 })
 
 // ✅ Composable para obtener datos de Google Sheets
@@ -378,7 +391,6 @@ const ingresosData = computed(() => {
   return result
 })
 
-// ✅ FUNCIÓN DE DIAGNÓSTICO CON LOGGING MEJORADO
 // ✅ FUNCIÓN DE DIAGNÓSTICO CON LOGGING MEJORADO
 const calculateDonutData = (row, sectorsConfig, totalValue, debugLabel = '') => {
   console.log(`\n🔍 ===== CALCULANDO DONA ${debugLabel} =====`)
@@ -852,6 +864,17 @@ const variablesIngresosCarbono = [
   gap: 20px;
   width: 100%;
   height: 100%;
+}
+
+/* ✅ NUEVO: Cuando solo hay una card, centrarla verticalmente */
+.charts-wrapper.single-card {
+  align-items: center;
+}
+
+/* ✅ NUEVO: La card dentro del wrapper de una sola card ocupa 50% del height */
+.charts-wrapper.single-card .chart-card {
+  height: 50%;
+  max-height: 50%;
 }
 
 /* Card estilo ranking-panel */

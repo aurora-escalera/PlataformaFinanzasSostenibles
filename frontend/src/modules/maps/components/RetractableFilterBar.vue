@@ -40,7 +40,7 @@
                 @wheel.prevent="handleDropdownScroll"
               >
                 <div 
-                  @click="() => { console.log('🖱️ Click en: Todas'); selectEntity(null); }"
+                  @click="selectEntity(null)"
                   class="dropdown-option"
                   :class="{ 'selected': !selectedEntity }"
                 >
@@ -49,7 +49,7 @@
                 <div 
                   v-for="entity in filteredEntities" 
                   :key="entity.name"
-                  @click="() => { console.log('🖱️ Click en:', entity.name); selectEntity(entity.name); }"
+                  @click="selectEntity(entity.name)"
                   class="dropdown-option"
                   :class="{ 'selected': selectedEntity === entity.name }"
                 >
@@ -92,7 +92,7 @@
           </div>
         </div>
 
-        <!-- Filtro Variable SIMPLIFICADO -->
+        <!-- Filtro Variable CON LAS 4 OPCIONES + TODAS -->
         <div class="filter-group">
           <label class="filter-label">Variable</label>
           <div class="filter-dropdown">
@@ -102,28 +102,56 @@
               :class="{ 'active': activeDropdown === 'variable' }"
             >
               <span class="dropdown-icon">📊</span>
-              <span class="dropdown-text">IFSS Total</span>
+              <span class="dropdown-text">{{ getVariableLabel() }}</span>
               <span class="dropdown-arrow">▼</span>
             </button>
             
             <!-- Dropdown de variables -->
-            <div v-if="activeDropdown === 'variable'" class="dropdown-menu">
+            <div v-if="activeDropdown === 'variable'" class="dropdown-menu variable-menu">
               <div class="dropdown-options">
+                <!-- Todas -->
                 <div 
-                  @click="selectVariable(defaultVariable)"
-                  class="dropdown-option selected"
+                  @click="selectVariable(null)"
+                  class="dropdown-option"
+                  :class="{ 'selected': !selectedVariable }"
                 >
-                  <span>IFSS Total</span>
-                  <span class="variable-description">Índice completo de finanzas sostenibles</span>
+                  <span>Todas</span>
                 </div>
-                <!-- Futuras variables cuando tengas más datos -->
-                <div class="dropdown-option disabled">
-                  <span>Financiamiento Verde</span>
-                  <span class="variable-description">Próximamente</span>
+                
+                <!-- Presupuestos Sostenibles (PS) -->
+                <div 
+                  @click="selectVariable(variables.PS)"
+                  class="dropdown-option"
+                  :class="{ 'selected': selectedVariable?.key === 'PS' }"
+                >
+                  <span>Presupuestos Sostenibles (PS)</span>
                 </div>
-                <div class="dropdown-option disabled">
-                  <span>Transparencia</span>
-                  <span class="variable-description">Próximamente</span>
+                
+                <!-- Ingresos Intensivos en Carbono (IIC) -->
+                <div 
+                  @click="selectVariable(variables.IIC)"
+                  class="dropdown-option"
+                  :class="{ 'selected': selectedVariable?.key === 'IIC' }"
+                >
+                  <span>Ingresos Intensivos en Carbono (IIC)</span>
+                </div>
+                
+                <!-- Presupuestos Intensivos en Carbono (PIC) -->
+                <div 
+                  @click="selectVariable(variables.PIC)"
+                  class="dropdown-option"
+                  :class="{ 'selected': selectedVariable?.key === 'PIC' }"
+                >
+                  <span>Presupuestos Intensivos en Carbono (PIC)</span>
+                </div>
+                
+                <!-- Ingresos Sostenibles (IS) -->
+                <div 
+                  @click="selectVariable(variables.IS)"
+                  class="dropdown-option"
+                  :class="{ 'selected': selectedVariable?.key === 'IS' }"
+                >
+                  <span>Ingresos Sostenibles (IS)</span>
                 </div>
               </div>
             </div>
@@ -131,15 +159,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Overlay para cerrar dropdowns - COMENTADO TEMPORALMENTE PARA DEBUG -->
-    <!--
-    <div 
-      v-if="activeDropdown"
-      @click="closeAllDropdowns"
-      class="dropdown-overlay"
-    ></div>
-    -->
   </div>
 </template>
 
@@ -182,13 +201,41 @@ const availableYears = ref([
   '2023', '2022', '2021', '2020', '2019'
 ])
 
-// Variable por defecto
-const defaultVariable = ref({
-  key: 'ifss_total',
-  label: 'IFSS Total',
-  description: 'Índice completo de finanzas sostenibles',
-  field: 'value'
-})
+// Definición de las 4 variables
+const variables = {
+  PS: {
+    key: 'PS',
+    label: 'Presupuestos Sostenibles (PS)',
+    description: 'Presupuestos Sostenibles',
+    category: 'presupuestos',
+    barVariables: ['PS', 'PT'],
+    donutType: 'PS'
+  },
+  IIC: {
+    key: 'IIC',
+    label: 'Ingresos Intensivos en Carbono (IIC)',
+    description: 'Ingresos Intensivos en Carbono',
+    category: 'ingresos',
+    barVariables: ['IIC', 'IT'],
+    donutType: 'IIC'
+  },
+  PIC: {
+    key: 'PIC',
+    label: 'Presupuestos Intensivos en Carbono (PIC)',
+    description: 'Presupuestos Intensivos en Carbono',
+    category: 'presupuestos',
+    barVariables: ['PIC', 'PT'],
+    donutType: 'PIC'
+  },
+  IS: {
+    key: 'IS',
+    label: 'Ingresos Sostenibles (IS)',
+    description: 'Ingresos Sostenibles',
+    category: 'ingresos',
+    barVariables: ['IS', 'IT'],
+    donutType: 'IS'
+  }
+}
 
 // Computed
 const filteredEntities = computed(() => {
@@ -199,6 +246,12 @@ const filteredEntities = computed(() => {
     entity.name.toLowerCase().includes(search)
   )
 })
+
+// Función para obtener el label de la variable seleccionada
+const getVariableLabel = () => {
+  if (!selectedVariable.value) return 'Todas'
+  return selectedVariable.value.label
+}
 
 // Función para manejar el scroll en el dropdown
 const handleDropdownScroll = (event) => {
@@ -258,19 +311,14 @@ const closeAllDropdowns = () => {
 const selectEntity = (entityName) => {
   console.log('=== FILTRO: Entidad seleccionada ===', entityName)
   selectedEntity.value = entityName
-  
-  console.log('=== FILTRO: Emitiendo entity-change ===')
   emit('entity-change', entityName)
-  
-  console.log('=== FILTRO: Llamando emitFiltersChange ===')
   emitFiltersChange()
-  
   entitySearch.value = ''
   closeAllDropdowns()
-  console.log('=== FILTRO: selectEntity completado ===')
 }
 
 const selectYear = (year) => {
+  console.log('=== FILTRO: Año seleccionado ===', year)
   selectedYear.value = year
   emit('year-change', year)
   emitFiltersChange()
@@ -278,6 +326,7 @@ const selectYear = (year) => {
 }
 
 const selectVariable = (variable) => {
+  console.log('=== FILTRO: Variable seleccionada ===', variable)
   selectedVariable.value = variable
   emit('variable-change', variable)
   emitFiltersChange()
@@ -298,7 +347,6 @@ const emitFiltersChange = () => {
 onMounted(() => {
   console.log('✅ RetractableFilterBar montado')
   console.log('✅ Entidades recibidas:', props.entities.length)
-  selectedVariable.value = defaultVariable.value
   emitFiltersChange()
 })
 </script>
@@ -309,16 +357,16 @@ onMounted(() => {
   left: 19.6px;
   top: 0px;
   width: 100%;
-  height: 90px;
+  height: 110px;
   margin: 0;
   padding: 0;
-  z-index: 1;
+  z-index: 99;
 }
 
 .filter-bar {
   background: #053759;
   color: white;
-  padding: 5px 24px;
+  padding: 8px 24px;
   border-radius: 7px;
   box-shadow: 0 4px 20px rgba(44, 82, 130, 0.3);
   transition: transform 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
@@ -341,14 +389,14 @@ onMounted(() => {
 .filter-content {
   display: flex;
   top: 100px;
-  gap: 24px;
+  gap: 32px;
   flex-wrap: wrap;
   justify-content: center;
 }
 
 .filter-group {
   position: relative;
-  min-width: 100px;
+  min-width: 140px;
   flex: 1;
   text-align: center;
   display: flex;
@@ -359,7 +407,7 @@ onMounted(() => {
 .filter-group::after {
   content: '|';
   position: absolute;
-  right: -26px;
+  right: -32px;
   top: 32%;
   transform: translateY(-100%);
   color: rgba(255, 255, 255, 0.6);
@@ -371,9 +419,9 @@ onMounted(() => {
 
 .filter-label {
   display: block;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 400;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   color: #e2e8f0;
   letter-spacing: 0.5px; 
 }
@@ -384,11 +432,11 @@ onMounted(() => {
 
 .dropdown-button {
   opacity: 80%;
-  width: 120%;
+  width: 135%;
   background: rgba(255, 255, 255, 0.95);
   border: 2px solid rgba(255, 255, 255, 0.3);
   color: hsl(218, 23%, 23%);
-  padding: 0px 3px;
+  padding: 2px 6px;
   border-radius: 25px;
   cursor: pointer;
   display: flex;
@@ -410,15 +458,15 @@ onMounted(() => {
 
 .dropdown-icon {
   font-size: 16px;
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   background: #4a5568;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .dropdown-text {
@@ -429,6 +477,7 @@ onMounted(() => {
   text-overflow: ellipsis;
   color: #4a5568;
   font-weight: 500;
+  font-size: 13px;
 }
 
 .dropdown-arrow {
@@ -449,11 +498,15 @@ onMounted(() => {
   background: white;
   border-radius: 8px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-  z-index: 9999;
   margin-top: 8px;
   max-height: none;
   overflow: visible;
   animation: dropdownFadeIn 0.2s ease;
+}
+
+.variable-menu {
+  width: 280%;
+  left: -90%;
 }
 
 @keyframes dropdownFadeIn {
@@ -552,33 +605,10 @@ onMounted(() => {
   border-bottom: none;
 }
 
-.entity-value {
-  font-size: 12px;
-  color: #4caf50;
-  font-weight: 600;
-}
-
-.variable-description {
-  font-size: 11px;
-  color: #718096;
-  max-width: 150px;
-  text-align: right;
-}
-
 .year-note {
   font-size: 10px;
   color: #999;
   font-style: italic;
-}
-
-.dropdown-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 999;
-  background: transparent;
 }
 
 @media (max-width: 768px) {
@@ -592,11 +622,16 @@ onMounted(() => {
   }
   
   .filter-bar-container {
-    height: 80px;
+    height: 100px;
   }
   
   .filter-bar {
     transform: translateY(calc(100% - 60px));
+  }
+  
+  .variable-menu {
+    width: 180%;
+    left: -40%;
   }
 }
 </style>
