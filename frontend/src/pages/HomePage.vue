@@ -51,13 +51,9 @@
             @navigate-regional="handleIFSRegionalClick"
             @navigate-federal="handleDatosFederalesClick"
           />
-        
-        <!-- Botón retráctil - Versión simplificada que actúa como trigger -->
-        <div 
-          class="retractable-trigger"
-          @mouseenter="isRetractableExpanded = true"
-        >
-          <div class="expand-retractable-btn">+</div>
+        <!-- Botón retráctil -->
+        <div class="retractable-view">
+          <div class="expand-retractable-btn" @click="handleDatosCualitativosClick">+</div>
         </div>
 
         <!-- RANKING CHART SECTION - Al lado del mapa -->
@@ -114,56 +110,6 @@
       </div>
     </div>
   </div>
-  
-  <!-- ✅ Panel expandible usando Teleport para sacarlo del flujo -->
-  <Teleport to="body">
-    <transition name="fade">
-      <div 
-        v-if="isRetractableExpanded"
-        class="retractable-overlay"
-        @mouseleave="isRetractableExpanded = false"
-      >
-        <div class="retractable-panel">
-          <div class="expand-retractable-btn-overlay" @click="isRetractableExpanded = false">×</div>
-          
-          <div class="retractable-content">
-            <h3>Datos Cualitativos</h3>
-            <p>Explora análisis detallados y reportes sobre finanzas sostenibles</p>
-            <div class="retractable-options">
-              <button class="retractable-option-btn" @click="handleDatosCualitativosClick">
-                <span>📊</span>
-                <div class="btn-text">
-                  <strong>Análisis Completo</strong>
-                  <small>Ver todos los datos cualitativos</small>
-                </div>
-              </button>
-              <button class="retractable-option-btn">
-                <span>📈</span>
-                <div class="btn-text">
-                  <strong>Tendencias</strong>
-                  <small>Análisis de evolución temporal</small>
-                </div>
-              </button>
-              <button class="retractable-option-btn">
-                <span>📋</span>
-                <div class="btn-text">
-                  <strong>Reportes</strong>
-                  <small>Documentos y resúmenes</small>
-                </div>
-              </button>
-              <button class="retractable-option-btn">
-                <span>🎯</span>
-                <div class="btn-text">
-                  <strong>Indicadores Clave</strong>
-                  <small>KPIs de sostenibilidad</small>
-                </div>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </transition>
-  </Teleport>
 </template>
 
 <script setup>
@@ -248,9 +194,6 @@ const {
 
 const router = useRouter()
 
-// ✅ Estado para controlar expansión del retractable
-const isRetractableExpanded = ref(false)
-
 // Data para entidades (puedes ajustar según tus necesidades)
 const entitiesData = ref([])
 
@@ -307,7 +250,6 @@ const handleDatosFederalesClick = () => {
 
 const handleDatosCualitativosClick = () => {
   console.log('Navegando a cualitativos...')
-  isRetractableExpanded.value = false // Cerrar el panel
   router.push('/finanzas/cualitativos')
 }
 
@@ -410,8 +352,7 @@ onMounted(async () => {
   box-sizing: border-box;
 }
 
-/* ✅ Trigger del retractable (botón pequeño) */
-.retractable-trigger {
+.retractable-view {
   position: relative;
   width: 70px;
   height: 600px;
@@ -420,13 +361,6 @@ onMounted(async () => {
   flex-shrink: 0;
   z-index: 1;
   transform: translateX(-55px);
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.retractable-trigger:hover {
-  transform: translateX(-50px);
-  box-shadow: 0 4px 16px rgba(5, 55, 89, 0.3);
 }
 
 .expand-retractable-btn {
@@ -455,159 +389,6 @@ onMounted(async () => {
     inset 0 -2px 4px rgba(255, 255, 255, 0.15),
     0 1px 2px rgba(0, 0, 0, 0.3);
   transform: translateY(1px);
-}
-
-/* ✅ Overlay que cubre toda la pantalla */
-.retractable-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 9999; /* Por encima de TODO */
-  background: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(2px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-
-/* ✅ Panel expandido (sobre el overlay) */
-.retractable-panel {
-  position: relative;
-  width: 100%;
-  max-width: 450px;
-  height: auto;
-  max-height: 90vh;
-  background: linear-gradient(135deg, #053759 0%, #064d7a 100%);
-  border-radius: 20px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-  overflow: hidden;
-  animation: slideIn 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
-}
-
-@keyframes slideIn {
-  from {
-    transform: scale(0.9) translateY(50px);
-    opacity: 0;
-  }
-  to {
-    transform: scale(1) translateY(0);
-    opacity: 1;
-  }
-}
-
-.expand-retractable-btn-overlay {
-  position: absolute;
-  font-size: 28px;
-  color: white;
-  right: 20px;
-  top: 20px;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.15);
-  transition: all 0.2s ease;
-  line-height: 1;
-  font-weight: 300;
-  z-index: 10;
-}
-
-.expand-retractable-btn-overlay:hover {
-  background: rgba(255, 255, 255, 0.25);
-  transform: rotate(90deg);
-}
-
-/* ✅ Contenido del retractable */
-.retractable-content {
-  padding: 50px 40px 40px;
-  color: white;
-  overflow-y: auto;
-  max-height: 90vh;
-}
-
-.retractable-content h3 {
-  font-size: 28px;
-  margin-bottom: 15px;
-  font-weight: 700;
-  letter-spacing: -0.5px;
-  background: linear-gradient(135deg, #ffffff 0%, #e0f2fe 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.retractable-content p {
-  font-size: 15px;
-  opacity: 0.85;
-  line-height: 1.6;
-  margin-bottom: 30px;
-  color: #e0f2fe;
-}
-
-.retractable-options {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.retractable-option-btn {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: white;
-  padding: 18px 20px;
-  border-radius: 12px;
-  cursor: pointer;
-  font-size: 14px;
-  text-align: left;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  backdrop-filter: blur(10px);
-}
-
-.retractable-option-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.4);
-  transform: translateX(8px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-}
-
-.retractable-option-btn span:first-child {
-  font-size: 24px;
-  flex-shrink: 0;
-}
-
-.btn-text {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.btn-text strong {
-  font-size: 15px;
-  font-weight: 600;
-  display: block;
-}
-
-.btn-text small {
-  font-size: 12px;
-  opacity: 0.7;
-  font-weight: 400;
-}
-
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.3s ease;
-}
-
-.fade-enter-from, .fade-leave-to {
-  opacity: 0;
 }
 
 /* Charts section - usa flex para ocupar el espacio restante */
@@ -912,6 +693,7 @@ onMounted(async () => {
   flex-direction: column;
   height: 1040px;
   width: 100%;
+
 }
 
 /* Ranking panel: Header */
@@ -963,20 +745,15 @@ h2 {
     height: auto;
   }
   
-  .retractable-trigger {
+  .retractable-view {
     width: 100%;
     height: 60px;
-    transform: translateX(0);
   }
   
   .charts-section {
     width: 100%;
     height: auto;
     min-height: 400px;
-  }
-  
-  .retractable-panel {
-    max-width: 90%;
   }
 }
 
@@ -1017,19 +794,6 @@ h2 {
   
   h2 {
     font-size: 14px;
-  }
-  
-  .retractable-panel {
-    max-width: 95%;
-    border-radius: 15px;
-  }
-  
-  .retractable-content {
-    padding: 40px 25px 30px;
-  }
-  
-  .retractable-content h3 {
-    font-size: 24px;
   }
 }
 </style>
