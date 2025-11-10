@@ -109,7 +109,7 @@
       :width="mapConfig.width" 
       :height="mapConfig.height"
       class="mexico-map"
-      viewBox="0 0 591.8 344.3"
+      viewBox="55 32 485 275"
       preserveAspectRatio="xMidYMid meet"
       @click="handleSvgClick"
     >
@@ -464,9 +464,10 @@ const tooltipStyle = computed(() => {
 /* Porcentaje dinamico */
 .hover-info-box {
   position: absolute;
-  height: 50px;
-  top: 40%;
-  left: 10%;
+  height: 70px;
+  width: 280px;
+  top: 65%;
+  left: 8%;
   z-index: 15;
   backdrop-filter: blur(10px);
   font-family: Arial, Helvetica, sans-serif;
@@ -477,19 +478,19 @@ const tooltipStyle = computed(() => {
 /* Barra de colores */
 .color-legend {
   position: absolute;
-  bottom: 20px;
-  left: 50%;
+  bottom: 60px;
+  left: 16%;
   transform: translateX(-50%);
   background: rgba(255, 255, 255, 0.95);
   border: none;
   border-radius: 8px;
   z-index: 10;
   backdrop-filter: blur(5px);
-  width: 130px;
+  width: 230px;
 }
 
 .location-label {
-  font-size: 10px;
+  font-size: 15px;
   color: #666;
   font-weight: 100;
   margin-bottom: 8px;
@@ -498,7 +499,7 @@ const tooltipStyle = computed(() => {
 }
 
 .value-display {
-  font-size: 30px;
+  font-size: 50px;
   font-weight: 300;
   color: #2c3e50;
   line-height: 1;
@@ -515,8 +516,8 @@ const tooltipStyle = computed(() => {
   border-radius: 4px;
   overflow: hidden;
   border: 0px solid rgba(0,0,0,0.1);
-  height: 40px;
-  width: 160px;
+  height: 30px;
+  width: 360px;
 }
 
 .legend-item-horizontal {
@@ -531,7 +532,7 @@ const tooltipStyle = computed(() => {
 
 .legend-color-horizontal {
   width: 100%;
-  height: 5px;
+  height: 100%;
   border: none;
   padding-bottom: 10px;
 }

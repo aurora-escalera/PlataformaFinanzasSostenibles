@@ -1,15 +1,18 @@
 <!-- src/modules/charts/components/ChartsComponent.vue -->
 <template>
   <div class="charts-wrapper">
-    <!-- FILA 1: PRESUPUESTOS -->
-    <div class="chart-section-row">
-      <h4 class="section-title">{{ selectedState ? `Presupuestos - ${selectedState}` : 'Selecciona un estado' }}</h4>
-      <div class="chart-row-content">
+    <!-- CARD 1: PRESUPUESTOS -->
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <h4 class="card-title">{{ selectedState ? `Presupuestos - ${selectedState}` : 'Selecciona un estado' }}</h4>
+      </div>
+      
+      <div class="chart-card-body">
         <!-- Barra izquierda -->
         <div class="chart-col-bar">
           <BarChart 
             :data="presupuestosData"
-            :title="selectedYear ? `Proporción del gasto asignado a Presupuestos Intensivos en Carbono (PIC) y Presupuestos Sostenibles (PS) con respecto del gasto total en millones de pesos (MXN) en- ${selectedYear}` : 'Proporción del gasto asignado a Presupuestos Intensivos en Carbono (PIC) y Presupuestos Sostenibles (PS) con respecto del gasto total en millones de pesos (MXN)'"
+            :title="selectedYear ? `Presupuestos Intensivos en Carbono (PIC) y Presupuestos Sostenibles (PS) con respecto del gasto total en- ${selectedYear}` : 'Presupuestos Intensivos en Carbono (PIC) y Presupuestos Sostenibles (PS) con respecto del gasto total'"
           />
         </div>
         
@@ -37,11 +40,13 @@
       </div>
     </div>
 
-    <!-- FILA 2: INGRESOS -->
-    <div class="chart-section-row">
-      <h4 class="section-title">Ingresos</h4>
+    <!-- CARD 2: INGRESOS -->
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <h4 class="card-title">Ingresos</h4>
+      </div>
       
-      <div class="chart-row-content">
+      <div class="chart-card-body">
         <!-- Barra izquierda -->
         <div class="chart-col-bar">
           <BarChart 
@@ -166,42 +171,63 @@ const donutIngresosCarbono = computed(() => {
 .charts-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 20px;
   width: 100%;
+  height: 100%;
 }
 
-.chart-section-row {
+/* Card estilo ranking-panel */
+.chart-card {
   display: flex;
   flex-direction: column;
-  gap: 12px;
   width: 100%;
+  height: 100%;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.182);
+  box-sizing: border-box;
 }
 
-.section-title {
-  margin: 0;
-  padding: 0px 0 0px;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+/* Header estilo header-ranking-panel */
+.chart-card-header {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
   border-bottom: 1px solid #e0e0e0;
-  font-size: 9px;
-  font-weight: 200;
-  color: #6b7280;
 }
 
-.chart-row-content {
+.card-title {
+  padding: 4px 0 2px 0;
+  text-align: left;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 100;
+  color: #535353;
+  font-size: 19px;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+/* Body de la card */
+.chart-card-body {
   display: flex;
   flex-direction: row;
   gap: 10px;
-  padding: 0px 8px 0px 8px;
   width: 100%;
-  height: 127.5px;
+  height: 100%;
+  flex: 1;
 }
 
 .chart-col-bar {
   flex: 1;
+  height: 100%;
   min-width: 0;
 }
 
-/*Container for donuts first row */
+/* Container for donuts */
 .chart-col-donuts {
   flex: 1;
   min-width: 0;
@@ -225,11 +251,11 @@ const donutIngresosCarbono = computed(() => {
   text-align: center;
   letter-spacing: -0.5px;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-padding-bottom: 10px;
+  padding-bottom: 10px;
 }
 
 @media (max-width: 1000px) {
-  .chart-row-content {
+  .chart-card-body {
     flex-direction: column;
   }
   

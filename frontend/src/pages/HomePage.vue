@@ -48,7 +48,7 @@
             :getStateColor="getStateColor"
             :getStateInfo="getStateInfo"
             :getIFSSLabel="getIFSSLabel"
-            :show-info-card="false"
+            :show-info-card="true"
             @state-click="handleStateClickWithEmit"
             @state-hover="handleStateHover"
             @state-leave="handleStateLeave"
@@ -99,7 +99,6 @@
       <!-- Panel de Charts Component - Abajo -->
       <div v-if="selectedState" class="ranking-panel">
         <div class="header-ranking-panel">
-          <h2>Análisis de {{ selectedState }}</h2>
           <div class="ranking-hamburger-menu">
             <img src="/public/icons/hamburger.png" alt="hamburger-menu" class="hamburger-icon">
           </div>
@@ -696,34 +695,28 @@ onMounted(async () => {
 .ranking-panel {
   display: flex;
   flex-direction: column;
-  height: 1540px;
+  height: 1040px;
   width: 100%;
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 12px;
-  padding: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.182);
-  margin-top: 20px;
-  box-sizing: border-box;
+
 }
 
 /* Ranking panel: Header */
 .header-ranking-panel {
   display: flex;
   flex-direction: row; 
-  height: 3%;
+  height: 1%;
   width: 100%;
-  padding: 10px;
-  margin-bottom: 10px;
+  padding: 0px;
+  margin-bottom: 0px;
 }
 
 h2 {
   padding: 4px 0 2px 0;
   text-align: center;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-weight: 100;
+  font-weight: 200;
   color: #535353;
-  font-size: 12px;
+  font-size: 20px;
   margin: 0;  
   flex-shrink: 0;
   justify-content: space-between; 
@@ -740,7 +733,7 @@ h2 {
 
 /* Ranking panel: Body */
 .body-ranking-panel {
-  height: 97%;
+  height: 100%;
   width: 100%;
 }
 
