@@ -29,8 +29,9 @@
         </div>
         
         <!-- Donas derecha -->
-        <div v-if="!loading && !error" class="chart-col-donuts">
-          <div class="donut-item">
+        <div v-if="!loading && !error" class="chart-col-donuts" :class="{ 'single-donut': showingSingleDonutPresupuestos }">
+          <!-- ✅ Dona PS: Solo visible si no hay variable O si variable es PS -->
+          <div v-if="!selectedVariable || selectedVariable.key === 'PS'" class="donut-item">
             <div class="donut-header">
               <h5 class="donut-title">Análisis comparativo de los sectores que conforman Presupuestos Sostenibles (PS)</h5>
             </div>
@@ -46,7 +47,8 @@
             />
             <div v-else class="no-data-message">Sin datos disponibles</div>
           </div>
-          <div class="donut-item">
+          <!-- ✅ Dona PIC: Solo visible si no hay variable O si variable es PIC -->
+          <div v-if="!selectedVariable || selectedVariable.key === 'PIC'" class="donut-item">
             <div class="donut-header">
               <h5 class="donut-title">Análisis comparativo de los sectores que conforman Presupuestos Intensivos en Carbono (PIC)</h5>
             </div>
@@ -94,8 +96,9 @@
         </div>
         
         <!-- Donas derecha -->
-        <div v-if="!loading && !error" class="chart-col-donuts">
-          <div class="donut-item">
+        <div v-if="!loading && !error" class="chart-col-donuts" :class="{ 'single-donut': showingSingleDonutIngresos }">
+          <!-- ✅ Dona IS: Solo visible si no hay variable O si variable es IS -->
+          <div v-if="!selectedVariable || selectedVariable.key === 'IS'" class="donut-item">
             <div class="donut-header">
               <h5 class="donut-title">Análisis comparativo de los sectores que conforman Ingresos Sostenibles (IS)</h5>
             </div>
@@ -111,7 +114,8 @@
             />
             <div v-else class="no-data-message">Sin datos disponibles</div>
           </div>
-          <div class="donut-item">
+          <!-- ✅ Dona IIC: Solo visible si no hay variable O si variable es IIC -->
+          <div v-if="!selectedVariable || selectedVariable.key === 'IIC'" class="donut-item">
             <div class="donut-header">
               <h5 class="donut-title">Análisis comparativo de los sectores que conforman Ingresos Intensivos en Carbono (IIC)</h5>
             </div>
@@ -164,6 +168,18 @@ const props = defineProps({
 const showingSingleCard = computed(() => {
   if (!props.selectedVariable) return false
   return true // Si hay variable seleccionada, solo se muestra una card
+})
+
+// ✅ NUEVO: Computed para saber si en la card de Presupuestos solo hay una dona visible
+const showingSingleDonutPresupuestos = computed(() => {
+  if (!props.selectedVariable) return false
+  return props.selectedVariable.key === 'PS' || props.selectedVariable.key === 'PIC'
+})
+
+// ✅ NUEVO: Computed para saber si en la card de Ingresos solo hay una dona visible
+const showingSingleDonutIngresos = computed(() => {
+  if (!props.selectedVariable) return false
+  return props.selectedVariable.key === 'IS' || props.selectedVariable.key === 'IIC'
 })
 
 // ✅ Composable para obtener datos de Google Sheets
@@ -834,6 +850,14 @@ watch(() => props.selectedState, (newState, oldState) => {
   console.log(`===========================\n`)
 }, { immediate: true })
 
+// ✅ Watch para ver cuando cambia la variable seleccionada
+watch(() => props.selectedVariable, (newVariable, oldVariable) => {
+  console.log(`\n🔔 ===== VARIABLE CAMBIÓ =====`)
+  console.log(`   De:`, oldVariable)
+  console.log(`   A:`, newVariable)
+  console.log(`===========================\n`)
+}, { immediate: true })
+
 // Variables para filtros de Ingresos Intensivos en Carbono
 const variablesIngresosCarbono = [
   {
@@ -941,6 +965,16 @@ const variablesIngresosCarbono = [
   border-radius: 12px;
 }
 
+/* ✅ NUEVO: Cuando solo hay una dona, centrarla y quitar el borde derecho */
+.chart-col-donuts.single-donut {
+  justify-content: center;
+}
+
+.chart-col-donuts.single-donut .donut-item {
+  border-right: none !important;
+  max-width: 100%;
+}
+
 .donut-item {
   display: flex;
   flex-direction: column;
@@ -955,6 +989,11 @@ const variablesIngresosCarbono = [
 
 .donut-item:first-child {
   border-right: 1px solid #e5e7eb;
+}
+
+/* ✅ NUEVO: Si solo hay una dona (última y única), no tiene borde */
+.donut-item:first-child:last-child {
+  border-right: none;
 }
 
 .loading-container,
