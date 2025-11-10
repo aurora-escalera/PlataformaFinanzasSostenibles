@@ -373,6 +373,7 @@ const transformSingleRowToBarChart = (row, mapping) => {
 // ✅ Transformar datos para BarChart
 const presupuestosData = computed(() => {
   console.log('🔄 Calculando presupuestosData...')
+  console.log('📊 Variable seleccionada:', props.selectedVariable?.key)
   
   if (!filteredPresupuestosData.value.length) {
     console.log('⚠️ No hay datos filtrados de presupuestos')
@@ -384,13 +385,36 @@ const presupuestosData = computed(() => {
   console.log('📊 Fila de presupuestos a transformar:', row)
   
   const result = transformSingleRowToBarChart(row, presupuestosMapping)
-  console.log('✅ presupuestosData transformado:', result)
+  console.log('📊 Variables ANTES del filtro:', result.variables.map(v => ({ key: v.key, label: v.label, value: v.value })))
+  
+  // ✅ NUEVO: Filtrar variables según selectedVariable usando ÍNDICES
+  if (props.selectedVariable && result.variables.length >= 3) {
+    console.log('🔍 Filtrando variables para:', props.selectedVariable.key)
+    
+    // Asumiendo que el orden es: [0] PT, [1] PS, [2] PIC
+    if (props.selectedVariable.key === 'PS') {
+      // Solo mantener índices 0 (PT) y 1 (PS)
+      const filtered = [result.variables[0], result.variables[1]].filter(v => v)
+      console.log(`✅ Filtrado PS: Manteniendo ${filtered[0]?.label} y ${filtered[1]?.label}`)
+      result.variables = filtered
+    } else if (props.selectedVariable.key === 'PIC') {
+      // Solo mantener índices 0 (PT) y 2 (PIC)
+      const filtered = [result.variables[0], result.variables[2]].filter(v => v)
+      console.log(`✅ Filtrado PIC: Manteniendo ${filtered[0]?.label} y ${filtered[1]?.label}`)
+      result.variables = filtered
+    }
+    
+    console.log('📊 Variables DESPUÉS del filtro:', result.variables.map(v => ({ key: v.key, label: v.label, value: v.value })))
+  }
+  
+  console.log('✅ presupuestosData transformado y filtrado:', result)
   
   return result
 })
 
 const ingresosData = computed(() => {
   console.log('🔄 Calculando ingresosData...')
+  console.log('📊 Variable seleccionada:', props.selectedVariable?.key)
   
   if (!filteredIngresosData.value.length) {
     console.log('⚠️ No hay datos filtrados de ingresos')
@@ -402,7 +426,29 @@ const ingresosData = computed(() => {
   console.log('📊 Fila de ingresos a transformar:', row)
   
   const result = transformSingleRowToBarChart(row, ingresosMapping)
-  console.log('✅ ingresosData transformado:', result)
+  console.log('📊 Variables ANTES del filtro:', result.variables.map(v => ({ key: v.key, label: v.label, value: v.value })))
+  
+  // ✅ NUEVO: Filtrar variables según selectedVariable usando ÍNDICES
+  if (props.selectedVariable && result.variables.length >= 3) {
+    console.log('🔍 Filtrando variables para:', props.selectedVariable.key)
+    
+    // Asumiendo que el orden es: [0] IT, [1] IS, [2] IIC
+    if (props.selectedVariable.key === 'IS') {
+      // Solo mantener índices 0 (IT) y 1 (IS)
+      const filtered = [result.variables[0], result.variables[1]].filter(v => v)
+      console.log(`✅ Filtrado IS: Manteniendo ${filtered[0]?.label} y ${filtered[1]?.label}`)
+      result.variables = filtered
+    } else if (props.selectedVariable.key === 'IIC') {
+      // Solo mantener índices 0 (IT) y 2 (IIC)
+      const filtered = [result.variables[0], result.variables[2]].filter(v => v)
+      console.log(`✅ Filtrado IIC: Manteniendo ${filtered[0]?.label} y ${filtered[1]?.label}`)
+      result.variables = filtered
+    }
+    
+    console.log('📊 Variables DESPUÉS del filtro:', result.variables.map(v => ({ key: v.key, label: v.label, value: v.value })))
+  }
+  
+  console.log('✅ ingresosData transformado y filtrado:', result)
   
   return result
 })

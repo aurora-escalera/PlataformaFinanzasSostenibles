@@ -61,13 +61,13 @@
       <!-- Si hay estado en hover, mostrar información del estado -->
       <div v-if="hoveredState" class="info-content">
         <div class="location-label">{{ hoveredState }}</div>
-        <div class="value-display">{{ getStateInfo(hoveredState).value || 0 }}%</div>
+        <div class="value-display">IFS: {{ getStateInfo(hoveredState).value || 0 }}</div>
       </div>
       
       <!-- Si no hay estado en hover, mostrar información nacional -->
       <div v-else-if="nationalIFSS" class="info-content">
         <div class="location-label">México</div>
-        <div class="value-display">{{ nationalIFSS.value }}%</div>
+        <div class="value-display">IFS: {{ nationalIFSS.value }}</div>
       </div>
     </div>
 

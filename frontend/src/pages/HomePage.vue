@@ -43,7 +43,7 @@
             :getStateColor="getStateColor"
             :getStateInfo="getStateInfo"
             :getIFSSLabel="getIFSSLabel"
-            :show-info-card="true"
+            :show-info-card="false"
             @state-click="handleStateClickWithEmit"
             @state-hover="handleStateHover"
             @state-leave="handleStateLeave"
@@ -516,8 +516,8 @@ onMounted(async () => {
 
 .filters-column {
   flex: 1;
-  min-width: 300px;
-  max-width: 650px;
+  min-width: 600px;
+  max-width: 850px;
 }
 
 .ranking-panel {
