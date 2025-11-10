@@ -103,9 +103,9 @@ import { ref, computed, watch, onMounted, nextTick } from 'vue'
 
 const props = defineProps({
   data: {
-    type: Object,
+    type: [Object, Array],
     required: true,
-    default: () => ({})
+    default: () => []
   },
   title: {
     type: String,
@@ -113,26 +113,29 @@ const props = defineProps({
   }
 })
 
-// Variables disponibles con sus configuraciones
+// Variables disponibles con sus configuraciones (valores por defecto para compatibilidad)
 const variables = ref([
   {
     key: 'presupuesto_total',
     label: 'Presupuesto Total',
     colorClass: 'gray',
-    value: 0,
-    active: true
-  },
-  {
-    key: 'presupuesto_carbono',
-    label: 'Presupuesto Intensivo en Carbono',
-    colorClass: 'red',
+    color: '#9ca3af',
     value: 0,
     active: false
   },
   {
     key: 'presupuesto_sostenible',
-    label: 'Presupuesto sostenible',
+    label: 'Presupuesto Sostenible',
     colorClass: 'green',
+    color: '#7cb342',
+    value: 0,
+    active: false
+  },
+  {
+    key: 'presupuesto_carbono',
+    label: 'Presupuesto Intensivo en Carbono',
+    colorClass: 'red',
+    color: '#DC143C',
     value: 0,
     active: false
   }
@@ -143,15 +146,79 @@ const barsContainerHeight = ref(300) // Altura por defecto
 const hoveredBar = ref(null)
 const tooltipPosition = ref({ x: 0, y: 0 })
 
-// Inicializar valores desde props.data
-if (props.data.is_amount !== undefined) {
-  variables.value[1].value = props.data.is_amount
+// ✅ NUEVO: Función para inicializar variables desde datos
+const initializeVariablesFromData = () => {
+  console.log('🔄 initializeVariablesFromData llamado')
+  console.log('📦 props.data:', JSON.stringify(props.data, null, 2))
+  
+  // Formato 1: Objeto con variables directamente { variables: [...] }
+  if (props.data && props.data.variables && Array.isArray(props.data.variables)) {
+    console.log('📊 BarChart: Formato { variables: [...] }')
+    console.log('📝 Variables recibidas:', props.data.variables.map(v => ({ key: v.key, value: v.value })))
+    
+    // Reemplazar todas las variables con las que vienen en los datos
+    variables.value = props.data.variables.map(dataVar => ({
+      key: dataVar.key,
+      label: dataVar.label || dataVar.key,
+      colorClass: dataVar.colorClass || 'gray',
+      color: dataVar.color || '#9ca3af',
+      value: dataVar.value || 0,
+      active: false // Iniciar inactivas para animación secuencial
+    }))
+  }
+  // Formato 2: Array con años [{ year: '2020', variables: [...] }]
+  else if (Array.isArray(props.data) && props.data.length > 0) {
+    console.log('📊 BarChart: Formato array con años')
+    
+    const firstYearData = props.data[0]
+    
+    if (firstYearData.variables && Array.isArray(firstYearData.variables)) {
+      variables.value = firstYearData.variables.map(dataVar => ({
+        key: dataVar.key,
+        label: dataVar.label || dataVar.key,
+        colorClass: dataVar.colorClass || 'gray',
+        color: dataVar.color || '#9ca3af',
+        value: dataVar.value || 0,
+        active: false
+      }))
+    }
+  }
+  // Formato 3: Objeto antiguo { is_amount, iic_amount, ... }
+  else if (props.data && typeof props.data === 'object' && !Array.isArray(props.data) && !props.data.variables) {
+    console.log('📊 BarChart: Formato objeto antiguo')
+    
+    // Mantener variables por defecto para compatibilidad
+    if (props.data.is_amount !== undefined) {
+      variables.value[1].value = props.data.is_amount
+    }
+    if (props.data.iic_amount !== undefined) {
+      variables.value[2].value = props.data.iic_amount
+    }
+    variables.value[0].value = variables.value[1].value + variables.value[2].value
+  }
+  
+  console.log('✅ Variables inicializadas:', variables.value.map(v => ({ key: v.key, label: v.label, value: v.value })))
 }
-if (props.data.iic_amount !== undefined) {
-  variables.value[2].value = props.data.iic_amount
-}
-// Calcular presupuesto total como suma
-variables.value[0].value = variables.value[1].value + variables.value[2].value
+
+// Inicializar al montar
+initializeVariablesFromData()
+
+// Reinicializar cuando cambien los datos
+watch(() => props.data, () => {
+  initializeVariablesFromData()
+  // Activar animación secuencial solo si no se ha activado antes
+  if (!hasActivatedOnce.value) {
+    nextTick(() => {
+      activateVariablesSequentially()
+      hasActivatedOnce.value = true
+    })
+  } else {
+    // Si ya se activó antes, activar todas inmediatamente
+    nextTick(() => {
+      variables.value.forEach(v => v.active = true)
+    })
+  }
+}, { deep: true })
 
 // Computed: Variables activas
 const activeVariables = computed(() => {
@@ -231,6 +298,21 @@ const formatValue = (value) => {
   return value.toLocaleString()
 }
 
+// Función para activar variables secuencialmente
+const activateVariablesSequentially = () => {
+  // Delay inicial antes de empezar
+  setTimeout(() => {
+    // Activar cada variable con 600ms de separación
+    variables.value.forEach((variable, index) => {
+      setTimeout(() => {
+        variable.active = true
+      }, index * 600) // 600ms entre cada variable
+    })
+  }, 300) // 300ms de delay inicial
+}
+
+const hasActivatedOnce = ref(false)
+
 // Actualizar altura del contenedor de barras
 const updateBarsContainerHeight = () => {
   if (barsContainerRef.value) {
@@ -251,6 +333,13 @@ onMounted(async () => {
       updateBarsContainerHeight()
     })
     resizeObserver.observe(barsContainerRef.value)
+  }
+  
+  // Activar variables secuencialmente después de montar e inicializar
+  if (!hasActivatedOnce.value && variables.value.length > 0) {
+    await nextTick()
+    activateVariablesSequentially()
+    hasActivatedOnce.value = true
   }
 })
 
@@ -325,6 +414,24 @@ watch(() => props.data, () => {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.filter-btn.active {
+  animation: filterActivate 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes filterActivate {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .filter-btn:hover {

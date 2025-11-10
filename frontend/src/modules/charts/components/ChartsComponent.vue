@@ -8,16 +8,27 @@
       </div>
       
       <div class="chart-card-body">
+        <!-- Loading state -->
+        <div v-if="loading" class="loading-container">
+          <div class="spinner"></div>
+          <p>Cargando datos...</p>
+        </div>
+        
+        <!-- Error state -->
+        <div v-else-if="error" class="error-container">
+          <p>Error: {{ error }}</p>
+        </div>
+        
         <!-- Barra izquierda -->
-        <div class="chart-col-bar">
+        <div v-else class="chart-col-bar">
           <BarChart 
             :data="presupuestosData"
-            :title="selectedYear ? `Presupuestos Intensivos en Carbono (PIC) y Presupuestos Sostenibles (PS) con respecto del gasto total en- ${selectedYear}` : 'Presupuestos Intensivos en Carbono (PIC) y Presupuestos Sostenibles (PS) con respecto del gasto total'"
+            :title="selectedYear ? `Presupuestos Intensivos en Carbono (PIC) y Presupuestos Sostenibles (PS) con respecto del gasto total en ${selectedYear}` : 'Presupuestos Intensivos en Carbono (PIC) y Presupuestos Sostenibles (PS) con respecto del gasto total'"
           />
         </div>
         
         <!-- Donas derecha -->
-        <div class="chart-col-donuts">
+        <div v-if="!loading && !error" class="chart-col-donuts">
           <div class="donut-item">
             <div class="donut-header">
               <h5 class="donut-title">Análisis comparativo de los sectores que conforman Presupuestos Sostenibles (PS)</h5>
@@ -53,8 +64,19 @@
       </div>
       
       <div class="chart-card-body">
+        <!-- Loading state -->
+        <div v-if="loading" class="loading-container">
+          <div class="spinner"></div>
+          <p>Cargando datos...</p>
+        </div>
+        
+        <!-- Error state -->
+        <div v-else-if="error" class="error-container">
+          <p>Error: {{ error }}</p>
+        </div>
+        
         <!-- Barra izquierda -->
-        <div class="chart-col-bar">
+        <div v-else class="chart-col-bar">
           <BarChart 
             :data="ingresosData"
             title="Proporción del gasto asignado a Ingresos"
@@ -62,7 +84,7 @@
         </div>
         
         <!-- Donas derecha -->
-        <div class="chart-col-donuts">
+        <div v-if="!loading && !error" class="chart-col-donuts">
           <div class="donut-item">
             <div class="donut-header">
               <h5 class="donut-title">Análisis comparativo de los sectores que conforman Ingresos Sostenibles (IS)</h5>
@@ -94,12 +116,18 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, watch, onMounted } from 'vue'
+import { useStorageData } from '@/dataConection/useStorageData'
+import { getMapping } from '@/dataConection/storageConfig'
 import BarChart from './BarChart.vue'
 import DonutChart from './DonutChart.vue'
 
 const props = defineProps({
   selectedState: {
+    type: String,
+    default: null
+  },
+  selectedYear: {
     type: String,
     default: null
   },
@@ -109,33 +137,157 @@ const props = defineProps({
   }
 })
 
-// Datos para Presupuestos (Barras)
-const presupuestosData = computed(() => {
-  if (!props.ifssData || !props.ifssData.is_amount) {
-    return {
-      is_amount: 5,
-      is_percentage: 8,
-      iic_amount: 10,
-      iic_percentage: 0
-    }
-  }
-  
-  return {
-    is_amount: props.ifssData.is_amount || 0,
-    is_percentage: props.ifssData.is_percentage || 0,
-    iic_amount: props.ifssData.iic_amount || 0,
-    iic_percentage: props.ifssData.iic_percentage || 0
+// ✅ Composable para obtener datos de Google Sheets
+const { fetchData, transform, loading, error } = useStorageData()
+
+// ✅ Datos crudos desde Google Sheets
+const rawPresupuestosData = ref([])
+const rawIngresosData = ref([])
+
+// ✅ Obtener mappings
+const presupuestosMapping = getMapping('chartsPresupuestos')
+const ingresosMapping = getMapping('chartsIngresos')
+
+// ✅ Fetch de datos al montar el componente
+onMounted(async () => {
+  try {
+    console.log('📊 ChartsComponent: Cargando datos...')
+    
+    // Cargar datos de Presupuestos desde Datos_Cuantitativos
+    const rawPresupuestos = await fetchData('chartsPresupuestos', 'Datos_Cuantitativos')
+    rawPresupuestosData.value = rawPresupuestos
+    console.log('✅ Datos de Presupuestos cargados:', rawPresupuestos.length, 'filas')
+    
+    // Cargar datos de Ingresos desde Datos_Cuantitativos
+    const rawIngresos = await fetchData('chartsIngresos', 'Datos_Cuantitativos')
+    rawIngresosData.value = rawIngresos
+    console.log('✅ Datos de Ingresos cargados:', rawIngresos.length, 'filas')
+    
+  } catch (err) {
+    console.error('❌ Error cargando datos de ChartsComponent:', err)
   }
 })
 
-// Datos para Ingresos (Barras)
-const ingresosData = computed(() => {
-  return {
-    is_amount: props.ifssData?.is_amount ? props.ifssData.is_amount * 0.8 : 18,
-    is_percentage: props.ifssData?.is_percentage || 0,
-    iic_amount: props.ifssData?.iic_amount ? props.ifssData.iic_amount * 1.2 : 4,
-    iic_percentage: props.ifssData?.iic_percentage || 0
+// ✅ Filtrar datos por estado seleccionado
+const filteredPresupuestosData = computed(() => {
+  if (!props.selectedState || !rawPresupuestosData.value.length) {
+    console.log('⚠️ No hay estado seleccionado o no hay datos de presupuestos')
+    return []
   }
+  
+  console.log(`🔍 Filtrando presupuestos para estado: "${props.selectedState}"`)
+  console.log(`📊 Total de filas en rawPresupuestosData: ${rawPresupuestosData.value.length}`)
+  console.log(`📋 Columna de estado: "${presupuestosMapping.stateColumn}"`)
+  
+  const filtered = rawPresupuestosData.value.filter(row => {
+    const rowState = row[presupuestosMapping.stateColumn]
+    const matches = rowState === props.selectedState
+    if (matches) {
+      console.log(`✅ Fila coincidente encontrada:`, row)
+    }
+    return matches
+  })
+  
+  console.log(`✅ Filas filtradas de presupuestos: ${filtered.length}`)
+  
+  return filtered
+})
+
+const filteredIngresosData = computed(() => {
+  if (!props.selectedState || !rawIngresosData.value.length) {
+    console.log('⚠️ No hay estado seleccionado o no hay datos de ingresos')
+    return []
+  }
+  
+  console.log(`🔍 Filtrando ingresos para estado: "${props.selectedState}"`)
+  console.log(`📊 Total de filas en rawIngresosData: ${rawIngresosData.value.length}`)
+  
+  const filtered = rawIngresosData.value.filter(row => 
+    row[ingresosMapping.stateColumn] === props.selectedState
+  )
+  
+  console.log(`✅ Filas filtradas de ingresos: ${filtered.length}`)
+  
+  return filtered
+})
+
+// ✅ NUEVO: Función para transformar datos sin años a formato BarChart
+const transformSingleRowToBarChart = (row, mapping) => {
+  if (!row) {
+    console.warn('⚠️ transformSingleRowToBarChart: No hay fila para transformar')
+    return { variables: [] }
+  }
+  
+  console.log('🔄 Transformando fila:', row)
+  console.log('📋 Mapping:', mapping.variableColumns.map(v => ({ key: v.key, column: v.column })))
+  
+  const variables = mapping.variableColumns.map(varConfig => {
+    const rawValue = row[varConfig.column]
+    
+    console.log(`  - ${varConfig.key} (columna: ${varConfig.column}):`, rawValue)
+    
+    // Limpiar comas y puntos si el valor es un string
+    const cleanValue = typeof rawValue === 'string' 
+      ? rawValue.replace(/[,.]/g, '')
+      : rawValue
+    
+    const parsedValue = parseFloat(cleanValue) || 0
+    
+    console.log(`    → Valor limpio: ${cleanValue} → Parseado: ${parsedValue}`)
+    
+    return {
+      key: varConfig.key,
+      label: varConfig.label,
+      value: parsedValue,
+      color: varConfig.color,
+      colorClass: varConfig.colorClass,
+      order: varConfig.order || 0
+    }
+  })
+  
+  // Ordenar por orden
+  variables.sort((a, b) => a.order - b.order)
+  
+  console.log('✅ Variables transformadas:', variables.map(v => ({ key: v.key, value: v.value })))
+  
+  return { variables }
+}
+
+// ✅ Transformar datos para BarChart
+const presupuestosData = computed(() => {
+  console.log('🔄 Calculando presupuestosData...')
+  
+  if (!filteredPresupuestosData.value.length) {
+    console.log('⚠️ No hay datos filtrados de presupuestos')
+    return { variables: [] }
+  }
+  
+  // Tomar la primera fila (ya está filtrada por estado)
+  const row = filteredPresupuestosData.value[0]
+  console.log('📊 Fila de presupuestos a transformar:', row)
+  
+  const result = transformSingleRowToBarChart(row, presupuestosMapping)
+  console.log('✅ presupuestosData transformado:', result)
+  
+  return result
+})
+
+const ingresosData = computed(() => {
+  console.log('🔄 Calculando ingresosData...')
+  
+  if (!filteredIngresosData.value.length) {
+    console.log('⚠️ No hay datos filtrados de ingresos')
+    return { variables: [] }
+  }
+  
+  // Tomar la primera fila (ya está filtrada por estado)
+  const row = filteredIngresosData.value[0]
+  console.log('📊 Fila de ingresos a transformar:', row)
+  
+  const result = transformSingleRowToBarChart(row, ingresosMapping)
+  console.log('✅ ingresosData transformado:', result)
+  
+  return result
 })
 
 // Datos para Donas - Presupuestos Sostenibles
@@ -354,6 +506,37 @@ const variablesIngresosCarbono = [
 
 .donut-item:first-child {
   border-right: 1px solid #e5e7eb;
+}
+
+.loading-container,
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: 200px;
+  color: #666;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #7cb342;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 10px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error-container {
+  color: #DC143C;
 }
 
 .donut-header {

@@ -1,4 +1,5 @@
 // src/dataConection/storageConfig.js
+// ✅ ACTUALIZADO con las columnas correctas de tu Google Sheet
 
 console.log('API Key:', import.meta.env.VITE_GOOGLE_SHEETS_API_KEY)
 console.log('Sheet ID Principal:', import.meta.env.VITE_GOOGLE_SHEET_ID)
@@ -11,9 +12,7 @@ export const storageConfig = {
   googlesheets: {
     apiKey: import.meta.env.VITE_GOOGLE_SHEETS_API_KEY,
     
-    // ✅ NUEVO: Soporte para múltiples sheets
     sheets: {
-      // Sheet principal (tu sheet original)
       principal: {
         sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID,
         files: {
@@ -24,16 +23,16 @@ export const storageConfig = {
           estados: 'Estados'
         }
       },
-      // Sheet de datos cuantitativos (tu sheet nuevo)
       cuantitativos: {
         sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_CUANTITATIVOS,
         files: {
-          datosCuantitativos: 'Datos_Cuantitativos'
+          datosCuantitativos: 'Datos_Cuantitativos',
+          chartsPresupuestos: 'Datos_Cuantitativos', 
+          chartsIngresos: 'Datos_Cuantitativos'  
         }
       }
     },
     
-    // ⚠️ BACKWARD COMPATIBILITY: Mantener la forma antigua
     sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID,
     files: {
       datosFinancieros: 'Hoja 1',
@@ -41,11 +40,75 @@ export const storageConfig = {
       indicadores: 'Indicadores',
       gastos: 'Gastos',
       estados: 'Estados',
-      datosCuantitativos: 'Datos_Cuantitativos'
+      datosCuantitativos: 'Datos_Cuantitativos',
+      chartsPresupuestos: 'Datos_Cuantitativos',  
+      chartsIngresos: 'Datos_Cuantitativos' 
     }
   },
   
   mappings: {
+    // ✅ MAPPING ACTUALIZADO: Presupuestos
+    chartsPresupuestos: {
+      stateColumn: 'Entidad Federativa',
+      variableColumns: [
+        {
+          key: 'presupuesto_total',
+          column: 'PT ($)',
+          label: 'Presupuesto Total',
+          colorClass: 'gray',
+          color: '#9ca3af',
+          order: 1
+        },
+        {
+          key: 'presupuesto_sostenible',
+          column: 'PS ($)',
+          label: 'Presupuesto Sostenible',
+          colorClass: 'green',
+          color: '#7cb342',
+          order: 2
+        },
+        {
+          key: 'presupuesto_carbono',
+          column: 'PIC ($)',
+          label: 'Presupuestos Intensivos en Carbono',
+          colorClass: 'red',
+          color: '#DC143C',
+          order: 3
+        }
+      ]
+    },
+    
+    // ✅ MAPPING ACTUALIZADO: Ingresos
+    chartsIngresos: {
+      stateColumn: 'Entidad Federativa',
+      variableColumns: [
+        {
+          key: 'ingresos_total',
+          column: 'IT ($)',
+          label: 'Ingresos Total',
+          colorClass: 'gray',
+          color: '#9ca3af',
+          order: 1
+        },
+        {
+          key: 'ingresos_sostenibles',
+          column: 'IS ($)',
+          label: 'Ingresos Sostenibles',
+          colorClass: 'green',
+          color: '#7cb342',
+          order: 2
+        },
+        {
+          key: 'ingresos_carbono',
+          column: 'IIC ($)',
+          label: 'Ingresos Intensivos en Carbono',
+          colorClass: 'red',
+          color: '#DC143C',
+          order: 3
+        }
+      ]
+    },
+    
     rankingCuantitativo: {
       stateColumn: 'Entidad Federativa',
       variableColumns: [
@@ -305,13 +368,10 @@ export function getCurrentConfig() {
   }
 }
 
-// ✅ NUEVA FUNCIÓN: Obtener Sheet ID específico según el archivo
 export function getSheetIdForFile(fileKey) {
   const config = storageConfig.googlesheets
   
-  // Si hay configuración de múltiples sheets
   if (config.sheets) {
-    // Buscar en qué sheet está el archivo
     for (const [sheetKey, sheetConfig] of Object.entries(config.sheets)) {
       if (sheetConfig.files && sheetConfig.files[fileKey]) {
         console.log(`📄 Archivo "${fileKey}" encontrado en sheet "${sheetKey}"`)
@@ -320,7 +380,6 @@ export function getSheetIdForFile(fileKey) {
     }
   }
   
-  // Fallback: usar el sheet principal
   console.log(`📄 Usando sheet principal para "${fileKey}"`)
   return config.sheetId
 }
