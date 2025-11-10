@@ -34,24 +34,32 @@
               <h5 class="donut-title">Análisis comparativo de los sectores que conforman Presupuestos Sostenibles (PS)</h5>
             </div>
             <DonutChart 
+              v-if="sectoresPresupuestosSostenibles.length > 0"
+              :key="`ps-${props.selectedState}-${sectoresPresupuestosSostenibles.length}`"
               :data="donutPresupuestosSostenibles"
               title="PS"
-              subtitle="35%"
+              :subtitle="subtitlePresupuestosSostenibles"
               :size="220"
               :variables="variablesPresupuestosSostenibles"
+              :sectors="sectoresPresupuestosSostenibles"
             />
+            <div v-else class="no-data-message">Sin datos disponibles</div>
           </div>
           <div class="donut-item">
             <div class="donut-header">
               <h5 class="donut-title">Análisis comparativo de los sectores que conforman Presupuestos Intensivos en Carbono (PIC)</h5>
             </div>
             <DonutChart 
+              v-if="sectoresPresupuestosCarbono.length > 0"
+              :key="`pic-${props.selectedState}-${sectoresPresupuestosCarbono.length}`"
               :data="donutPresupuestosCarbono"
               title="PIC"
-              subtitle="40%"
+              :subtitle="subtitlePresupuestosCarbono"
               :size="220"
               :variables="variablesPresupuestosCarbono"
+              :sectors="sectoresPresupuestosCarbono"
             />
+            <div v-else class="no-data-message">Sin datos disponibles</div>
           </div>
         </div>
       </div>
@@ -90,24 +98,32 @@
               <h5 class="donut-title">Análisis comparativo de los sectores que conforman Ingresos Sostenibles (IS)</h5>
             </div>
             <DonutChart 
+              v-if="sectoresIngresosSostenibles.length > 0"
+              :key="`is-${props.selectedState}-${sectoresIngresosSostenibles.length}`"
               :data="donutIngresosSostenibles"
               title="IS"
-              subtitle="45%"
+              :subtitle="subtitleIngresosSostenibles"
               :size="220"
               :variables="variablesIngresosSostenibles"
+              :sectors="sectoresIngresosSostenibles"
             />
+            <div v-else class="no-data-message">Sin datos disponibles</div>
           </div>
           <div class="donut-item">
             <div class="donut-header">
               <h5 class="donut-title">Análisis comparativo de los sectores que conforman Ingresos Intensivos en Carbono (IIC)</h5>
             </div>
             <DonutChart 
+              v-if="sectoresIngresosCarbono.length > 0"
+              :key="`iic-${props.selectedState}-${sectoresIngresosCarbono.length}`"
               :data="donutIngresosCarbono"
               title="IIC"
-              subtitle="38%"
+              :subtitle="subtitleIngresosCarbono"
               :size="220"
               :variables="variablesIngresosCarbono"
+              :sectors="sectoresIngresosCarbono"
             />
+            <div v-else class="no-data-message">Sin datos disponibles</div>
           </div>
         </div>
       </div>
@@ -140,6 +156,9 @@ const props = defineProps({
 // ✅ Composable para obtener datos de Google Sheets
 const { fetchData, transform, loading, error } = useStorageData()
 
+// ✅ Flag para saber si los datos ya se cargaron
+const dataLoaded = ref(false)
+
 // ✅ Datos crudos desde Google Sheets
 const rawPresupuestosData = ref([])
 const rawIngresosData = ref([])
@@ -151,17 +170,35 @@ const ingresosMapping = getMapping('chartsIngresos')
 // ✅ Fetch de datos al montar el componente
 onMounted(async () => {
   try {
-    console.log('📊 ChartsComponent: Cargando datos...')
+    console.log('\n🚀 ===== CARGANDO DATOS EN ChartsComponent =====')
     
     // Cargar datos de Presupuestos desde Datos_Cuantitativos
+    console.log('📥 Cargando datos de Presupuestos...')
     const rawPresupuestos = await fetchData('chartsPresupuestos', 'Datos_Cuantitativos')
     rawPresupuestosData.value = rawPresupuestos
-    console.log('✅ Datos de Presupuestos cargados:', rawPresupuestos.length, 'filas')
+    console.log(`✅ Presupuestos cargados: ${rawPresupuestos.length} filas`)
+    
+    if (rawPresupuestos.length > 0) {
+      console.log('📋 Columnas disponibles en Presupuestos:', Object.keys(rawPresupuestos[0]))
+      console.log('📋 Primera fila:', rawPresupuestos[0])
+    }
     
     // Cargar datos de Ingresos desde Datos_Cuantitativos
+    console.log('\n📥 Cargando datos de Ingresos...')
     const rawIngresos = await fetchData('chartsIngresos', 'Datos_Cuantitativos')
     rawIngresosData.value = rawIngresos
-    console.log('✅ Datos de Ingresos cargados:', rawIngresos.length, 'filas')
+    console.log(`✅ Ingresos cargados: ${rawIngresos.length} filas`)
+    
+    if (rawIngresos.length > 0) {
+      console.log('📋 Columnas disponibles en Ingresos:', Object.keys(rawIngresos[0]))
+      console.log('📋 Primera fila:', rawIngresos[0])
+      console.log('📋 Estados disponibles:', rawIngresos.map(r => r[ingresosMapping.stateColumn]))
+    }
+    
+    // ✅ Marcar que los datos ya están cargados
+    dataLoaded.value = true
+    console.log('✅ dataLoaded establecido a true')
+    console.log('===== FIN CARGA DE DATOS =====\n')
     
   } catch (err) {
     console.error('❌ Error cargando datos de ChartsComponent:', err)
@@ -170,6 +207,12 @@ onMounted(async () => {
 
 // ✅ Filtrar datos por estado seleccionado
 const filteredPresupuestosData = computed(() => {
+  // ✅ Esperar a que los datos estén cargados
+  if (!dataLoaded.value) {
+    console.log('⏳ filteredPresupuestosData: Esperando a que los datos se carguen...')
+    return []
+  }
+  
   if (!props.selectedState || !rawPresupuestosData.value.length) {
     console.log('⚠️ No hay estado seleccionado o no hay datos de presupuestos')
     return []
@@ -194,24 +237,58 @@ const filteredPresupuestosData = computed(() => {
 })
 
 const filteredIngresosData = computed(() => {
-  if (!props.selectedState || !rawIngresosData.value.length) {
-    console.log('⚠️ No hay estado seleccionado o no hay datos de ingresos')
+  console.log('\n🔍 ===== FILTRANDO DATOS DE INGRESOS =====')
+  console.log('📊 dataLoaded.value:', dataLoaded.value)
+  console.log('📊 props.selectedState:', props.selectedState)
+  console.log('📊 rawIngresosData.value.length:', rawIngresosData.value.length)
+  console.log('📊 ingresosMapping.stateColumn:', ingresosMapping.stateColumn)
+  
+  // ✅ NUEVO: Esperar a que los datos estén cargados
+  if (!dataLoaded.value) {
+    console.log('⏳ Esperando a que los datos se carguen...')
     return []
   }
   
-  console.log(`🔍 Filtrando ingresos para estado: "${props.selectedState}"`)
-  console.log(`📊 Total de filas en rawIngresosData: ${rawIngresosData.value.length}`)
+  if (!props.selectedState) {
+    console.log('⚠️ No hay estado seleccionado')
+    return []
+  }
   
-  const filtered = rawIngresosData.value.filter(row => 
-    row[ingresosMapping.stateColumn] === props.selectedState
-  )
+  if (!rawIngresosData.value.length) {
+    console.log('⚠️ rawIngresosData está vacío')
+    return []
+  }
   
-  console.log(`✅ Filas filtradas de ingresos: ${filtered.length}`)
+  // Mostrar algunos datos de ejemplo
+  console.log('📋 Primeras 3 filas de rawIngresosData:')
+  rawIngresosData.value.slice(0, 3).forEach((row, idx) => {
+    console.log(`  Fila ${idx}:`, {
+      estado: row[ingresosMapping.stateColumn],
+      'IT ($)': row['IT ($)'],
+      'IS ($)': row['IS ($)']
+    })
+  })
+  
+  console.log(`\n🔍 Buscando filas donde "${ingresosMapping.stateColumn}" === "${props.selectedState}"`)
+  
+  const filtered = rawIngresosData.value.filter(row => {
+    const rowState = row[ingresosMapping.stateColumn]
+    const matches = rowState === props.selectedState
+    
+    if (matches) {
+      console.log('✅ COINCIDENCIA ENCONTRADA:', row)
+    }
+    
+    return matches
+  })
+  
+  console.log(`✅ Total de filas filtradas: ${filtered.length}`)
+  console.log('===== FIN FILTRO INGRESOS =====\n')
   
   return filtered
 })
 
-// ✅ NUEVO: Función para transformar datos sin años a formato BarChart
+// ✅ CORREGIDO: Función para transformar datos sin años a formato BarChart
 const transformSingleRowToBarChart = (row, mapping) => {
   if (!row) {
     console.warn('⚠️ transformSingleRowToBarChart: No hay fila para transformar')
@@ -226,10 +303,21 @@ const transformSingleRowToBarChart = (row, mapping) => {
     
     console.log(`  - ${varConfig.key} (columna: ${varConfig.column}):`, rawValue)
     
-    // Limpiar comas y puntos si el valor es un string
-    const cleanValue = typeof rawValue === 'string' 
-      ? rawValue.replace(/[,.]/g, '')
-      : rawValue
+    // ✅ FIX: Limpiar comillas triples, puntos y comas
+    let cleanValue = rawValue
+    
+    if (typeof rawValue === 'string') {
+      // Eliminar comillas al inicio y final
+      cleanValue = rawValue.replace(/^["']+|["']+$/g, '').trim()
+      
+      // Si quedó vacío o solo comillas, es 0
+      if (cleanValue === '' || cleanValue === '""' || cleanValue === '"""') {
+        cleanValue = '0'
+      } else {
+        // Limpiar PUNTOS (separadores de miles)
+        cleanValue = cleanValue.replace(/\./g, '')
+      }
+    }
     
     const parsedValue = parseFloat(cleanValue) || 0
     
@@ -290,64 +378,388 @@ const ingresosData = computed(() => {
   return result
 })
 
+// ✅ FUNCIÓN DE DIAGNÓSTICO CON LOGGING MEJORADO
+// ✅ FUNCIÓN DE DIAGNÓSTICO CON LOGGING MEJORADO
+const calculateDonutData = (row, sectorsConfig, totalValue, debugLabel = '') => {
+  console.log(`\n🔍 ===== CALCULANDO DONA ${debugLabel} =====`)
+  console.log('📊 Row:', row)
+  console.log('📊 Columnas disponibles:', row ? Object.keys(row) : 'NO HAY ROW')
+  console.log('📊 Total Value:', totalValue)
+  console.log('📊 Sectors Config:', sectorsConfig)
+  
+  if (!row || !sectorsConfig || !totalValue) {
+    console.warn('⚠️ calculateDonutData: Faltan datos', {
+      hasRow: !!row,
+      hasSectorsConfig: !!sectorsConfig,
+      hasTotalValue: !!totalValue
+    })
+    return {
+      mainPercentage: 0,
+      sectorsTotal: 0,
+      sectors: []
+    }
+  }
+  
+  console.log('📋 Procesando sectores:')
+  let sectorsTotal = 0
+  const sectors = sectorsConfig.map(sectorConfig => {
+    console.log(`\n  🔸 Sector: ${sectorConfig.label}`)
+    console.log(`     - Buscando columna: "${sectorConfig.column}"`)
+    
+    const rawValue = row[sectorConfig.column]
+    console.log(`     - Valor RAW: "${rawValue}" (tipo: ${typeof rawValue})`)
+    
+    // ✅ FIX: Limpiar comillas triples, puntos y comas
+    let cleanValue = rawValue
+    
+    if (rawValue === null || rawValue === undefined) {
+      console.log(`     ⚠️ Valor es null/undefined`)
+      cleanValue = '0'
+    } else if (typeof rawValue === 'string') {
+      console.log(`     - Es string, limpiando...`)
+      // Eliminar comillas al inicio y final
+      cleanValue = rawValue.replace(/^["']+|["']+$/g, '').trim()
+      console.log(`     - Después de quitar comillas: "${cleanValue}"`)
+      
+      // Si quedó vacío o solo comillas, es 0
+      if (cleanValue === '' || cleanValue === '""' || cleanValue === '"""') {
+        console.log(`     - String vacío, asignando 0`)
+        cleanValue = '0'
+      } else {
+        // Limpiar PUNTOS (separadores de miles)
+        cleanValue = cleanValue.replace(/\./g, '')
+        console.log(`     - Después de quitar puntos: "${cleanValue}"`)
+      }
+    }
+    
+    const value = parseFloat(cleanValue) || 0
+    console.log(`     ✅ Valor FINAL: ${value}`)
+    
+    sectorsTotal += value
+    
+    return {
+      key: sectorConfig.key,
+      label: sectorConfig.label,
+      value: value,
+      color: sectorConfig.color,
+      colorClass: sectorConfig.colorClass
+    }
+  })
+  
+  
+  // Calcular porcentaje principal (total de sectores / total general)
+  const mainPercentage = totalValue > 0 ? Math.round((sectorsTotal / totalValue) * 100) : 0
+  
+  console.log(`\n📊 RESUMEN ${debugLabel}:`)
+  console.log(`  📊 Total sectores: ${sectorsTotal} / Total general: ${totalValue}`)
+  console.log(`  📊 Porcentaje principal: ${mainPercentage}%`)
+  console.log(`  📊 Sectores resultantes:`, sectors)
+  console.log(`===== FIN CÁLCULO ${debugLabel} =====\n`)
+  
+  return {
+    mainPercentage,
+    sectorsTotal,
+    sectors
+  }
+}
+
 // Datos para Donas - Presupuestos Sostenibles
 const donutPresupuestosSostenibles = computed(() => {
-  const percentage = props.ifssData?.is_percentage 
-    ? Math.round(props.ifssData.is_percentage * 100) 
-    : 35
+  if (!filteredPresupuestosData.value.length) {
+    return [
+      { label: 'PS', value: 35, color: '#7cb342' },
+      { label: 'Resto', value: 65, color: '#E8E8E8' }
+    ]
+  }
+  
+  const row = filteredPresupuestosData.value[0]
+  
+  // Limpiar el valor del presupuesto total
+  let totalPresupuesto = 0
+  const rawPT = row['PT ($)'] || '0'
+  if (typeof rawPT === 'string') {
+    const cleanPT = rawPT.replace(/^["']+|["']+$/g, '').trim().replace(/\./g, '')
+    totalPresupuesto = parseFloat(cleanPT) || 0
+  } else {
+    totalPresupuesto = parseFloat(rawPT) || 0
+  }
+  
+  const donutData = calculateDonutData(
+    row,
+    presupuestosMapping.donutSectorsPS || [],
+    totalPresupuesto,
+    'PS (Presupuestos Sostenibles)'
+  )
   
   return [
-    { label: 'PS', value: percentage, color: '#7cb342' },
-    { label: 'Resto', value: 100 - percentage, color: '#E8E8E8' }
+    { label: 'PS', value: donutData.mainPercentage, color: '#7cb342' },
+    { label: 'Resto', value: 100 - donutData.mainPercentage, color: '#E8E8E8' }
   ]
+})
+
+// Sectores de dona PS con valores en $
+const sectoresPresupuestosSostenibles = computed(() => {
+  if (!filteredPresupuestosData.value.length) {
+    return []
+  }
+  
+  const row = filteredPresupuestosData.value[0]
+  
+  // Limpiar el valor del presupuesto total
+  let totalPresupuesto = 0
+  const rawPT = row['PT ($)'] || '0'
+  if (typeof rawPT === 'string') {
+    const cleanPT = rawPT.replace(/^["']+|["']+$/g, '').trim().replace(/\./g, '')
+    totalPresupuesto = parseFloat(cleanPT) || 0
+  } else {
+    totalPresupuesto = parseFloat(rawPT) || 0
+  }
+  
+  const donutData = calculateDonutData(
+    row,
+    presupuestosMapping.donutSectorsPS || [],
+    totalPresupuesto,
+    'PS (Sectores)'
+  )
+  
+  console.log('🎯 sectoresPresupuestosSostenibles FINAL que se pasa a DonutChart:', donutData.sectors)
+  
+  return donutData.sectors
+})
+
+// Subtitle dinámico para dona PS
+const subtitlePresupuestosSostenibles = computed(() => {
+  return `${donutPresupuestosSostenibles.value[0].value}%`
 })
 
 // Datos para Donas - Presupuestos Carbono
 const donutPresupuestosCarbono = computed(() => {
-  const percentage = props.ifssData?.iic_percentage 
-    ? Math.round(props.ifssData.iic_percentage * 100) 
-    : 40
+  if (!filteredPresupuestosData.value.length) {
+    return [
+      { label: 'PIC', value: 40, color: '#DC143C' },
+      { label: 'Resto', value: 60, color: '#E8E8E8' }
+    ]
+  }
+  
+  const row = filteredPresupuestosData.value[0]
+  
+  // Limpiar el valor del presupuesto total
+  let totalPresupuesto = 0
+  const rawPT = row['PT ($)'] || '0'
+  if (typeof rawPT === 'string') {
+    const cleanPT = rawPT.replace(/^["']+|["']+$/g, '').trim().replace(/\./g, '')
+    totalPresupuesto = parseFloat(cleanPT) || 0
+  } else {
+    totalPresupuesto = parseFloat(rawPT) || 0
+  }
+  
+  const donutData = calculateDonutData(
+    row,
+    presupuestosMapping.donutSectorsPIC || [],
+    totalPresupuesto,
+    'PIC (Presupuestos Intensivos en Carbono)'
+  )
   
   return [
-    { label: 'PIC', value: percentage, color: '#DC143C' },
-    { label: 'Resto', value: 100 - percentage, color: '#E8E8E8' }
+    { label: 'PIC', value: donutData.mainPercentage, color: '#DC143C' },
+    { label: 'Resto', value: 100 - donutData.mainPercentage, color: '#E8E8E8' }
   ]
+})
+
+// Sectores de dona PIC con valores en $
+const sectoresPresupuestosCarbono = computed(() => {
+  if (!filteredPresupuestosData.value.length) {
+    return []
+  }
+  
+  const row = filteredPresupuestosData.value[0]
+  
+  // Limpiar el valor del presupuesto total
+  let totalPresupuesto = 0
+  const rawPT = row['PT ($)'] || '0'
+  if (typeof rawPT === 'string') {
+    const cleanPT = rawPT.replace(/^["']+|["']+$/g, '').trim().replace(/\./g, '')
+    totalPresupuesto = parseFloat(cleanPT) || 0
+  } else {
+    totalPresupuesto = parseFloat(rawPT) || 0
+  }
+  
+  const donutData = calculateDonutData(
+    row,
+    presupuestosMapping.donutSectorsPIC || [],
+    totalPresupuesto,
+    'PIC (Sectores)'
+  )
+  
+  console.log('🎯 sectoresPresupuestosCarbono FINAL que se pasa a DonutChart:', donutData.sectors)
+  
+  return donutData.sectors
+})
+
+// Subtitle dinámico para dona PIC
+const subtitlePresupuestosCarbono = computed(() => {
+  return `${donutPresupuestosCarbono.value[0].value}%`
 })
 
 // Datos para Donas - Ingresos Sostenibles
 const donutIngresosSostenibles = computed(() => {
+  if (!filteredIngresosData.value.length) {
+    return [
+      { label: 'IS', value: 45, color: '#7cb342' },
+      { label: 'Resto', value: 55, color: '#E8E8E8' }
+    ]
+  }
+  
+  const row = filteredIngresosData.value[0]
+  
+  // Limpiar el valor de ingresos total
+  let totalIngresos = 0
+  const rawIT = row['IT ($)'] || '0'
+  if (typeof rawIT === 'string') {
+    const cleanIT = rawIT.replace(/^["']+|["']+$/g, '').trim().replace(/\./g, '')
+    totalIngresos = parseFloat(cleanIT) || 0
+  } else {
+    totalIngresos = parseFloat(rawIT) || 0
+  }
+  
+  const donutData = calculateDonutData(
+    row,
+    ingresosMapping.donutSectorsIS || [],
+    totalIngresos,
+    'IS (Ingresos Sostenibles)'
+  )
+  
   return [
-    { label: 'IS', value: 45, color: '#7cb342' },
-    { label: 'Resto', value: 55, color: '#E8E8E8' }
+    { label: 'IS', value: donutData.mainPercentage, color: '#7cb342' },
+    { label: 'Resto', value: 100 - donutData.mainPercentage, color: '#E8E8E8' }
   ]
+})
+
+// Sectores de dona IS con valores en $
+const sectoresIngresosSostenibles = computed(() => {
+  console.log('🎯 COMPUTED sectoresIngresosSostenibles ejecutándose...')
+  console.log('  📊 filteredIngresosData.value.length:', filteredIngresosData.value.length)
+  
+  if (!filteredIngresosData.value.length) {
+    console.log('  ⚠️ No hay datos filtrados, retornando array vacío')
+    return []
+  }
+  
+  const row = filteredIngresosData.value[0]
+  console.log('  📊 Row para IS:', row)
+  
+  // Limpiar el valor de ingresos total
+  let totalIngresos = 0
+  const rawIT = row['IT ($)'] || '0'
+  if (typeof rawIT === 'string') {
+    const cleanIT = rawIT.replace(/^["']+|["']+$/g, '').trim().replace(/\./g, '')
+    totalIngresos = parseFloat(cleanIT) || 0
+  } else {
+    totalIngresos = parseFloat(rawIT) || 0
+  }
+  
+  console.log('  📊 Total Ingresos calculado:', totalIngresos)
+  console.log('  📊 ingresosMapping.donutSectorsIS:', ingresosMapping.donutSectorsIS)
+  
+  const donutData = calculateDonutData(
+    row,
+    ingresosMapping.donutSectorsIS || [],
+    totalIngresos,
+    'IS (Sectores)'
+  )
+  
+  console.log('🎯 sectoresIngresosSostenibles FINAL que se pasa a DonutChart:', donutData.sectors)
+  console.log('  📊 Cantidad de sectores:', donutData.sectors?.length || 0)
+  
+  return donutData.sectors
+})
+
+// Subtitle dinámico para dona IS
+const subtitleIngresosSostenibles = computed(() => {
+  return `${donutIngresosSostenibles.value[0].value}%`
 })
 
 // Datos para Donas - Ingresos Carbono
 const donutIngresosCarbono = computed(() => {
+  if (!filteredIngresosData.value.length) {
+    return [
+      { label: 'IIC', value: 38, color: '#DC143C' },
+      { label: 'Resto', value: 62, color: '#E8E8E8' }
+    ]
+  }
+  
+  const row = filteredIngresosData.value[0]
+  
+  // Limpiar el valor de ingresos total
+  let totalIngresos = 0
+  const rawIT = row['IT ($)'] || '0'
+  if (typeof rawIT === 'string') {
+    const cleanIT = rawIT.replace(/^["']+|["']+$/g, '').trim().replace(/\./g, '')
+    totalIngresos = parseFloat(cleanIT) || 0
+  } else {
+    totalIngresos = parseFloat(rawIT) || 0
+  }
+  
+  const donutData = calculateDonutData(
+    row,
+    ingresosMapping.donutSectorsIIC || [],
+    totalIngresos,
+    'IIC (Ingresos Intensivos en Carbono)'
+  )
+  
   return [
-    { label: 'IIC', value: 38, color: '#DC143C' },
-    { label: 'Resto', value: 62, color: '#E8E8E8' }
+    { label: 'IIC', value: donutData.mainPercentage, color: '#DC143C' },
+    { label: 'Resto', value: 100 - donutData.mainPercentage, color: '#E8E8E8' }
   ]
+})
+
+// Sectores de dona IIC con valores en $
+const sectoresIngresosCarbono = computed(() => {
+  if (!filteredIngresosData.value.length) {
+    return []
+  }
+  
+  const row = filteredIngresosData.value[0]
+  
+  // Limpiar el valor de ingresos total
+  let totalIngresos = 0
+  const rawIT = row['IT ($)'] || '0'
+  if (typeof rawIT === 'string') {
+    const cleanIT = rawIT.replace(/^["']+|["']+$/g, '').trim().replace(/\./g, '')
+    totalIngresos = parseFloat(cleanIT) || 0
+  } else {
+    totalIngresos = parseFloat(rawIT) || 0
+  }
+  
+  const donutData = calculateDonutData(
+    row,
+    ingresosMapping.donutSectorsIIC || [],
+    totalIngresos,
+    'IIC (Sectores)'
+  )
+  
+  console.log('🎯 sectoresIngresosCarbono FINAL que se pasa a DonutChart:', donutData.sectors)
+  
+  return donutData.sectors
+})
+
+// Subtitle dinámico para dona IIC
+const subtitleIngresosCarbono = computed(() => {
+  return `${donutIngresosCarbono.value[0].value}%`
 })
 
 // Variables para filtros de Presupuestos Sostenibles
 const variablesPresupuestosSostenibles = [
   {
-    key: 'ambiental',
-    label: 'Ambiental',
+    key: 'ps_desastres',
+    label: 'Desastres Naturales',
     colorClass: 'dark-green',
     active: true
   },
   {
-    key: 'ecologico',
-    label: 'Ecológico',
+    key: 'ps_proteccion',
+    label: 'Protección Ambiental',
     colorClass: 'green',
-    active: true
-  },
-  {
-    key: 'movilidad_sustentable',
-    label: 'Movilidad sustentable',
-    colorClass: 'light-green',
     active: true
   }
 ]
@@ -355,20 +767,20 @@ const variablesPresupuestosSostenibles = [
 // Variables para filtros de Presupuestos Intensivos en Carbono
 const variablesPresupuestosCarbono = [
   {
-    key: 'hidrocarburos',
-    label: 'Hidrocarburos',
+    key: 'pic_combustible',
+    label: 'Combustible',
     colorClass: 'dark-red',
     active: true
   },
   {
-    key: 'transporte',
-    label: 'Transporte',
+    key: 'pic_mineria',
+    label: 'Minería',
     colorClass: 'red',
     active: true
   },
   {
-    key: 'movilidad_no_sustentable',
-    label: 'Movilidad no sustentable',
+    key: 'pic_transporte',
+    label: 'Transporte',
     colorClass: 'light-red',
     active: true
   }
@@ -377,42 +789,56 @@ const variablesPresupuestosCarbono = [
 // Variables para filtros de Ingresos Sostenibles
 const variablesIngresosSostenibles = [
   {
-    key: 'energia_renovable',
-    label: 'Energía renovable',
+    key: 'is_ambiental',
+    label: 'Ambiental',
     colorClass: 'dark-green',
     active: true
   },
   {
-    key: 'economia_circular',
-    label: 'Economía circular',
+    key: 'is_ecologico',
+    label: 'Ecológico',
     colorClass: 'green',
     active: true
   },
   {
-    key: 'turismo_sustentable',
-    label: 'Turismo sustentable',
+    key: 'is_movilidad',
+    label: 'Movilidad Sustentable',
     colorClass: 'light-green',
     active: true
   }
 ]
 
+// ✅ Watch para debugging
+watch(() => sectoresIngresosSostenibles.value, (newVal) => {
+  console.log('🔔 sectoresIngresosSostenibles CAMBIÓ:', newVal)
+  console.log('   📊 Cantidad:', newVal?.length || 0)
+  console.log('   📊 Valores:', newVal?.map(s => ({ key: s.key, value: s.value })))
+}, { immediate: true, deep: true })
+
+// ✅ Watch para ver cuando cambia el estado seleccionado
+watch(() => props.selectedState, (newState, oldState) => {
+  console.log(`\n🔔 ===== ESTADO CAMBIÓ =====`)
+  console.log(`   De: "${oldState}" → A: "${newState}"`)
+  console.log(`===========================\n`)
+}, { immediate: true })
+
 // Variables para filtros de Ingresos Intensivos en Carbono
 const variablesIngresosCarbono = [
   {
-    key: 'petroleo',
-    label: 'Petróleo',
+    key: 'iic_hidrocarburos',
+    label: 'Hidrocarburos',
     colorClass: 'dark-red',
     active: true
   },
   {
-    key: 'gas',
-    label: 'Gas',
+    key: 'iic_mineria',
+    label: 'Minería',
     colorClass: 'red',
     active: true
   },
   {
-    key: 'mineria',
-    label: 'Minería',
+    key: 'iic_transporte',
+    label: 'Transporte',
     colorClass: 'light-red',
     active: true
   }
@@ -558,6 +984,18 @@ const variablesIngresosCarbono = [
   line-height: 1.3;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   margin: 0;
+}
+
+.no-data-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: 200px;
+  color: #999;
+  font-size: 14px;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 @media (max-width: 1200px) {

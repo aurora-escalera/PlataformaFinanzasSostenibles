@@ -110,7 +110,7 @@ export function useStorageData() {
     }
   }
   
-  // ✅ CORREGIDO: Transformar a formato de gráfica de barras (limpia comas de strings)
+  // ✅ CORREGIDO: Transformar a formato de gráfica de barras (limpia puntos y comillas)
   const transformToBarChartData = (rawData, mapping) => {
     if (!rawData || rawData.length === 0) {
       console.warn('⚠️ No hay datos para transformar')
@@ -126,10 +126,21 @@ export function useStorageData() {
       const variables = variableColumns.map(varConfig => {
         const rawValue = row[varConfig.column]
         
-        // ✅ FIX: Limpiar comas Y puntos si el valor es un string
-        const cleanValue = typeof rawValue === 'string' 
-          ? rawValue.replace(/[,.]/g, '')
-          : rawValue
+        // ✅ FIX: Limpiar comillas triples, puntos y comas
+        let cleanValue = rawValue
+        
+        if (typeof rawValue === 'string') {
+          // Eliminar comillas al inicio y final
+          cleanValue = rawValue.replace(/^["']+|["']+$/g, '').trim()
+          
+          // Si quedó vacío o solo comillas, es 0
+          if (cleanValue === '' || cleanValue === '""' || cleanValue === '"""') {
+            cleanValue = '0'
+          } else {
+            // Limpiar PUNTOS (separadores de miles)
+            cleanValue = cleanValue.replace(/\./g, '')
+          }
+        }
         
         return {
           key: varConfig.key,
@@ -147,7 +158,7 @@ export function useStorageData() {
     return transformed
   }
   
-  // ✅ CORREGIDO: Transformar a formato de gráfica lineal (limpia comas de strings)
+  // ✅ CORREGIDO: Transformar a formato de gráfica lineal (limpia puntos y comillas)
   const transformToLinearChartData = (rawData, mapping) => {
     if (!rawData || rawData.length === 0) {
       console.warn('⚠️ No hay datos para transformar')
@@ -163,10 +174,17 @@ export function useStorageData() {
       const values = rawData.map(row => {
         const rawValue = row[varConfig.column]
         
-        // ✅ FIX: Limpiar comas Y puntos si el valor es un string
-        const cleanValue = typeof rawValue === 'string' 
-          ? rawValue.replace(/[,.]/g, '')
-          : rawValue
+        // ✅ FIX: Limpiar comillas triples, puntos
+        let cleanValue = rawValue
+        
+        if (typeof rawValue === 'string') {
+          cleanValue = rawValue.replace(/^["']+|["']+$/g, '').trim()
+          if (cleanValue === '' || cleanValue === '""' || cleanValue === '"""') {
+            cleanValue = '0'
+          } else {
+            cleanValue = cleanValue.replace(/\./g, '')
+          }
+        }
         
         return parseFloat(cleanValue) || 0
       })
@@ -204,10 +222,17 @@ export function useStorageData() {
       variableColumns.forEach(varConfig => {
         const rawValue = row[varConfig.column]
         
-        // Limpiar comas Y puntos si el valor es un string
-        const cleanValue = typeof rawValue === 'string' 
-          ? rawValue.replace(/[,.]/g, '')
-          : rawValue
+        // ✅ FIX: Limpiar comillas triples, puntos
+        let cleanValue = rawValue
+        
+        if (typeof rawValue === 'string') {
+          cleanValue = rawValue.replace(/^["']+|["']+$/g, '').trim()
+          if (cleanValue === '' || cleanValue === '""' || cleanValue === '"""') {
+            cleanValue = '0'
+          } else {
+            cleanValue = cleanValue.replace(/\./g, '')
+          }
+        }
         
         transformed[varConfig.label].push(parseFloat(cleanValue) || 0)
       })
@@ -217,7 +242,7 @@ export function useStorageData() {
     return transformed
   }
   
-  // ✅ NUEVO: Transformar a formato de gráfica de ranking horizontal
+  // ✅ CORREGIDO: Transformar a formato de gráfica de ranking horizontal
   const transformToRankingData = (rawData, mapping, stateFilter = null) => {
     if (!rawData || rawData.length === 0) {
       console.warn('⚠️ No hay datos para transformar')
@@ -245,10 +270,17 @@ export function useStorageData() {
     const transformed = variableColumns.map(varConfig => {
       const rawValue = dataRow[varConfig.column]
       
-      // ✅ Limpiar comas Y puntos si el valor es un string
-      const cleanValue = typeof rawValue === 'string' 
-        ? rawValue.replace(/[,.]/g, '')
-        : rawValue
+      // ✅ FIX: Limpiar comillas triples, puntos
+      let cleanValue = rawValue
+      
+      if (typeof rawValue === 'string') {
+        cleanValue = rawValue.replace(/^["']+|["']+$/g, '').trim()
+        if (cleanValue === '' || cleanValue === '""' || cleanValue === '"""') {
+          cleanValue = '0'
+        } else {
+          cleanValue = cleanValue.replace(/\./g, '')
+        }
+      }
       
       return {
         key: varConfig.key,
@@ -330,7 +362,7 @@ export function useStorageData() {
     transformToBarChartData,
     transformToLinearChartData,
     transformToStackedAreaData,
-    transformToRankingData,  // ✅ Nueva función exportada
+    transformToRankingData,
     transform,
     clearError,
     getProvider,

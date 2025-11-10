@@ -75,6 +75,46 @@ export const storageConfig = {
           color: '#DC143C',
           order: 3
         }
+      ],
+      // ✅ NUEVO: Sectores para donas de Presupuestos
+      donutSectorsPS: [
+        {
+          key: 'ps_desastres',
+          column: 'PS_DN',
+          label: 'Desastres Naturales',
+          colorClass: 'dark-green',
+          color: '#558b2f'
+        },
+        {
+          key: 'ps_proteccion',
+          column: 'PS_PA',
+          label: 'Protección Ambiental',
+          colorClass: 'green',
+          color: '#7cb342'
+        }
+      ],
+      donutSectorsPIC: [
+        {
+          key: 'pic_combustible',
+          column: 'PIC_C',
+          label: 'Combustible',
+          colorClass: 'dark-red',
+          color: '#b71c1c'
+        },
+        {
+          key: 'pic_mineria',
+          column: 'PIC_M',
+          label: 'Minería',
+          colorClass: 'red',
+          color: '#DC143C'
+        },
+        {
+          key: 'pic_transporte',
+          column: 'PIC_T',
+          label: 'Transporte',
+          colorClass: 'light-red',
+          color: '#ef5350'
+        }
       ]
     },
     
@@ -105,6 +145,53 @@ export const storageConfig = {
           colorClass: 'red',
           color: '#DC143C',
           order: 3
+        }
+      ],
+      // ✅ NUEVO: Sectores para donas de Ingresos
+      donutSectorsIS: [
+        {
+          key: 'is_ambiental',
+          column: 'IS_A',
+          label: 'Ambiental',
+          colorClass: 'dark-green',
+          color: '#558b2f'
+        },
+        {
+          key: 'is_ecologico',
+          column: 'IS_E',
+          label: 'Ecológico',
+          colorClass: 'green',
+          color: '#7cb342'
+        },
+        {
+          key: 'is_movilidad',
+          column: 'IS_MS',
+          label: 'Movilidad Sustentable',
+          colorClass: 'light-green',
+          color: '#9ccc65'
+        }
+      ],
+      donutSectorsIIC: [
+        {
+          key: 'iic_hidrocarburos',
+          column: 'IIC_H',
+          label: 'Hidrocarburos',
+          colorClass: 'dark-red',
+          color: '#b71c1c'
+        },
+        {
+          key: 'iic_mineria',
+          column: 'IIC_M',
+          label: 'Minería',
+          colorClass: 'red',
+          color: '#DC143C'
+        },
+        {
+          key: 'iic_transporte',
+          column: 'IIC_T',
+          label: 'Transporte',
+          colorClass: 'light-red',
+          color: '#ef5350'
         }
       ]
     },

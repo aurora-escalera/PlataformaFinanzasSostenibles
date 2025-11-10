@@ -70,13 +70,7 @@
               <h4>Análisis de Estado</h4>
               <p>Haz clic en cualquier estado del mapa para ver sus gráficas detalladas</p>
             </div>
-            
-            <!-- ChartsComponent cuando hay estado seleccionado -->
-            <ChartsComponent 
-              v-else
-              :selectedState="selectedState"
-              :ifssData="getStateInfo(selectedState)"
-            />
+          
           </div>
         </div>
       </div>
