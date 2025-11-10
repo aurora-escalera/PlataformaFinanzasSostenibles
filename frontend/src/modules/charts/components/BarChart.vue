@@ -348,8 +348,8 @@ watch(() => props.data, () => {
 
 /* Legend dot dentro del botón */
 .legend-dot {
-  width: 6px;
-  height: 6px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   flex-shrink: 0;
 }

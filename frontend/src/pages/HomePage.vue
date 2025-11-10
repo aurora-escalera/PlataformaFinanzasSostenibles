@@ -12,11 +12,6 @@
         @filters-change="handleFiltersChange"
       />
     </div>
-    
-    <!-- Columna derecha: Toggles -->
-    <div class="toggles-column">
-      <DataToggleComponent />
-    </div>
   </div>
   
   <div class="map-container">
