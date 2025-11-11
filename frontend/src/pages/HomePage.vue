@@ -6,6 +6,7 @@
       <RetractableFilterBar 
         :entities="entitiesData"
         :loading="entitiesLoading"
+        :selectedState="selectedState"
         @entity-change="handleEntityChange"
         @year-change="handleYearChange" 
         @variable-change="handleVariableChange"
@@ -43,7 +44,7 @@
             :getStateColor="getStateColor"
             :getStateInfo="getStateInfo"
             :getIFSSLabel="getIFSSLabel"
-            :show-info-card="false"
+            :show-info-card="true"
             @state-click="handleStateClickWithEmit"
             @state-hover="handleStateHover"
             @state-leave="handleStateLeave"
@@ -234,7 +235,7 @@ const loadEntitiesFromSheet = async () => {
 }
 
 const handleEntityChange = (entity) => {
-  console.log('🔍 Entidad seleccionada:', entity)
+  console.log('🔍 Entidad seleccionada desde filtro:', entity)
   if (entity) {
     handleStateClick(entity)
   } else {
@@ -256,6 +257,7 @@ const handleFiltersChange = (filters) => {
 }
 
 const handleStateClickWithEmit = async (stateName) => {
+  console.log('🗺️ Estado clickeado en mapa:', stateName)
   if (!stateName) {
     resetSelection()
     emit('region-selected', null)
@@ -298,6 +300,7 @@ const handleMapContainerClick = (event) => {
 }
 
 watch(selectedState, (newState, oldState) => {
+  console.log('👀 Watch selectedState - De:', oldState, '→ A:', newState)
   if (newState && newState !== oldState) {
     const stateData = getStateInfo(newState)
     setChartData(stateData)

@@ -6,6 +6,7 @@
   >
     <!-- Barra de filtros principal -->
     <div 
+      ref="filterBarRef"
       class="filter-bar" 
       :class="{ 
         'expanded': isSlideUp || activeDropdown,
@@ -116,45 +117,60 @@
               <div class="dropdown-options">
                 <!-- Todas -->
                 <div 
-                  @click="selectVariable(null)"
+                  @click="selectedEntity ? selectVariable(null) : null"
                   class="dropdown-option"
-                  :class="{ 'selected': !selectedVariable }"
+                  :class="{ 
+                    'selected': !selectedVariable,
+                    'disabled': !selectedEntity
+                  }"
                 >
                   <span>Todas</span>
                 </div>
                 
                 <!-- Presupuestos Sostenibles (PS) -->
                 <div 
-                  @click="selectVariable(variables.PS)"
+                  @click="selectedEntity ? selectVariable(variables.PS) : null"
                   class="dropdown-option"
-                  :class="{ 'selected': selectedVariable?.key === 'PS' }"
+                  :class="{ 
+                    'selected': selectedVariable?.key === 'PS',
+                    'disabled': !selectedEntity
+                  }"
                 >
                   <span>Presupuestos Sostenibles (PS)</span>
                 </div>
                 
                 <!-- Ingresos Intensivos en Carbono (IIC) -->
                 <div 
-                  @click="selectVariable(variables.IIC)"
+                  @click="selectedEntity ? selectVariable(variables.IIC) : null"
                   class="dropdown-option"
-                  :class="{ 'selected': selectedVariable?.key === 'IIC' }"
+                  :class="{ 
+                    'selected': selectedVariable?.key === 'IIC',
+                    'disabled': !selectedEntity
+                  }"
                 >
                   <span>Ingresos Intensivos en Carbono (IIC)</span>
                 </div>
                 
                 <!-- Presupuestos Intensivos en Carbono (PIC) -->
                 <div 
-                  @click="selectVariable(variables.PIC)"
+                  @click="selectedEntity ? selectVariable(variables.PIC) : null"
                   class="dropdown-option"
-                  :class="{ 'selected': selectedVariable?.key === 'PIC' }"
+                  :class="{ 
+                    'selected': selectedVariable?.key === 'PIC',
+                    'disabled': !selectedEntity
+                  }"
                 >
                   <span>Presupuestos Intensivos en Carbono (PIC)</span>
                 </div>
                 
                 <!-- Ingresos Sostenibles (IS) -->
                 <div 
-                  @click="selectVariable(variables.IS)"
+                  @click="selectedEntity ? selectVariable(variables.IS) : null"
                   class="dropdown-option"
-                  :class="{ 'selected': selectedVariable?.key === 'IS' }"
+                  :class="{ 
+                    'selected': selectedVariable?.key === 'IS',
+                    'disabled': !selectedEntity
+                  }"
                 >
                   <span>Ingresos Sostenibles (IS)</span>
                 </div>
@@ -168,7 +184,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch, onBeforeUnmount } from 'vue'
 
 // Props
 const props = defineProps({
@@ -179,6 +195,10 @@ const props = defineProps({
   loading: {
     type: Boolean,
     default: false
+  },
+  selectedState: {
+    type: String,
+    default: null
   }
 })
 
@@ -195,6 +215,7 @@ const isSlideUp = ref(false)
 const activeDropdown = ref(null)
 const entitySearch = ref('')
 const slideTimeout = ref(null)
+const filterBarRef = ref(null)
 
 // Filtros seleccionados
 const selectedEntity = ref(null)
@@ -314,6 +335,19 @@ const closeAllDropdowns = () => {
   }, 300)
 }
 
+// ✅ Función para manejar click fuera del dropdown
+const handleClickOutside = (event) => {
+  if (!filterBarRef.value) return
+  
+  // Si el click es fuera del componente de filtros
+  if (!filterBarRef.value.contains(event.target)) {
+    if (activeDropdown.value) {
+      console.log('👆 Click fuera detectado, cerrando dropdown')
+      closeAllDropdowns()
+    }
+  }
+}
+
 const selectEntity = (entityName) => {
   console.log('=== FILTRO: Entidad seleccionada ===', entityName)
   selectedEntity.value = entityName
@@ -349,11 +383,32 @@ const emitFiltersChange = () => {
   emit('filters-change', filters)
 }
 
+// ✅ Watch para sincronizar estado seleccionado desde el mapa
+watch(() => props.selectedState, (newState) => {
+  console.log('🔄 Sincronizando filtro con mapa. Estado:', newState)
+  selectedEntity.value = newState
+}, { immediate: true })
+
 // Inicialización
 onMounted(() => {
   console.log('✅ RetractableFilterBar montado')
   console.log('✅ Entidades recibidas:', props.entities.length)
   emitFiltersChange()
+  
+  // ✅ Agregar listener para detectar clicks fuera
+  document.addEventListener('click', handleClickOutside)
+})
+
+// ✅ Limpieza al desmontar
+onBeforeUnmount(() => {
+  console.log('👋 RetractableFilterBar desmontándose')
+  // Remover listener de clicks
+  document.removeEventListener('click', handleClickOutside)
+  
+  // Limpiar timeout si existe
+  if (slideTimeout.value) {
+    clearTimeout(slideTimeout.value)
+  }
 })
 </script>
 
@@ -372,8 +427,8 @@ onMounted(() => {
 .filter-bar {
   background: #053759;
   color: white;
-  padding: 8px 24px;
-  border-radius: 7px;
+  padding: 15px 0px;
+  border-radius: 15px 15px 0px 0px;
   box-shadow: 0 4px 20px rgba(44, 82, 130, 0.3);
   transition: transform 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
   position: absolute;
@@ -382,13 +437,13 @@ onMounted(() => {
   right: 0;
   width: 100%;
   cursor: pointer;
-  transform: translateY(calc(100% - 50px));
+  transform: translateY(calc(100% - 65px));
 }
 
 .filter-bar:hover,
 .filter-bar.expanded,
 .filter-bar.has-entity-selected {
-  transform: translateY(-22px);
+  transform: translateY(-20px);
   cursor: default;
   z-index: 1;
 }
@@ -409,14 +464,15 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: flex-start;
 }
 
 .filter-group::after {
   content: '|';
   position: absolute;
   right: -32px;
-  top: 32%;
-  transform: translateY(-100%);
+  top: 50%; 
+  transform: translateY(-50%);
   color: rgba(255, 255, 255, 0.6);
   font-size: 12px;
   font-weight: 300;
@@ -427,19 +483,27 @@ onMounted(() => {
 .filter-label {
   display: block;
   font-size: 14px;
-  font-weight: 400;
+  font-weight: 200;
   margin-bottom: 10px;
   color: #e2e8f0;
   letter-spacing: 0.5px; 
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  width: 100%; 
+  text-align: center;
+  height: 20px; 
+  line-height: 20px;
 }
 
 .filter-dropdown {
   position: relative;
+  display: flex; 
+  justify-content: center; 
+  width: 100%; 
 }
 
 .dropdown-button {
   opacity: 80%;
-  width: 135%;
+  width: 180px;
   background: rgba(255, 255, 255, 0.95);
   border: 2px solid rgba(255, 255, 255, 0.3);
   color: hsl(218, 23%, 23%);
@@ -453,6 +517,7 @@ onMounted(() => {
   font-size: 12px;
   font-weight: 100px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  
 }
 
 .dropdown-button:hover,
@@ -471,8 +536,9 @@ onMounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   color: #4a5568;
-  font-weight: 500;
+  font-weight: 200;
   font-size: 13px;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .dropdown-arrow {
@@ -489,7 +555,7 @@ onMounted(() => {
   position: absolute;
   top: 100%;
   left: 0;
-  width: 150%;
+  width: 100%;
   background: white;
   border-radius: 8px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
@@ -497,11 +563,6 @@ onMounted(() => {
   max-height: none;
   overflow: visible;
   animation: dropdownFadeIn 0.2s ease;
-}
-
-.variable-menu {
-  width: 280%;
-  left: -90%;
 }
 
 @keyframes dropdownFadeIn {
@@ -518,6 +579,7 @@ onMounted(() => {
 .dropdown-search {
   padding: 8px;
   border-bottom: 1px solid #e2e8f0;
+
 }
 
 .search-input {
@@ -525,8 +587,10 @@ onMounted(() => {
   padding: 6px 10px;
   border: 1px solid #e2e8f0;
   border-radius: 6px;
-  font-size: 12px;
   outline: none;
+  font-size: 14px;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 200;
 }
 
 .search-input:focus {
@@ -568,21 +632,19 @@ onMounted(() => {
   color: #2d3748;
   transition: background 0.2s ease;
   border-bottom: 1px solid #f7fafc;
-  font-size: 12px;
+  font-size: 13px;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 200;
 }
 
-.dropdown-option span:first-child {
-  font-size: 12px;
-  font-weight: 500;
-}
 
 .dropdown-option:hover {
-  background: #f7fafc;
+  background: #d0d2d4;
 }
 
 .dropdown-option.selected {
-  background: #ebf8ff;
-  color: #2b6cb0;
+  background: #f1f2f3;
+
   font-weight: 600;
 }
 

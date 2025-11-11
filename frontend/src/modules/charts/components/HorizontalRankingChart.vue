@@ -367,8 +367,8 @@ const formatValue = (value) => {
 
 /* Label del estado */
 .state-label {
-  font-size: 10px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 100;
   color: #374151;
   text-align: right;
   padding-right: 6px;
