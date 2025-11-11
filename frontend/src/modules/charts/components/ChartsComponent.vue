@@ -24,7 +24,7 @@
         <div v-else class="chart-col-bar">
           <BarChart 
             :data="presupuestosData"
-            :title="selectedYear ? `Presupuestos Intensivos en Carbono (PIC) y Presupuestos Sostenibles (PS) con respecto del gasto total en ${selectedYear}` : 'Presupuestos Intensivos en Carbono (PIC) y Presupuestos Sostenibles (PS) con respecto del gasto total'"
+            :title="presupuestosTitleDynamic"          
           />
         </div>
         
@@ -91,7 +91,7 @@
         <div v-else class="chart-col-bar">
           <BarChart 
             :data="ingresosData"
-            title="Proporción del gasto asignado a Ingresos"
+            :title="ingresosTitleDynamic"
           />
         </div>
         
@@ -822,6 +822,50 @@ const subtitleIngresosCarbono = computed(() => {
   return `${donutIngresosCarbono.value[0].value}%`
 })
 
+const presupuestosTitleDynamic = computed(() => {
+  if (props.selectedVariable) {
+    if (props.selectedVariable.key === 'PS') {
+      return 'Presupuestos Sostenibles (PS) con respecto al Presupuesto Total (PT)'
+    } else if (props.selectedVariable.key === 'PIC') {
+      return 'Presupuestos Intensivos en Carbono (PIC) con respecto al Presupuesto Total (PT)'
+    }
+  }
+  
+  return props.selectedYear 
+    ? `Presupuestos Intensivos en Carbono (PIC) y Presupuestos Sostenibles (PS) con respecto del gasto total en ${props.selectedYear}`
+    : 'Presupuestos Intensivos en Carbono (PIC) y Presupuestos Sostenibles (PS) con respecto del gasto total'
+})
+
+const ingresosTitleDynamic = computed(() => {
+  console.log('\n🔍 === DEBUG ingresosTitleDynamic ===')
+  console.log('📦 props.selectedVariable completo:', JSON.stringify(props.selectedVariable, null, 2))
+  console.log('🔑 props.selectedVariable?.key:', props.selectedVariable?.key)
+  console.log('📝 typeof key:', typeof props.selectedVariable?.key)
+  
+  if (props.selectedVariable) {
+    const key = props.selectedVariable.key
+    
+    console.log(`🧪 Comparando key "${key}" con "IS":`, key === 'IS')
+    console.log(`🧪 Comparando key "${key}" con "IIC":`, key === 'IIC')
+    
+    if (key === 'IS') {
+      console.log('✅ ¡MATCH! Retornando título para IS')
+      return 'Ingresos Sostenibles (IS) con respecto al Ingreso Total (IT)'
+    } else if (key === 'IIC') {
+      console.log('✅ ¡MATCH! Retornando título para IIC')
+      return 'Ingresos Intensivos en Carbono (IIC) con respecto al Ingreso Total (IT)'
+    } else {
+      console.log('⚠️ NO MATCH - key recibido:', key)
+      console.log('⚠️ keys disponibles esperados: "IS", "IIC"')
+    }
+  } else {
+    console.log('⚠️ props.selectedVariable es:', props.selectedVariable)
+  }
+  
+  console.log('📤 Retornando título por defecto')
+  console.log('=== FIN DEBUG ===\n')
+  return 'Proporción del gasto asignado a Ingresos'
+})
 // Variables para filtros de Presupuestos Sostenibles
 const variablesPresupuestosSostenibles = [
   {
@@ -897,12 +941,13 @@ watch(() => props.selectedState, (newState, oldState) => {
 }, { immediate: true })
 
 // ✅ Watch para ver cuando cambia la variable seleccionada
-watch(() => props.selectedVariable, (newVariable, oldVariable) => {
-  console.log(`\n🔔 ===== VARIABLE CAMBIÓ =====`)
-  console.log(`   De:`, oldVariable)
-  console.log(`   A:`, newVariable)
-  console.log(`===========================\n`)
-}, { immediate: true })
+watch(() => props.selectedVariable, (newVal, oldVal) => {
+  console.log('\n🔔 === selectedVariable CAMBIÓ ===')
+  console.log('📤 Valor anterior:', oldVal)
+  console.log('📥 Valor nuevo:', newVal)
+  console.log('🔑 Nuevo key:', newVal?.key)
+  console.log('================================\n')
+}, { deep: true, immediate: true })
 
 // Variables para filtros de Ingresos Intensivos en Carbono
 const variablesIngresosCarbono = [

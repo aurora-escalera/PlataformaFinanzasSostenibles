@@ -75,7 +75,7 @@
           text-anchor="middle"
           class="percentage-text"
         >
-          {{ displayValue }}
+         
         </text>
       </svg>
     </div>

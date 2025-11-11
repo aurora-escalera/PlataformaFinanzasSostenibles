@@ -1,4 +1,4 @@
-<!-- HorizontalRankingChart.vue - Con selección de estado -->
+<!-- HorizontalRankingChart.vue - Con colores del mapa (7 categorías) -->
 <template>
   <div class="horizontal-bar-chart" :style="{ width: width, height: height }">
     <!-- Título -->
@@ -84,7 +84,8 @@
           <div class="tooltip-color" :style="{ backgroundColor: tooltip.color }"></div>
           <div class="tooltip-info">
             <div class="tooltip-label">{{ tooltip.label }}</div>
-            <div class="tooltip-value">{{ formatValue(tooltip.value) }}</div>
+            <div class="tooltip-value">IFS: {{ formatValue(tooltip.value) }}</div>
+            <div class="tooltip-classification">{{ getIFSSClassification(tooltip.value) }}</div>
           </div>
         </div>
       </div>
@@ -106,7 +107,7 @@ const props = defineProps({
   showAllBars: { type: Boolean, default: false },
   initialBarsCount: { type: Number, default: 4 },
   valueFormatter: { type: Function, default: null },
-  selectedState: { type: String, default: null }  // Nuevo prop
+  selectedState: { type: String, default: null }
 })
 
 const hoveredBarKey = ref(null)
@@ -114,13 +115,53 @@ const tooltip = ref({ visible: false, x: 0, y: 0, label: '', value: '', color: '
 const internalVariables = ref([])
 const animatedWidths = ref({})
 
+// ✅ FUNCIÓN ACTUALIZADA: Obtener color según valor IFSS (7 categorías igual que el mapa)
+const getIFSSColorByValue = (value) => {
+  const numValue = parseFloat(value) || 0
+  
+  // Verde oscuro (Muy Alto)
+  if (numValue >= 2.5) return '#6ac952'      // Muy Alto
+  
+  // Verde (Alto)
+  if (numValue >= 2.3) return '#94d351'      // Alto
+  
+  // Verde-amarillo (Medio Alto)
+  if (numValue >= 2.0) return '#bddc50'      // Medio Alto
+  
+  // Amarillo (Medio)
+  if (numValue >= 1.8) return '#e6d64f'      // Medio
+  
+  // Naranja (Medio Bajo)
+  if (numValue >= 1.5) return '#e6a74c'      // Medio Bajo
+  
+  // Naranja-rojo (Bajo)
+  if (numValue >= 0.7) return '#e67849'      // Bajo
+  
+  // Rojo (Muy Bajo)
+  return '#e52845'                           // Muy Bajo
+}
+
+// ✅ FUNCIÓN ACTUALIZADA: Obtener clasificación según valor IFSS (7 categorías igual que el mapa)
+const getIFSSClassification = (value) => {
+  const numValue = parseFloat(value) || 0
+  
+  if (numValue >= 2.5) return 'Muy Alto'
+  if (numValue >= 2.3) return 'Alto'
+  if (numValue >= 2.0) return 'Medio Alto'
+  if (numValue >= 1.8) return 'Medio'
+  if (numValue >= 1.5) return 'Medio Bajo'
+  if (numValue >= 0.7) return 'Bajo'
+  return 'Muy Bajo'
+}
+
 const initializeVariables = () => {
   internalVariables.value = props.variables.map(v => ({
     key: v.key,
     label: v.label || v.key,
     value: v.value || 0,
     colorClass: v.colorClass || 'default',
-    color: v.color || '#3b82f6',
+    // ✅ Usar color del mapa basado en el valor IFSS
+    color: getIFSSColorByValue(v.value),
     active: false
   }))
   
@@ -211,7 +252,7 @@ const xAxisTicks = computed(() => {
 const tooltipStyle = computed(() => {
   return {
     left: `${tooltip.value.x + 15}px`,
-    top: `${tooltip.value.y - 50}px`
+    top: `${tooltip.value.y - 60}px`
   }
 })
 
@@ -449,13 +490,13 @@ const formatValue = (value) => {
 
 .tooltip {
   position: fixed;
-  background: rgba(0, 0, 0, 0.9);
+  background: rgba(0, 0, 0, 0.92);
   color: white;
-  padding: 8px 12px;
-  border-radius: 6px;
+  padding: 12px 16px;
+  border-radius: 8px;
   font-size: 12px;
   white-space: nowrap;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   pointer-events: none;
   z-index: 999999;
 }
@@ -463,28 +504,35 @@ const formatValue = (value) => {
 .tooltip-content {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
 }
 
 .tooltip-color {
-  width: 12px;
-  height: 12px;
+  width: 16px;
+  height: 16px;
   border-radius: 3px;
+  flex-shrink: 0;
 }
 
 .tooltip-info {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
 
 .tooltip-label {
   font-weight: 600;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .tooltip-value {
+  font-size: 12px;
+  opacity: 0.95;
+}
+
+.tooltip-classification {
   font-size: 11px;
-  opacity: 0.9;
+  opacity: 0.85;
+  font-style: italic;
 }
 </style>

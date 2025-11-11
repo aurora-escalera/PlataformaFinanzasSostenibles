@@ -139,7 +139,7 @@
         <h4>{{ hoveredState }}</h4>
         <div class="tooltip-data">
           <p>IFSS: {{ getStateInfo(hoveredState).value || 0 }}</p>
-          <p>Clasificación: {{ getIFSSLabel(getStateInfo(hoveredState).value || 0).label }}</p>
+          
           <p>Año: {{ getStateInfo(hoveredState).year }}</p>
         </div>
       </div>
