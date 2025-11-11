@@ -21,7 +21,6 @@
               class="dropdown-button"
               :class="{ 'active': activeDropdown === 'entidad' }"
             >
-              <span class="dropdown-icon">🗺️</span>
               <span class="dropdown-text">{{ selectedEntity || 'Todas' }}</span>
               <span class="dropdown-arrow">▼</span>
             </button>
@@ -58,6 +57,11 @@
               </div>
             </div>
           </div>
+          
+          <!-- Tooltip para seleccionar entidad -->
+          <div v-if="selectedVariable && !selectedEntity" class="tooltip-select-entity">
+            📍 Selecciona una Entidad Federativa
+          </div>
         </div>
 
         <!-- Filtro Año -->
@@ -69,7 +73,6 @@
               class="dropdown-button"
               :class="{ 'active': activeDropdown === 'año' }"
             >
-              <span class="dropdown-icon">📅</span>
               <span class="dropdown-text">{{ selectedYear || '2023' }}</span>
               <span class="dropdown-arrow">▼</span>
             </button>
@@ -101,7 +104,6 @@
               class="dropdown-button"
               :class="{ 'active': activeDropdown === 'variable' }"
             >
-              <span class="dropdown-icon">📊</span>
               <span class="dropdown-text">{{ getVariableLabel() }}</span>
               <span class="dropdown-arrow">▼</span>
             </button>
@@ -250,7 +252,7 @@ const filteredEntities = computed(() => {
 // Función para obtener el label de la variable seleccionada
 const getVariableLabel = () => {
   if (!selectedVariable.value) return 'Todas'
-  return selectedVariable.value.label
+  return selectedVariable.value.key  // Mostrar solo la abreviatura (PS, IIC, PIC, IS)
 }
 
 // Función para manejar el scroll en el dropdown
@@ -436,7 +438,7 @@ onMounted(() => {
   background: rgba(255, 255, 255, 0.95);
   border: 2px solid rgba(255, 255, 255, 0.3);
   color: hsl(218, 23%, 23%);
-  padding: 2px 6px;
+  padding: 8px 16px;
   border-radius: 25px;
   cursor: pointer;
   display: flex;
@@ -456,22 +458,9 @@ onMounted(() => {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.dropdown-icon {
-  font-size: 16px;
-  width: 28px;
-  height: 28px;
-  background: #4a5568;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 14px;
-}
-
 .dropdown-text {
   flex: 1;
-  text-align: left;
+  text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -611,6 +600,45 @@ onMounted(() => {
   font-style: italic;
 }
 
+.tooltip-select-entity {
+  position: absolute;
+  bottom: -45px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fbbf24;
+  color: #78350f;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
+  animation: tooltipBounce 0.5s ease;
+  z-index: 100;
+}
+
+.tooltip-select-entity::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 8px solid #fbbf24;
+}
+
+@keyframes tooltipBounce {
+  0%, 100% {
+    transform: translateX(-50%) translateY(0);
+  }
+  50% {
+    transform: translateX(-50%) translateY(-5px);
+  }
+}
+
 @media (max-width: 768px) {
   .filter-content {
     flex-direction: column;
@@ -632,6 +660,12 @@ onMounted(() => {
   .variable-menu {
     width: 180%;
     left: -40%;
+  }
+  
+  .tooltip-select-entity {
+    bottom: -50px;
+    font-size: 11px;
+    padding: 6px 12px;
   }
 }
 </style>

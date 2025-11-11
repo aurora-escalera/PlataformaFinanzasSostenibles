@@ -72,7 +72,7 @@
     <!-- ✅ NUEVO: Solo visible si no hay variable O si variable es IS o IIC -->
     <div v-if="!selectedVariable || selectedVariable.key === 'IS' || selectedVariable.key === 'IIC'" class="chart-card">
       <div class="chart-card-header">
-        <h4 class="card-title">Ingresos</h4>
+        <h4 class="card-title">{{ selectedState ? `Ingresos - ${selectedState}` : 'Selecciona un estado' }}</h4>
       </div>
       
       <div class="chart-card-body">
@@ -1043,9 +1043,9 @@ const variablesIngresosCarbono = [
   min-width: 0;
 }
 
-/* Container for donuts - Ajustado para dar más espacio y agregar borde */
+/* Container for donuts - Distribuido equitativamente 50-50 */
 .chart-col-donuts {
-  flex: 1.2;
+  flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: row;
