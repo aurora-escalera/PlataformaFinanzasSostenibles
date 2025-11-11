@@ -7,7 +7,10 @@
     <!-- Barra de filtros principal -->
     <div 
       class="filter-bar" 
-      :class="{ 'expanded': isSlideUp || activeDropdown }"
+      :class="{ 
+        'expanded': isSlideUp || activeDropdown,
+        'has-entity-selected': selectedEntity
+      }"
       @mouseenter="handleMouseEnter"
       @mouseleave="handleMouseLeave"
     >
@@ -19,7 +22,7 @@
             <button 
               @click="toggleDropdown('entidad')"
               class="dropdown-button"
-              :class="{ 'active': activeDropdown === 'entidad' }"
+              :class="{ 'active': activeDropdown === 'entidad', 'has-selection': selectedEntity }"
             >
               <span class="dropdown-text">{{ selectedEntity || 'Todas' }}</span>
               <span class="dropdown-arrow">▼</span>
@@ -71,7 +74,7 @@
             <button 
               @click="toggleDropdown('año')"
               class="dropdown-button"
-              :class="{ 'active': activeDropdown === 'año' }"
+              :class="{ 'active': activeDropdown === 'año', 'has-selection': selectedYear && selectedYear !== '2023' }"
             >
               <span class="dropdown-text">{{ selectedYear || '2023' }}</span>
               <span class="dropdown-arrow">▼</span>
@@ -102,7 +105,7 @@
             <button 
               @click="toggleDropdown('variable')"
               class="dropdown-button"
-              :class="{ 'active': activeDropdown === 'variable' }"
+              :class="{ 'active': activeDropdown === 'variable', 'has-selection': selectedVariable }"
             >
               <span class="dropdown-text">{{ getVariableLabel() }}</span>
               <span class="dropdown-arrow">▼</span>
@@ -281,7 +284,8 @@ const handleMouseEnter = () => {
 }
 
 const handleMouseLeave = () => {
-  if (!activeDropdown.value) {
+  // No contraer si hay una entidad seleccionada o si hay un dropdown activo
+  if (!activeDropdown.value && !selectedEntity.value) {
     slideTimeout.value = setTimeout(() => {
       isSlideUp.value = false
     }, 300)
@@ -382,7 +386,8 @@ onMounted(() => {
 }
 
 .filter-bar:hover,
-.filter-bar.expanded {
+.filter-bar.expanded,
+.filter-bar.has-entity-selected {
   transform: translateY(-22px);
   cursor: default;
   z-index: 1;
@@ -451,7 +456,8 @@ onMounted(() => {
 }
 
 .dropdown-button:hover,
-.dropdown-button.active {
+.dropdown-button.active,
+.dropdown-button.has-selection {
   background: rgba(255, 255, 255, 1);
   border-color: rgba(255, 255, 255, 0.6);
   transform: translateY(-1px);
