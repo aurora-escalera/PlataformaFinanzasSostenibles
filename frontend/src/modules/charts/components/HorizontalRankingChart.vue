@@ -357,14 +357,21 @@ const formatValue = (value) => {
 
 .bar-row.is-hovered {
   opacity: 1;
-  transform: scale(1.01);
+  transform: scale(1.02);
   z-index: 10;
+    font-weight: 500;
+  font-size: 10px;
 }
 
 .bar-row.is-dimmed {
-  opacity: 0.4;
+  opacity: 0.2;
+  transition: opacity 0.3s ease, filter 0.3s ease;
 }
 
+.state-label.is-hovered {
+  font-weight: 500;
+  font-size: 10px;
+}
 /* Label del estado */
 .state-label {
   font-size: 13px;

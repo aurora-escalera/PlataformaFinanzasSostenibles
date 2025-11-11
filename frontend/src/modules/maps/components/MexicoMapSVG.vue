@@ -56,15 +56,21 @@
       </div>
     </div>
 
-    <!-- Información de hover/nacional -->
+    <!-- Información de hover/estado seleccionado/nacional -->
     <div class="hover-info-box">
-      <!-- Si hay estado en hover, mostrar información del estado -->
-      <div v-if="hoveredState" class="info-content">
+      <!-- Prioridad 1: Si hay estado seleccionado, mostrar su información -->
+      <div v-if="selectedState" class="info-content">
+        <div class="location-label">{{ selectedState }}</div>
+        <div class="value-display">IFS: {{ getStateInfo(selectedState).value || 0 }}</div>
+      </div>
+      
+      <!-- Prioridad 2: Si hay estado en hover (y no hay seleccionado), mostrar información del estado -->
+      <div v-else-if="hoveredState" class="info-content">
         <div class="location-label">{{ hoveredState }}</div>
         <div class="value-display">IFS: {{ getStateInfo(hoveredState).value || 0 }}</div>
       </div>
       
-      <!-- Si no hay estado en hover, mostrar información nacional -->
+      <!-- Prioridad 3: Si no hay estado en hover ni seleccionado, mostrar información nacional -->
       <div v-else-if="nationalIFSS" class="info-content">
         <div class="location-label">México</div>
         <div class="value-display">IFS: {{ nationalIFSS.value }}</div>
@@ -73,7 +79,8 @@
 
     <!-- Leyenda de colores IFSS -->
     <div class="color-legend">
-      <div class="legend-items-horizontal">
+      <!-- Leyenda normal (cuando no hay estado seleccionado) -->
+      <div v-if="!selectedState" class="legend-items-horizontal">
         <div class="legend-item-horizontal">
           <div class="legend-color-horizontal" style="background-color: #6ac952"></div>
           <span>Muy Alto</span>
@@ -101,6 +108,16 @@
         <div class="legend-item-horizontal">
           <div class="legend-color-horizontal" style="background-color: #e52845"></div>
           <span>Muy Bajo</span>
+        </div>
+      </div>
+      
+      <!-- Leyenda del estado seleccionado -->
+      <div v-else class="legend-selected-state">
+        <div 
+          class="selected-state-bar"
+          :style="{ backgroundColor: getSelectedStateColor() }"
+        >
+          <span class="selected-state-label">{{ getSelectedStateClassification() }}</span>
         </div>
       </div>
     </div>
@@ -139,7 +156,7 @@
         <h4>{{ hoveredState }}</h4>
         <div class="tooltip-data">
           <p>IFSS: {{ getStateInfo(hoveredState).value || 0 }}</p>
-          
+                    <p>Clasificación: {{ getIFSSLabel(getStateInfo(hoveredState).value || 0).label }}</p>
           <p>Año: {{ getStateInfo(hoveredState).year }}</p>
         </div>
       </div>
@@ -281,6 +298,19 @@ const getCurrentPosition = () => {
   return '15'
 }
 
+// Funciones para la leyenda del estado seleccionado
+const getSelectedStateColor = () => {
+  if (!props.selectedState) return '#cccccc'
+  return props.getStateColor(props.selectedState)
+}
+
+const getSelectedStateClassification = () => {
+  if (!props.selectedState) return ''
+  const stateInfo = props.getStateInfo(props.selectedState)
+  const value = stateInfo.value || 0
+  return props.getIFSSLabel(value).label
+}
+
 // Handlers de eventos
 const handleMouseHover = (stateName, event) => {
   mousePosition.value = {
@@ -344,7 +374,7 @@ const tooltipStyle = computed(() => {
   height: 100%;
   flex-shrink: 0;
   background-color: white;
-  border-radius: 8px;
+  border-radius: 10px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   border: 1px solid #ccc;
   overflow: visible;
@@ -354,15 +384,15 @@ const tooltipStyle = computed(() => {
 /* CARD FLOTANTE */
 .map-info-card {
   position: absolute;
-  top: 21px;
-  right: 20px;
+  top: 100px;
+  right: 120px;
   background: white;
-  border-radius: 12px;
+  border-radius: 15px;
   padding: 12px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.38);
   z-index: 10;
-  width: 143.2px;
-  height: 143.2px;
+  width: 183.2px;
+  height: 203.2px;
   transition: all 0.3s ease;
 }
 
@@ -386,7 +416,7 @@ const tooltipStyle = computed(() => {
 }
 
 .card-position-number {
-  font-size: 30px;
+  font-size: 45px;
   font-weight: 200;
   color: #D4A574;
   line-height: 1;
@@ -394,15 +424,15 @@ const tooltipStyle = computed(() => {
 }
 
 .ifss-value-text {
-  font-size: 7px;
+  font-size: 12px;
   color: #767d86;
   font-weight: 300;
-  letter-spacing: 0.2ch;
+  letter-spacing: 0.1ch;
   margin: 0;
 }
 
 .ifss-classification {
-  font-size: 7px;
+  font-size: 11px;
   color: #ddb891;
   font-weight: 600;
   letter-spacing: 0.15ch;
@@ -414,7 +444,7 @@ const tooltipStyle = computed(() => {
 .card-bottom-stack {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 10px;
   padding-left: 10px;
   padding-top: 0px;
 }
@@ -423,11 +453,11 @@ const tooltipStyle = computed(() => {
   background: #f3f4f6;
   border-radius: 3px;
   text-align: center;
-  font-size: 6px;
+  font-size: 10px;
   color: #7a7f8f;
   font-weight: 100;
-  height: 15px;
-  width: 100px;
+  height: 20px;
+  width: 130px;
   letter-spacing: 0.06em;
   padding-top: 3px;
   cursor: pointer;
@@ -435,7 +465,7 @@ const tooltipStyle = computed(() => {
 }
 
 .card-position-title {
-  font-size: 6px;
+  font-size: 12px;
   color: #6b7280;
   letter-spacing: 0.2ch;
   justify-content: center;
@@ -487,6 +517,51 @@ const tooltipStyle = computed(() => {
   z-index: 10;
   backdrop-filter: blur(5px);
   width: 230px;
+  min-height: 30px;
+  transition: all 0.3s ease;
+}
+
+.legend-selected-state {
+  display: flex;
+  gap: 0;
+  align-items: stretch;
+  justify-content: center;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 0px solid rgba(0,0,0,0.1);
+  height: 30px;
+  width: 360px;
+  animation: legendFadeIn 0.4s ease;
+}
+
+.selected-state-bar {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+.selected-state-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: white;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+@keyframes legendFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .location-label {
@@ -499,7 +574,7 @@ const tooltipStyle = computed(() => {
 }
 
 .value-display {
-  font-size: 50px;
+  font-size: 40px;
   font-weight: 300;
   color: #2c3e50;
   line-height: 1;
@@ -555,6 +630,7 @@ const tooltipStyle = computed(() => {
   width: 100%;
   height: 100%;
   display: block;
+  border-radius: 10px 0px 0px 10px;
 }
 
 /* Estilos base del path */

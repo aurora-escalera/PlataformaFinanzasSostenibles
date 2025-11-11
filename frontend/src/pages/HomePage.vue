@@ -380,9 +380,8 @@ onMounted(async () => {
   align-items: flex-start;
   gap: 10px;
   padding: 19.6px;  
-  border-radius: 11px;
+  border-radius: 15px;
   height: 383.5px;
-  background-color: white;
   width: 100%;
   height: 100%;
   margin: 0 auto;
@@ -399,17 +398,18 @@ onMounted(async () => {
   border-radius: 15px;
   flex-shrink: 0;
   z-index: 1;
-  transform: translateX(-55px);
+  transform: translateX(-50px);
+  top: 1px;
 }
 
 .expand-retractable-btn {
   position: absolute;
-  font-size: 15px;
+  font-size: 20px;
   color: white;
-  left: 48px;
-  top: 3px;
-  width: 18px;
-  height: 18px;
+  left: 42px;
+  top: 2px;
+  width: 25px;
+  height: 25px;
   border-radius: 50%;
   cursor: pointer;
   display: flex;
