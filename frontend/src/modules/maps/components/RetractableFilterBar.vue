@@ -61,11 +61,6 @@
               </div>
             </div>
           </div>
-          
-          <!-- Tooltip para seleccionar entidad -->
-          <div v-if="activeDropdown === 'variable' && !selectedEntity" class="tooltip-select-entity">
-            📍 Selecciona una Entidad Federativa
-          </div>
         </div>
 
         <!-- Filtro Año -->
@@ -117,11 +112,10 @@
               <div class="dropdown-options">
                 <!-- Todas -->
                 <div 
-                  @click="selectedEntity ? selectVariable(null) : null"
+                  @click="selectVariable(null)"
                   class="dropdown-option"
                   :class="{ 
-                    'selected': !selectedVariable,
-                    'disabled': !selectedEntity
+                    'selected': !selectedVariable
                   }"
                 >
                   <span>Todas</span>
@@ -129,11 +123,10 @@
                 
                 <!-- Presupuestos Sostenibles (PS) -->
                 <div 
-                  @click="selectedEntity ? selectVariable(variables.PS) : null"
+                  @click="selectVariable(variables.PS)"
                   class="dropdown-option"
                   :class="{ 
-                    'selected': selectedVariable?.key === 'PS',
-                    'disabled': !selectedEntity
+                    'selected': selectedVariable?.key === 'PS'
                   }"
                 >
                   <span>Presupuestos Sostenibles (PS)</span>
@@ -141,11 +134,10 @@
                 
                 <!-- Ingresos Intensivos en Carbono (IIC) -->
                 <div 
-                  @click="selectedEntity ? selectVariable(variables.IIC) : null"
+                  @click="selectVariable(variables.IIC)"
                   class="dropdown-option"
                   :class="{ 
-                    'selected': selectedVariable?.key === 'IIC',
-                    'disabled': !selectedEntity
+                    'selected': selectedVariable?.key === 'IIC'
                   }"
                 >
                   <span>Ingresos Intensivos en Carbono (IIC)</span>
@@ -153,11 +145,10 @@
                 
                 <!-- Presupuestos Intensivos en Carbono (PIC) -->
                 <div 
-                  @click="selectedEntity ? selectVariable(variables.PIC) : null"
+                  @click="selectVariable(variables.PIC)"
                   class="dropdown-option"
                   :class="{ 
-                    'selected': selectedVariable?.key === 'PIC',
-                    'disabled': !selectedEntity
+                    'selected': selectedVariable?.key === 'PIC'
                   }"
                 >
                   <span>Presupuestos Intensivos en Carbono (PIC)</span>
@@ -165,11 +156,10 @@
                 
                 <!-- Ingresos Sostenibles (IS) -->
                 <div 
-                  @click="selectedEntity ? selectVariable(variables.IS) : null"
+                  @click="selectVariable(variables.IS)"
                   class="dropdown-option"
                   :class="{ 
-                    'selected': selectedVariable?.key === 'IS',
-                    'disabled': !selectedEntity
+                    'selected': selectedVariable?.key === 'IS'
                   }"
                 >
                   <span>Ingresos Sostenibles (IS)</span>
