@@ -59,7 +59,7 @@
           </div>
           
           <!-- Tooltip para seleccionar entidad -->
-          <div v-if="selectedVariable && !selectedEntity" class="tooltip-select-entity">
+          <div v-if="activeDropdown === 'variable' && !selectedEntity" class="tooltip-select-entity">
             📍 Selecciona una Entidad Federativa
           </div>
         </div>
