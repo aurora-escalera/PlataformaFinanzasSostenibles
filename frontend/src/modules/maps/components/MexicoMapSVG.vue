@@ -1,4 +1,4 @@
-<!-- src/modules/maps/components/MexicoMapSVG.vue -->
+<!-- src/modules/maps/components/MexicoMapSVG.vue --> 
 <template>
   <div class="map-wrapper" @click="handleBackgroundClick">
     <!-- CARD FLOTANTE CON INFO DEL ESTADO/NACIONAL -->
@@ -24,7 +24,7 @@
           </div>
           <!-- Columna derecha: IFS y clasificación -->
           <div class="card-ifss-info">
-            <div class="ifss-value-text">IFS: {{ getDisplayIFSS() }}</div>
+            <div class="ifss-value-text">IFSS: {{ getDisplayIFSS() }}</div>
             <div 
               class="ifss-classification"
               :style="{ color: getCurrentClassificationColor() }"
@@ -61,13 +61,13 @@
       <!-- Prioridad 1: Si hay estado seleccionado, mostrar su información -->
       <div v-if="selectedState" class="info-content">
         <div class="location-label">{{ selectedState }}</div>
-        <div class="value-display">IFS: {{ getStateInfo(selectedState).value || 0 }}</div>
+        <div class="value-display">IFSS: {{ getStateInfo(selectedState).value || 0 }}</div>
       </div>
       
       <!-- Prioridad 2: Si hay estado en hover (y no hay seleccionado), mostrar información del estado -->
       <div v-else-if="hoveredState" class="info-content">
         <div class="location-label">{{ hoveredState }}</div>
-        <div class="value-display">IFS: {{ getStateInfo(hoveredState).value || 0 }}</div>
+        <div class="value-display">IFSS: {{ getStateInfo(hoveredState).value || 0 }}</div>
       </div>
       
       <!-- Prioridad 3: Si no hay estado en hover ni seleccionado, mostrar información nacional -->

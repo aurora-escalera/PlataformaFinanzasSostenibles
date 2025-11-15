@@ -203,7 +203,7 @@ onMounted(async () => {
     
     // Cargar datos de Presupuestos desde Datos_Cuantitativos
     console.log('📥 Cargando datos de Presupuestos...')
-    const rawPresupuestos = await fetchData('chartsPresupuestos', 'Datos_Cuantitativos')
+    const rawPresupuestos = await fetchData('chartsPresupuestos', '2024')
     rawPresupuestosData.value = rawPresupuestos
     console.log(`✅ Presupuestos cargados: ${rawPresupuestos.length} filas`)
     
@@ -214,7 +214,7 @@ onMounted(async () => {
     
     // Cargar datos de Ingresos desde Datos_Cuantitativos
     console.log('\n📥 Cargando datos de Ingresos...')
-    const rawIngresos = await fetchData('chartsIngresos', 'Datos_Cuantitativos')
+    const rawIngresos = await fetchData('chartsIngresos', '2024')
     rawIngresosData.value = rawIngresos
     console.log(`✅ Ingresos cargados: ${rawIngresos.length} filas`)
     

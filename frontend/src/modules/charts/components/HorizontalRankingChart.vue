@@ -359,8 +359,6 @@ const formatValue = (value) => {
   opacity: 1;
   transform: scale(1.02);
   z-index: 10;
-    font-weight: 500;
-  font-size: 10px;
 }
 
 .bar-row.is-dimmed {
@@ -368,10 +366,6 @@ const formatValue = (value) => {
   transition: opacity 0.3s ease, filter 0.3s ease;
 }
 
-.state-label.is-hovered {
-  font-weight: 500;
-  font-size: 10px;
-}
 /* Label del estado */
 .state-label {
   font-size: 13px;

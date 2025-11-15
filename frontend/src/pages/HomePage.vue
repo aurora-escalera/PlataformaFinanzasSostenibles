@@ -1,4 +1,16 @@
 <!-- src/modules/maps/components/HomePage.vue -->
+<!-- 
+  CAMBIOS REALIZADOS:
+  1. Importar updateRankingByVariable del composable useStateRanking
+  2. Actualizar handleVariableChange para recargar ranking cuando cambia la variable
+  3. Agregar watch para selectedVariable
+  4. Agregar selectedYear ref para trackear el filtro de año
+  5. Agregar computed showHistoricalCard para detectar cuando Entidad='Todas' Y Año='Todos los años' Y Variable='Todas'
+  6. Mostrar HistoricalCard en lugar de ChartsComponent cuando los 3 filtros están en "Todas"
+  7. Modificar v-if del ranking-panel para mostrarse también cuando showHistoricalCard es true
+  8. Agregar clase condicional 'historical-view' para aplicar dimensiones específicas (2000px x 1540px)
+-->
+
 <template>
   <div class="filters-toggles-row">
     <!-- Columna izquierda: Filtros -->
@@ -68,7 +80,7 @@
               
               <div v-else-if="rankingError" class="ranking-error">
                 <p>Error: {{ rankingError }}</p>
-                <button @click="loadStateRankingData" class="retry-btn-small">
+                <button @click="loadAllStatesRanking(selectedVariable)" class="retry-btn-small">
                   Reintentar
                 </button>
               </div>
@@ -76,7 +88,7 @@
               <HorizontalRankingChart
                 v-else-if="rankingData.length > 0"
                 :variables="rankingData"
-                title="Ranking IFSS por Estado"
+                :title="getRankingTitle()"
                 :showAllBars="true"
                 :animationDelay="0"
                 :selectedState="selectedState"
@@ -93,7 +105,12 @@
       </div>
 
       <!-- Panel de Charts Component - Abajo -->
-      <div v-if="selectedState" class="ranking-panel">
+      <!-- ✅ Mostrar panel cuando hay estado seleccionado O cuando todos los filtros están en "Todas" -->
+      <div 
+        v-if="selectedState || showHistoricalCard" 
+        class="ranking-panel"
+        :class="{ 'historical-view': showHistoricalCard }"
+      >
         <div class="header-ranking-panel">
           <div class="ranking-hamburger-menu">
             <img src="/public/icons/hamburger.png" alt="hamburger-menu" class="hamburger-icon">
@@ -101,8 +118,18 @@
         </div>
         
         <div class="body-ranking-panel">
-          <!-- ChartsComponent con gráficas del estado seleccionado -->
+          <!-- ✅ Mostrar HistoricalCard cuando NO hay estado Y filtros están en "Todas" -->
+          <HistoricalCard
+            v-if="showHistoricalCard"
+            :statesData="statesDataForSlider"
+            :selectedStateValue="selectedStateIFSS"
+            @range-change="handleRangeChange"
+            @filter-change="handleFilterChange"
+          />
+          
+          <!-- ✅ Mostrar ChartsComponent cuando hay un estado seleccionado -->
           <ChartsComponent 
+            v-else
             :selectedState="selectedState"
             :selectedVariable="selectedVariable"
             :ifssData="getStateInfo(selectedState)"
@@ -188,20 +215,40 @@ const {
   initialize: initializeSlider
 } = useSlider(props.mapsComposable || useMaps())
 
+// ✅ ACTUALIZADO: Importar updateRankingByVariable
 const {
   rankingData,
   loading: rankingLoading,
   error: rankingError,
-  loadAllStatesRanking
+  loadAllStatesRanking,
+  updateRankingByVariable
 } = useStateRanking()
 
 const router = useRouter()
 const selectedVariable = ref(null)
+const selectedYear = ref(null)
 const { fetchData: fetchEntities } = useStorageData()
 
 const entitiesData = ref([])
 const entitiesLoading = ref(false)
 const entitiesError = ref(null)
+
+// ✅ NUEVO: Computed para determinar si mostrar HistoricalCard
+// Muestra HistoricalCard cuando NO hay estado seleccionado Y Año="Todos los años" Y Variable="Todas"
+const showHistoricalCard = computed(() => {
+  const allFiltersDefault = !selectedState.value && 
+                           selectedYear.value === null && 
+                           selectedVariable.value === null
+  
+  console.log('🔍 showHistoricalCard check:', {
+    selectedState: selectedState.value,
+    selectedYear: selectedYear.value,
+    selectedVariable: selectedVariable.value,
+    result: allFiltersDefault
+  })
+  
+  return allFiltersDefault
+})
 
 const loadEntitiesFromSheet = async () => {
   try {
@@ -210,7 +257,7 @@ const loadEntitiesFromSheet = async () => {
     entitiesError.value = null
     
     const presupuestosMapping = getMapping('chartsPresupuestos')
-    const rawData = await fetchEntities('chartsPresupuestos', 'Datos_Cuantitativos')
+    const rawData = await fetchEntities('chartsPresupuestos', '2024')
     
     console.log(`✅ Datos cargados: ${rawData.length} filas`)
     
@@ -240,16 +287,31 @@ const handleEntityChange = (entity) => {
     handleStateClick(entity)
   } else {
     resetSelection()
+    // ✅ Al deseleccionar estado, recargar ranking con variable actual
+    if (selectedVariable.value) {
+      console.log('🔄 Recargando ranking con variable actual:', selectedVariable.value)
+      updateRankingByVariable(selectedVariable.value)
+    } else {
+      loadAllStatesRanking(null)
+    }
   }
 }
 
 const handleYearChange = (year) => {
   console.log('📅 Año seleccionado:', year)
+  selectedYear.value = year
 }
 
+// ✅ ACTUALIZADO: handleVariableChange ahora actualiza el ranking
 const handleVariableChange = (variable) => {
   console.log('📊 Variable seleccionada:', variable)
   selectedVariable.value = variable
+  
+  // ✅ Si NO hay estado seleccionado, actualizar el ranking con la nueva variable
+  if (!selectedState.value) {
+    console.log('🔄 Actualizando ranking por variable (sin estado seleccionado)')
+    updateRankingByVariable(variable)
+  }
 }
 
 const handleFiltersChange = (filters) => {
@@ -261,6 +323,12 @@ const handleStateClickWithEmit = async (stateName) => {
   if (!stateName) {
     resetSelection()
     emit('region-selected', null)
+    // ✅ Al deseleccionar, recargar ranking con variable actual
+    if (selectedVariable.value) {
+      updateRankingByVariable(selectedVariable.value)
+    } else {
+      loadAllStatesRanking(null)
+    }
     return
   }
   
@@ -299,6 +367,33 @@ const handleMapContainerClick = (event) => {
   }
 }
 
+// ✅ NUEVO: Función para obtener el título dinámico del ranking
+const getRankingTitle = () => {
+  if (!selectedVariable.value || !selectedVariable.value.key) {
+    return 'Ranking IFSS por Estado'
+  }
+  
+  const variableLabels = {
+    'PS': 'Presupuestos Sostenibles (PS)',
+    'IIC': 'Ingresos Intensivos en Carbono (IIC)',
+    'PIC': 'Presupuestos Intensivos en Carbono (PIC)',
+    'IS': 'Ingresos Sostenibles (IS)'
+  }
+  
+  return `Ranking ${variableLabels[selectedVariable.value.key] || 'IFSS'} por Estado`
+}
+
+// ✅ NUEVO: Watch para detectar cambios en selectedVariable
+watch(selectedVariable, (newVariable, oldVariable) => {
+  console.log('👀 Watch selectedVariable - De:', oldVariable, '→ A:', newVariable)
+  
+  // Solo actualizar si no hay estado seleccionado
+  if (!selectedState.value) {
+    console.log('🔄 Actualizando ranking desde watch')
+    updateRankingByVariable(newVariable)
+  }
+})
+
 watch(selectedState, (newState, oldState) => {
   console.log('👀 Watch selectedState - De:', oldState, '→ A:', newState)
   if (newState && newState !== oldState) {
@@ -310,6 +405,12 @@ watch(selectedState, (newState, oldState) => {
     })
   } else if (!newState && oldState) {
     emit('region-selected', null)
+    // ✅ Al deseleccionar estado, recargar ranking
+    if (selectedVariable.value) {
+      updateRankingByVariable(selectedVariable.value)
+    } else {
+      loadAllStatesRanking(null)
+    }
   }
 })
 
@@ -323,12 +424,13 @@ onMounted(async () => {
   console.log('\n🚀 ===== INICIALIZANDO HomePage =====')
   await loadEntitiesFromSheet()
   await initializeSlider()
-  await loadAllStatesRanking()
+  await loadAllStatesRanking(null)  // ✅ Cargar con variable por defecto (IFSS)
   console.log('✅ HomePage inicializado\n')
 })
 </script>
 
 <style scoped>
+/* ... (estilos sin cambios) ... */
 .map-container {
   width: 95%;
   max-width: 2000px;
@@ -530,6 +632,13 @@ onMounted(async () => {
   width: 100%;
 }
 
+/* ✅ Dimensiones específicas cuando se muestra HistoricalCard */
+.ranking-panel.historical-view {
+  width: 2000px;
+  height: 1540px;
+  transition: all 0.3s ease;
+}
+
 .header-ranking-panel {
   display: flex;
   flex-direction: row; 
@@ -595,6 +704,13 @@ h2 {
     justify-content: center;
   }
   
+  /* ✅ Ajustar dimensiones en tablets */
+  .ranking-panel.historical-view {
+    width: 100%;
+    height: auto;
+    min-height: 1400px;
+  }
+  
   h2 {
     font-size: 16px;
   }
@@ -615,6 +731,13 @@ h2 {
   
   .ranking-panel {
     padding: 15px;
+  }
+  
+  /* ✅ Ajustar dimensiones en pantallas pequeñas */
+  .ranking-panel.historical-view {
+    width: 100%;
+    height: auto;
+    min-height: 1200px;
   }
   
   h2 {

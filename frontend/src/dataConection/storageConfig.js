@@ -26,9 +26,9 @@ export const storageConfig = {
       cuantitativos: {
         sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_CUANTITATIVOS,
         files: {
-          datosCuantitativos: 'Datos_Cuantitativos',
-          chartsPresupuestos: 'Datos_Cuantitativos', 
-          chartsIngresos: 'Datos_Cuantitativos'  
+          datosCuantitativos: '2024',
+          chartsPresupuestos: '2024', 
+          chartsIngresos: '2024'  
         }
       }
     },
@@ -40,9 +40,9 @@ export const storageConfig = {
       indicadores: 'Indicadores',
       gastos: 'Gastos',
       estados: 'Estados',
-      datosCuantitativos: 'Datos_Cuantitativos',
-      chartsPresupuestos: 'Datos_Cuantitativos',  
-      chartsIngresos: 'Datos_Cuantitativos' 
+      datosCuantitativos: '2024',
+      chartsPresupuestos: '2024',  
+      chartsIngresos: '2024' 
     }
   },
   
@@ -196,8 +196,17 @@ export const storageConfig = {
       ]
     },
     
+    // ✅ NUEVO MAPPING: Ranking con columnas específicas por variable
     rankingCuantitativo: {
       stateColumn: 'Entidad Federativa',
+      // Mapeo de variables a columnas del sheet
+      columnsByVariable: {
+        'IFSS': 'IFSS',  // Default (cuando no hay variable seleccionada o variable es "Todas")
+        'PS': 'PS (%)',  // Columna para Presupuestos Sostenibles
+        'IIC': 'IIC (%)', // Columna para Ingresos Intensivos en Carbono
+        'PIC': 'PIC (%)', // Columna para Presupuestos Intensivos en Carbono
+        'IS': 'IS (%)'   // Columna para Ingresos Sostenibles
+      },
       variableColumns: [
         {
           key: 'IFSS',

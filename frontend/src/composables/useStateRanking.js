@@ -1,128 +1,197 @@
 // src/composables/useStateRanking.js
-import { ref, computed } from 'vue'
+
+import { ref } from 'vue'
 import { useStorageData } from '@/dataConection/useStorageData'
+import { getMapping } from '@/dataConection/storageConfig'
 
 export function useStateRanking() {
   const rankingData = ref([])
-  const sortOrder = ref('desc')
+  const loading = ref(false)
+  const error = ref(null)
+  const rawData = ref([])
+  const currentVariable = ref(null)
   
-  const { loading, error, fetchData } = useStorageData()
+  const { fetchData } = useStorageData()
   
-  const loadAllStatesRanking = async () => {
+  /**
+   * Determinar qué columna usar según la variable seleccionada
+   * @param {Object|null} variable - Variable seleccionada del filtro
+   * @returns {string} - Nombre de la columna a usar
+   */
+  const getColumnForVariable = (variable) => {
+    const mapping = getMapping('rankingCuantitativo')
+    
+    // Si no hay variable seleccionada, usar IFSS por defecto
+    if (!variable || !variable.key) {
+      console.log('📊 Usando columna por defecto: IFSS')
+      return mapping.columnsByVariable['IFSS']
+    }
+    
+    // Buscar la columna correspondiente a la variable
+    const columnName = mapping.columnsByVariable[variable.key]
+    
+    if (!columnName) {
+      console.warn(`⚠️ No se encontró columna para variable: ${variable.key}, usando IFSS`)
+      return mapping.columnsByVariable['IFSS']
+    }
+    
+    console.log(`📊 Usando columna: ${columnName} para variable: ${variable.key}`)
+    return columnName
+  }
+  
+  /**
+   * Transformar datos crudos a formato de ranking según la variable
+   * @param {Array} data - Datos crudos del sheet
+   * @param {string} columnName - Nombre de la columna a usar
+   * @returns {Array} - Datos transformados para HorizontalRankingChart
+   */
+  const transformRankingData = (data, columnName) => {
+    const mapping = getMapping('rankingCuantitativo')
+    const stateColumn = mapping.stateColumn
+    
+    // Transformar cada fila a formato de ranking
+    const transformed = data.map(row => {
+      const stateName = row[stateColumn]
+      const rawValue = row[columnName]
+      
+      // ✅ CORREGIDO: Limpiar el valor preservando decimales
+      let cleanValue = rawValue
+      if (typeof rawValue === 'string') {
+        // Eliminar comillas al inicio y final
+        cleanValue = rawValue.replace(/^["']+|["']+$/g, '').trim()
+        
+        // Si quedó vacío o solo comillas, es 0
+        if (cleanValue === '' || cleanValue === '""' || cleanValue === '"""') {
+          cleanValue = '0'
+        } else {
+          // ✅ IMPORTANTE: NO eliminar puntos si son decimales
+          // Solo eliminar puntos si hay comas (formato europeo con miles)
+          // Ejemplo: "1.234,56" → "1234.56"
+          if (cleanValue.includes(',')) {
+            // Formato europeo: punto para miles, coma para decimales
+            cleanValue = cleanValue.replace(/\./g, '').replace(',', '.')
+          }
+          // Si solo hay punto, asumimos que es decimal (formato US)
+          // Ejemplo: "2.5" → "2.5" (no tocar)
+        }
+      }
+      
+      return {
+        key: stateName,
+        label: stateName,
+        value: parseFloat(cleanValue) || 0,
+        colorClass: 'blue',
+        color: null  // El color se asignará en el componente según el valor
+      }
+    })
+    
+    // Filtrar estados sin nombre y ordenar por valor descendente
+    const filtered = transformed
+      .filter(item => item.label && item.label.trim() !== '')
+      .sort((a, b) => b.value - a.value)
+    
+    console.log(`✅ Ranking transformado: ${filtered.length} estados`)
+    console.log(`📊 Ejemplo de valores: ${filtered.slice(0, 3).map(f => `${f.label}: ${f.value}`).join(', ')}`)
+    
+    return filtered
+  }
+  
+  /**
+   * Cargar ranking de todos los estados según la variable seleccionada
+   * @param {Object|null} variable - Variable seleccionada del filtro
+   */
+  const loadAllStatesRanking = async (variable = null) => {
+    loading.value = true
+    error.value = null
+    
     try {
       console.log('📊 Cargando ranking de estados...')
+      console.log('📊 Variable seleccionada:', variable)
       
-      const data = await fetchData('datosCuantitativos', 'Datos_Cuantitativos')
+      // Obtener datos del sheet
+      const data = await fetchData('datosCuantitativos', '2024')
       
       if (!data || data.length === 0) {
-        console.warn('⚠️ No se encontraron datos')
+        console.warn('⚠️ No se encontraron datos en el sheet')
         rankingData.value = []
         return
       }
       
-      console.log('✅ Datos obtenidos:', data.length, 'filas')
-      console.log('Primera fila:', data[0])
-      console.log('Todas las filas:', data)
+      rawData.value = data
+      currentVariable.value = variable
       
-      // Nombres de columnas
-      const stateColumnName = 'Entidad Federativa'
-      const ifssColumnName = 'IFSS'
+      // Determinar qué columna usar
+      const columnName = getColumnForVariable(variable)
       
-      const transformed = data.map(row => {
-        const stateName = row[stateColumnName]
-        const ifssValue = row[ifssColumnName]
-        
-        // ✅ FIX: Convertir formato europeo (coma decimal) a formato estándar
-        const cleanValue = typeof ifssValue === 'string' 
-          ? ifssValue.replace(/\./g, '').replace(',', '.')  // Quitar puntos de miles, cambiar coma a punto
-          : ifssValue
-        
-        const parsedValue = parseFloat(cleanValue) || 0
-        
-        console.log(`Estado: ${stateName}, IFSS: ${ifssValue} → ${parsedValue}`)
-        
-        return {
-          key: stateName?.toLowerCase().replace(/\s+/g, '_') || 'unknown',
-          label: stateName || 'Desconocido',
-          value: parsedValue,
-          colorClass: 'blue',
-          color: getColorByValue(parsedValue)
-        }
-      })
+      // Transformar datos al formato esperado
+      const transformed = transformRankingData(data, columnName)
       
-      const filtered = transformed.filter(item => 
-        item.label !== 'Desconocido' && item.value > 0
-      )
+      rankingData.value = transformed
       
-      rankingData.value = sortRanking(filtered)
-      
-      console.log(`✅ Ranking cargado: ${rankingData.value.length} estados`)
-      console.log('📊 RankingData completo:', rankingData.value)
+      console.log(`✅ Ranking cargado: ${transformed.length} estados`)
       
     } catch (err) {
       console.error('❌ Error cargando ranking:', err)
+      error.value = err.message
       rankingData.value = []
-      throw err
+    } finally {
+      loading.value = false
     }
   }
   
-  const sortRanking = (data) => {
-    return [...data].sort((a, b) => {
-      return sortOrder.value === 'desc' ? b.value - a.value : a.value - b.value
-    })
-  }
-  
-  const toggleSortOrder = () => {
-    sortOrder.value = sortOrder.value === 'desc' ? 'asc' : 'desc'
-    if (rankingData.value.length > 0) {
-      rankingData.value = sortRanking(rankingData.value)
+  /**
+   * Actualizar ranking cuando cambia la variable (sin recargar datos del sheet)
+   * @param {Object|null} variable - Variable seleccionada del filtro
+   */
+  const updateRankingByVariable = (variable) => {
+    if (!rawData.value || rawData.value.length === 0) {
+      console.warn('⚠️ No hay datos cargados, cargando...')
+      loadAllStatesRanking(variable)
+      return
+    }
+    
+    try {
+      console.log('🔄 Actualizando ranking por variable:', variable)
+      
+      currentVariable.value = variable
+      
+      // Determinar qué columna usar
+      const columnName = getColumnForVariable(variable)
+      
+      // Transformar datos con la nueva columna
+      const transformed = transformRankingData(rawData.value, columnName)
+      
+      rankingData.value = transformed
+      
+      console.log(`✅ Ranking actualizado: ${transformed.length} estados`)
+      
+    } catch (err) {
+      console.error('❌ Error actualizando ranking:', err)
+      error.value = err.message
     }
   }
   
-  const getColorByValue = (value) => {
-    // Muy Alto / Alto (Verde Fuerte)
-    if (value >= 2.5) return '#16a34a'  // Verde fuerte
-    
-    // Medio Alto (Verde Bajo)
-    if (value >= 2.3) return '#84cc16'  // Verde amarillento
-    
-    // Medio (Amarillo)
-    if (value >= 1.9) return '#facc15'  // Amarillo
-    
-    // Medio Bajo (Anaranjado)
-    if (value >= 1.5) return '#f97316'  // Naranja
-    
-    // Bajo (Rojo)
-    if (value >= 0.8) return '#dc2626'  // Rojo
-    
-    // Muy Bajo (Rojo Fuerte)
-    return '#b91c1c'  // Rojo oscuro
+  /**
+   * Reiniciar datos
+   */
+  const reset = () => {
+    rankingData.value = []
+    rawData.value = []
+    currentVariable.value = null
+    error.value = null
   }
-  
-  const stats = computed(() => {
-    if (rankingData.value.length === 0) {
-      return { total: 0, average: 0, max: 0, min: 0 }
-    }
-    
-    const values = rankingData.value.map(item => item.value)
-    const total = values.reduce((sum, val) => sum + val, 0)
-    
-    return {
-      total: values.length,
-      average: (total / values.length).toFixed(2),
-      max: Math.max(...values).toFixed(2),
-      min: Math.min(...values).toFixed(2)
-    }
-  })
   
   return {
+    // Estado
     rankingData,
     loading,
     error,
-    sortOrder,
-    stats,
+    currentVariable,
+    
+    // Métodos
     loadAllStatesRanking,
-    toggleSortOrder
+    updateRankingByVariable,
+    reset
   }
 }
 

@@ -70,15 +70,25 @@
             <button 
               @click="toggleDropdown('año')"
               class="dropdown-button"
-              :class="{ 'active': activeDropdown === 'año', 'has-selection': selectedYear && selectedYear !== '2023' }"
+              :class="{ 'active': activeDropdown === 'año', 'has-selection': selectedYear !== null }"
             >
-              <span class="dropdown-text">{{ selectedYear || '2023' }}</span>
+              <span class="dropdown-text">{{ selectedYear || 'Todos los años' }}</span>
               <span class="dropdown-arrow">▼</span>
             </button>
             
             <!-- Dropdown de años -->
             <div v-if="activeDropdown === 'año'" class="dropdown-menu">
               <div class="dropdown-options">
+                <!-- Opción "Todos los años" -->
+                <div 
+                  @click="selectYear(null)"
+                  class="dropdown-option"
+                  :class="{ 'selected': selectedYear === null }"
+                >
+                  <span>Todos los años</span>
+                </div>
+                
+                <!-- Años específicos -->
                 <div 
                   v-for="year in availableYears" 
                   :key="year"
@@ -207,9 +217,9 @@ const entitySearch = ref('')
 const slideTimeout = ref(null)
 const filterBarRef = ref(null)
 
-// Filtros seleccionados
+// Filtros seleccionados - MODIFICADO: selectedYear ahora por defecto es null (Todos los años)
 const selectedEntity = ref(null)
-const selectedYear = ref('2023')
+const selectedYear = ref(null) // null = "Todos los años"
 const selectedVariable = ref(null)
 
 // Datos de configuración

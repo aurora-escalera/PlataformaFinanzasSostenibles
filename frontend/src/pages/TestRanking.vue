@@ -127,7 +127,7 @@ const runDebug = async () => {
     
     // PASO 2: Obtener datos del sheet
     console.log('=== PASO 2: Obteniendo datos ===')
-    const data = await fetchData('datosCuantitativos', 'Datos_Cuantitativos')
+    const data = await fetchData('datosCuantitativos', '2024')
     
     if (!data || data.length === 0) {
       errorMsg.value = 'El sheet está vacío o no se pudo conectar'

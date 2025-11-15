@@ -25,7 +25,7 @@ export function useRankingData() {
       console.log('📊 Cargando datos de ranking cuantitativo...')
       
       // Obtener datos del sheet "Datos_Cuantitativos"
-      const data = await fetchData('datosCuantitativos', 'Datos_Cuantitativos')
+      const data = await fetchData('datosCuantitativos', '2024')
       
       if (!data || data.length === 0) {
         console.warn('⚠️ No se encontraron datos en el sheet')
