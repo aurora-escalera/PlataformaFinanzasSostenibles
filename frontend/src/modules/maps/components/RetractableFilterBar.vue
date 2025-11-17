@@ -26,7 +26,7 @@
               class="dropdown-button"
               :class="{ 'active': activeDropdown === 'entidad', 'has-selection': selectedEntity }"
             >
-              <span class="dropdown-text">{{ selectedEntity || 'Todas' }}</span>
+              <span class="dropdown-text">{{ selectedEntity || 'Todas las entidades' }}</span>
               <span class="dropdown-arrow">▼</span>
             </button>
             
@@ -285,7 +285,7 @@ const filteredEntities = computed(() => {
 
 // Función para obtener el label de la variable seleccionada
 const getVariableLabel = () => {
-  if (!selectedVariable.value) return 'Todas'
+  if (!selectedVariable.value) return 'Todas las variables'
   return selectedVariable.value.key
 }
 

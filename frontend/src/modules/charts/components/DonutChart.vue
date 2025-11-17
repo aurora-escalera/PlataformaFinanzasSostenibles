@@ -22,7 +22,7 @@
     <!-- SVG de la gráfica de dona -->
     <div class="chart-svg-container">
       <svg 
-        :key="`donut-${sectorsKey}`"
+        :key="sectorsKey"
         :width="size" 
         :height="size" 
         class="donut-svg"
@@ -37,35 +37,40 @@
           :stroke-width="strokeWidth"
         />
         
-        <!-- Segmentos interactivos de la dona -->
-        <g v-if="shouldShowProgress && allSectorsWithState.length > 0">
-          <path
-            v-for="(sector, index) in allSectorsWithState"
-            :key="sector.key"
-            :d="getSectorPath(sector, index)"
-            fill="none"
-            :stroke="getSectorColor(sector)"
-            :stroke-width="strokeWidth"
-            :class="['sector-path', { 'sector-inactive': !sector.isActive }]"
-            @mouseenter="(e) => handleSectorHover(sector, e)"
-            @mousemove="updateTooltipPosition"
-            @mouseleave="handleSectorLeave"
-          />
+        <!-- ✅ FIX: Separar v-if en elemento contenedor -->
+        <g v-if="shouldShowProgress">
+          <!-- ✅ FIX: v-for en elemento hijo separado -->
+          <template v-if="allSectorsWithState.length > 0">
+            <path
+              v-for="(sector, index) in allSectorsWithState"
+              :key="`sector-${sector.key}-${index}`"
+              :d="getSectorPath(sector, index)"
+              fill="none"
+              :stroke="getSectorColor(sector)"
+              :stroke-width="strokeWidth"
+              :class="['sector-path', { 'sector-inactive': !sector.isActive }]"
+              @mouseenter="(e) => handleSectorHover(sector, e)"
+              @mousemove="updateTooltipPosition"
+              @mouseleave="handleSectorLeave"
+            />
+          </template>
         </g>
 
         <!-- Labels de porcentaje en cada segmento -->
-        <g v-if="shouldShowProgress && allSectorsWithState.length > 0">
-          <text
-            v-for="(sector, index) in allSectorsWithState"
-            :key="`label-${sector.key}`"
-            :x="getSectorLabelPosition(sector, index).x"
-            :y="getSectorLabelPosition(sector, index).y"
-            text-anchor="middle"
-            :class="['sector-label', { 'sector-label-inactive': !sector.isActive }]"
-            pointer-events="none"
-          >
-            {{ getSectorPercentage(sector) }}
-          </text>
+        <g v-if="shouldShowProgress">
+          <template v-if="allSectorsWithState.length > 0">
+            <text
+              v-for="(sector, index) in allSectorsWithState"
+              :key="`label-${sector.key}-${index}`"
+              :x="getSectorLabelPosition(sector, index).x"
+              :y="getSectorLabelPosition(sector, index).y"
+              text-anchor="middle"
+              :class="['sector-label', { 'sector-label-inactive': !sector.isActive }]"
+              pointer-events="none"
+            >
+              {{ getSectorPercentage(sector) }}
+            </text>
+          </template>
         </g>
         
         <!-- Texto central con el porcentaje -->
@@ -130,54 +135,8 @@ const props = defineProps({
   }
 })
 
-// ✅ Estado de toggle del usuario (separado del computed)
+// ✅ Estado de toggle del usuario
 const userToggles = ref({})
-
-// ✅ CAMBIO IMPORTANTE: Variables internas ahora son COMPUTED
-// Esto asegura que siempre estén sincronizadas con los sectores
-const internalVariables = computed(() => {
-  console.log('🔧 Calculando internalVariables...')
-  console.log('  📊 props.variables:', props.variables)
-  console.log('  📊 props.sectors:', props.sectors)
-  
-  if (!props.variables || props.variables.length === 0) {
-    console.log('  ⚠️ No hay variables para inicializar')
-    return []
-  }
-  
-  const result = props.variables.map(v => {
-    // Buscar el sector correspondiente para verificar si tiene datos
-    const sector = props.sectors?.find(s => s.key === v.key)
-    
-    // ✅ VALIDACIÓN ESTRICTA: Solo tiene datos si el valor es > 0
-    const hasData = sector && 
-                    sector.value !== null && 
-                    sector.value !== undefined && 
-                    !isNaN(sector.value) &&
-                    sector.value > 0
-    
-    // Si el usuario ha hecho toggle, usar ese valor; si no, usar hasData
-    const userToggle = userToggles.value[v.key]
-    const shouldBeActive = hasData && (userToggle !== undefined ? userToggle : true)
-    
-    console.log(`  🔧 Variable ${v.key}:`)
-    console.log(`     - Sector encontrado:`, sector)
-    console.log(`     - Valor del sector:`, sector?.value)
-    console.log(`     - hasData: ${hasData}`)
-    console.log(`     - userToggle: ${userToggle}`)
-    console.log(`     - shouldBeActive: ${shouldBeActive}`)
-    console.log(`     - disabled: ${!hasData}`)
-    
-    return {
-      ...v,
-      active: shouldBeActive,
-      disabled: !hasData
-    }
-  })
-  
-  console.log('  ✅ Variables calculadas:', result)
-  return result
-})
 
 // Estado del tooltip
 const hoveredSector = ref(null)
@@ -186,35 +145,66 @@ const tooltipPosition = ref({ x: 0, y: 0 })
 // ✅ Key para forzar re-render del SVG cuando cambien los sectores
 const sectorsKey = computed(() => {
   if (!props.sectors || props.sectors.length === 0) return 'empty'
-  // Crear key basada en los valores de los sectores
-  return props.sectors.map(s => `${s.key}-${s.value}`).join('_')
+  return props.sectors.map(s => `${s.key}-${s.value || 0}`).join('_')
 })
 
-// ✅ Watch para debugging de props.sectors
-watch(() => props.sectors, (newVal) => {
-  console.log('🔔 DonutChart recibió NUEVO props.sectors:', newVal)
-  console.log('   📊 Cantidad:', newVal?.length || 0)
-  console.log('   📊 Valores:', newVal?.map(s => ({ key: s.key, value: s.value })))
-}, { immediate: true, deep: true })
-
-// ✅ Watch para detectar cambios profundos en los sectores y resetear toggles si es necesario
-watch(() => props.sectors, (newSectors, oldSectors) => {
-  console.log('🔄 props.sectors cambió')
-  console.log('  📊 Nuevos sectores:', newSectors)
-  
-  // Si los sectores cambiaron significativamente (diferentes valores), 
-  // verificar que los toggles del usuario aún sean válidos
-  if (newSectors && newSectors.length > 0) {
-    newSectors.forEach(sector => {
-      // Si un sector ahora no tiene datos pero el usuario lo tenía activo, resetear
-      const hasData = sector.value > 0
-      if (!hasData && userToggles.value[sector.key] === true) {
-        delete userToggles.value[sector.key]
-        console.log(`  🔄 Reseteando toggle para ${sector.key} (ya no tiene datos)`)
-      }
-    })
+// ✅ OPTIMIZADO: Variables internas como computed
+const internalVariables = computed(() => {
+  if (!props.variables || props.variables.length === 0) {
+    return []
   }
-}, { deep: true })
+  
+  return props.variables.map(v => {
+    const sector = props.sectors?.find(s => s.key === v.key)
+    const hasData = sector && 
+                    sector.value !== null && 
+                    sector.value !== undefined && 
+                    !isNaN(sector.value) &&
+                    sector.value > 0
+    
+    const userToggle = userToggles.value[v.key]
+    const shouldBeActive = hasData && (userToggle !== undefined ? userToggle : true)
+    
+    return {
+      ...v,
+      active: shouldBeActive,
+      disabled: !hasData
+    }
+  })
+})
+
+// ✅ SIMPLIFICADO: Calcular sectores con estado activo/inactivo
+const allSectorsWithState = computed(() => {
+  if (!props.sectors || props.sectors.length === 0) {
+    return []
+  }
+  
+  return props.sectors.map(sector => {
+    const hasData = sector.value !== null && 
+                    sector.value !== undefined && 
+                    !isNaN(sector.value) &&
+                    sector.value > 0
+    
+    const userToggle = userToggles.value[sector.key]
+    const isActive = hasData && (userToggle !== undefined ? userToggle : true)
+    
+    return {
+      ...sector,
+      isActive: isActive,
+      hasData: hasData
+    }
+  })
+})
+
+// Calcular el valor total de TODOS los sectores
+const totalAllSectorsValue = computed(() => {
+  return allSectorsWithState.value.reduce((sum, sector) => sum + (sector.value || 0), 0)
+})
+
+// Determinar si mostrar el progreso
+const shouldShowProgress = computed(() => {
+  return allSectorsWithState.value.some(s => s.hasData)
+})
 
 // Función para formatear moneda
 const formatCurrency = (value) => {
@@ -230,7 +220,6 @@ const formatCurrency = (value) => {
 
 // Manejar hover en segmento de la gráfica
 const handleSectorHover = (sector, event) => {
-  console.log('🖱️ Hover sobre sector de la gráfica:', sector.label, sector.value)
   hoveredSector.value = sector
   updateTooltipPosition(event)
 }
@@ -245,7 +234,6 @@ const updateTooltipPosition = (event) => {
 
 // Limpiar hover
 const handleSectorLeave = () => {
-  console.log('👋 Dejando hover del sector')
   hoveredSector.value = null
 }
 
@@ -268,181 +256,21 @@ const backgroundColor = computed(() => {
 const center = computed(() => props.size / 2)
 const strokeWidth = computed(() => 28)
 const radius = computed(() => (props.size / 2) - (strokeWidth.value / 2))
-const circumference = computed(() => 2 * Math.PI * radius.value)
 
-// Obtener el valor del primer elemento
-const primaryValue = computed(() => {
-  return props.data.length > 0 ? props.data[0].value : 0
-})
-
-// Valor a mostrar en el centro
-const displayValue = computed(() => {
-  if (props.subtitle) {
-    return props.subtitle
-  }
-  const percentage = primaryValue.value <= 1 ? primaryValue.value * 100 : primaryValue.value
-  return `${Math.round(percentage)}%`
-})
-
-// Verificar si alguna variable está activa
-const activeVariablesCount = computed(() => {
-  return internalVariables.value.filter(v => v.active).length
-})
-
-// Determinar si mostrar el progreso
-const shouldShowProgress = computed(() => {
-  // Si no hay variables, siempre mostrar si hay sectores con datos
-  if (!props.variables || props.variables.length === 0) {
-    const result = allSectorsWithState.value.some(s => s.hasData)
-    console.log('🎯 shouldShowProgress (sin variables):', result)
-    return result
-  }
-  // Si hay variables, mostrar si hay al menos un sector con datos
-  const result = allSectorsWithState.value.some(s => s.hasData)
-  console.log('🎯 shouldShowProgress (con variables):', result, 'sectores:', allSectorsWithState.value.length)
-  return result
-})
-
-// ✅ SIMPLIFICADO: Todos los sectores con información de si están activos
-// Ahora usa userToggles directamente, sin depender de internalVariables
-let allSectorsCalculationCount = 0
-const allSectorsWithState = computed(() => {
-  allSectorsCalculationCount++
-  console.log(`🔄 Calculando allSectorsWithState... (llamada #${allSectorsCalculationCount})`)
-  console.log('  📊 props.sectors:', props.sectors)
-  console.log('  📊 userToggles:', userToggles.value)
-  
-  if (!props.sectors || props.sectors.length === 0) {
-    console.log('  ⚠️ No hay sectores')
-    return []
-  }
-  
-  // Mapear sectores con su estado activo/inactivo
-  const result = props.sectors.map(sector => {
-    // ✅ VALIDACIÓN ESTRICTA: hasData
-    const hasData = sector.value !== null && 
-                    sector.value !== undefined && 
-                    !isNaN(sector.value) &&
-                    sector.value > 0
-    
-    // Si el usuario hizo toggle, usar ese valor; si no, está activo por defecto si tiene datos
-    const userToggle = userToggles.value[sector.key]
-    const isActive = hasData && (userToggle !== undefined ? userToggle : true)
-    
-    console.log(`  🔸 Sector ${sector.key}:`)
-    console.log(`     - value: ${sector.value}`)
-    console.log(`     - hasData: ${hasData}`)
-    console.log(`     - userToggle: ${userToggle}`)
-    console.log(`     - isActive: ${isActive}`)
-    
-    return {
-      ...sector,
-      isActive: isActive,
-      hasData: hasData
-    }
-  })
-  
-  console.log('  ✅ allSectorsWithState calculado:', result)
-  
-  if (allSectorsCalculationCount > 10) {
-    console.error('⚠️⚠️⚠️ POSIBLE LOOP INFINITO - allSectorsWithState calculado más de 10 veces')
-  }
-  
-  return result
-})
-
-// Calcular el valor total de TODOS los sectores (activos e inactivos)
-const totalAllSectorsValue = computed(() => {
-  return allSectorsWithState.value.reduce((sum, sector) => sum + (sector.value || 0), 0)
-})
-
-// Obtener color del sector (activo = su color, inactivo = gris)
+// Obtener color del sector
 const getSectorColor = (sector) => {
-  console.log(`🎨 getSectorColor para ${sector.key}:`, {
-    hasData: sector.hasData,
-    isActive: sector.isActive,
-    color: sector.color,
-    resultado: sector.hasData ? (sector.isActive ? sector.color : '#D0D0D0') : '#E8E8E8'
-  })
-  
   if (!sector.hasData) {
-    return '#E8E8E8' // Gris claro si no tiene datos
+    return '#E8E8E8'
   }
-  return sector.isActive ? sector.color : '#D0D0D0' // Su color o gris
+  return sector.isActive ? sector.color : '#D0D0D0'
 }
 
-// Función para calcular el path SVG de cada sector
+// ✅ FIX: Función para calcular el path SVG de cada sector con manejo especial para 360°
 const getSectorPath = (sector, index) => {
-  console.log(`📐 getSectorPath llamado para sector ${sector.key} (index ${index})`)
-  
   const r = radius.value
   const cx = center.value
   const cy = center.value
   
-  // Calcular ángulo inicial basado en TODOS los sectores anteriores
-  let startAngle = -90 // Comenzar desde arriba
-  
-  for (let i = 0; i < index; i++) {
-    const prevSector = allSectorsWithState.value[i]
-    const prevPercentage = totalAllSectorsValue.value > 0 
-      ? (prevSector.value / totalAllSectorsValue.value) 
-      : 0
-    startAngle += prevPercentage * 360
-  }
-  
-  // Calcular ángulo del sector actual basado en el TOTAL
-  const sectorPercentage = totalAllSectorsValue.value > 0 
-    ? (sector.value / totalAllSectorsValue.value) 
-    : 0
-  const sectorAngle = sectorPercentage * 360
-  
-  const endAngle = startAngle + sectorAngle
-  
-  // Convertir a radianes
-  const startRad = (startAngle * Math.PI) / 180
-  const endRad = (endAngle * Math.PI) / 180
-  
-  // Calcular coordenadas
-  const x1 = cx + r * Math.cos(startRad)
-  const y1 = cy + r * Math.sin(startRad)
-  const x2 = cx + r * Math.cos(endRad)
-  const y2 = cy + r * Math.sin(endRad)
-  
-  // Determinar si el arco es mayor a 180 grados
-  const largeArcFlag = sectorAngle > 180 ? 1 : 0
-  
-  // Crear el path del arco
-  const pathString = `M ${x1} ${y1} A ${r} ${r} 0 ${largeArcFlag} 1 ${x2} ${y2}`
-  
-  console.log(`📐 Path generado para ${sector.key}:`, {
-    startAngle,
-    endAngle,
-    sectorAngle,
-    sectorPercentage: (sectorPercentage * 100).toFixed(2) + '%',
-    path: pathString
-  })
-  
-  return pathString
-}
-
-// Función para calcular el porcentaje de un sector
-const getSectorPercentage = (sector) => {
-  if (totalAllSectorsValue.value === 0) return '0.00%'
-  const percentage = (sector.value / totalAllSectorsValue.value) * 100
-  
-  // Solo mostrar si el porcentaje es mayor a 5% (para que sea legible)
-  if (percentage < 5) return ''
-  
-  return `${percentage.toFixed(2)}%`
-}
-
-// Función para calcular la posición del label en el centro del segmento
-const getSectorLabelPosition = (sector, index) => {
-  const r = radius.value
-  const cx = center.value
-  const cy = center.value
-  
-  // Calcular ángulo inicial
   let startAngle = -90
   
   for (let i = 0; i < index; i++) {
@@ -453,22 +281,74 @@ const getSectorLabelPosition = (sector, index) => {
     startAngle += prevPercentage * 360
   }
   
-  // Calcular ángulo del sector actual
   const sectorPercentage = totalAllSectorsValue.value > 0 
     ? (sector.value / totalAllSectorsValue.value) 
     : 0
   const sectorAngle = sectorPercentage * 360
   
-  // Ángulo medio del sector (donde va el label)
+  // ✅ FIX: Caso especial para sectores que ocupan 100% (360°)
+  // Un arco SVG no puede ser exactamente 360°, así que lo dibujamos como dos semicírculos
+  if (sectorAngle >= 359.99) {
+    const topY = cy - r
+    const bottomY = cy + r
+    // Dibujar como dos arcos de 180° que forman un círculo completo
+    return `M ${cx} ${topY} A ${r} ${r} 0 0 1 ${cx} ${bottomY} A ${r} ${r} 0 0 1 ${cx} ${topY}`
+  }
+  
+  const endAngle = startAngle + sectorAngle
+  
+  const startRad = (startAngle * Math.PI) / 180
+  const endRad = (endAngle * Math.PI) / 180
+  
+  const x1 = cx + r * Math.cos(startRad)
+  const y1 = cy + r * Math.sin(startRad)
+  const x2 = cx + r * Math.cos(endRad)
+  const y2 = cy + r * Math.sin(endRad)
+  
+  const largeArcFlag = sectorAngle > 180 ? 1 : 0
+  
+  return `M ${x1} ${y1} A ${r} ${r} 0 ${largeArcFlag} 1 ${x2} ${y2}`
+}
+
+// Función para calcular el porcentaje de un sector
+const getSectorPercentage = (sector) => {
+  if (totalAllSectorsValue.value === 0) return ''
+  const percentage = (sector.value / totalAllSectorsValue.value) * 100
+  
+  if (percentage < 5) return ''
+  
+  return `${percentage.toFixed(2)}%`
+}
+
+// Función para calcular la posición del label
+const getSectorLabelPosition = (sector, index) => {
+  const r = radius.value
+  const cx = center.value
+  const cy = center.value
+  
+  let startAngle = -90
+  
+  for (let i = 0; i < index; i++) {
+    const prevSector = allSectorsWithState.value[i]
+    const prevPercentage = totalAllSectorsValue.value > 0 
+      ? (prevSector.value / totalAllSectorsValue.value) 
+      : 0
+    startAngle += prevPercentage * 360
+  }
+  
+  const sectorPercentage = totalAllSectorsValue.value > 0 
+    ? (sector.value / totalAllSectorsValue.value) 
+    : 0
+  const sectorAngle = sectorPercentage * 360
+  
   const midAngle = startAngle + (sectorAngle / 2)
   const midRad = (midAngle * Math.PI) / 180
   
-  // Posición en el medio del anillo (radio del centro de la dona)
   const labelRadius = r
   
   return {
     x: cx + labelRadius * Math.cos(midRad),
-    y: cy + labelRadius * Math.sin(midRad) + 4 // +4 para centrar verticalmente
+    y: cy + labelRadius * Math.sin(midRad) + 4
   }
 }
 
@@ -476,12 +356,8 @@ const getSectorLabelPosition = (sector, index) => {
 const toggleVariable = (key) => {
   const variable = internalVariables.value.find(v => v.key === key)
   if (variable && !variable.disabled) {
-    // Toggle del estado del usuario
     const currentState = userToggles.value[key] !== undefined ? userToggles.value[key] : true
     userToggles.value[key] = !currentState
-    console.log(`🔄 Toggle variable ${key}: ${currentState} -> ${!currentState}`)
-  } else if (variable && variable.disabled) {
-    console.log(`⚠️ Variable ${key} está deshabilitada (sin datos)`)
   }
 }
 
@@ -492,6 +368,18 @@ const isVariableActive = (key) => {
 const isVariableDisabled = (key) => {
   return internalVariables.value.find(v => v.key === key)?.disabled || false
 }
+
+// ✅ Watch optimizado para detectar cambios en sectores
+watch(() => props.sectors, (newSectors) => {
+  if (newSectors && newSectors.length > 0) {
+    newSectors.forEach(sector => {
+      const hasData = sector.value > 0
+      if (!hasData && userToggles.value[sector.key] === true) {
+        delete userToggles.value[sector.key]
+      }
+    })
+  }
+}, { deep: true })
 </script>
 
 <style scoped>
@@ -504,7 +392,6 @@ const isVariableDisabled = (key) => {
   height: 100%;
 }
 
-/* Filtros de variables */
 .variable-filters {
   display: flex;
   flex-direction: row;
@@ -562,7 +449,6 @@ const isVariableDisabled = (key) => {
   opacity: 0.5;
 }
 
-/* Legend dot dentro del botón */
 .legend-dot {
   width: 12px;
   height: 12px;
@@ -570,7 +456,6 @@ const isVariableDisabled = (key) => {
   flex-shrink: 0;
 }
 
-/* Colores para diferentes tipos */
 .legend-dot.green {
   background: #7cb342;
 }
@@ -627,7 +512,7 @@ const isVariableDisabled = (key) => {
 }
 
 .sector-path.sector-inactive:hover {
-  stroke-width: 28; /* No aumenta el grosor si está inactivo */
+  stroke-width: 28;
 }
 
 .percentage-text {
@@ -665,7 +550,6 @@ const isVariableDisabled = (key) => {
   }
 }
 
-/* Tooltip Styles */
 .donut-tooltip {
   position: fixed;
   transform: translate(-50%, calc(-100% - 15px));
