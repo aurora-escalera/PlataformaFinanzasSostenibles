@@ -1,15 +1,4 @@
 <!-- src/modules/maps/components/HomePage.vue -->
-<!-- 
-  CAMBIOS REALIZADOS:
-  1. Importar updateRankingByVariable del composable useStateRanking
-  2. Actualizar handleVariableChange para recargar ranking cuando cambia la variable
-  3. Agregar watch para selectedVariable
-  4. Agregar selectedYear ref para trackear el filtro de año
-  5. Agregar computed showHistoricalCard para detectar cuando Entidad='Todas' Y Año='Todos los años' Y Variable='Todas'
-  6. Mostrar HistoricalCard en lugar de ChartsComponent cuando los 3 filtros están en "Todas"
-  7. Modificar v-if del ranking-panel para mostrarse también cuando showHistoricalCard es true
-  8. Agregar clase condicional 'historical-view' para aplicar dimensiones específicas (2000px x 1540px)
--->
 
 <template>
   <div class="filters-toggles-row">
@@ -128,9 +117,11 @@
           />
           
           <!-- ✅ Mostrar ChartsComponent cuando hay un estado seleccionado -->
+          <!-- ✅ CORREGIDO: Agregar :selectedYear prop -->
           <ChartsComponent 
             v-else
             :selectedState="selectedState"
+            :selectedYear="selectedYear"
             :selectedVariable="selectedVariable"
             :ifssData="getStateInfo(selectedState)"
           />
@@ -372,10 +363,12 @@ const handleMapContainerClick = (event) => {
   }
 }
 
-// ✅ NUEVO: Función para obtener el título dinámico del ranking
+// ✅ ACTUALIZADO: Función para obtener el título dinámico del ranking con año
 const getRankingTitle = () => {
+  const yearSuffix = selectedYear.value ? ` - ${selectedYear.value}` : ''
+  
   if (!selectedVariable.value || !selectedVariable.value.key) {
-    return 'Ranking IFSS por Estado'
+    return `Ranking IFSS por Estado${yearSuffix}`
   }
   
   const variableLabels = {
@@ -385,7 +378,7 @@ const getRankingTitle = () => {
     'IS': 'Ingresos Sostenibles (IS)'
   }
   
-  return `Ranking ${variableLabels[selectedVariable.value.key] || 'IFSS'} por Estado`
+  return `Ranking ${variableLabels[selectedVariable.value.key] || 'IFSS'} por Estado${yearSuffix}`
 }
 
 // ✅ NUEVO: Watch para detectar cambios en selectedVariable
@@ -765,5 +758,19 @@ h2 {
   h2 {
     font-size: 14px;
   }
+}
+</style>
+
+<!-- ✅ NUEVO: Estilos globales para zoom 80% -->
+<style>
+body {
+  zoom: 0.92; /* Propiedad más directa */
+  overflow-x: visible;
+}
+
+/* Alternativa: Si el body no funciona, aplicar al contenedor principal */
+#app {
+  zoom: 0.92;
+  overflow-x: visible;
 }
 </style>

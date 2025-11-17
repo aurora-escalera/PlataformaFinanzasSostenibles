@@ -1,12 +1,12 @@
 <!-- src/modules/charts/components/ChartsComponent.vue -->
-<!-- ✅ ACTUALIZADO: Usa año dinámico del filtro en lugar de '2024' hardcodeado -->
+<!-- ✅ ACTUALIZADO: Usa año dinámico del filtro en TODOS los títulos -->
 <template>
   <div class="charts-wrapper" :class="{ 'single-card': showingSingleCard }">
     <!-- CARD 1: PRESUPUESTOS -->
     <!-- ✅ NUEVO: Solo visible si no hay variable O si variable es PS o PIC -->
     <div v-if="!selectedVariable || selectedVariable.key === 'PS' || selectedVariable.key === 'PIC'" class="chart-card">
       <div class="chart-card-header">
-        <h4 class="card-title">{{ selectedState ? `Presupuestos - ${selectedState}` : 'Selecciona un estado' }}</h4>
+        <h4 class="card-title">{{ cardTitlePresupuestos }}</h4>
       </div>
       
       <div class="chart-card-body">
@@ -34,7 +34,7 @@
           <!-- ✅ Dona PS: Solo visible si no hay variable O si variable es PS -->
           <div v-if="!selectedVariable || selectedVariable.key === 'PS'" class="donut-item">
             <div class="donut-header">
-              <h5 class="donut-title">Análisis comparativo de los sectores que conforman Presupuestos Sostenibles (PS)</h5>
+              <h5 class="donut-title">{{ donutTitlePS }}</h5>
             </div>
             <DonutChart 
               v-if="sectoresPresupuestosSostenibles.length > 0"
@@ -51,7 +51,7 @@
           <!-- ✅ Dona PIC: Solo visible si no hay variable O si variable es PIC -->
           <div v-if="!selectedVariable || selectedVariable.key === 'PIC'" class="donut-item">
             <div class="donut-header">
-              <h5 class="donut-title">Análisis comparativo de los sectores que conforman Presupuestos Intensivos en Carbono (PIC)</h5>
+              <h5 class="donut-title">{{ donutTitlePIC }}</h5>
             </div>
             <DonutChart 
               v-if="sectoresPresupuestosCarbono.length > 0"
@@ -73,7 +73,7 @@
     <!-- ✅ NUEVO: Solo visible si no hay variable O si variable es IS o IIC -->
     <div v-if="!selectedVariable || selectedVariable.key === 'IS' || selectedVariable.key === 'IIC'" class="chart-card">
       <div class="chart-card-header">
-        <h4 class="card-title">{{ selectedState ? `Ingresos - ${selectedState}` : 'Selecciona un estado' }}</h4>
+        <h4 class="card-title">{{ cardTitleIngresos }}</h4>
       </div>
       
       <div class="chart-card-body">
@@ -101,7 +101,7 @@
           <!-- ✅ Dona IS: Solo visible si no hay variable O si variable es IS -->
           <div v-if="!selectedVariable || selectedVariable.key === 'IS'" class="donut-item">
             <div class="donut-header">
-              <h5 class="donut-title">Análisis comparativo de los sectores que conforman Ingresos Sostenibles (IS)</h5>
+              <h5 class="donut-title">{{ donutTitleIS }}</h5>
             </div>
             <DonutChart 
               v-if="sectoresIngresosSostenibles.length > 0"
@@ -118,7 +118,7 @@
           <!-- ✅ Dona IIC: Solo visible si no hay variable O si variable es IIC -->
           <div v-if="!selectedVariable || selectedVariable.key === 'IIC'" class="donut-item">
             <div class="donut-header">
-              <h5 class="donut-title">Análisis comparativo de los sectores que conforman Ingresos Intensivos en Carbono (IIC)</h5>
+              <h5 class="donut-title">{{ donutTitleIIC }}</h5>
             </div>
             <DonutChart 
               v-if="sectoresIngresosCarbono.length > 0"
@@ -847,25 +847,29 @@ const subtitleIngresosCarbono = computed(() => {
   return `${donutIngresosCarbono.value[0].value}%`
 })
 
+// ✅ NUEVO: Títulos dinámicos para las gráficas de barras con año
 const presupuestosTitleDynamic = computed(() => {
+  const yearSuffix = props.selectedYear ? ` en ${props.selectedYear}` : ''
+  
   if (props.selectedVariable) {
     if (props.selectedVariable.key === 'PS') {
-      return 'Presupuestos Sostenibles (PS) con respecto al Presupuesto Total (PT)'
+      return `Presupuestos Sostenibles (PS) con respecto al Presupuesto Total (PT)${yearSuffix}`
     } else if (props.selectedVariable.key === 'PIC') {
-      return 'Presupuestos Intensivos en Carbono (PIC) con respecto al Presupuesto Total (PT)'
+      return `Presupuestos Intensivos en Carbono (PIC) con respecto al Presupuesto Total (PT)${yearSuffix}`
     }
   }
   
-  return props.selectedYear 
-    ? `Presupuestos Intensivos en Carbono (PIC) y Presupuestos Sostenibles (PS) con respecto del gasto total en ${props.selectedYear}`
-    : 'Presupuestos Intensivos en Carbono (PIC) y Presupuestos Sostenibles (PS) con respecto del gasto total'
+  return `Presupuestos Intensivos en Carbono (PIC) y Presupuestos Sostenibles (PS) con respecto del gasto total${yearSuffix}`
 })
 
 const ingresosTitleDynamic = computed(() => {
+  const yearSuffix = props.selectedYear ? ` en ${props.selectedYear}` : ''
+  
   console.log('\n🔍 === DEBUG ingresosTitleDynamic ===')
   console.log('📦 props.selectedVariable completo:', JSON.stringify(props.selectedVariable, null, 2))
   console.log('🔑 props.selectedVariable?.key:', props.selectedVariable?.key)
   console.log('📝 typeof key:', typeof props.selectedVariable?.key)
+  console.log('📅 yearSuffix:', yearSuffix)
   
   if (props.selectedVariable) {
     const key = props.selectedVariable.key
@@ -874,11 +878,11 @@ const ingresosTitleDynamic = computed(() => {
     console.log(`🧪 Comparando key "${key}" con "IIC":`, key === 'IIC')
     
     if (key === 'IS') {
-      console.log('✅ ¡MATCH! Retornando título para IS')
-      return 'Ingresos Sostenibles (IS) con respecto al Ingreso Total (IT)'
+      console.log('✅ ¡MATCH! Retornando título para IS con año')
+      return `Ingresos Sostenibles (IS) con respecto al Ingreso Total (IT)${yearSuffix}`
     } else if (key === 'IIC') {
-      console.log('✅ ¡MATCH! Retornando título para IIC')
-      return 'Ingresos Intensivos en Carbono (IIC) con respecto al Ingreso Total (IT)'
+      console.log('✅ ¡MATCH! Retornando título para IIC con año')
+      return `Ingresos Intensivos en Carbono (IIC) con respecto al Ingreso Total (IT)${yearSuffix}`
     } else {
       console.log('⚠️ NO MATCH - key recibido:', key)
       console.log('⚠️ keys disponibles esperados: "IS", "IIC"')
@@ -887,10 +891,47 @@ const ingresosTitleDynamic = computed(() => {
     console.log('⚠️ props.selectedVariable es:', props.selectedVariable)
   }
   
-  console.log('📤 Retornando título por defecto')
+  console.log('📤 Retornando título por defecto con año')
   console.log('=== FIN DEBUG ===\n')
-  return 'Proporción del gasto asignado a Ingresos'
+  return `Proporción del gasto asignado a Ingresos${yearSuffix}`
 })
+
+// ✅ NUEVO: Títulos dinámicos para las donas con año
+const donutTitlePS = computed(() => {
+  const yearSuffix = props.selectedYear ? ` (${props.selectedYear})` : ''
+  return `Análisis comparativo de los sectores que conforman Presupuestos Sostenibles (PS)${yearSuffix}`
+})
+
+const donutTitlePIC = computed(() => {
+  const yearSuffix = props.selectedYear ? ` (${props.selectedYear})` : ''
+  return `Análisis comparativo de los sectores que conforman Presupuestos Intensivos en Carbono (PIC)${yearSuffix}`
+})
+
+const donutTitleIS = computed(() => {
+  const yearSuffix = props.selectedYear ? ` (${props.selectedYear})` : ''
+  return `Análisis comparativo de los sectores que conforman Ingresos Sostenibles (IS)${yearSuffix}`
+})
+
+const donutTitleIIC = computed(() => {
+  const yearSuffix = props.selectedYear ? ` (${props.selectedYear})` : ''
+  return `Análisis comparativo de los sectores que conforman Ingresos Intensivos en Carbono (IIC)${yearSuffix}`
+})
+
+// ✅ NUEVO: Card titles con año y estado
+const cardTitlePresupuestos = computed(() => {
+  if (!props.selectedState) return 'Selecciona un estado'
+  
+  const yearSuffix = props.selectedYear ? ` - ${props.selectedYear}` : ''
+  return `Presupuestos - ${props.selectedState}${yearSuffix}`
+})
+
+const cardTitleIngresos = computed(() => {
+  if (!props.selectedState) return 'Selecciona un estado'
+  
+  const yearSuffix = props.selectedYear ? ` - ${props.selectedYear}` : ''
+  return `Ingresos - ${props.selectedState}${yearSuffix}`
+})
+
 // Variables para filtros de Presupuestos Sostenibles
 const variablesPresupuestosSostenibles = [
   {
