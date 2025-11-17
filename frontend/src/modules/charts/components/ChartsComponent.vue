@@ -1,4 +1,5 @@
 <!-- src/modules/charts/components/ChartsComponent.vue -->
+<!-- ✅ ACTUALIZADO: Usa año dinámico del filtro en lugar de '2024' hardcodeado -->
 <template>
   <div class="charts-wrapper" :class="{ 'single-card': showingSingleCard }">
     <!-- CARD 1: PRESUPUESTOS -->
@@ -140,7 +141,7 @@
 <script setup>
 import { computed, ref, watch, onMounted } from 'vue'
 import { useStorageData } from '@/dataConection/useStorageData'
-import { getMapping } from '@/dataConection/storageConfig'
+import { getMapping, getSheetName } from '@/dataConection/storageConfig'
 import BarChart from './BarChart.vue'
 import DonutChart from './DonutChart.vue'
 
@@ -196,14 +197,22 @@ const rawIngresosData = ref([])
 const presupuestosMapping = getMapping('chartsPresupuestos')
 const ingresosMapping = getMapping('chartsIngresos')
 
-// ✅ Fetch de datos al montar el componente
-onMounted(async () => {
+// ✅ NUEVA FUNCIÓN: Cargar datos (puede ser llamada desde onMounted y watch)
+const loadChartData = async () => {
   try {
     console.log('\n🚀 ===== CARGANDO DATOS EN ChartsComponent =====')
     
-    // Cargar datos de Presupuestos desde Datos_Cuantitativos
+    // ✅ MODIFICADO: Usar getSheetName para obtener el año activo
+    const presupuestosSheetName = getSheetName('chartsPresupuestos')
+    const ingresosSheetName = getSheetName('chartsIngresos')
+    
+    console.log(`📅 Cargando datos desde hojas:`)
+    console.log(`  - Presupuestos: "${presupuestosSheetName}"`)
+    console.log(`  - Ingresos: "${ingresosSheetName}"`)
+    
+    // Cargar datos de Presupuestos
     console.log('📥 Cargando datos de Presupuestos...')
-    const rawPresupuestos = await fetchData('chartsPresupuestos', '2024')
+    const rawPresupuestos = await fetchData('chartsPresupuestos', presupuestosSheetName)
     rawPresupuestosData.value = rawPresupuestos
     console.log(`✅ Presupuestos cargados: ${rawPresupuestos.length} filas`)
     
@@ -212,9 +221,9 @@ onMounted(async () => {
       console.log('📋 Primera fila:', rawPresupuestos[0])
     }
     
-    // Cargar datos de Ingresos desde Datos_Cuantitativos
+    // Cargar datos de Ingresos
     console.log('\n📥 Cargando datos de Ingresos...')
-    const rawIngresos = await fetchData('chartsIngresos', '2024')
+    const rawIngresos = await fetchData('chartsIngresos', ingresosSheetName)
     rawIngresosData.value = rawIngresos
     console.log(`✅ Ingresos cargados: ${rawIngresos.length} filas`)
     
@@ -231,6 +240,22 @@ onMounted(async () => {
     
   } catch (err) {
     console.error('❌ Error cargando datos de ChartsComponent:', err)
+  }
+}
+
+// ✅ Fetch de datos al montar el componente
+onMounted(async () => {
+  await loadChartData()
+})
+
+// ✅ NUEVO: Watch para recargar datos cuando cambia el año
+watch(() => props.selectedYear, async (newYear, oldYear) => {
+  console.log('👀 Watch selectedYear en ChartsComponent - De:', oldYear, '→ A:', newYear)
+  
+  if (newYear !== oldYear) {
+    console.log('🔄 Recargando datos de gráficas por cambio de año')
+    dataLoaded.value = false // Resetear flag
+    await loadChartData()
   }
 })
 

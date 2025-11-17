@@ -155,7 +155,7 @@ import HistoricalCard from '../modules/object/component/HistoricalCard.vue'
 import { useSlider } from '@/composables/useSlider'
 import { useStateRanking } from '@/composables/useStateRanking'
 import { useStorageData } from '@/dataConection/useStorageData'
-import { getMapping } from '@/dataConection/storageConfig'
+import { getMapping, getSheetName } from '@/dataConection/storageConfig'
 
 const props = defineProps({
   title: {
@@ -257,7 +257,12 @@ const loadEntitiesFromSheet = async () => {
     entitiesError.value = null
     
     const presupuestosMapping = getMapping('chartsPresupuestos')
-    const rawData = await fetchEntities('chartsPresupuestos', '2024')
+    
+    // ✅ Usar getSheetName para obtener el año activo dinámicamente
+    const sheetName = getSheetName('chartsPresupuestos')
+    console.log(`📅 Cargando entidades desde hoja: "${sheetName}"`)
+    
+    const rawData = await fetchEntities('chartsPresupuestos', sheetName)
     
     console.log(`✅ Datos cargados: ${rawData.length} filas`)
     
@@ -391,6 +396,23 @@ watch(selectedVariable, (newVariable, oldVariable) => {
   if (!selectedState.value) {
     console.log('🔄 Actualizando ranking desde watch')
     updateRankingByVariable(newVariable)
+  }
+})
+
+// ✅ NUEVO: Watch para recargar entidades cuando cambia el año
+watch(selectedYear, async (newYear, oldYear) => {
+  console.log('👀 Watch selectedYear - De:', oldYear, '→ A:', newYear)
+  
+  if (newYear !== oldYear) {
+    console.log('🔄 Recargando entidades por cambio de año')
+    await loadEntitiesFromSheet()
+    
+    // También recargar el ranking
+    if (selectedVariable.value) {
+      await updateRankingByVariable(selectedVariable.value)
+    } else {
+      await loadAllStatesRanking(null)
+    }
   }
 })
 

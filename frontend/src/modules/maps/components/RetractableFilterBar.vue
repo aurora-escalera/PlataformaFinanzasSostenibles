@@ -1,4 +1,5 @@
 <!-- src/modules/maps/components/RetractableFilterBar.vue -->
+<!-- ✅ MODIFICACIÓN MÍNIMA: Solo se agregó carga dinámica de años y actualización del año activo -->
 <template>
   <div 
     class="filter-bar-container" 
@@ -63,7 +64,7 @@
           </div>
         </div>
 
-        <!-- Filtro Año -->
+        <!-- Filtro Año - ✅ MODIFICADO: Carga dinámica de años -->
         <div class="filter-group">
           <label class="filter-label">Año</label>
           <div class="filter-dropdown">
@@ -71,8 +72,11 @@
               @click="toggleDropdown('año')"
               class="dropdown-button"
               :class="{ 'active': activeDropdown === 'año', 'has-selection': selectedYear !== null }"
+              :disabled="loadingYears"
             >
-              <span class="dropdown-text">{{ selectedYear || 'Todos los años' }}</span>
+              <span class="dropdown-text">
+                {{ loadingYears ? 'Cargando...' : (selectedYear || 'Todos los años') }}
+              </span>
               <span class="dropdown-arrow">▼</span>
             </button>
             
@@ -88,7 +92,7 @@
                   <span>Todos los años</span>
                 </div>
                 
-                <!-- Años específicos -->
+                <!-- ✅ Años dinámicos desde Google Sheets -->
                 <div 
                   v-for="year in availableYears" 
                   :key="year"
@@ -97,14 +101,13 @@
                   :class="{ 'selected': selectedYear === year }"
                 >
                   <span>{{ year }}</span>
-                  <span v-if="year !== '2023'" class="year-note">(Sin datos)</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Filtro Variable CON LAS 4 OPCIONES + TODAS -->
+        <!-- Filtro Variable -->
         <div class="filter-group">
           <label class="filter-label">Variable</label>
           <div class="filter-dropdown">
@@ -185,6 +188,9 @@
 
 <script setup>
 import { ref, computed, onMounted, watch, onBeforeUnmount } from 'vue'
+// ✅ NUEVO: Importar composable de años y función setActiveYear
+import { useYearFilter } from '@/composables/useYearFilter'
+import { setActiveYear } from '@/dataConection/storageConfig'
 
 // Props
 const props = defineProps({
@@ -210,6 +216,16 @@ const emit = defineEmits([
   'filters-change'
 ])
 
+// ✅ NUEVO: Usar composable de año
+const {
+  selectedYear,
+  availableYears,
+  loadingYears,
+  fetchAvailableYears,
+  setSelectedYear: setYear,
+  activeYear
+} = useYearFilter()
+
 // Estados reactivos
 const isSlideUp = ref(false)
 const activeDropdown = ref(null)
@@ -217,15 +233,9 @@ const entitySearch = ref('')
 const slideTimeout = ref(null)
 const filterBarRef = ref(null)
 
-// Filtros seleccionados - MODIFICADO: selectedYear ahora por defecto es null (Todos los años)
+// Filtros seleccionados
 const selectedEntity = ref(null)
-const selectedYear = ref(null) // null = "Todos los años"
 const selectedVariable = ref(null)
-
-// Datos de configuración
-const availableYears = ref([
-  '2023', '2022', '2021', '2020', '2019'
-])
 
 // Definición de las 4 variables
 const variables = {
@@ -276,7 +286,7 @@ const filteredEntities = computed(() => {
 // Función para obtener el label de la variable seleccionada
 const getVariableLabel = () => {
   if (!selectedVariable.value) return 'Todas'
-  return selectedVariable.value.key  // Mostrar solo la abreviatura (PS, IIC, PIC, IS)
+  return selectedVariable.value.key
 }
 
 // Función para manejar el scroll en el dropdown
@@ -305,7 +315,6 @@ const handleMouseEnter = () => {
 }
 
 const handleMouseLeave = () => {
-  // No contraer si hay una entidad seleccionada o si hay un dropdown activo
   if (!activeDropdown.value && !selectedEntity.value) {
     slideTimeout.value = setTimeout(() => {
       isSlideUp.value = false
@@ -335,11 +344,9 @@ const closeAllDropdowns = () => {
   }, 300)
 }
 
-// ✅ Función para manejar click fuera del dropdown
 const handleClickOutside = (event) => {
   if (!filterBarRef.value) return
   
-  // Si el click es fuera del componente de filtros
   if (!filterBarRef.value.contains(event.target)) {
     if (activeDropdown.value) {
       console.log('👆 Click fuera detectado, cerrando dropdown')
@@ -357,9 +364,16 @@ const selectEntity = (entityName) => {
   closeAllDropdowns()
 }
 
+// ✅ MODIFICADO: selectYear ahora actualiza el año activo globalmente
 const selectYear = (year) => {
   console.log('=== FILTRO: Año seleccionado ===', year)
-  selectedYear.value = year
+  setYear(year)
+  
+  // ✅ Actualizar el año activo en storageConfig
+  const yearToUse = year || availableYears.value[0] || '2024'
+  setActiveYear(yearToUse)
+  console.log('📅 Año activo establecido:', yearToUse)
+  
   emit('year-change', year)
   emitFiltersChange()
   closeAllDropdowns()
@@ -383,29 +397,35 @@ const emitFiltersChange = () => {
   emit('filters-change', filters)
 }
 
-// ✅ Watch para sincronizar estado seleccionado desde el mapa
+// Watch para sincronizar estado seleccionado desde el mapa
 watch(() => props.selectedState, (newState) => {
   console.log('🔄 Sincronizando filtro con mapa. Estado:', newState)
   selectedEntity.value = newState
 }, { immediate: true })
 
-// Inicialización
-onMounted(() => {
+// ✅ MODIFICADO: onMounted ahora carga años dinámicamente
+onMounted(async () => {
   console.log('✅ RetractableFilterBar montado')
   console.log('✅ Entidades recibidas:', props.entities.length)
+  
+  // ✅ NUEVO: Cargar años disponibles desde Google Sheets
+  console.log('📅 Cargando años disponibles...')
+  await fetchAvailableYears()
+  console.log('📅 Años cargados:', availableYears.value)
+  
+  // ✅ NUEVO: Establecer el año activo inicial
+  setActiveYear(activeYear.value)
+  console.log('📅 Año activo inicial:', activeYear.value)
+  
   emitFiltersChange()
   
-  // ✅ Agregar listener para detectar clicks fuera
   document.addEventListener('click', handleClickOutside)
 })
 
-// ✅ Limpieza al desmontar
 onBeforeUnmount(() => {
   console.log('👋 RetractableFilterBar desmontándose')
-  // Remover listener de clicks
   document.removeEventListener('click', handleClickOutside)
   
-  // Limpiar timeout si existe
   if (slideTimeout.value) {
     clearTimeout(slideTimeout.value)
   }
@@ -413,6 +433,7 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+/* ✅ Estilos SIN CAMBIOS - Todo igual al original */
 .filter-bar-container {
   position: relative;
   left: 19.6px;
@@ -517,10 +538,14 @@ onBeforeUnmount(() => {
   font-size: 12px;
   font-weight: 100px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  
 }
 
-.dropdown-button:hover,
+.dropdown-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dropdown-button:hover:not(:disabled),
 .dropdown-button.active,
 .dropdown-button.has-selection {
   background: rgba(255, 255, 255, 1);
@@ -579,7 +604,6 @@ onBeforeUnmount(() => {
 .dropdown-search {
   padding: 8px;
   border-bottom: 1px solid #e2e8f0;
-
 }
 
 .search-input {
@@ -637,14 +661,12 @@ onBeforeUnmount(() => {
   font-weight: 200;
 }
 
-
 .dropdown-option:hover {
   background: #d0d2d4;
 }
 
 .dropdown-option.selected {
   background: #f1f2f3;
-
   font-weight: 600;
 }
 

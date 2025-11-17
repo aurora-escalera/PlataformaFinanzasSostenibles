@@ -1,8 +1,9 @@
 // src/composables/useRankingData.js
+// ✅ ACTUALIZADO: Usa año dinámico del filtro automáticamente
 
 import { ref, computed } from 'vue'
 import { useStorageData } from '@/dataConection/useStorageData'
-import { getMapping } from '@/dataConection/storageConfig'
+import { getMapping, getSheetName } from '@/dataConection/storageConfig'
 
 export function useRankingData() {
   const rankingVariables = ref([])
@@ -24,8 +25,12 @@ export function useRankingData() {
     try {
       console.log('📊 Cargando datos de ranking cuantitativo...')
       
-      // Obtener datos del sheet "Datos_Cuantitativos"
-      const data = await fetchData('datosCuantitativos', '2024')
+      // ✅ MODIFICADO: Usar getSheetName para obtener el año activo dinámicamente
+      const sheetName = getSheetName('datosCuantitativos')
+      console.log(`📅 Cargando datos de ranking desde hoja: "${sheetName}"`)
+      
+      // Obtener datos del sheet usando el año activo
+      const data = await fetchData('datosCuantitativos', sheetName)
       
       if (!data || data.length === 0) {
         console.warn('⚠️ No se encontraron datos en el sheet')

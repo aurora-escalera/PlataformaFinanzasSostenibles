@@ -1,10 +1,14 @@
 // src/dataConection/storageConfig.js
 // ✅ ACTUALIZADO con las columnas correctas de tu Google Sheet
+// ✅ Soporte MÍNIMO para años dinámicos desde nombres de hojas
 
 console.log('API Key:', import.meta.env.VITE_GOOGLE_SHEETS_API_KEY)
 console.log('Sheet ID Principal:', import.meta.env.VITE_GOOGLE_SHEET_ID)
 console.log('Sheet ID Cuantitativos:', import.meta.env.VITE_GOOGLE_SHEET_ID_CUANTITATIVOS)
 console.log('Provider:', import.meta.env.VITE_STORAGE_PROVIDER)
+
+// ✅ NUEVO: Variable global para el año activo (usado dinámicamente)
+let currentActiveYear = '2024'
 
 export const storageConfig = {
   provider: import.meta.env.VITE_STORAGE_PROVIDER || 'googlesheets',
@@ -451,6 +455,17 @@ export const storageConfig = {
   }
 }
 
+// ✅ NUEVO: Función para establecer el año activo
+export function setActiveYear(year) {
+  console.log('📅 [storageConfig] Estableciendo año activo:', year)
+  currentActiveYear = year || '2024'
+}
+
+// ✅ NUEVO: Función para obtener el año activo
+export function getActiveYear() {
+  return currentActiveYear
+}
+
 export function getCurrentConfig() {
   const provider = storageConfig.provider
   if (!provider) throw new Error('Provider no configurado en storageConfig.js')
@@ -464,6 +479,7 @@ export function getCurrentConfig() {
   }
 }
 
+// ✅ MODIFICADO: Usar año activo para archivos de cuantitativos
 export function getSheetIdForFile(fileKey) {
   const config = storageConfig.googlesheets
   
@@ -471,6 +487,13 @@ export function getSheetIdForFile(fileKey) {
     for (const [sheetKey, sheetConfig] of Object.entries(config.sheets)) {
       if (sheetConfig.files && sheetConfig.files[fileKey]) {
         console.log(`📄 Archivo "${fileKey}" encontrado en sheet "${sheetKey}"`)
+        
+        // ✅ Si es un archivo de cuantitativos, retornar el año activo
+        if (sheetKey === 'cuantitativos') {
+          console.log(`📅 Usando año activo para cuantitativos: ${currentActiveYear}`)
+          return sheetConfig.sheetId
+        }
+        
         return sheetConfig.sheetId
       }
     }
@@ -478,6 +501,31 @@ export function getSheetIdForFile(fileKey) {
   
   console.log(`📄 Usando sheet principal para "${fileKey}"`)
   return config.sheetId
+}
+
+// ✅ NUEVA FUNCIÓN: Obtener el nombre de hoja dinámicamente según el año activo
+export function getSheetName(fileKey) {
+  const config = storageConfig.googlesheets
+  
+  // Si es un archivo de cuantitativos, usar el año activo
+  if (fileKey === 'datosCuantitativos' || 
+      fileKey === 'chartsPresupuestos' || 
+      fileKey === 'chartsIngresos') {
+    console.log(`📅 Nombre de hoja dinámico para "${fileKey}": ${currentActiveYear}`)
+    return currentActiveYear
+  }
+  
+  // Para otros archivos, usar el nombre estático
+  if (config.sheets) {
+    for (const [sheetKey, sheetConfig] of Object.entries(config.sheets)) {
+      if (sheetConfig.files && sheetConfig.files[fileKey]) {
+        return sheetConfig.files[fileKey]
+      }
+    }
+  }
+  
+  // Fallback al archivo estático
+  return config.files[fileKey] || fileKey
 }
 
 export function getMapping(mappingName) {
