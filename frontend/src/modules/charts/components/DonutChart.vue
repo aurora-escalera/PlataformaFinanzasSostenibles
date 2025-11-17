@@ -37,50 +37,91 @@
           :stroke-width="strokeWidth"
         />
         
-        <!-- ✅ FIX: Separar v-if en elemento contenedor -->
+        <!-- Segmentos de la dona con animación -->
         <g v-if="shouldShowProgress">
-          <!-- ✅ FIX: v-for en elemento hijo separado -->
           <template v-if="allSectorsWithState.length > 0">
             <path
               v-for="(sector, index) in allSectorsWithState"
               :key="`sector-${sector.key}-${index}`"
-              :d="getSectorPath(sector, index)"
+              :d="getSectorPath(sector, index, animatedProgress)"
               fill="none"
               :stroke="getSectorColor(sector)"
-              :stroke-width="strokeWidth"
-              :class="['sector-path', { 'sector-inactive': !sector.isActive }]"
-              @mouseenter="(e) => handleSectorHover(sector, e)"
+              :stroke-width="hoveredSectorIndex === index ? strokeWidth + 5 : strokeWidth"
+              :class="['sector-path', { 
+                'sector-inactive': !sector.isActive,
+                'sector-hovered': hoveredSectorIndex === index
+              }]"
+              @mouseenter="handleSectorHover(sector, index, $event)"
               @mousemove="updateTooltipPosition"
               @mouseleave="handleSectorLeave"
+            />
+            <!-- ✅ Bordes blancos entre sectores -->
+            <line
+              v-if="index < allSectorsWithState.length - 1"
+              :key="`divider-${sector.key}-${index}`"
+              :x1="getSectorDividerStart(sector, index, animatedProgress).x"
+              :y1="getSectorDividerStart(sector, index, animatedProgress).y"
+              :x2="getSectorDividerEnd(sector, index, animatedProgress).x"
+              :y2="getSectorDividerEnd(sector, index, animatedProgress).y"
+              stroke="white"
+              stroke-width="2"
+              pointer-events="none"
             />
           </template>
         </g>
 
-        <!-- Labels de porcentaje en cada segmento -->
-        <g v-if="shouldShowProgress">
+        <!-- ✅ Porcentajes DENTRO del anillo (pequeños y delgados) -->
+        <g v-if="shouldShowProgress && animatedProgress >= 0.9">
           <template v-if="allSectorsWithState.length > 0">
             <text
               v-for="(sector, index) in allSectorsWithState"
-              :key="`label-${sector.key}-${index}`"
-              :x="getSectorLabelPosition(sector, index).x"
-              :y="getSectorLabelPosition(sector, index).y"
+              :key="`percent-${sector.key}-${index}`"
+              :x="getSectorLabelPosition(sector, index, 'inner').x"
+              :y="getSectorLabelPosition(sector, index, 'inner').y"
               text-anchor="middle"
-              :class="['sector-label', { 'sector-label-inactive': !sector.isActive }]"
+              :class="['sector-percent', { 'sector-percent-inactive': !sector.isActive }]"
               pointer-events="none"
             >
               {{ getSectorPercentage(sector) }}
             </text>
           </template>
         </g>
+
+        <!-- ✅ Nombres FUERA del donut -->
+        <g v-if="shouldShowProgress && animatedProgress >= 0.9">
+          <template v-if="allSectorsWithState.length > 0">
+            <text
+              v-for="(sector, index) in allSectorsWithState"
+              :key="`name-${sector.key}-${index}`"
+              :x="getSectorLabelPosition(sector, index, 'outer').x"
+              :y="getSectorLabelPosition(sector, index, 'outer').y"
+              text-anchor="middle"
+              :class="['sector-name', { 'sector-name-inactive': !sector.isActive }]"
+              pointer-events="none"
+            >
+              {{ sector.label }}
+            </text>
+          </template>
+        </g>
         
-        <!-- Texto central con el porcentaje -->
+        <!-- ✅ NUEVO: Título de la variable arriba del total -->
         <text
           :x="center"
-          :y="center + 4"
+          :y="center - 15"
           text-anchor="middle"
-          class="percentage-text"
+          class="variable-title-text"
         >
-         
+          {{ title }}
+        </text>
+        
+        <!-- ✅ Suma total en el centro (no porcentaje) -->
+        <text
+          :x="center"
+          :y="center + 12"
+          text-anchor="middle"
+          class="total-value-text"
+        >
+          {{ formatTotalValue(totalAllSectorsValue) }}
         </text>
       </svg>
     </div>
@@ -105,7 +146,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 
 // Props
 const props = defineProps({
@@ -123,7 +164,7 @@ const props = defineProps({
   },
   size: {
     type: Number,
-    default: 220
+    default: 280
   },
   variables: {
     type: Array,
@@ -135,20 +176,25 @@ const props = defineProps({
   }
 })
 
-// ✅ Estado de toggle del usuario
+// Estado de toggle del usuario
 const userToggles = ref({})
 
 // Estado del tooltip
 const hoveredSector = ref(null)
+const hoveredSectorIndex = ref(null)
 const tooltipPosition = ref({ x: 0, y: 0 })
 
-// ✅ Key para forzar re-render del SVG cuando cambien los sectores
+// ✅ NUEVO: Estado de animación
+const animatedProgress = ref(0)
+const isAnimating = ref(false)
+
+// Key para forzar re-render del SVG cuando cambien los sectores
 const sectorsKey = computed(() => {
   if (!props.sectors || props.sectors.length === 0) return 'empty'
   return props.sectors.map(s => `${s.key}-${s.value || 0}`).join('_')
 })
 
-// ✅ OPTIMIZADO: Variables internas como computed
+// Variables internas como computed
 const internalVariables = computed(() => {
   if (!props.variables || props.variables.length === 0) {
     return []
@@ -173,7 +219,7 @@ const internalVariables = computed(() => {
   })
 })
 
-// ✅ SIMPLIFICADO: Calcular sectores con estado activo/inactivo
+// Calcular sectores con estado activo/inactivo
 const allSectorsWithState = computed(() => {
   if (!props.sectors || props.sectors.length === 0) {
     return []
@@ -206,11 +252,13 @@ const shouldShowProgress = computed(() => {
   return allSectorsWithState.value.some(s => s.hasData)
 })
 
-// Función para formatear moneda
-const formatCurrency = (value) => {
-  if (value === null || value === undefined) return ''
+// ✅ NUEVO: Función para formatear el valor total en el centro
+const formatTotalValue = (value) => {
+  if (value === null || value === undefined || value === 0) return '$0'
   
-  if (Math.abs(value) >= 1000000) {
+  if (Math.abs(value) >= 1000000000) {
+    return `$${(value / 1000000000).toFixed(1)}B`
+  } else if (Math.abs(value) >= 1000000) {
     return `$${(value / 1000000).toFixed(1)}M`
   } else if (Math.abs(value) >= 1000) {
     return `$${(value / 1000).toFixed(1)}K`
@@ -218,9 +266,24 @@ const formatCurrency = (value) => {
   return `$${value.toFixed(0)}`
 }
 
-// Manejar hover en segmento de la gráfica
-const handleSectorHover = (sector, event) => {
+// Función para formatear moneda
+const formatCurrency = (value) => {
+  if (value === null || value === undefined) return ''
+  
+  if (Math.abs(value) >= 1000000000) {
+    return `$${(value / 1000000000).toFixed(2)}B`
+  } else if (Math.abs(value) >= 1000000) {
+    return `$${(value / 1000000).toFixed(2)}M`
+  } else if (Math.abs(value) >= 1000) {
+    return `$${(value / 1000).toFixed(1)}K`
+  }
+  return `$${value.toFixed(0)}`
+}
+
+// ✅ MODIFICADO: Manejar hover con índice
+const handleSectorHover = (sector, index, event) => {
   hoveredSector.value = sector
+  hoveredSectorIndex.value = index
   updateTooltipPosition(event)
 }
 
@@ -235,6 +298,7 @@ const updateTooltipPosition = (event) => {
 // Limpiar hover
 const handleSectorLeave = () => {
   hoveredSector.value = null
+  hoveredSectorIndex.value = null
 }
 
 // Configuración de colores
@@ -254,7 +318,7 @@ const backgroundColor = computed(() => {
 
 // Calculados para el SVG
 const center = computed(() => props.size / 2)
-const strokeWidth = computed(() => 28)
+const strokeWidth = computed(() => 35)
 const radius = computed(() => (props.size / 2) - (strokeWidth.value / 2))
 
 // Obtener color del sector
@@ -265,33 +329,32 @@ const getSectorColor = (sector) => {
   return sector.isActive ? sector.color : '#D0D0D0'
 }
 
-// ✅ FIX: Función para calcular el path SVG de cada sector con manejo especial para 360°
-const getSectorPath = (sector, index) => {
+// ✅ MODIFICADO: getSectorPath ahora acepta animatedProgress
+const getSectorPath = (sector, index, progress = 1) => {
   const r = radius.value
   const cx = center.value
   const cy = center.value
   
   let startAngle = -90
   
+  // Calcular ángulo inicial basado en sectores anteriores
   for (let i = 0; i < index; i++) {
     const prevSector = allSectorsWithState.value[i]
     const prevPercentage = totalAllSectorsValue.value > 0 
       ? (prevSector.value / totalAllSectorsValue.value) 
       : 0
-    startAngle += prevPercentage * 360
+    startAngle += prevPercentage * 360 * progress
   }
   
   const sectorPercentage = totalAllSectorsValue.value > 0 
     ? (sector.value / totalAllSectorsValue.value) 
     : 0
-  const sectorAngle = sectorPercentage * 360
+  const sectorAngle = sectorPercentage * 360 * progress
   
-  // ✅ FIX: Caso especial para sectores que ocupan 100% (360°)
-  // Un arco SVG no puede ser exactamente 360°, así que lo dibujamos como dos semicírculos
+  // Caso especial para sectores de 360°
   if (sectorAngle >= 359.99) {
     const topY = cy - r
     const bottomY = cy + r
-    // Dibujar como dos arcos de 180° que forman un círculo completo
     return `M ${cx} ${topY} A ${r} ${r} 0 0 1 ${cx} ${bottomY} A ${r} ${r} 0 0 1 ${cx} ${topY}`
   }
   
@@ -310,18 +373,69 @@ const getSectorPath = (sector, index) => {
   return `M ${x1} ${y1} A ${r} ${r} 0 ${largeArcFlag} 1 ${x2} ${y2}`
 }
 
+// ✅ NUEVO: Función para obtener el punto de inicio del divisor
+const getSectorDividerStart = (sector, index, progress = 1) => {
+  const r = radius.value
+  const cx = center.value
+  const cy = center.value
+  const outerRadius = r + (strokeWidth.value / 2)
+  const innerRadius = r - (strokeWidth.value / 2)
+  
+  let angle = -90
+  
+  for (let i = 0; i <= index; i++) {
+    const currentSector = allSectorsWithState.value[i]
+    const percentage = totalAllSectorsValue.value > 0 
+      ? (currentSector.value / totalAllSectorsValue.value) 
+      : 0
+    angle += percentage * 360 * progress
+  }
+  
+  const rad = (angle * Math.PI) / 180
+  
+  return {
+    x: cx + innerRadius * Math.cos(rad),
+    y: cy + innerRadius * Math.sin(rad)
+  }
+}
+
+// ✅ NUEVO: Función para obtener el punto final del divisor
+const getSectorDividerEnd = (sector, index, progress = 1) => {
+  const r = radius.value
+  const cx = center.value
+  const cy = center.value
+  const outerRadius = r + (strokeWidth.value / 2)
+  
+  let angle = -90
+  
+  for (let i = 0; i <= index; i++) {
+    const currentSector = allSectorsWithState.value[i]
+    const percentage = totalAllSectorsValue.value > 0 
+      ? (currentSector.value / totalAllSectorsValue.value) 
+      : 0
+    angle += percentage * 360 * progress
+  }
+  
+  const rad = (angle * Math.PI) / 180
+  
+  return {
+    x: cx + outerRadius * Math.cos(rad),
+    y: cy + outerRadius * Math.sin(rad)
+  }
+}
+
 // Función para calcular el porcentaje de un sector
 const getSectorPercentage = (sector) => {
   if (totalAllSectorsValue.value === 0) return ''
   const percentage = (sector.value / totalAllSectorsValue.value) * 100
   
-  if (percentage < 5) return ''
+  if (percentage < 3) return '' // Ocultar si es muy pequeño
   
-  return `${percentage.toFixed(2)}%`
+  return `${percentage.toFixed(1)}%`
 }
 
-// Función para calcular la posición del label
-const getSectorLabelPosition = (sector, index) => {
+// ✅ MODIFICADO: Función para calcular la posición del label (inner o outer)
+const getSectorLabelPosition = (sector, index, type = 'inner') => {
   const r = radius.value
   const cx = center.value
   const cy = center.value
@@ -344,11 +458,14 @@ const getSectorLabelPosition = (sector, index) => {
   const midAngle = startAngle + (sectorAngle / 2)
   const midRad = (midAngle * Math.PI) / 180
   
-  const labelRadius = r
+  // ✅ Determinar radio según tipo
+  const labelRadius = type === 'inner' 
+    ? r  // Dentro del anillo
+    : r + strokeWidth.value + 25  // Fuera del donut
   
   return {
     x: cx + labelRadius * Math.cos(midRad),
-    y: cy + labelRadius * Math.sin(midRad) + 4
+    y: cy + labelRadius * Math.sin(midRad) + (type === 'inner' ? 4 : 5)
   }
 }
 
@@ -369,7 +486,34 @@ const isVariableDisabled = (key) => {
   return internalVariables.value.find(v => v.key === key)?.disabled || false
 }
 
-// ✅ Watch optimizado para detectar cambios en sectores
+// ✅ NUEVO: Función de animación
+const animateDonut = () => {
+  if (isAnimating.value) return
+  
+  isAnimating.value = true
+  animatedProgress.value = 0
+  
+  const duration = 1500 // 1.5 segundos
+  const startTime = Date.now()
+  
+  const animate = () => {
+    const elapsed = Date.now() - startTime
+    const progress = Math.min(elapsed / duration, 1)
+    
+    // Easing: ease-out cubic
+    animatedProgress.value = 1 - Math.pow(1 - progress, 3)
+    
+    if (progress < 1) {
+      requestAnimationFrame(animate)
+    } else {
+      isAnimating.value = false
+    }
+  }
+  
+  requestAnimationFrame(animate)
+}
+
+// Watch optimizado para detectar cambios en sectores
 watch(() => props.sectors, (newSectors) => {
   if (newSectors && newSectors.length > 0) {
     newSectors.forEach(sector => {
@@ -378,8 +522,20 @@ watch(() => props.sectors, (newSectors) => {
         delete userToggles.value[sector.key]
       }
     })
+    
+    // ✅ Animar cuando cambien los datos
+    animateDonut()
   }
 }, { deep: true })
+
+// ✅ NUEVO: Animar al montar el componente
+onMounted(() => {
+  if (shouldShowProgress.value) {
+    setTimeout(() => {
+      animateDonut()
+    }, 100)
+  }
+})
 </script>
 
 <style scoped>
@@ -498,12 +654,12 @@ watch(() => props.sectors, (newSectors) => {
 }
 
 .sector-path {
-  transition: stroke-width 0.2s ease, opacity 0.2s ease;
+  transition: stroke-width 0.3s ease, opacity 0.2s ease;
   cursor: pointer;
 }
 
-.sector-path:hover {
-  stroke-width: 32;
+.sector-path.sector-hovered {
+  filter: brightness(1.1);
 }
 
 .sector-path.sector-inactive {
@@ -511,30 +667,55 @@ watch(() => props.sectors, (newSectors) => {
   cursor: default;
 }
 
-.sector-path.sector-inactive:hover {
-  stroke-width: 28;
-}
-
-.percentage-text {
-  font-size: 14px;
-  font-weight: bold;
-  fill: #333;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  pointer-events: none;
-}
-
-.sector-label {
-  font-size: 11px;
-  font-weight: 700;
+/* ✅ Porcentajes DENTRO del anillo - pequeños y delgados */
+.sector-percent {
+  font-size: 10px;
+  font-weight: 300;
   fill: white;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   pointer-events: none;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  opacity: 0.95;
 }
 
-.sector-label-inactive {
-  fill: #666;
+.sector-percent-inactive {
+  fill: #888;
+  opacity: 0.5;
+}
+
+/* ✅ Nombres FUERA del donut */
+.sector-name {
+  font-size: 13px;
+  font-weight: 500;
+  fill: #444;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  pointer-events: none;
+  letter-spacing: -0.3px;
+}
+
+.sector-name-inactive {
+  fill: #999;
   opacity: 0.6;
+}
+
+/* ✅ NUEVO: Título de la variable (IS, PS, PIC, IIC) */
+.variable-title-text {
+  font-size: 18px;
+  font-weight: 300;
+  fill: #666;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  pointer-events: none;
+  letter-spacing: 0.5px;
+}
+
+/* ✅ Valor total en el centro */
+.total-value-text {
+  font-size: 20px;
+  font-weight: 400;
+  fill: #2c3e50;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  pointer-events: none;
+  letter-spacing: -0.5px;
 }
 
 @media (max-width: 768px) {
@@ -547,6 +728,22 @@ watch(() => props.sectors, (newSectors) => {
   .legend-dot {
     width: 10px;
     height: 10px;
+  }
+  
+  .sector-percent {
+    font-size: 9px;
+  }
+  
+  .sector-name {
+    font-size: 11px;
+  }
+  
+  .variable-title-text {
+    font-size: 13px;
+  }
+  
+  .total-value-text {
+    font-size: 18px;
   }
 }
 
