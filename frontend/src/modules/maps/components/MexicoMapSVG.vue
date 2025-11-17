@@ -1,8 +1,12 @@
-<!-- src/modules/maps/components/MexicoMapSVG.vue -->
+<!-- src/modules/maps/components/MexicoMapSVG.vue --> 
 <template>
-  <div class="map-wrapper">
+  <div class="map-wrapper" @click="handleBackgroundClick">
     <!-- CARD FLOTANTE CON INFO DEL ESTADO/NACIONAL -->
-    <div class="map-info-card" :class="{ 'state-selected': selectedState }">
+    <div 
+      v-if="showInfoCard"
+      class="map-info-card" 
+      :class="{ 'state-selected': selectedState }"
+    >
       <div class="card-content">
         <!-- Título de la posición del país-->
         <div class="card-position-title">
@@ -20,7 +24,7 @@
           </div>
           <!-- Columna derecha: IFS y clasificación -->
           <div class="card-ifss-info">
-            <div class="ifss-value-text">IFS: {{ getDisplayIFSS() }}</div>
+            <div class="ifss-value-text">IFSS: {{ getDisplayIFSS() }}</div>
             <div 
               class="ifss-classification"
               :style="{ color: getCurrentClassificationColor() }"
@@ -31,17 +35,20 @@
         </div>
 
         <!-- FLEX 2: Dos filas (IFS Regional + Datos federales) -->
-        <div class="card-bottom-stack">
+        <div 
+          v-if="showNavigation"
+          class="card-bottom-stack"
+        >
           <div 
             class="card-label-pill" 
             :class="{ 'active': !selectedState }"
-            @click="handleIFSRegionalClick"
+            @click.stop="handleIFSRegionalClick"
           >
             IFS Regional
           </div>
           <div 
             class="card-label-pill"
-            @click="handleDatosFederalesClick"
+            @click.stop="handleDatosFederalesClick"
           >
             Datos federales
           </div>
@@ -49,24 +56,31 @@
       </div>
     </div>
 
-    <!-- Información de hover/nacional -->
+    <!-- Información de hover/estado seleccionado/nacional -->
     <div class="hover-info-box">
-      <!-- Si hay estado en hover, mostrar información del estado -->
-      <div v-if="hoveredState" class="info-content">
-        <div class="location-label">{{ hoveredState }}</div>
-        <div class="value-display">{{ getStateInfo(hoveredState).value || 0 }}%</div>
+      <!-- Prioridad 1: Si hay estado seleccionado, mostrar su información -->
+      <div v-if="selectedState" class="info-content">
+        <div class="location-label">{{ selectedState }}</div>
+        <div class="value-display">IFSS: {{ getStateInfo(selectedState).value || 0 }}</div>
       </div>
       
-      <!-- Si no hay estado en hover, mostrar información nacional -->
+      <!-- Prioridad 2: Si hay estado en hover (y no hay seleccionado), mostrar información del estado -->
+      <div v-else-if="hoveredState" class="info-content">
+        <div class="location-label">{{ hoveredState }}</div>
+        <div class="value-display">IFSS: {{ getStateInfo(hoveredState).value || 0 }}</div>
+      </div>
+      
+      <!-- Prioridad 3: Si no hay estado en hover ni seleccionado, mostrar información nacional -->
       <div v-else-if="nationalIFSS" class="info-content">
         <div class="location-label">México</div>
-        <div class="value-display">{{ nationalIFSS.value }}%</div>
+        <div class="value-display">IFS: {{ nationalIFSS.value }}</div>
       </div>
     </div>
 
     <!-- Leyenda de colores IFSS -->
     <div class="color-legend">
-      <div class="legend-items-horizontal">
+      <!-- Leyenda normal (cuando no hay estado seleccionado) -->
+      <div v-if="!selectedState" class="legend-items-horizontal">
         <div class="legend-item-horizontal">
           <div class="legend-color-horizontal" style="background-color: #6ac952"></div>
           <span>Muy Alto</span>
@@ -96,12 +110,25 @@
           <span>Muy Bajo</span>
         </div>
       </div>
+      
+      <!-- Leyenda del estado seleccionado -->
+      <div v-else class="legend-selected-state">
+        <div 
+          class="selected-state-bar"
+          :style="{ backgroundColor: getSelectedStateColor() }"
+        >
+          <span class="selected-state-label">{{ getSelectedStateClassification() }}</span>
+        </div>
+      </div>
     </div>
 
     <svg 
       :width="mapConfig.width" 
       :height="mapConfig.height"
       class="mexico-map"
+      viewBox="55 32 485 275"
+      preserveAspectRatio="xMidYMid meet"
+      @click="handleSvgClick"
     >
       <g>
         <path
@@ -111,8 +138,8 @@
           :fill="getStateColor(feature.properties.state_name)"
           :stroke="getStrokeColor(feature.properties.state_name)"
           :stroke-width="getStrokeWidth(feature.properties.state_name)"
-          class="state-path"
-          @click="handleStateClick(feature.properties.state_name)"
+          :class="getStateClass(feature.properties.state_name)"
+          @click.stop="handleStateClick(feature.properties.state_name)"
           @mouseenter="handleMouseHover(feature.properties.state_name, $event)"
           @mouseleave="handleMouseLeave"
         />
@@ -129,7 +156,7 @@
         <h4>{{ hoveredState }}</h4>
         <div class="tooltip-data">
           <p>IFSS: {{ getStateInfo(hoveredState).value || 0 }}</p>
-          <p>Clasificación: {{ getIFSSLabel(getStateInfo(hoveredState).value || 0).label }}</p>
+                    <p>Clasificación: {{ getIFSSLabel(getStateInfo(hoveredState).value || 0).label }}</p>
           <p>Año: {{ getStateInfo(hoveredState).year }}</p>
         </div>
       </div>
@@ -174,6 +201,16 @@ const props = defineProps({
   getIFSSLabel: {
     type: Function,
     required: true
+  },
+  // Prop para controlar la visibilidad del card-bottom-stack
+  showNavigation: {
+    type: Boolean,
+    default: true
+  },
+  // Nueva prop para controlar la visibilidad de todo el map-info-card
+  showInfoCard: {
+    type: Boolean,
+    default: true
   }
 })
 
@@ -206,8 +243,25 @@ const getPathData = (feature) => {
   return pathGenerator.value(feature)
 }
 
+// Nueva función para obtener las clases CSS del estado
+const getStateClass = (stateName) => {
+  const classes = ['state-path']
+  
+  if (props.selectedState === stateName) {
+    classes.push('state-selected')
+  } else if (props.hoveredState === stateName) {
+    classes.push('state-hovered')
+  }
+  
+  if (props.selectedState && props.selectedState !== stateName) {
+    classes.push('state-dimmed')
+  }
+  
+  return classes.join(' ')
+}
+
 const getStrokeColor = (stateName) => {
-  if (props.selectedState === stateName) return '#FFFFFF'
+  if (props.selectedState === stateName) return '#1a202c'
   if (props.hoveredState === stateName) return '#555555'
   return '#555555'
 }
@@ -244,6 +298,19 @@ const getCurrentPosition = () => {
   return '15'
 }
 
+// Funciones para la leyenda del estado seleccionado
+const getSelectedStateColor = () => {
+  if (!props.selectedState) return '#cccccc'
+  return props.getStateColor(props.selectedState)
+}
+
+const getSelectedStateClassification = () => {
+  if (!props.selectedState) return ''
+  const stateInfo = props.getStateInfo(props.selectedState)
+  const value = stateInfo.value || 0
+  return props.getIFSSLabel(value).label
+}
+
 // Handlers de eventos
 const handleMouseHover = (stateName, event) => {
   mousePosition.value = {
@@ -259,6 +326,20 @@ const handleMouseLeave = () => {
 
 const handleStateClick = (stateName) => {
   emit('state-click', stateName)
+}
+
+const handleBackgroundClick = (event) => {
+  // Si el click es en el wrapper (no en SVG o estados)
+  if (event.target.classList.contains('map-wrapper')) {
+    emit('state-click', null)
+  }
+}
+
+const handleSvgClick = (event) => {
+  // Si el click es directamente en el SVG (no en un path)
+  if (event.target.tagName === 'svg' || event.target.tagName === 'g') {
+    emit('state-click', null)
+  }
 }
 
 const handleIFSRegionalClick = () => {
@@ -286,35 +367,37 @@ const tooltipStyle = computed(() => {
 </script>
 
 <style scoped>
+/* Mismo estilo que IS-anual-linear-chart en HistoricalCard */
 .map-wrapper {
   position: relative;
-  width: 591.8px; 
-  height: 344.3px;
+  width: 48%;
+  height: 100%;
   flex-shrink: 0;
   background-color: white;
-  border-radius: 15px;
-  box-shadow: 1px 1px 1px #666;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #ccc;
+  overflow: visible;
   z-index: 2;
 }
 
 /* CARD FLOTANTE */
 .map-info-card {
   position: absolute;
-  top: 21px;
-  left: 410px;
+  top: 100px;
+  right: 120px;
   background: white;
-  border-radius: 12px;
+  border-radius: 15px;
   padding: 12px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.38);
   z-index: 10;
-  width: 143.2px;
-  height: 143.2px;
+  width: 183.2px;
+  height: 203.2px;
   transition: all 0.3s ease;
 }
 
 .map-info-card.state-selected {
   box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
-
 }
 
 .card-content {
@@ -333,7 +416,7 @@ const tooltipStyle = computed(() => {
 }
 
 .card-position-number {
-  font-size: 30px;
+  font-size: 45px;
   font-weight: 200;
   color: #D4A574;
   line-height: 1;
@@ -341,15 +424,15 @@ const tooltipStyle = computed(() => {
 }
 
 .ifss-value-text {
-  font-size: 7px;
+  font-size: 12px;
   color: #767d86;
   font-weight: 300;
-  letter-spacing: 0.2ch;
+  letter-spacing: 0.1ch;
   margin: 0;
 }
 
 .ifss-classification {
-  font-size: 7px;
+  font-size: 11px;
   color: #ddb891;
   font-weight: 600;
   letter-spacing: 0.15ch;
@@ -361,7 +444,7 @@ const tooltipStyle = computed(() => {
 .card-bottom-stack {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 10px;
   padding-left: 10px;
   padding-top: 0px;
 }
@@ -370,11 +453,11 @@ const tooltipStyle = computed(() => {
   background: #f3f4f6;
   border-radius: 3px;
   text-align: center;
-  font-size: 6px;
+  font-size: 10px;
   color: #7a7f8f;
   font-weight: 100;
-  height: 15px;
-  width: 100px;
+  height: 20px;
+  width: 130px;
   letter-spacing: 0.06em;
   padding-top: 3px;
   cursor: pointer;
@@ -382,7 +465,7 @@ const tooltipStyle = computed(() => {
 }
 
 .card-position-title {
-  font-size: 6px;
+  font-size: 12px;
   color: #6b7280;
   letter-spacing: 0.2ch;
   justify-content: center;
@@ -408,12 +491,13 @@ const tooltipStyle = computed(() => {
   color: white;
 }
 
-/* Porcentaje dinamico left: 19.6px;*/
+/* Porcentaje dinamico */
 .hover-info-box {
   position: absolute;
-  height: 50px;
-  top: 180px;
-  left: 70px;
+  height: 70px;
+  width: 280px;
+  top: 65%;
+  left: 8%;
   z-index: 15;
   backdrop-filter: blur(10px);
   font-family: Arial, Helvetica, sans-serif;
@@ -424,18 +508,64 @@ const tooltipStyle = computed(() => {
 /* Barra de colores */
 .color-legend {
   position: absolute;
-  top: 270px;
-  left: 35px;
+  bottom: 60px;
+  left: 16%;
+  transform: translateX(-50%);
   background: rgba(255, 255, 255, 0.95);
   border: none;
   border-radius: 8px;
   z-index: 10;
   backdrop-filter: blur(5px);
-  width: 130px;
+  width: 230px;
+  min-height: 30px;
+  transition: all 0.3s ease;
+}
+
+.legend-selected-state {
+  display: flex;
+  gap: 0;
+  align-items: stretch;
+  justify-content: center;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 0px solid rgba(0,0,0,0.1);
+  height: 30px;
+  width: 360px;
+  animation: legendFadeIn 0.4s ease;
+}
+
+.selected-state-bar {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+.selected-state-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: white;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+@keyframes legendFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .location-label {
-  font-size: 10px;
+  font-size: 15px;
   color: #666;
   font-weight: 100;
   margin-bottom: 8px;
@@ -444,7 +574,7 @@ const tooltipStyle = computed(() => {
 }
 
 .value-display {
-  font-size: 30px;
+  font-size: 40px;
   font-weight: 300;
   color: #2c3e50;
   line-height: 1;
@@ -461,8 +591,8 @@ const tooltipStyle = computed(() => {
   border-radius: 4px;
   overflow: hidden;
   border: 0px solid rgba(0,0,0,0.1);
-  height: 40px;
-  width: 160px;
+  height: 30px;
+  width: 360px;
 }
 
 .legend-item-horizontal {
@@ -477,7 +607,7 @@ const tooltipStyle = computed(() => {
 
 .legend-color-horizontal {
   width: 100%;
-  height: 5px;
+  height: 100%;
   border: none;
   padding-bottom: 10px;
 }
@@ -497,11 +627,16 @@ const tooltipStyle = computed(() => {
 
 .mexico-map {
   background: white;
+  width: 100%;
+  height: 100%;
+  display: block;
+  border-radius: 10px 0px 0px 10px;
 }
 
+/* Estilos base del path */
 .state-path {
   cursor: pointer;
-  transition: all 0.05s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   opacity: 1;
   stroke-width: .5;
   vector-effect: non-scaling-stroke;
@@ -509,25 +644,42 @@ const tooltipStyle = computed(() => {
   stroke-linecap: round;
 }
 
-.state-path:hover {
-  filter: brightness(1.3);
-  opacity: 0.95;
-  stroke-width: 0.5;
-  vector-effect: non-scaling-stroke;
-  stroke-linejoin: round;
-  stroke-linecap: round;
-}
-
-svg g:hover .state-path {
-  opacity: 0.8;
-}
-
-svg g:hover .state-path:hover {
+/* Estado seleccionado - mantiene el estilo visual */
+.state-path.state-selected {
   opacity: 1;
   filter: saturate(1.8) contrast(1.3);
-  stroke-width: 0.4;
+  stroke-width: 0.5;  /* ✅ Borde delgado */
   filter: drop-shadow(0 0 6px rgba(10, 10, 10, 0.8));
   transform-origin: center;
+}
+
+/* Estado en hover (solo si no está seleccionado) */
+.state-path.state-hovered:not(.state-selected) {
+  filter: brightness(1.3);
+  opacity: 0.95;
+  stroke-width: 2;
+}
+
+/* Estados atenuados cuando hay uno seleccionado */
+.state-path.state-dimmed {
+  opacity: 0.5;
+  filter: brightness(0.8);
+}
+
+/* Hover sobre estados atenuados */
+.state-path.state-dimmed:hover {
+  opacity: 0.7;
+  filter: brightness(1);
+}
+
+/* Asegurar que hover funcione sobre estado seleccionado */
+.state-path.state-selected:hover {
+  opacity: 1;
+  filter: saturate(1.8) contrast(1.3);
+  stroke-width: 0.4;  /* ✅ Borde muy delgado */
+  filter: drop-shadow(0 0 6px rgba(10, 10, 10, 0.8));
+  transform-origin: center;
+
 }
 
 .tooltip {
@@ -555,9 +707,13 @@ svg g:hover .state-path:hover {
 }
 
 @media (max-width: 1200px) {
+  .map-wrapper {
+    width: 100%;
+  }
+  
   .map-info-card {
     top: 20px;
-    left: 20px;
+    right: 20px;
   }
 }
 

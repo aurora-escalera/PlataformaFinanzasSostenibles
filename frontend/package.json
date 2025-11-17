@@ -9,6 +9,8 @@
     "serve": "vite dev"
   },
   "dependencies": {
+    "@azure/msal-browser": "^4.26.0",
+    "axios": "^1.13.1",
     "chart.js": "^4.5.0",
     "d3": "^7.9.0",
     "d3-geo": "^3.1.1",
