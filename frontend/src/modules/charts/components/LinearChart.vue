@@ -1010,8 +1010,8 @@ onUnmounted(() => {
 
 /* Estilos para las etiquetas del eje Y */
 .y-axis-label {
-  font-size: 9px;
-  font-weight: 200;
+  font-size: 14px;
+  font-weight: 300;
   fill: #6b7280;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   user-select: none;
@@ -1051,8 +1051,8 @@ onUnmounted(() => {
 .x-axis-label {
   position: absolute;
   transform: translateX(-50%);
-  font-size: 9px;
-  font-weight: 200;
+  font-size: 12px;
+  font-weight: 100;
   color: #6b7280;
   white-space: nowrap;
   user-select: none;

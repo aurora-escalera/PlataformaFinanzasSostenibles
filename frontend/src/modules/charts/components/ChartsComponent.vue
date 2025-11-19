@@ -2,74 +2,9 @@
 <!-- ✅ ACTUALIZADO: Usa año dinámico del filtro en TODOS los títulos -->
 <template>
   <div class="charts-wrapper" :class="{ 'single-card': showingSingleCard }">
-    <!-- CARD 1: PRESUPUESTOS -->
-    <!-- ✅ NUEVO: Solo visible si no hay variable O si variable es PS o PIC -->
-    <div v-if="!selectedVariable || selectedVariable.key === 'PS' || selectedVariable.key === 'PIC'" class="chart-card">
-      <div class="chart-card-header">
-        <h4 class="card-title">{{ cardTitlePresupuestos }}</h4>
-      </div>
-      
-      <div class="chart-card-body">
-        <!-- Loading state -->
-        <div v-if="loading" class="loading-container">
-          <div class="spinner"></div>
-          <p>Cargando datos...</p>
-        </div>
-        
-        <!-- Error state -->
-        <div v-else-if="error" class="error-container">
-          <p>Error: {{ error }}</p>
-        </div>
-        
-        <!-- Barra izquierda -->
-        <div v-else class="chart-col-bar">
-          <BarChart 
-            :data="presupuestosData"
-            :title="presupuestosTitleDynamic"          
-          />
-        </div>
-        
-        <!-- Donas derecha -->
-        <div v-if="!loading && !error" class="chart-col-donuts" :class="{ 'single-donut': showingSingleDonutPresupuestos }">
-          <!-- ✅ Dona PS: Solo visible si no hay variable O si variable es PS -->
-          <div v-if="!selectedVariable || selectedVariable.key === 'PS'" class="donut-item">
-            <div class="donut-header">
-              <h5 class="donut-title">{{ donutTitlePS }}</h5>
-            </div>
-            <DonutChart 
-              v-if="sectoresPresupuestosSostenibles.length > 0"
-              :key="`ps-${props.selectedState}-${sectoresPresupuestosSostenibles.length}`"
-              :data="donutPresupuestosSostenibles"
-              title="PS"
-              :subtitle="subtitlePresupuestosSostenibles"
-              :size="220"
-              :variables="variablesPresupuestosSostenibles"
-              :sectors="sectoresPresupuestosSostenibles"
-            />
-            <div v-else class="no-data-message">Sin datos disponibles</div>
-          </div>
-          <!-- ✅ Dona PIC: Solo visible si no hay variable O si variable es PIC -->
-          <div v-if="!selectedVariable || selectedVariable.key === 'PIC'" class="donut-item">
-            <div class="donut-header">
-              <h5 class="donut-title">{{ donutTitlePIC }}</h5>
-            </div>
-            <DonutChart 
-              v-if="sectoresPresupuestosCarbono.length > 0"
-              :key="`pic-${props.selectedState}-${sectoresPresupuestosCarbono.length}`"
-              :data="donutPresupuestosCarbono"
-              title="PIC"
-              :subtitle="subtitlePresupuestosCarbono"
-              :size="220"
-              :variables="variablesPresupuestosCarbono"
-              :sectors="sectoresPresupuestosCarbono"
-            />
-            <div v-else class="no-data-message">Sin datos disponibles</div>
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- CARD 2: INGRESOS -->
+    <!-- ✅ NUEVO: Solo visible si no hay variable O si variable es PS o PIC -->
+    <!-- CARD 1: INGRESOS -->
     <!-- ✅ NUEVO: Solo visible si no hay variable O si variable es IS o IIC -->
     <div v-if="!selectedVariable || selectedVariable.key === 'IS' || selectedVariable.key === 'IIC'" class="chart-card">
       <div class="chart-card-header">
@@ -135,6 +70,72 @@
         </div>
       </div>
     </div>
+    <!-- CARD 2: PRESUPUESTOS -->
+    <div v-if="!selectedVariable || selectedVariable.key === 'PS' || selectedVariable.key === 'PIC'" class="chart-card">
+      <div class="chart-card-header">
+        <h4 class="card-title">{{ cardTitlePresupuestos }}</h4>
+      </div>
+      
+      <div class="chart-card-body">
+        <!-- Loading state -->
+        <div v-if="loading" class="loading-container">
+          <div class="spinner"></div>
+          <p>Cargando datos...</p>
+        </div>
+        
+        <!-- Error state -->
+        <div v-else-if="error" class="error-container">
+          <p>Error: {{ error }}</p>
+        </div>
+        
+        <!-- Barra izquierda -->
+        <div v-else class="chart-col-bar">
+          <BarChart 
+            :data="presupuestosData"
+            :title="presupuestosTitleDynamic"          
+          />
+        </div>
+        
+        <!-- Donas derecha -->
+        <div v-if="!loading && !error" class="chart-col-donuts" :class="{ 'single-donut': showingSingleDonutPresupuestos }">
+          <!-- ✅ Dona PS: Solo visible si no hay variable O si variable es PS -->
+          <div v-if="!selectedVariable || selectedVariable.key === 'PS'" class="donut-item">
+            <div class="donut-header">
+              <h5 class="donut-title">{{ donutTitlePS }}</h5>
+            </div>
+            <DonutChart 
+              v-if="sectoresPresupuestosSostenibles.length > 0"
+              :key="`ps-${props.selectedState}-${sectoresPresupuestosSostenibles.length}`"
+              :data="donutPresupuestosSostenibles"
+              title="PS"
+              :subtitle="subtitlePresupuestosSostenibles"
+              :size="220"
+              :variables="variablesPresupuestosSostenibles"
+              :sectors="sectoresPresupuestosSostenibles"
+            />
+            <div v-else class="no-data-message">Sin datos disponibles</div>
+          </div>
+          <!-- ✅ Dona PIC: Solo visible si no hay variable O si variable es PIC -->
+          <div v-if="!selectedVariable || selectedVariable.key === 'PIC'" class="donut-item">
+            <div class="donut-header">
+              <h5 class="donut-title">{{ donutTitlePIC }}</h5>
+            </div>
+            <DonutChart 
+              v-if="sectoresPresupuestosCarbono.length > 0"
+              :key="`pic-${props.selectedState}-${sectoresPresupuestosCarbono.length}`"
+              :data="donutPresupuestosCarbono"
+              title="PIC"
+              :subtitle="subtitlePresupuestosCarbono"
+              :size="220"
+              :variables="variablesPresupuestosCarbono"
+              :sectors="sectoresPresupuestosCarbono"
+            />
+            <div v-else class="no-data-message">Sin datos disponibles</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 

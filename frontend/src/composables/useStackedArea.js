@@ -195,7 +195,7 @@ export function useStackedAreaData() {
   /**
    * Obtener el título del gráfico
    */
-  const title = 'Evolución del IFS'
+  const title = 'Análisis histórico del ranking de Indice de Finanzas Sostenibles (IFS)'
 
   return {
     chartData,

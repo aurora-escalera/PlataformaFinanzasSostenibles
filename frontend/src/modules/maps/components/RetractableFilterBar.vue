@@ -1,5 +1,6 @@
 <!-- src/modules/maps/components/RetractableFilterBar.vue -->
 <!-- ✅ MODIFICADO: Agregada opción "------------" en Entidad y Variable -->
+<!-- ✅ ACTUALIZADO: Mantener barra expandida cuando isLocked es true -->
 <template>
   <div 
     class="filter-bar-container" 
@@ -11,7 +12,9 @@
       class="filter-bar" 
       :class="{ 
         'expanded': isSlideUp || activeDropdown,
-        'has-entity-selected': selectedEntity
+        'has-entity-selected': selectedEntity,
+        'locked-expanded': props.isLocked,
+        'animating-down': isAnimatingDown
       }"
       @mouseenter="handleMouseEnter"
       @mouseleave="handleMouseLeave"
@@ -211,6 +214,10 @@ const props = defineProps({
   selectedState: {
     type: String,
     default: null
+  },
+  isLocked: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -238,6 +245,7 @@ const activeDropdown = ref(null)
 const entitySearch = ref('')
 const slideTimeout = ref(null)
 const filterBarRef = ref(null)
+const isAnimatingDown = ref(false) // ✅ NUEVO: Estado para animación de bajada
 
 // Filtros seleccionados - ✅ Inicializados como string vacío por defecto
 const selectedEntity = ref('')
@@ -328,7 +336,14 @@ const handleMouseEnter = () => {
   isSlideUp.value = true
 }
 
+// ✅ ACTUALIZADO: No contraer la barra si está bloqueada
 const handleMouseLeave = () => {
+  // Si está bloqueada, no contraer
+  if (props.isLocked) {
+    console.log('🔒 Barra bloqueada, no se contrae al salir del mouse')
+    return
+  }
+  
   if (!activeDropdown.value && !selectedEntity.value) {
     slideTimeout.value = setTimeout(() => {
       isSlideUp.value = false
@@ -349,9 +364,16 @@ const toggleDropdown = (dropdownName) => {
   console.log('📂 Dropdown activo:', activeDropdown.value)
 }
 
+// ✅ ACTUALIZADO: No contraer si está bloqueada, solo cerrar dropdown
 const closeAllDropdowns = () => {
   console.log('🚪 Cerrando todos los dropdowns')
   activeDropdown.value = null
+  
+  // Si está bloqueada, mantener expandida
+  if (props.isLocked) {
+    console.log('🔒 Barra bloqueada, permanece expandida')
+    return
+  }
   
   slideTimeout.value = setTimeout(() => {
     isSlideUp.value = false
@@ -409,6 +431,34 @@ const emitFiltersChange = () => {
   console.log('=== FILTRO: Emitiendo filters-change ===', filters)
   emit('filters-change', filters)
 }
+
+// ✅ ACTUALIZADO: Watch para mantener expandida cuando se bloquea y animar al desbloquear
+watch(() => props.isLocked, (newLocked, oldLocked) => {
+  console.log('🔒 isLocked cambió de', oldLocked, 'a', newLocked)
+  
+  if (newLocked) {
+    // Cuando se bloquea, forzar expansión
+    isSlideUp.value = true
+    isAnimatingDown.value = false
+    if (slideTimeout.value) {
+      clearTimeout(slideTimeout.value)
+      slideTimeout.value = null
+    }
+  } else if (oldLocked === true && newLocked === false) {
+    // ✅ NUEVO: Cuando se desbloquea, animar bajada
+    console.log('📉 Iniciando animación de bajada...')
+    isAnimatingDown.value = true
+    
+    // Después de la animación, restaurar estado normal
+    setTimeout(() => {
+      isAnimatingDown.value = false
+      if (!selectedEntity.value && !activeDropdown.value) {
+        isSlideUp.value = false
+      }
+      console.log('✅ Animación de bajada completada')
+    }, 600) // Duración de la animación
+  }
+})
 
 // Watch para sincronizar estado seleccionado desde el mapa
 watch(() => props.selectedState, (newState) => {
@@ -495,6 +545,32 @@ onBeforeUnmount(() => {
   transform: translateY(-20px);
   cursor: default;
   z-index: 1;
+}
+
+/* ✅ ACTUALIZADO: Clase locked-expanded con mayor prioridad */
+.filter-bar.locked-expanded {
+  transform: translateY(-20px) !important;
+  cursor: default;
+  z-index: 1;
+  box-shadow: 0 6px 24px rgba(44, 82, 130, 0.4);
+}
+
+/* ✅ NUEVO: Animación de bajada suave */
+.filter-bar.animating-down {
+  animation: slideDown 0.6s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
+  cursor: default;
+  z-index: 1;
+}
+
+@keyframes slideDown {
+  0% {
+    transform: translateY(-20px);
+    box-shadow: 0 6px 24px rgba(44, 82, 130, 0.4);
+  }
+  100% {
+    transform: translateY(calc(100% - 65px));
+    box-shadow: 0 4px 20px rgba(44, 82, 130, 0.3);
+  }
 }
 
 .filter-content {

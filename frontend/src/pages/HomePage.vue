@@ -6,9 +6,11 @@
     <!-- Columna izquierda: Filtros -->
     <div class="filters-column">
       <RetractableFilterBar 
+        :key="filterBarKey"
         :entities="entitiesData"
         :loading="entitiesLoading"
         :selectedState="selectedState"
+        :isLocked="isFilterBarLocked"
         @entity-change="handleEntityChange"
         @year-change="handleYearChange" 
         @variable-change="handleVariableChange"
@@ -53,6 +55,22 @@
             @navigate-regional="handleIFSRegionalClick"
             @navigate-federal="handleDatosFederalesClick"
           />
+          
+          <!-- ✅ NUEVO: Overlay sobre SOLO el mapa -->
+          <transition name="overlay-fade">
+            <div 
+              v-if="showMapOverlay" 
+              class="map-overlay-filter"
+              @click.stop="handleOverlayClick"
+            >
+              <div class="overlay-message">
+                <h2 class="overlay-text">
+                  Haz click en cualquier entidad del mapa para regresar a los resultados subnacionales
+                </h2>
+              </div>
+            </div>
+          </transition>
+          
         <!-- Botón retráctil -->
         <div class="retractable-view">
           <div class="expand-retractable-btn" @click="handleDatosCualitativosClick">+</div>
@@ -256,6 +274,7 @@ const router = useRouter()
 const selectedVariable = ref('')
 const selectedYear = ref(null)
 const selectedEntity = ref('')
+const filterBarKey = ref(0) // ✅ NUEVO: Key para forzar reset del FilterBar
 const { fetchData: fetchEntities } = useStorageData()
 
 const entitiesData = ref([])
@@ -276,6 +295,16 @@ const showStackedArea = computed(() => {
   })
   
   return allFiltersDefault
+})
+
+// ✅ NUEVO: Computed para mostrar overlay en el mapa
+const showMapOverlay = computed(() => {
+  return showStackedArea.value
+})
+
+// ✅ NUEVO: Computed para mantener FilterBar expandido cuando overlay está activo
+const isFilterBarLocked = computed(() => {
+  return showStackedArea.value
 })
 
 // Computed para detectar si se debe ocultar el panel
@@ -471,6 +500,32 @@ const handleMapContainerClick = (event) => {
   }
 }
 
+// ✅ NUEVO: Función para manejar click en el overlay del mapa
+const handleOverlayClick = async () => {
+  console.log('🔄 Overlay clickeado - Reseteando filtros')
+  
+  // Resetear todos los filtros a sus valores por defecto
+  selectedEntity.value = ''
+  selectedVariable.value = ''
+  selectedYear.value = null
+  
+  // Resetear el estado seleccionado en el mapa
+  resetSelection()
+  
+  // Emitir que no hay región seleccionada
+  emit('region-selected', null)
+  
+  // ✅ NUEVO: Recargar ranking con valores por defecto
+  await loadAllStatesRanking(null)
+  
+  // ✅ NUEVO: Incrementar key para forzar re-render de FilterBar
+  filterBarKey.value++
+  
+  await nextTick()
+  
+  console.log('✅ Filtros reseteados a estado por defecto')
+}
+
 // Computed property para el título del ranking
 const getRankingTitle = computed(() => {
   const yearSuffix = selectedYear.value ? ` - ${selectedYear.value}` : ''
@@ -617,7 +672,6 @@ onMounted(async () => {
 
 .map-and-charts-wrapper {
   display: flex;
-  align-items: flex-start;
   gap: 10px;
   padding: 19.6px;  
   border-radius: 15px;
@@ -628,6 +682,7 @@ onMounted(async () => {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.182);
   box-sizing: border-box;
   z-index: 2;
+  position: relative; /* ✅ Para que el overlay se posicione relativo a este contenedor */
 }
 
 .retractable-view {
@@ -640,6 +695,7 @@ onMounted(async () => {
   z-index: 1;
   transform: translateX(-50px);
   top: 1px;
+
 }
 
 .expand-retractable-btn {
@@ -671,20 +727,17 @@ onMounted(async () => {
 }
 
 .charts-section {
-  flex: 1;
+  transform: translateX(-48PX);
   height: 605px;
-  border-radius: 15px;
-  min-width: 0;
+  border-radius: 8px;
+  width:980px;
+  border: 1px solid #ccc;
+
 }
 
 .charts-container {
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 12px;
-  padding: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   height: 100%;
-  width: 100%;
+  width: 985px;
 }
 
 .ranking-loading, .ranking-error {
@@ -772,7 +825,8 @@ onMounted(async () => {
 
 .ranking-panel.historical-view {
   width: 2000px;
-  height: 1540px;
+  height: 1840px;
+  padding-bottom: 70px;
   transition: all 0.3s ease;
 }
 
@@ -809,6 +863,54 @@ h2 {
 .body-ranking-panel {
   height: 100%;
   width: 100%;
+}
+
+/* ✅ NUEVO: Overlay que cubre SOLO el área del mapa SVG */
+.map-overlay-filter {
+  position: absolute;
+  top: 19.6px;
+  left: 19.6px;
+  width: calc(50% - 60px); /* Aproximadamente el ancho del mapa */
+  height: calc(100% - 40px);
+  background: rgba(180, 180, 180, 0.92); /* ✅ Fondo gris más oscuro */
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  cursor: pointer;
+  transition: background 0.3s ease;
+  border-radius: 8px;
+}
+
+.map-overlay-filter:hover {
+  background: rgba(160, 160, 160, 0.94); /* ✅ Gris más oscuro al hover */
+}
+
+.overlay-message {
+  text-align: center;
+  padding: 30px;
+  max-width: 450px;
+}
+
+.overlay-text {
+  font-size: 18px;
+  font-weight: 300;
+  color: #2d3748; /* ✅ Color más oscuro para contraste con fondo gris */
+  margin: 0;
+  line-height: 1.4;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Animación del overlay */
+.overlay-fade-enter-active,
+.overlay-fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.overlay-fade-enter-from,
+.overlay-fade-leave-to {
+  opacity: 0;
 }
 
 @media (max-width: 1400px) {

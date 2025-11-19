@@ -207,7 +207,7 @@ onMounted(async () => {
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   gap: 10px;
-  overflow: auto;
+  overflow: visible;
   box-sizing: border-box;
 }
 
@@ -223,7 +223,7 @@ onMounted(async () => {
 .row-1, .row-2, .row-3, .row-4 {
   display: flex;
   flex-direction: row;
-  height: 25%;
+  height: 24.5%;
   gap: 10px;
 }
 
