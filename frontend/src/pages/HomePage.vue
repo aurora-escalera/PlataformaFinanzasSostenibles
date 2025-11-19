@@ -102,6 +102,14 @@
                 :title="stackedAreaTitle"
                 :data="stackedAreaChartData"
                 :xLabels="stackedAreaYears"
+                :width="980"
+                :height="500"
+                :padding="{
+                  top: 30,
+                  right: 70,
+                  bottom: 120,
+                  left: 60
+                }"
               />
               
               <!-- Loading State para Ranking -->
@@ -669,6 +677,7 @@ onMounted(async () => {
 .retry-btn:hover {
   background: #d32f2f;
 }
+
 
 .map-and-charts-wrapper {
   display: flex;
