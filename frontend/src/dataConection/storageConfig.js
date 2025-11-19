@@ -22,7 +22,7 @@ export const storageConfig = {
         files: {
           datosFinancieros: 'Hoja 1',
           presupuesto: 'Hoja 1',
-          indicadores: 'Indicadores',
+          indicadores: 'Hoja 1',
           gastos: 'Gastos',
           estados: 'Estados'
         }
@@ -264,6 +264,18 @@ export const storageConfig = {
           column: 'IT ($)',
           label: 'Ingreso Total',
           color: '#0F3759'
+        }
+      ]
+    },
+
+    ifssStackedArea: {
+      yearColumn: 'Año',
+      variableColumns: [
+        {
+          key: 'IFS',
+          column: 'IFS',
+          label: 'IFS',
+          color: '#10b981'  // Verde
         }
       ]
     },

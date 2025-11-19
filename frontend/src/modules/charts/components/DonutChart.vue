@@ -49,13 +49,15 @@
               :stroke-width="hoveredSectorIndex === index ? strokeWidth + 5 : strokeWidth"
               :class="['sector-path', { 
                 'sector-inactive': !sector.isActive,
-                'sector-hovered': hoveredSectorIndex === index
+                'sector-hovered': hoveredSectorIndex === index,
+                'sector-dimmed': hoveredSectorIndex !== null && hoveredSectorIndex !== index
               }]"
+              style="cursor: pointer;"
               @mouseenter="handleSectorHover(sector, index, $event)"
-              @mousemove="updateTooltipPosition"
+              @mousemove="updateTooltipPosition($event)"
               @mouseleave="handleSectorLeave"
             />
-            <!-- ✅ Bordes blancos entre sectores -->
+            <!-- Bordes blancos entre sectores -->
             <line
               v-if="index < allSectorsWithState.length - 1"
               :key="`divider-${sector.key}-${index}`"
@@ -70,7 +72,7 @@
           </template>
         </g>
 
-        <!-- ✅ Porcentajes DENTRO del anillo (pequeños y delgados) -->
+        <!-- Porcentajes DENTRO del anillo (pequeños y delgados) -->
         <g v-if="shouldShowProgress && animatedProgress >= 0.9">
           <template v-if="allSectorsWithState.length > 0">
             <text
@@ -79,69 +81,38 @@
               :x="getSectorLabelPosition(sector, index, 'inner').x"
               :y="getSectorLabelPosition(sector, index, 'inner').y"
               text-anchor="middle"
-              :class="['sector-percent', { 'sector-percent-inactive': !sector.isActive }]"
+              :class="['sector-percent', { 
+                'sector-percent-inactive': !sector.isActive,
+                'sector-percent-dimmed': hoveredSectorIndex !== null && hoveredSectorIndex !== index
+              }]"
               pointer-events="none"
             >
               {{ getSectorPercentage(sector) }}
             </text>
           </template>
         </g>
-
-        <!-- ✅ Nombres FUERA del donut -->
-        <g v-if="shouldShowProgress && animatedProgress >= 0.9">
-          <template v-if="allSectorsWithState.length > 0">
-            <text
-              v-for="(sector, index) in allSectorsWithState"
-              :key="`name-${sector.key}-${index}`"
-              :x="getSectorLabelPosition(sector, index, 'outer').x"
-              :y="getSectorLabelPosition(sector, index, 'outer').y"
-              text-anchor="middle"
-              :class="['sector-name', { 'sector-name-inactive': !sector.isActive }]"
-              pointer-events="none"
-            >
-              {{ sector.label }}
-            </text>
-          </template>
-        </g>
         
-        <!-- ✅ NUEVO: Título de la variable arriba del total -->
+        <!-- Título de la variable o label del sector en hover -->
         <text
           :x="center"
           :y="center - 15"
           text-anchor="middle"
-          class="variable-title-text"
+          :class="['variable-title-text', { 'hovered': !!hoveredSector }]"
         >
-          {{ title }}
+          {{ centralTitle }}
         </text>
         
-        <!-- ✅ Suma total en el centro (no porcentaje) -->
+        <!-- Total general o valor del sector en hover -->
         <text
           :x="center"
           :y="center + 12"
           text-anchor="middle"
-          class="total-value-text"
+          :class="['total-value-text', { 'hovered': !!hoveredSector }]"
         >
-          {{ formatTotalValue(totalAllSectorsValue) }}
+          {{ centralValue }}
         </text>
       </svg>
     </div>
-
-    <!-- Tooltip para mostrar valores en $ -->
-    <Teleport to="body">
-      <div 
-        v-if="hoveredSector"
-        class="donut-tooltip"
-        :style="{
-          left: `${tooltipPosition.x}px`,
-          top: `${tooltipPosition.y}px`
-        }"
-      >
-        <div class="tooltip-content">
-          <span class="tooltip-label">{{ hoveredSector.label }}</span>
-          <span class="tooltip-value">{{ formatCurrency(hoveredSector.value) }}</span>
-        </div>
-      </div>
-    </Teleport>
   </div>
 </template>
 
@@ -252,6 +223,17 @@ const shouldShowProgress = computed(() => {
   return allSectorsWithState.value.some(s => s.hasData)
 })
 
+// Texto central dinámico
+const centralTitle = computed(() => {
+  return hoveredSector.value ? hoveredSector.value.label : props.title
+})
+
+const centralValue = computed(() => {
+  return hoveredSector.value 
+    ? formatCurrency(hoveredSector.value.value) 
+    : formatTotalValue(totalAllSectorsValue.value)
+})
+
 // ✅ NUEVO: Función para formatear el valor total en el centro
 const formatTotalValue = (value) => {
   if (value === null || value === undefined || value === 0) return '$0'
@@ -280,7 +262,7 @@ const formatCurrency = (value) => {
   return `$${value.toFixed(0)}`
 }
 
-// ✅ MODIFICADO: Manejar hover con índice
+// Manejar hover con índice
 const handleSectorHover = (sector, index, event) => {
   hoveredSector.value = sector
   hoveredSectorIndex.value = index
@@ -523,12 +505,12 @@ watch(() => props.sectors, (newSectors) => {
       }
     })
     
-    // ✅ Animar cuando cambien los datos
+    // Animar cuando cambien los datos
     animateDonut()
   }
 }, { deep: true })
 
-// ✅ NUEVO: Animar al montar el componente
+// Animar al montar el componente
 onMounted(() => {
   if (shouldShowProgress.value) {
     setTimeout(() => {
@@ -667,7 +649,12 @@ onMounted(() => {
   cursor: default;
 }
 
-/* ✅ Porcentajes DENTRO del anillo - pequeños y delgados */
+.sector-path.sector-dimmed {
+  opacity: 0.3;
+  transition: opacity 0.3s ease;
+}
+
+/* Porcentajes DENTRO del anillo - pequeños y delgados */
 .sector-percent {
   font-size: 10px;
   font-weight: 300;
@@ -676,6 +663,7 @@ onMounted(() => {
   pointer-events: none;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
   opacity: 0.95;
+  transition: opacity 0.3s ease;
 }
 
 .sector-percent-inactive {
@@ -683,39 +671,40 @@ onMounted(() => {
   opacity: 0.5;
 }
 
-/* ✅ Nombres FUERA del donut */
-.sector-name {
-  font-size: 13px;
-  font-weight: 500;
-  fill: #444;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  pointer-events: none;
-  letter-spacing: -0.3px;
+.sector-percent-dimmed {
+  opacity: 0.3;
 }
 
-.sector-name-inactive {
-  fill: #999;
-  opacity: 0.6;
-}
-
-/* ✅ NUEVO: Título de la variable (IS, PS, PIC, IIC) */
+/* Título de la variable (IS, PS, PIC, IIC) */
 .variable-title-text {
-  font-size: 18px;
-  font-weight: 300;
+  font-size: 15px;
+  font-weight: 600;
   fill: #666;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   pointer-events: none;
   letter-spacing: 0.5px;
+  transition: fill 0.3s ease, font-size 0.3s ease;
 }
 
-/* ✅ Valor total en el centro */
+.variable-title-text.hovered {
+  fill: #2c3e50;
+  font-size: 16px;
+}
+
+/* Valor total en el centro */
 .total-value-text {
-  font-size: 20px;
-  font-weight: 400;
+  font-size: 22px;
+  font-weight: 700;
   fill: #2c3e50;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   pointer-events: none;
   letter-spacing: -0.5px;
+  transition: fill 0.3s ease, font-size 0.3s ease;
+}
+
+.total-value-text.hovered {
+  fill: #7cb342;
+  font-size: 24px;
 }
 
 @media (max-width: 768px) {
@@ -734,61 +723,20 @@ onMounted(() => {
     font-size: 9px;
   }
   
-  .sector-name {
-    font-size: 11px;
-  }
-  
   .variable-title-text {
     font-size: 13px;
+  }
+  
+  .variable-title-text.hovered {
+    font-size: 14px;
   }
   
   .total-value-text {
     font-size: 18px;
   }
-}
-
-.donut-tooltip {
-  position: fixed;
-  transform: translate(-50%, calc(-100% - 15px));
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 10px 14px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  pointer-events: none;
-  z-index: 999999;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  transition: left 0.05s ease, top 0.05s ease;
-  white-space: nowrap;
-  min-width: 120px;
-}
-
-.donut-tooltip::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 6px solid transparent;
-  border-top-color: white;
-  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.1));
-}
-
-.tooltip-content {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.tooltip-label {
-  font-size: 11px;
-  color: #666;
-  font-weight: 500;
-}
-
-.tooltip-value {
-  font-size: 14px;
-  color: #333;
-  font-weight: 700;
+  
+  .total-value-text.hovered {
+    font-size: 20px;
+  }
 }
 </style>

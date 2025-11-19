@@ -1064,10 +1064,11 @@ const variablesIngresosCarbono = [
   flex-direction: column;
   width: 100%;
   height: 100%;
-  background: white;
-  border: 1px solid #ddd;
+  background: #F8F9FA;
+
   border-radius: 12px;
   padding: 12px;
+    border: 1px solid #ddd;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.182);
   box-sizing: border-box;
 }
@@ -1107,6 +1108,7 @@ const variablesIngresosCarbono = [
   flex: 1;
   height: 100%;
   min-width: 0;
+  padding: 10px;
 }
 
 /* Container for donuts - Distribuido equitativamente 50-50 */
@@ -1116,7 +1118,7 @@ const variablesIngresosCarbono = [
   display: flex;
   flex-direction: row;
   gap: 15px;
-  padding: 0;
+  padding: 10px;
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
