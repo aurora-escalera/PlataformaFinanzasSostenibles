@@ -315,13 +315,13 @@ const tooltipStyle = computed(() => {
   display: flex;
   align-items: center;
   gap: 1px;
-  font-size: 5.5px;
+  font-size: 10px;
   color: #666;
   padding-left: 8px;
 }
 
 .legend-color {
-  width: 10px;
+  width: 12px;
   height: 4px;
 }
 
