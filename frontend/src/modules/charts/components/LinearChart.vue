@@ -636,23 +636,43 @@ const getAnimatedPointY = (variable) => {
   return animatingPoints.value[`${variable}-y`] || 0
 }
 
-// Manejar movimiento del mouse
+// ✅ CORREGIDO v5: Activar el punto MUCHO ANTES (30% del camino, no 50%)
 const handleMouseMove = (event) => {
   const svg = event.currentTarget
   const rect = svg.getBoundingClientRect()
   const x = event.clientX - rect.left
   
+  const dataLength = props.xLabels.length
   let closestIndex = 0
-  let minDistance = Infinity
   
-  props.xLabels.forEach((_, i) => {
-    const pointX = getXPosition(i)
-    const distance = Math.abs(x - pointX)
-    if (distance < minDistance) {
-      minDistance = distance
-      closestIndex = i
+  if (dataLength === 1) {
+    closestIndex = 0
+  } else {
+    // Calcular puntos de transición al 30% del camino (no al 50%)
+    // Esto hace que el punto se active MUCHO ANTES
+    const transitionPoints = []
+    for (let i = 0; i < dataLength - 1; i++) {
+      const currentX = getXPosition(i)
+      const nextX = getXPosition(i + 1)
+      const distance = nextX - currentX
+      // Punto de transición al 30% del camino hacia el siguiente punto
+      transitionPoints.push(currentX + distance * 0.05)
     }
-  })
+    
+    // Determinar en qué rango está el cursor
+    if (x < transitionPoints[0]) {
+      closestIndex = 0
+    } else if (x >= transitionPoints[transitionPoints.length - 1]) {
+      closestIndex = dataLength - 1
+    } else {
+      for (let i = 0; i < transitionPoints.length - 1; i++) {
+        if (x >= transitionPoints[i] && x < transitionPoints[i + 1]) {
+          closestIndex = i + 1
+          break
+        }
+      }
+    }
+  }
   
   const previousIndex = hoverState.value.index
   const pointX = getXPosition(closestIndex)
@@ -682,34 +702,39 @@ const handleMouseMove = (event) => {
   }
   
   if (previousIndex !== closestIndex && previousIndex !== -1) {
-    visibleVariables.value.forEach(variable => {
-      const startX = getXPosition(previousIndex)
-      const endX = getXPosition(closestIndex)
-      const startY = getAnimatedY(variable, previousIndex)
-      const endY = getAnimatedY(variable, closestIndex)
-      
-      const duration = 200
-      const startTime = Date.now()
-      
-      const animate = () => {
-        const elapsed = Date.now() - startTime
-        const progress = Math.min(elapsed / duration, 1)
-        const easeProgress = 1 - Math.pow(1 - progress, 3)
-        
-        animatingPoints.value[`${variable}-x`] = startX + (endX - startX) * easeProgress
-        animatingPoints.value[`${variable}-y`] = startY + (endY - startY) * easeProgress
-        
-        if (progress < 1) {
-          requestAnimationFrame(animate)
-        } else {
-          delete animatingPoints.value[`${variable}-x`]
-          delete animatingPoints.value[`${variable}-y`]
-        }
-      }
-      
-      animate()
-    })
+    animatePointTransition(previousIndex, closestIndex)
   }
+}
+
+// Función auxiliar para animar la transición de puntos
+const animatePointTransition = (fromIndex, toIndex) => {
+  visibleVariables.value.forEach(variable => {
+    const startX = getXPosition(fromIndex)
+    const endX = getXPosition(toIndex)
+    const startY = getAnimatedY(variable, fromIndex)
+    const endY = getAnimatedY(variable, toIndex)
+    
+    const duration = 200
+    const startTime = Date.now()
+    
+    const animate = () => {
+      const elapsed = Date.now() - startTime
+      const progress = Math.min(elapsed / duration, 1)
+      const easeProgress = 1 - Math.pow(1 - progress, 3)
+      
+      animatingPoints.value[`${variable}-x`] = startX + (endX - startX) * easeProgress
+      animatingPoints.value[`${variable}-y`] = startY + (endY - startY) * easeProgress
+      
+      if (progress < 1) {
+        requestAnimationFrame(animate)
+      } else {
+        delete animatingPoints.value[`${variable}-x`]
+        delete animatingPoints.value[`${variable}-y`]
+      }
+    }
+    
+    animate()
+  })
 }
 
 const hideTooltip = () => {
