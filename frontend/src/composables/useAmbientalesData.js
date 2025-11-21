@@ -101,6 +101,47 @@ export function useAmbientalesData() {
       loading.value = false
     }
   }
+
+    const loadIngresoTotalData = async (year = null) => {
+    try {
+      loading.value = true
+      error.value = null
+      
+      const yearToLoad = year || currentYear.value || '2024'
+      console.log('🔥 Cargando datos de ingresos totales para año:', yearToLoad)
+      
+      const data = await fetchData('ambientalesIncendios', yearToLoad)
+      
+      if (!data || data.length === 0) {
+        throw new Error(`No hay datos disponibles para el año ${yearToLoad}`)
+      }
+      
+      const mapping = getMapping('ambientalesIncendios')
+      
+      // Extraer entidades únicas
+      const entities = [...new Set(data.map(row => row[mapping.stateColumn]))]
+        .filter(entity => entity && entity.trim() !== '')
+        .sort()
+      
+      availableEntities.value = entities
+      rawData.value = data
+      currentYear.value = yearToLoad
+      
+      console.log('✅ Datos cargados:', {
+        registros: data.length,
+        entidades: entities.length,
+        año: yearToLoad
+      })
+      
+    } catch (err) {
+      console.error('❌ Error cargando datos de incendios:', err)
+      error.value = err.message
+      rawData.value = []
+      availableEntities.value = []
+    } finally {
+      loading.value = false
+    }
+  }
   
   /**
    * Obtener datos filtrados por entidad

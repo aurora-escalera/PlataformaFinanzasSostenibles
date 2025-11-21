@@ -1,10 +1,14 @@
 // src/dataConection/storageConfig.js
-// ✅ ACTUALIZADO con configuración para Ambientales - VERSIÓN CORREGIDA
+// ✅ ACTUALIZADO con configuración para TODOS los componentes de Ambientales y Económicos
 
 console.log('API Key:', import.meta.env.VITE_GOOGLE_SHEETS_API_KEY)
 console.log('Sheet ID Principal:', import.meta.env.VITE_GOOGLE_SHEET_ID)
 console.log('Sheet ID Cuantitativos:', import.meta.env.VITE_GOOGLE_SHEET_ID_CUANTITATIVOS)
-console.log('Sheet ID Ambientales:', import.meta.env.VITE_GOOGLE_SHEET_ID_AMBIENTALES_INCENDIOS_FORESTALES)
+console.log('Sheet ID Incendios Forestales:', import.meta.env.VITE_GOOGLE_SHEET_ID_AMBIENTALES_INCENDIOS_FORESTALES)
+console.log('Sheet ID Residuos Sólidos:', import.meta.env.VITE_GOOGLE_SHEET_ID_AMBIENTALES_RESIDUOS_SOLIDOS)
+console.log('Sheet ID Emisiones:', import.meta.env.VITE_GOOGLE_SHEET_ID_AMBIENTALES_EMISIONES)
+console.log('Sheet ID Energía:', import.meta.env.VITE_GOOGLE_SHEET_ID_AMBIENTALES_ENERGIA)
+console.log('Sheet ID Áreas Naturales:', import.meta.env.VITE_GOOGLE_SHEET_ID_AMBIENTALES_AREAS_NATURALES)
 console.log('Provider:', import.meta.env.VITE_STORAGE_PROVIDER)
 
 // ✅ Variable global para el año activo
@@ -35,10 +39,69 @@ export const storageConfig = {
           chartsIngresos: '2024'  
         }
       },
+      // Configuración modular para cada componente ambiental
       ambientales: {
-        sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_AMBIENTALES_INCENDIOS_FORESTALES,
-        files: {
-          incendiosForestales: '2024'
+        incendiosForestales: {
+          sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_AMBIENTALES_INCENDIOS_FORESTALES,
+          files: {
+            incendiosForestales: '2024'
+          }
+        },
+        residuosSolidos: {
+          sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_AMBIENTALES_RESIDUOS_SOLIDOS,
+          files: {
+            residuosSolidos: '2024'
+          }
+        },
+        emisiones: {
+          sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_AMBIENTALES_EMISIONES,
+          files: {
+            emisiones: '2024'
+          }
+        },
+        energia: {
+          sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_AMBIENTALES_ENERGIA,
+          files: {
+            energia: '2024'
+          }
+        },
+        areasNaturales: {
+          sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_AMBIENTALES_AREAS_NATURALES,
+          files: {
+            areasNaturales: '2024'
+          }
+        }
+      },
+      economicos: {
+        ingresoTotal: {
+          sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_ECONOMICOS_INGRESO_TOTAL,
+          files: {
+            ingresoTotal: '2024'
+          }
+        },
+        egresoTotal: {
+          sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_ECONOMICOS_EGRESO_TOTAL,
+          files: {
+            egresoTotal: '2024'
+          }
+        },
+        pea: {
+          sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_ECONOMICOS_PEA,
+          files: {
+            pea: '2024'
+          }
+        },
+        pibe: {
+          sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_ECONOMICOS_PIBE,
+          files: {
+            pibe: '2024'
+          }
+        },
+        itaee: {
+          sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_ECONOMICOS_ITAEE,
+          files: {
+            itaee: '2024'
+          }
         }
       }
     },
@@ -53,55 +116,202 @@ export const storageConfig = {
       datosCuantitativos: '2024',
       chartsPresupuestos: '2024',
       chartsIngresos: '2024',
-      incendiosForestales: '2024'
+      incendiosForestales: '2024',
+      residuosSolidos: '2024',
+      emisiones: '2024',
+      energia: '2024',
+      areasNaturales: '2024',
+      ingresoTotal: '2024',
+      egresoTotal: '2024',
+      pea: '2024',
+      pibe: '2024',
+      itaee: '2024'
     }
   },
   
   mappings: {
-    // ✅ CORREGIDO: Mapping con nombres EXACTOS según los headers del Google Sheet
+    //CUALITATIVOS - ECONOMICOS
+    ingresoTotal: {
+      categoryColumn: 'Entidad Federativa',
+      valueColumn: 'Ingresos',
+    },
+    egresoTotal: {
+      categoryColumn: 'Entidad Federativa',
+      valueColumn: 'Egresos',
+    },
+    pea: {
+      categoryColumn: 'Entidad Federativa',
+      valueColumn: 'Personas',
+    },
+    pibe: {
+      categoryColumn: 'Entidad Federativa',
+      valueColumn: 'PIBE',
+    },
+    itaee: {
+      categoryColumn: 'Entidad Federativa',
+      valueColumn: 'Variación Porcentual Anual',
+    },
+
+    //CUALITATIVOS - AMBIENTALES
+    // Mapping para Incendios Forestales (HorizontalBarChart)
     incendiosForestales: {
-      categoryColumn: 'Entidad Federativa',  // ← Primera columna con nombres de estados
+      categoryColumn: 'Entidad Federativa',
       variables: [
         {
           key: 'arbolado',
-          column: 'Arbolado Adulto',  // ← EXACTO del header
+          column: 'Arbolado Adulto',
           label: 'Arbolado Adulto',
           color: '#0F3759',
+          colorClass: 'blue',
           order: 1
         },
         {
           key: 'renuevo',
-          column: 'Renuevo',  // ← EXACTO del header
+          column: 'Renuevo',
           label: 'Renuevo',
           color: '#3B5A70',
+          colorClass: 'blue',
           order: 2
         },
         {
           key: 'arbustivo',
-          column: 'Arbustivo',  // ← EXACTO del header
+          column: 'Arbustivo',
           label: 'Arbustivo',
           color: '#4E6D82',
+          colorClass: 'blue',
           order: 3
         },
         {
           key: 'herbaceo',
-          column: 'Herbaceo',  // ← EXACTO del header
+          column: 'Herbaceo',
           label: 'Herbaceo',
           color: '#D6D6D6',
+          colorClass: 'gray',
           order: 4
         },
         {
           key: 'hojarasca',
-          column: 'Hojarasca',  // ← EXACTO del header
+          column: 'Hojarasca',
           label: 'Hojarasca',
           color: '#A1A1A1',
+          colorClass: 'gray',
           order: 5
         },
         {
           key: 'total',
-          column: 'Total de Hectáreas',  // ← EXACTO del header (nota: con acento en "Héctareas")
+          column: 'Total de Hectáreas',
           label: 'Total de Hectáreas',
           color: '#B0B0B0',
+          colorClass: 'gray',
+          order: 6
+        }
+      ]
+    },
+
+    // Mapping para Residuos Sólidos Urbanos (BottleChart)
+    residuosSolidos: {
+      categoryColumn: 'Entidad Federativa',
+      valueColumn: 'Sólidos Urbanos',
+    },
+
+    // Mapping para Emisiones Contaminantes (AreaChart)
+    emisiones: {
+      categoryColumn: 'Entidad Federativa',
+      variables: [
+        {
+          key: 'Fuentes Fijas',
+          column: 'Fuentes Fijas',
+          label: 'Fuentes Fijas',
+          color: '#DC143C',
+          order: 1
+        },
+        {
+          key: 'Fuente Áerea',
+          column: 'Fuente Áerea',
+          label: 'Fuente Áerea',
+          color: '#0F3759',
+          order: 2
+        },
+        {
+          key: 'Carreteros',
+          column: 'Carreteros',
+          label: 'Carreteros',
+          color: '#7cb342',
+          order: 3
+        },
+        {
+          key: 'No Carreteros',
+          column: 'No Carreteros',
+          label: 'No Carreteros',
+          color: '#FF9800',
+          order: 4
+        },
+        {
+          key: 'Naturales',
+          column: 'Naturales',
+          label: 'Naturales',
+          color: '#9C27B0',
+          order: 5
+        }
+      ]
+    },
+
+    // ✅ NUEVO: Mapping para Consumo de Energía Eléctrica (GaugeChart)
+    energia: {
+      categoryColumn: 'Entidad Federativa',
+      valueColumn: 'Consumo Energía'
+    },
+
+    // ✅ NUEVO: Mapping para Áreas Naturales Protegidas (VerticalBarChart)
+    areasNaturales: {
+      categoryColumn: 'Entidad Federativa',
+      variables: [
+        {
+          key: 'Flora y fauna',
+          column: 'Flora y fauna',
+          label: 'Flora y fauna',
+          color: '#0F3759',
+          colorClass: 'blue',
+          order: 1
+        },
+        {
+          key: 'Recursos naturales',
+          column: 'Recursos naturales',
+          label: 'Recursos naturales',
+          color: '#3B5A70',
+          colorClass: 'blue',
+          order: 2
+        },
+        {
+          key: 'Monumento Natural',
+          column: 'Monumento Natural',
+          label: 'Monumento Natural',
+          color: '#4E6D82',
+          colorClass: 'blue',
+          order: 3
+        },
+        {
+          key: 'Parque Nacional',
+          column: 'Parque Nacional',
+          label: 'Parque Nacional',
+          color: '#B0B0B0',
+          colorClass: 'gray',
+          order: 4
+        },
+        {
+          key: 'Reserva de la biósfera',
+          column: 'Reserva de la biósfera',
+          label: 'Reserva de la biósfera',
+          color: '#0F3759',
+          colorClass: 'blue',
+          order: 5
+        },
+        {
+          key: 'Santuario',
+          column: 'Santuario',
+          label: 'Santuario',
+          color: '#3B5A70',
+          colorClass: 'gray',
           order: 6
         }
       ]
@@ -540,21 +750,44 @@ export function getCurrentConfig() {
   }
 }
 
+// ✅ CORREGIDO: Ahora busca primero en economicos
 export function getSheetIdForFile(fileKey) {
   const config = storageConfig.googlesheets
   
-  if (config.sheets) {
-    for (const [sheetKey, sheetConfig] of Object.entries(config.sheets)) {
-      if (sheetConfig.files && sheetConfig.files[fileKey]) {
-        console.log(`📄 Archivo "${fileKey}" encontrado en sheet "${sheetKey}"`)
-        
-        if (sheetKey === 'cuantitativos') {
-          console.log(`📅 Usando año activo para cuantitativos: ${currentActiveYear}`)
-          return sheetConfig.sheetId
-        }
-        
-        return sheetConfig.sheetId
+  // ✅ PRIMERO: Buscar en sheets modulares de ECONOMICOS
+  if (config.sheets && config.sheets.economicos) {
+    for (const [componentKey, componentConfig] of Object.entries(config.sheets.economicos)) {
+      if (componentConfig.files && componentConfig.files[fileKey]) {
+        console.log(`📄 Archivo "${fileKey}" encontrado en economicos.${componentKey}`)
+        return componentConfig.sheetId
       }
+    }
+  }
+  
+  // Buscar en sheets modulares de ambientales
+  if (config.sheets && config.sheets.ambientales) {
+    for (const [componentKey, componentConfig] of Object.entries(config.sheets.ambientales)) {
+      if (componentConfig.files && componentConfig.files[fileKey]) {
+        console.log(`📄 Archivo "${fileKey}" encontrado en ambientales.${componentKey}`)
+        return componentConfig.sheetId
+      }
+    }
+  }
+  
+  // Buscar en sheets de cuantitativos
+  if (config.sheets && config.sheets.cuantitativos) {
+    if (config.sheets.cuantitativos.files && config.sheets.cuantitativos.files[fileKey]) {
+      console.log(`📄 Archivo "${fileKey}" encontrado en cuantitativos`)
+      console.log(`📅 Usando año activo: ${currentActiveYear}`)
+      return config.sheets.cuantitativos.sheetId
+    }
+  }
+  
+  // Buscar en sheets principales
+  if (config.sheets && config.sheets.principal) {
+    if (config.sheets.principal.files && config.sheets.principal.files[fileKey]) {
+      console.log(`📄 Archivo "${fileKey}" encontrado en principal`)
+      return config.sheets.principal.sheetId
     }
   }
   
@@ -562,23 +795,62 @@ export function getSheetIdForFile(fileKey) {
   return config.sheetId
 }
 
+// ✅ ACTUALIZADO: Retornar año dinámico para TODOS los sheets de ambientales
 export function getSheetName(fileKey) {
   const config = storageConfig.googlesheets
   
-  // ✅ ACTUALIZADO: Ahora incendiosForestales también usa año dinámico
-  if (fileKey === 'datosCuantitativos' || 
-      fileKey === 'chartsPresupuestos' || 
-      fileKey === 'chartsIngresos' ||
-      fileKey === 'incendiosForestales') {  // ← NUEVO
+  // Lista de archivos que usan año dinámico
+  const dynamicYearFiles = [
+    'datosCuantitativos',
+    'chartsPresupuestos',
+    'chartsIngresos',
+    'incendiosForestales',
+    'residuosSolidos',
+    'emisiones',
+    'energia',
+    'areasNaturales',
+    'ingresoTotal',
+    'egresoTotal',
+    'pea',
+    'pibe',
+    'itaee'
+  ]
+  
+  if (dynamicYearFiles.includes(fileKey)) {
     console.log(`📅 Nombre de hoja dinámico para "${fileKey}": ${currentActiveYear}`)
     return currentActiveYear
   }
   
-  if (config.sheets) {
-    for (const [sheetKey, sheetConfig] of Object.entries(config.sheets)) {
-      if (sheetConfig.files && sheetConfig.files[fileKey]) {
-        return sheetConfig.files[fileKey]
+  
+  // Buscar en configuración modular de economicos
+  if (config.sheets && config.sheets.economicos) {
+    for (const [componentKey, componentConfig] of Object.entries(config.sheets.economicos)) {
+      if (componentConfig.files && componentConfig.files[fileKey]) {
+        return componentConfig.files[fileKey]
       }
+    }
+  }
+
+  // Buscar en configuración modular de ambientales
+  if (config.sheets && config.sheets.ambientales) {
+    for (const [componentKey, componentConfig] of Object.entries(config.sheets.ambientales)) {
+      if (componentConfig.files && componentConfig.files[fileKey]) {
+        return componentConfig.files[fileKey]
+      }
+    }
+  }
+  
+  // Buscar en configuración de cuantitativos
+  if (config.sheets && config.sheets.cuantitativos) {
+    if (config.sheets.cuantitativos.files && config.sheets.cuantitativos.files[fileKey]) {
+      return config.sheets.cuantitativos.files[fileKey]
+    }
+  }
+  
+  // Buscar en configuración principal
+  if (config.sheets && config.sheets.principal) {
+    if (config.sheets.principal.files && config.sheets.principal.files[fileKey]) {
+      return config.sheets.principal.files[fileKey]
     }
   }
   

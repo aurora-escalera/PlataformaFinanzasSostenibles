@@ -1,4 +1,4 @@
-<!-- src/modules/qualitativeIndicators/components/AmbientalesView.vue -->
+<!-- src/modules/qualitativeIndicators/components/EconomicosView.vue -->
 <!-- ✅ ACTUALIZADO: Todos los componentes vinculados con filtros y Google Sheets -->
 <template>
   <div class="ambientales-container">
@@ -8,15 +8,15 @@
         <!-- Top: Horizontal Bar Chart - Incendios Forestales -->
         <div class="bar-graph card">
           <!-- Loading State -->
-          <div v-if="incendiosLoading" class="loading-state">
+          <div v-if="ingresoTotalLoading" class="loading-state">
             <div class="spinner-small"></div>
             <p>Cargando datos...</p>
           </div>
 
           <!-- Error State -->
-          <div v-else-if="incendiosError" class="error-state">
-            <p>Error: {{ incendiosError }}</p>
-            <button @click="loadIncendiosData(selectedEntity, selectedYear)" class="retry-btn-small">
+          <div v-else-if="ingresoTotalError" class="error-state">
+            <p>Error: {{ ingresoTotalError }}</p>
+            <button @click="loadIngresoTotalData(selectedEntity, selectedYear)" class="retry-btn-small">
               Reintentar
             </button>
           </div>
@@ -31,10 +31,10 @@
           <!-- HorizontalBarChart con datos dinámicos -->
           <HorizontalBarChart
             v-else
-            :variables="incendiosData"
+            :variables="ingresoTotalData"
             width="100%"
             height="100%"
-            title="Incendios forestales en hectáreas en 2024"
+            title="Ingresos Totales en 2024"
             :showFilters="true"
             :showLegend="true"
             barHeight="20px"
@@ -210,69 +210,66 @@ const emit = defineEmits(['back'])
 const { fetchData, transform } = useStorageData()
 
 // ============================================
-// INCENDIOS FORESTALES (HorizontalBarChart)
+// Ingresos Totales (HorizontalBarChart)
 // ============================================
-const incendiosData = ref([])
-const incendiosLoading = ref(false)
-const incendiosError = ref(null)
+const ingresoTotalData = ref([])
+const ingresoTotalLoading = ref(false)
+const ingresoTotalError = ref(null)
 
-const loadIncendiosData = async (entityName = null, year = null) => {
+const loadIngresoTotalData = async (entityName = null, year = null) => {
   try {
-    incendiosLoading.value = true
-    incendiosError.value = null
+    ingresoTotalLoading.value = true
+    ingresoTotalError.value = null
     
-    console.log('🔥 [Incendios] Cargando datos')
+    console.log('💰 [Ingreso Total] Cargando datos')
     console.log('  - Entidad:', entityName)
     console.log('  - Año:', year)
     
     if (!entityName) {
-      incendiosData.value = []
-      incendiosLoading.value = false
+      ingresoTotalData.value = []
+      ingresoTotalLoading.value = false
       return
     }
     
     if (year) setActiveYear(year)
     
-    const mapping = getMapping('incendiosForestales')
-    const sheetName = getSheetName('incendiosForestales')
+    const mapping = getMapping('ingresoTotal')
+    const sheetName = getSheetName('ingresoTotal')
     
-    const rawData = await fetchData('incendiosForestales', sheetName)
+    const rawData = await fetchData('ingresoTotal', sheetName)
     
     if (rawData.length === 0) {
       throw new Error('No se obtuvieron datos del Google Sheet')
     }
     
-    // ✅ CORREGIDO: Buscar la fila de la entidad
+    // Buscar la fila de la entidad
     const entityRow = rawData.find(row => row[mapping.categoryColumn] === entityName)
     
     if (!entityRow) {
-      console.log('⚠️ [Incendios] No se encontraron datos para', entityName)
-      incendiosData.value = []
-      incendiosLoading.value = false
+      console.log('⚠️ [Ingreso Total] No se encontraron datos para', entityName)
+      ingresoTotalData.value = []
+      ingresoTotalLoading.value = false
       return
     }
     
-    // ✅ CORREGIDO: Transformar solo las variables definidas en el mapping
-    const transformedData = mapping.variables
-      .sort((a, b) => a.order - b.order)  // Ordenar por el campo 'order'
-      .map(variable => ({
-        key: variable.key,
-        label: variable.label,
-        value: parseFloat(entityRow[variable.column]) || 0,
-        color: variable.color,
-        colorClass: variable.colorClass || 'default',
-        active: true  // ← Horizontal chart muestra todas activas por defecto
-      }))
+    // ✅ Crear un array con UN SOLO elemento
+    const transformedData = [{
+      key: 'ingresoTotal',
+      label: 'Ingreso Total',
+      value: parseFloat(entityRow[mapping.valueColumn]) || 0,
+      color: '#0F3759',
+      colorClass: 'blue',
+      active: true
+    }]
     
-    incendiosData.value = transformedData
-    console.log('✅ [Incendios] Datos cargados:', transformedData.length, 'variables')
-    console.log('📊 [Incendios] Datos:', transformedData)
+    ingresoTotalData.value = transformedData
+    console.log('✅ [Ingreso Total] Datos cargados:', transformedData)
     
   } catch (err) {
-    console.error('❌ [Incendios] Error:', err)
-    incendiosError.value = err.message
+    console.error('❌ [Ingreso Total] Error:', err)
+    ingresoTotalError.value = err.message
   } finally {
-    incendiosLoading.value = false
+    ingresoTotalLoading.value = false
   }
 }
 
@@ -530,7 +527,7 @@ watch(() => props.selectedEntity, (newEntity, oldEntity) => {
   console.log('  - Nueva:', newEntity)
   
   // Cargar datos de todos los componentes
-  loadIncendiosData(newEntity, props.selectedYear)
+  loadIngresoTotalData(newEntity, props.selectedYear)
   loadResiduosData(newEntity, props.selectedYear)
   loadEmisionesData(newEntity, props.selectedYear)
   loadEnergiaData(newEntity, props.selectedYear)
@@ -544,7 +541,7 @@ watch(() => props.selectedYear, (newYear, oldYear) => {
   
   // Solo recargar si hay una entidad seleccionada
   if (props.selectedEntity) {
-    loadIncendiosData(props.selectedEntity, newYear)
+    loadIngresoTotalData(props.selectedEntity, newYear)
     loadResiduosData(props.selectedEntity, newYear)
     loadEmisionesData(props.selectedEntity, newYear)
     loadEnergiaData(props.selectedEntity, newYear)
@@ -562,7 +559,7 @@ onMounted(async () => {
   
   // Cargar datos iniciales de todos los componentes
   await Promise.all([
-    loadIncendiosData(props.selectedEntity, props.selectedYear),
+    loadIngresoTotalData(props.selectedEntity, props.selectedYear),
     loadResiduosData(props.selectedEntity, props.selectedYear),
     loadEmisionesData(props.selectedEntity, props.selectedYear),
     loadEnergiaData(props.selectedEntity, props.selectedYear),

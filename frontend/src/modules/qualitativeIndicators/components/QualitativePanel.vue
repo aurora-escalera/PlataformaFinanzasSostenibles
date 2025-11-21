@@ -48,9 +48,18 @@
         </div>
       </div>
 
-      <!-- ✅ Mostrar componente AmbientalesView cuando se selecciona "Ambientales" -->
+      <!-- ✅ Mostrar componente EconomicosView cuando se selecciona "Ambientales" -->
       <div v-else-if="selectedCategory === 'ambientales'" class="inner-card">
         <AmbientalesView 
+          :selectedEntity="props.selectedEntity"
+          :selectedYear="props.selectedYear"
+          @back="handleBack" 
+        />
+      </div>
+
+      <!-- ✅ Mostrar componente AmbientalesView cuando se selecciona "Ambientales" -->
+      <div v-else-if="selectedCategory === 'economicos'" class="inner-card">
+        <EconomicosView
           :selectedEntity="props.selectedEntity"
           :selectedYear="props.selectedYear"
           @back="handleBack" 
@@ -78,6 +87,7 @@
 import { ref, watch } from 'vue'
 import AmbientalesView from './AmbientalesView.vue'
 import { useStorageData } from '@/dataConection/useStorageData'
+import EconomicosView from './EconomicosView.vue'
 
 const props = defineProps({
   isExpanded: {
