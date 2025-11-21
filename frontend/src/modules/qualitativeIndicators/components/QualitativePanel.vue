@@ -1,4 +1,5 @@
 <!-- src/modules/qualitativeIndicators/components/QualitativePanel.vue -->
+<!-- ✅ ACTUALIZADO: Emite eventos 'years-loaded' y 'panel-closed' correctamente -->
 <template>
   <div 
     class="qualitative-panel"
@@ -47,7 +48,7 @@
         </div>
       </div>
 
-      <!-- ✅ Mostrar componente AmbientalesView cuando se selecciona "Ambientales" CON selectedEntity y selectedYear -->
+      <!-- ✅ Mostrar componente AmbientalesView cuando se selecciona "Ambientales" -->
       <div v-else-if="selectedCategory === 'ambientales'" class="inner-card">
         <AmbientalesView 
           :selectedEntity="props.selectedEntity"
@@ -76,28 +77,53 @@
 <script setup>
 import { ref, watch } from 'vue'
 import AmbientalesView from './AmbientalesView.vue'
+import { useStorageData } from '@/dataConection/useStorageData'
 
 const props = defineProps({
   isExpanded: {
     type: Boolean,
     default: false
   },
-  // ✅ NUEVO: Recibir la entidad seleccionada
   selectedEntity: {
     type: String,
     default: null
   },
-  // ✅ NUEVO: Recibir el año seleccionado
   selectedYear: {
     type: [String, Number],
     default: null
   }
 })
 
-const emit = defineEmits(['toggle', 'category-click'])
+const emit = defineEmits(['toggle', 'category-click', 'years-loaded', 'panel-closed'])
 
 // Estado local para categoría seleccionada
 const selectedCategory = ref(null)
+
+// ✅ Composable para obtener datos
+const { fetchSheetNames } = useStorageData()
+
+// ✅ Función para cargar años desde el sheet de ambientales
+const loadAmbientalesYears = async () => {
+  try {
+    console.log('📅 [QualitativePanel] Cargando años de sheet ambientales...')
+    
+    // Obtener los nombres de las hojas del sheet de ambientales
+    const sheetNames = await fetchSheetNames('incendiosForestales')
+    
+    // Filtrar solo los que parecen años (números de 4 dígitos)
+    const years = sheetNames
+      .filter(name => /^\d{4}$/.test(name))
+      .sort((a, b) => b - a) // Ordenar descendente
+    
+    console.log('✅ [QualitativePanel] Años encontrados:', years)
+    
+    // Emitir los años al HomePage
+    emit('years-loaded', years)
+    
+  } catch (err) {
+    console.error('❌ [QualitativePanel] Error cargando años:', err)
+  }
+}
 
 // ✅ Watch para debugging de entidad
 watch(() => props.selectedEntity, (newEntity, oldEntity) => {
@@ -107,7 +133,7 @@ watch(() => props.selectedEntity, (newEntity, oldEntity) => {
   console.log('  - Categoría activa:', selectedCategory.value)
 }, { immediate: true })
 
-// ✅ NUEVO: Watch para debugging de año
+// ✅ Watch para debugging de año
 watch(() => props.selectedYear, (newYear, oldYear) => {
   console.log('🔄 [QualitativePanel] Año cambió')
   console.log('  - Anterior:', oldYear)
@@ -115,25 +141,52 @@ watch(() => props.selectedYear, (newYear, oldYear) => {
   console.log('  - Categoría activa:', selectedCategory.value)
 }, { immediate: true })
 
+// ✅ Toggle del panel con manejo de cierre
 const togglePanel = () => {
+  console.log('🔄 [QualitativePanel] Toggle panel')
+  console.log('  - isExpanded:', props.isExpanded)
+  console.log('  - selectedCategory:', selectedCategory.value)
+  
   if (props.isExpanded && selectedCategory.value) {
     // Si está expandido y hay categoría, primero volver a botones
+    console.log('📂 Volviendo a menú de categorías...')
     selectedCategory.value = null
+    // ✅ CRÍTICO: Emitir panel-closed para restaurar años
+    emit('panel-closed')
+  } else if (props.isExpanded && !selectedCategory.value) {
+    // Si está en el menú principal, cerrar completamente
+    console.log('❌ Cerrando panel completamente...')
+    emit('toggle')
+    // ✅ CRÍTICO: Emitir panel-closed para restaurar años
+    emit('panel-closed')
   } else {
-    // Si no, toggle normal
+    // Si está cerrado, solo abrir
+    console.log('✅ Abriendo panel...')
     emit('toggle')
   }
 }
 
-const handleCategoryClick = (category) => {
-  console.log('Categoría seleccionada:', category)
-  console.log('Entidad actual:', props.selectedEntity)
-  console.log('Cambiando a vista interna, sin navegación')
+// ✅ Manejar click en categoría con carga de años
+const handleCategoryClick = async (category) => {
+  console.log('📂 [QualitativePanel] Categoría seleccionada:', category)
+  console.log('📍 Entidad actual:', props.selectedEntity)
+  console.log('📅 Año actual:', props.selectedYear)
+  
   selectedCategory.value = category
+  
+  // ✅ Si es ambientales, cargar años dinámicos
+  if (category === 'ambientales') {
+    console.log('🌿 Cargando años de ambientales...')
+    await loadAmbientalesYears()
+  }
 }
 
+// ✅ Manejar botón "Volver" con restauración
 const handleBack = () => {
+  console.log('⬅️ [QualitativePanel] Volviendo al menú principal...')
   selectedCategory.value = null
+  // ✅ CRÍTICO: Emitir panel-closed para restaurar años
+  emit('panel-closed')
 }
 
 const getCategoryTitle = (category) => {
@@ -295,9 +348,7 @@ const getCategoryTitle = (category) => {
   flex-shrink: 0;
 }
 
-/* ============================
-   INNER CARD CONTAINER
-   ============================ */
+/* Inner Card Container */
 .inner-card {
   background-color: white;
   border-radius: 15px;

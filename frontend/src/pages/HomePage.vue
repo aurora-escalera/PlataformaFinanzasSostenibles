@@ -9,6 +9,7 @@
         :loading="entitiesLoading"
         :selectedState="selectedState"
         :isLocked="isFilterBarLocked"
+        :availableYears="availableYears"
         @entity-change="handleEntityChange"
         @year-change="handleYearChange" 
         @variable-change="handleVariableChange"
@@ -73,11 +74,14 @@
             </div>
           </transition>
           
-        <!-- ✅ COMPONENTE: Panel Cualitativo - Ahora recibe selectedEntity -->
+        <!-- ✅ COMPONENTE: Panel Cualitativo - Escucha eventos de años y cierre -->
         <QualitativePanel
           :isExpanded="isRetractableExpanded"
           :selectedEntity="selectedEntity"
+          :selectedYear="selectedYear"
           @toggle="handleDatosCualitativosClick"
+          @years-loaded="handleYearsLoaded"
+          @panel-closed="handlePanelClosed"
         />
 
         <!-- RANKING CHART SECTION - Al lado del mapa -->
@@ -204,7 +208,7 @@ import QualitativePanel from '../modules/qualitativeIndicators/components/Qualit
 import { useSlider } from '@/composables/useSlider'
 import { useStateRanking } from '@/composables/useStateRanking'
 import { useStorageData } from '@/dataConection/useStorageData'
-import { getMapping, getSheetName } from '@/dataConection/storageConfig'
+import { getMapping, getSheetName, setActiveYear } from '@/dataConection/storageConfig'
 import { useStackedAreaData } from '@/composables/useStackedArea'
 
 const props = defineProps({
@@ -285,11 +289,23 @@ const {
 const router = useRouter()
 const selectedVariable = ref('')
 const selectedYear = ref(null)
-const selectedEntity = ref('') // ✅ Esta es la entidad que se pasa a QualitativePanel
+const selectedEntity = ref('')
 const filterBarKey = ref(0)
-const { fetchData: fetchEntities } = useStorageData()
+const { fetchData: fetchEntities, fetchSheetNames } = useStorageData()
 
-// ✅ NUEVO: Watch para debugging de selectedEntity
+// ✅ NUEVO: Array de años disponibles (dinámico)
+const availableYears = ref([])
+
+// ✅ NUEVO: Guardar años iniciales de cuantitativos
+const initialYears = ref([])
+
+// ✅ NUEVO: Guardar estado inicial de filtros
+const initialFilters = ref({
+  entity: '',
+  year: null,
+  variable: ''
+})
+
 watch(selectedEntity, (newVal, oldVal) => {
   console.log('🔍 [HomePage] selectedEntity cambió')
   console.log('  - Anterior:', oldVal)
@@ -370,11 +386,9 @@ const loadEntitiesFromSheet = async () => {
 const handleEntityChange = (entity) => {
   console.log('📍 handleEntityChange llamado con:', entity)
   
-  // ✅ CRÍTICO: Actualizar selectedEntity SIEMPRE, incluso para string vacío
   selectedEntity.value = entity
   console.log('📍 selectedEntity actualizado a:', selectedEntity.value)
   
-  // Lógica del mapa
   if (entity === '') {
     resetSelection()
     return
@@ -394,6 +408,11 @@ const handleEntityChange = (entity) => {
 
 const handleYearChange = async (year) => {
   selectedYear.value = year
+  
+  // ✅ Actualizar el año activo en storageConfig
+  if (year) {
+    setActiveYear(year)
+  }
   
   if (showStackedArea.value) {
     await loadIFSSData()
@@ -446,10 +465,100 @@ const handleDatosFederalesClick = () => {
   console.log('Navegando a federales...')
 }
 
-// ✅ Toggle del panel retráctil - SIN NAVEGACIÓN
 const handleDatosCualitativosClick = () => {
   console.log('🔄 Toggling panel cualitativo:', !isRetractableExpanded.value)
   isRetractableExpanded.value = !isRetractableExpanded.value
+}
+
+// ✅ NUEVA FUNCIÓN: Manejar carga de años desde sheet de ambientales
+const handleYearsLoaded = async (years) => {
+  console.log('📅 [HomePage] Años recibidos de ambientales:', years)
+  
+  if (years && years.length > 0) {
+    // Actualizar los años disponibles en el filtro
+    availableYears.value = years
+    
+    console.log('✅ [HomePage] availableYears actualizado:', availableYears.value)
+    
+    // Establecer el primer año como seleccionado
+    const firstYear = years[0]
+    selectedYear.value = firstYear
+    setActiveYear(firstYear)
+    
+    // Forzar re-render del filtro
+    filterBarKey.value++
+    await nextTick()
+    
+    console.log('✅ Filtro actualizado con años de ambientales')
+  }
+}
+
+// ✅ NUEVA FUNCIÓN: Obtener años disponibles del sheet de cuantitativos
+const fetchAvailableYears = async () => {
+  try {
+    console.log('📅 [HomePage] Obteniendo años de sheet cuantitativos...')
+    
+    const sheetNames = await fetchSheetNames('datosCuantitativos')
+    
+    // Filtrar solo los que parecen años (números de 4 dígitos)
+    const years = sheetNames
+      .filter(name => /^\d{4}$/.test(name))
+      .sort((a, b) => b - a) // Ordenar descendente
+    
+    console.log('✅ [HomePage] Años de cuantitativos:', years)
+    
+    // Guardar como años iniciales
+    initialYears.value = [...years]
+    availableYears.value = [...years]
+    
+    // Establecer el primer año como seleccionado
+    if (years.length > 0) {
+      selectedYear.value = years[0]
+      setActiveYear(years[0])
+    }
+    
+    return years
+    
+  } catch (err) {
+    console.error('❌ [HomePage] Error obteniendo años:', err)
+    return []
+  }
+}
+
+// ✅ NUEVA FUNCIÓN: Resetear filtros al cerrar panel cualitativo
+const handlePanelClosed = async () => {
+  console.log('🔄 [HomePage] Panel cualitativo cerrado, reseteando filtros...')
+  
+  // Resetear filtros a estado inicial
+  selectedEntity.value = initialFilters.value.entity
+  selectedVariable.value = initialFilters.value.variable
+  
+  // ✅ Restaurar años iniciales de cuantitativos
+  availableYears.value = [...initialYears.value]
+  
+  // Establecer el primer año de cuantitativos
+  if (initialYears.value.length > 0) {
+    const firstYear = initialYears.value[0]
+    selectedYear.value = firstYear
+    setActiveYear(firstYear)
+    console.log('📅 Año restaurado:', firstYear)
+  }
+  
+  // Forzar re-render del filtro
+  filterBarKey.value++
+  await nextTick()
+  
+  // Resetear selección del mapa
+  resetSelection()
+  
+  // Recargar ranking con filtros iniciales
+  if (selectedVariable.value && selectedVariable.value !== '') {
+    updateRankingByVariable(selectedVariable.value)
+  } else {
+    await loadAllStatesRanking(null)
+  }
+  
+  console.log('✅ Filtros reseteados a estado inicial')
 }
 
 const handleMapContainerClick = (event) => {
@@ -545,10 +654,24 @@ watch(error, (newError) => {
 
 onMounted(async () => {
   console.log('\n🚀 ===== INICIALIZANDO HomePage =====')
+  
+  // ✅ Cargar años iniciales de cuantitativos
+  await fetchAvailableYears()
+  
   await loadEntitiesFromSheet()
   await initializeSlider()
   await loadAllStatesRanking(null)
   await loadIFSSData()
+  
+  // ✅ Guardar estado inicial de filtros
+  initialFilters.value = {
+    entity: selectedEntity.value,
+    year: selectedYear.value,
+    variable: selectedVariable.value
+  }
+  console.log('💾 Estado inicial de filtros guardado:', initialFilters.value)
+  console.log('💾 Años iniciales guardados:', initialYears.value)
+  
   console.log('✅ HomePage inicializado\n')
 })
 </script>

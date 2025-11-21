@@ -1,6 +1,7 @@
 <!-- src/modules/maps/components/RetractableFilterBar.vue -->
 <!-- ✅ MODIFICADO: Agregada opción "------------" en Entidad y Variable -->
 <!-- ✅ ACTUALIZADO: Mantener barra expandida cuando isLocked es true -->
+<!-- ✅ CORREGIDO: Usa computed para combinar props.availableYears y composable -->
 <template>
   <div 
     class="filter-bar-container" 
@@ -103,9 +104,9 @@
                   <span>Todos los años</span>
                 </div>
                 
-                <!-- Años dinámicos desde Google Sheets -->
+                <!-- ✅ CORREGIDO: Usa computed years que combina ambas fuentes -->
                 <div 
-                  v-for="year in availableYears" 
+                  v-for="year in years" 
                   :key="year"
                   @click="selectYear(year)"
                   class="dropdown-option"
@@ -218,6 +219,10 @@ const props = defineProps({
   isLocked: {
     type: Boolean,
     default: false
+  },
+  availableYears: {
+    type: Array,
+    default: () => []
   }
 })
 
@@ -229,15 +234,28 @@ const emit = defineEmits([
   'filters-change'
 ])
 
-// Usar composable de año
+// ✅ MANTENER: Composable completo para funcionalidad de carga
 const {
   selectedYear,
-  availableYears,
+  availableYears: composableYears,  // ← Renombrado para evitar conflicto
   loadingYears,
   fetchAvailableYears,
   setSelectedYear: setYear,
   activeYear
 } = useYearFilter()
+
+// ✅ NUEVO: Computed que da prioridad a props.availableYears, sino usa composableYears
+const years = computed(() => {
+  // Si props tiene años (viene de HomePage), usarlos
+  if (props.availableYears && props.availableYears.length > 0) {
+    console.log('📅 Usando años de props.availableYears:', props.availableYears)
+    return props.availableYears
+  }
+  
+  // Sino, usar los del composable (carga inicial)
+  console.log('📅 Usando años de composable:', composableYears.value)
+  return composableYears.value
+})
 
 // Estados reactivos
 const isSlideUp = ref(false)
@@ -245,9 +263,9 @@ const activeDropdown = ref(null)
 const entitySearch = ref('')
 const slideTimeout = ref(null)
 const filterBarRef = ref(null)
-const isAnimatingDown = ref(false) // ✅ NUEVO: Estado para animación de bajada
+const isAnimatingDown = ref(false)
 
-// Filtros seleccionados - ✅ Inicializados como string vacío por defecto
+// Filtros seleccionados
 const selectedEntity = ref('')
 const selectedVariable = ref('')
 
@@ -297,21 +315,18 @@ const filteredEntities = computed(() => {
   )
 })
 
-// ✅ ACTUALIZADO: Función para obtener el label de la entidad seleccionada
 const getEntityLabel = () => {
   if (selectedEntity.value === '') return '-'
   if (!selectedEntity.value || selectedEntity.value === null) return 'Todas las entidades'
   return selectedEntity.value
 }
 
-// Función para obtener el label de la variable seleccionada
 const getVariableLabel = () => {
   if (selectedVariable.value === '') return '-'
   if (!selectedVariable.value || selectedVariable.value === null) return 'Todas las variables'
   return selectedVariable.value.key
 }
 
-// Función para manejar el scroll en el dropdown
 const handleDropdownScroll = (event) => {
   const container = event.currentTarget
   const { scrollTop, scrollHeight, clientHeight } = container
@@ -327,7 +342,6 @@ const handleDropdownScroll = (event) => {
   event.stopPropagation()
 }
 
-// Métodos para manejo de deslizamiento
 const handleMouseEnter = () => {
   if (slideTimeout.value) {
     clearTimeout(slideTimeout.value)
@@ -336,9 +350,7 @@ const handleMouseEnter = () => {
   isSlideUp.value = true
 }
 
-// ✅ ACTUALIZADO: No contraer la barra si está bloqueada
 const handleMouseLeave = () => {
-  // Si está bloqueada, no contraer
   if (props.isLocked) {
     console.log('🔒 Barra bloqueada, no se contrae al salir del mouse')
     return
@@ -364,12 +376,10 @@ const toggleDropdown = (dropdownName) => {
   console.log('📂 Dropdown activo:', activeDropdown.value)
 }
 
-// ✅ ACTUALIZADO: No contraer si está bloqueada, solo cerrar dropdown
 const closeAllDropdowns = () => {
   console.log('🚪 Cerrando todos los dropdowns')
   activeDropdown.value = null
   
-  // Si está bloqueada, mantener expandida
   if (props.isLocked) {
     console.log('🔒 Barra bloqueada, permanece expandida')
     return
@@ -405,7 +415,7 @@ const selectYear = (year) => {
   setYear(year)
   
   // Actualizar el año activo en storageConfig
-  const yearToUse = year || availableYears.value[0] || '2024'
+  const yearToUse = year || years.value[0] || '2024'
   setActiveYear(yearToUse)
   console.log('📅 Año activo establecido:', yearToUse)
   
@@ -432,12 +442,10 @@ const emitFiltersChange = () => {
   emit('filters-change', filters)
 }
 
-// ✅ ACTUALIZADO: Watch para mantener expandida cuando se bloquea y animar al desbloquear
 watch(() => props.isLocked, (newLocked, oldLocked) => {
   console.log('🔒 isLocked cambió de', oldLocked, 'a', newLocked)
   
   if (newLocked) {
-    // Cuando se bloquea, forzar expansión
     isSlideUp.value = true
     isAnimatingDown.value = false
     if (slideTimeout.value) {
@@ -445,53 +453,58 @@ watch(() => props.isLocked, (newLocked, oldLocked) => {
       slideTimeout.value = null
     }
   } else if (oldLocked === true && newLocked === false) {
-    // ✅ NUEVO: Cuando se desbloquea, animar bajada
     console.log('📉 Iniciando animación de bajada...')
     isAnimatingDown.value = true
     
-    // Después de la animación, restaurar estado normal
     setTimeout(() => {
       isAnimatingDown.value = false
       if (!selectedEntity.value && !activeDropdown.value) {
         isSlideUp.value = false
       }
       console.log('✅ Animación de bajada completada')
-    }, 600) // Duración de la animación
+    }, 600)
   }
 })
 
-// Watch para sincronizar estado seleccionado desde el mapa
 watch(() => props.selectedState, (newState) => {
   console.log('🔄 Sincronizando filtro con mapa. Estado:', newState)
-  // Solo actualizar si hay un cambio real desde el mapa (no al inicializar)
   if (newState !== null && newState !== undefined) {
     selectedEntity.value = newState
   } else if (newState === null && selectedEntity.value !== '') {
-    // Si el mapa se deselecciona, solo limpiar si no estamos en el estado inicial
     selectedEntity.value = newState
   }
 })
+
+// ✅ Watch de debug para ver qué años se usan
+watch(years, (newYears) => {
+  console.log('🔄 [RetractableFilterBar] Computed years cambió a:', newYears)
+}, { immediate: true })
+
+watch(() => props.availableYears, (newYears, oldYears) => {
+  console.log('🔄 [RetractableFilterBar] props.availableYears cambió')
+  console.log('  - Anterior:', oldYears)
+  console.log('  - Nuevo:', newYears)
+}, { deep: true })
 
 onMounted(async () => {
   console.log('✅ RetractableFilterBar montado')
   console.log('✅ Entidades recibidas:', props.entities.length)
+  console.log('✅ Años en props:', props.availableYears)
   
-  // Cargar años disponibles desde Google Sheets
-  console.log('📅 Cargando años disponibles...')
+  // Cargar años disponibles desde Google Sheets (para carga inicial)
+  console.log('📅 Cargando años desde composable...')
   await fetchAvailableYears()
-  console.log('📅 Años cargados:', availableYears.value)
+  console.log('📅 Años del composable cargados:', composableYears.value)
   
-  // ✅ ACTUALIZADO: Establecer el primer año como default Y emitir evento
-  if (availableYears.value.length > 0) {
-    const firstYear = availableYears.value[0]
+  // Establecer el primer año como default
+  if (years.value.length > 0) {
+    const firstYear = years.value[0]
     setYear(firstYear)
     setActiveYear(firstYear)
     console.log('📅 Año por defecto establecido:', firstYear)
     
-    // ✅ NUEVO: Emitir el evento year-change con el año inicial
     emit('year-change', firstYear)
   } else {
-    // Fallback al año activo
     setActiveYear(activeYear.value)
     console.log('📅 Año activo inicial (fallback):', activeYear.value)
   }
@@ -547,7 +560,6 @@ onBeforeUnmount(() => {
   z-index: 1;
 }
 
-/* ✅ ACTUALIZADO: Clase locked-expanded con mayor prioridad */
 .filter-bar.locked-expanded {
   transform: translateY(-20px) !important;
   cursor: default;
@@ -555,7 +567,6 @@ onBeforeUnmount(() => {
   box-shadow: 0 6px 24px rgba(44, 82, 130, 0.4);
 }
 
-/* ✅ NUEVO: Animación de bajada suave */
 .filter-bar.animating-down {
   animation: slideDown 0.6s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
   cursor: default;
@@ -788,7 +799,6 @@ onBeforeUnmount(() => {
   border-bottom: none;
 }
 
-/* ✅ NUEVO: Estilo para opción en blanco */
 .blank-option {
   color: #cbd5e0;
   font-size: 14px;

@@ -1,465 +1,168 @@
 // src/dataConection/useStorageData.js
-
-import { ref, computed } from 'vue'
-import { getDataStorageService } from './dataStorageService'
-import { getCurrentConfig } from './storageConfig'
+import { getCurrentConfig, getSheetIdForFile, getSheetName } from './storageConfig'
 
 export function useStorageData() {
-  const loading = ref(false)
-  const error = ref(null)
-  const isAuthenticated = ref(false)
-  
-  const service = getDataStorageService()
   const config = getCurrentConfig()
   
-  const provider = computed(() => service.getProvider())
-  
-  // Google Sheets no necesita login
-  const needsLogin = computed(() => {
-    return provider.value === 'onedrive' && !isAuthenticated.value
-  })
-  
-  const checkAuth = () => {
+  /**
+   * ✅ NUEVA FUNCIÓN: Obtener los nombres de todas las hojas de un Google Sheet
+   * @param {string} fileKey - La clave del archivo (ej: 'incendiosForestales')
+   * @returns {Promise<string[]>} - Array con los nombres de las hojas
+   */
+  const fetchSheetNames = async (fileKey) => {
     try {
-      isAuthenticated.value = service.isAuthenticated()
-      return isAuthenticated.value
-    } catch (err) {
-      console.error('Error verificando auth:', err)
-      return false
-    }
-  }
-  
-  const authenticate = async () => {
-    loading.value = true
-    error.value = null
-    
-    try {
-      await service.authenticate()
-      isAuthenticated.value = true
-      console.log('✅ Autenticación exitosa en composable')
-      return true
-    } catch (err) {
-      error.value = err.message
-      console.error('❌ Error autenticación:', err)
-      return false
-    } finally {
-      loading.value = false
-    }
-  }
-  
-  const fetchData = async (fileKey, sheetName) => {
-    loading.value = true
-    error.value = null
-    
-    try {
-      console.log('📊 fetchData llamado:', { fileKey, sheetName, provider: provider.value })
+      const sheetId = getSheetIdForFile(fileKey)
+      const apiKey = config.apiKey
       
-      // Solo autenticar si es OneDrive y necesita login
-      if (needsLogin.value) {
-        console.log('🔐 Requiere autenticación...')
-        const authSuccess = await authenticate()
-        if (!authSuccess) {
-          throw new Error('Autenticación requerida')
-        }
+      if (!apiKey || !sheetId) {
+        throw new Error('Falta configuración de API Key o Sheet ID')
       }
       
-      const data = await service.getExcelData(fileKey, sheetName)
+      console.log(`📋 [useStorageData] Obteniendo nombres de hojas para: ${fileKey}`)
+      console.log(`  - Sheet ID: ${sheetId}`)
       
-      console.log(`✅ Datos obtenidos en composable: ${data.length} filas`)
-      return data
+      // Usar la API de Google Sheets para obtener metadatos del spreadsheet
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}?key=${apiKey}`
+      const response = await fetch(url)
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Error HTTP ${response.status}: ${errorText}`)
+      }
+      
+      const data = await response.json()
+      
+      // Extraer los nombres de las hojas
+      const sheetNames = data.sheets.map(sheet => sheet.properties.title)
+      
+      console.log(`✅ [useStorageData] Hojas encontradas:`, sheetNames)
+      return sheetNames
       
     } catch (err) {
-      error.value = err.message
-      console.error('❌ Error obteniendo datos:', err)
+      console.error('❌ [useStorageData] Error obteniendo nombres de hojas:', err)
       throw err
-    } finally {
-      loading.value = false
     }
   }
   
-  const fetchFiles = async (folderPath) => {
-    loading.value = true
-    error.value = null
-    
+  /**
+   * Obtener datos de una hoja específica de Google Sheets
+   */
+  const fetchData = async (fileKey, sheetName = null) => {
     try {
-      if (needsLogin.value) {
-        await authenticate()
+      const actualSheetName = sheetName || getSheetName(fileKey)
+      const sheetId = getSheetIdForFile(fileKey)
+      const apiKey = config.apiKey
+      
+      if (!apiKey || !sheetId) {
+        throw new Error('Falta configuración de API Key o Sheet ID')
       }
       
-      const files = await service.getFiles(folderPath)
-      return files
-    } catch (err) {
-      error.value = err.message
-      console.error('Error obteniendo archivos:', err)
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-  
-  const fetchUserInfo = async () => {
-    if (provider.value !== 'onedrive') {
-      return null
-    }
-    
-    try {
-      return await service.getUserInfo()
-    } catch (err) {
-      console.error('Error obteniendo info de usuario:', err)
-      return null
-    }
-  }
-  
-  // ✅ CORREGIDO: Transformar a formato de gráfica de barras (limpia puntos y comillas)
-  const transformToBarChartData = (rawData, mapping) => {
-    if (!rawData || rawData.length === 0) {
-      console.warn('⚠️ No hay datos para transformar')
-      return []
-    }
-    
-    const yearColumn = mapping.yearColumn
-    const variableColumns = mapping.variableColumns
-    
-    const transformed = rawData.map(row => {
-      const year = row[yearColumn]?.toString() || ''
+      console.log(`📊 [useStorageData] Obteniendo datos de: ${fileKey}`)
+      console.log(`  - Hoja: ${actualSheetName}`)
+      console.log(`  - Sheet ID: ${sheetId}`)
       
-      const variables = variableColumns.map(varConfig => {
-        const rawValue = row[varConfig.column]
-        
-        // ✅ FIX: Limpiar comillas triples, puntos y comas
-        let cleanValue = rawValue
-        
-        if (typeof rawValue === 'string') {
-          // Eliminar comillas al inicio y final
-          cleanValue = rawValue.replace(/^["']+|["']+$/g, '').trim()
-          
-          // Si quedó vacío o solo comillas, es 0
-          if (cleanValue === '' || cleanValue === '""' || cleanValue === '"""') {
-            cleanValue = '0'
-          } else {
-            // Limpiar PUNTOS (separadores de miles)
-            cleanValue = cleanValue.replace(/\./g, '')
-          }
-        }
-        
-        return {
-          key: varConfig.key,
-          label: varConfig.label,
-          value: parseFloat(cleanValue) || 0,
-          color: varConfig.color,
-          order: varConfig.order || 0
-        }
-      })
+      const range = `${actualSheetName}!A:ZZ`
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(range)}?key=${apiKey}`
       
-      return { year, variables }
-    })
-    
-    console.log('✅ Datos transformados para BarChart:', transformed.length, 'años')
-    return transformed
-  }
-  
-  // ✅ CORREGIDO: Transformar a formato de gráfica lineal (limpia puntos y comillas)
-  const transformToLinearChartData = (rawData, mapping) => {
-    if (!rawData || rawData.length === 0) {
-      console.warn('⚠️ No hay datos para transformar')
-      return { data: [], labels: [] }
-    }
-    
-    const yearColumn = mapping.yearColumn
-    const variableColumns = mapping.variableColumns
-    
-    const labels = rawData.map(row => row[yearColumn]?.toString() || '')
-    
-    const data = variableColumns.map(varConfig => {
-      const values = rawData.map(row => {
-        const rawValue = row[varConfig.column]
-        
-        // ✅ FIX: Limpiar comillas triples, puntos
-        let cleanValue = rawValue
-        
-        if (typeof rawValue === 'string') {
-          cleanValue = rawValue.replace(/^["']+|["']+$/g, '').trim()
-          if (cleanValue === '' || cleanValue === '""' || cleanValue === '"""') {
-            cleanValue = '0'
-          } else {
-            cleanValue = cleanValue.replace(/\./g, '')
-          }
-        }
-        
-        return parseFloat(cleanValue) || 0
-      })
+      const response = await fetch(url)
       
-      return {
-        key: varConfig.key,
-        label: varConfig.label,
-        data: values,
-        color: varConfig.color
-      }
-    })
-    
-    console.log('✅ Datos transformados para LinearChart:', data.length, 'series')
-    return { data, labels }
-  }
-  
-  const transformToStackedAreaData = (rawData, mapping) => {
-    if (!rawData || rawData.length === 0) {
-      console.warn('⚠️ No hay datos para transformar')
-      return {}
-    }
-    
-    const yearColumn = mapping.yearColumn
-    const variableColumns = mapping.variableColumns
-    
-    const transformed = {}
-    
-    // Inicializar arrays para cada variable
-    variableColumns.forEach(varConfig => {
-      transformed[varConfig.label] = []
-    })
-    
-    // Llenar datos para cada año
-    rawData.forEach(row => {
-      variableColumns.forEach(varConfig => {
-        const rawValue = row[varConfig.column]
-        
-        // ✅ FIX: Limpiar comillas triples, puntos
-        let cleanValue = rawValue
-        
-        if (typeof rawValue === 'string') {
-          cleanValue = rawValue.replace(/^["']+|["']+$/g, '').trim()
-          if (cleanValue === '' || cleanValue === '""' || cleanValue === '"""') {
-            cleanValue = '0'
-          } else {
-            cleanValue = cleanValue.replace(/\./g, '')
-          }
-        }
-        
-        transformed[varConfig.label].push(parseFloat(cleanValue) || 0)
-      })
-    })
-    
-    console.log('✅ Datos transformados para StackedArea:', Object.keys(transformed).length, 'series')
-    return transformed
-  }
-  
-  // ✅ CORREGIDO: Transformar a formato de gráfica de ranking horizontal
-  const transformToRankingData = (rawData, mapping, stateFilter = null) => {
-    if (!rawData || rawData.length === 0) {
-      console.warn('⚠️ No hay datos para transformar')
-      return []
-    }
-    
-    const stateColumn = mapping.stateColumn
-    const variableColumns = mapping.variableColumns
-    
-    // Filtrar por estado si se proporciona
-    let dataToProcess = rawData
-    if (stateFilter) {
-      dataToProcess = rawData.filter(row => row[stateColumn] === stateFilter)
-    }
-    
-    if (dataToProcess.length === 0) {
-      console.warn(`⚠️ No hay datos para el estado: ${stateFilter}`)
-      return []
-    }
-    
-    // Tomar la primera fila (o última, dependiendo de tu estructura)
-    const dataRow = dataToProcess[0]
-    
-    // Transformar cada variable a formato de HorizontalRankingChart
-    const transformed = variableColumns.map(varConfig => {
-      const rawValue = dataRow[varConfig.column]
-      
-      // ✅ FIX: Limpiar comillas triples, puntos
-      let cleanValue = rawValue
-      
-      if (typeof rawValue === 'string') {
-        cleanValue = rawValue.replace(/^["']+|["']+$/g, '').trim()
-        if (cleanValue === '' || cleanValue === '""' || cleanValue === '"""') {
-          cleanValue = '0'
-        } else {
-          cleanValue = cleanValue.replace(/\./g, '')
-        }
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Error HTTP ${response.status}: ${errorText}`)
       }
       
-      return {
-        key: varConfig.key,
-        label: varConfig.label,
-        value: parseFloat(cleanValue) || 0,
-        colorClass: varConfig.colorClass || 'default',
-        color: varConfig.color || null
-      }
-    })
-    
-    // Ordenar por orden si existe
-    transformed.sort((a, b) => {
-      const orderA = variableColumns.find(v => v.key === a.key)?.order || 999
-      const orderB = variableColumns.find(v => v.key === b.key)?.order || 999
-      return orderA - orderB
-    })
-    
-    console.log(`✅ Datos transformados para Ranking: ${transformed.length} variables`)
-    return transformed
-  }
-
-  // ✅ NUEVO: Transformar a formato de HorizontalBarChart
-  const transformToHorizontalBarData = (rawData, mapping, options = {}) => {
-    if (!rawData || rawData.length === 0) {
-      console.warn('⚠️ No hay datos para transformar')
-      return []
-    }
-    
-    const categoryColumn = mapping.categoryColumn // 'Entidad Federativa'
-    const variables = mapping.variables
-    const selectedEntity = options.selectedEntity // Entidad federativa seleccionada
-    
-    console.log('📊 Transformando datos para entidad:', selectedEntity)
-    
-    // ✅ NUEVO: Mostrar todas las entidades disponibles para debugging
-    const availableEntities = rawData.map(row => row[categoryColumn]?.toString().trim()).filter(Boolean)
-    console.log('📋 Entidades disponibles en el sheet:', availableEntities)
-    
-    // Buscar la fila correspondiente a la entidad seleccionada
-    let dataRow = null
-    
-    if (selectedEntity) {
-      // ✅ MEJORADO: Búsqueda más tolerante (case-insensitive y sin espacios extra)
-      const normalizedSelectedEntity = selectedEntity.toLowerCase().trim()
+      const data = await response.json()
+      const rows = data.values || []
       
-      dataRow = rawData.find(row => {
-        const entityName = row[categoryColumn]?.toString().trim()
-        const normalizedEntityName = entityName?.toLowerCase()
-        
-        console.log(`  Comparando: "${entityName}" vs "${selectedEntity}"`)
-        console.log(`    Normalizado: "${normalizedEntityName}" vs "${normalizedSelectedEntity}"`)
-        
-        return normalizedEntityName === normalizedSelectedEntity
-      })
-      
-      if (!dataRow) {
-        console.warn(`⚠️ No se encontraron datos para la entidad: ${selectedEntity}`)
-        console.warn('💡 Verifica que el nombre coincida exactamente con alguno de estos:', availableEntities)
+      if (rows.length === 0) {
+        console.warn('⚠️ [useStorageData] No se encontraron datos')
         return []
       }
       
-      console.log('✅ Fila encontrada:', dataRow)
-    } else {
-      // Si no hay entidad seleccionada, usar la primera fila (o retornar vacío)
-      console.warn('⚠️ No hay entidad seleccionada')
+      // Convertir a objetos con headers
+      const headers = rows[0]
+      const dataRows = rows.slice(1).map(row => {
+        const obj = {}
+        headers.forEach((header, index) => {
+          obj[header] = row[index] || null
+        })
+        return obj
+      })
+      
+      console.log(`✅ [useStorageData] Datos obtenidos: ${dataRows.length} filas`)
+      return dataRows
+      
+    } catch (err) {
+      console.error('❌ [useStorageData] Error obteniendo datos:', err)
+      throw err
+    }
+  }
+  
+  /**
+   * Transformar datos según un mapping específico
+   */
+  const transform = (rawData, mapping, chartType = 'horizontal', options = {}) => {
+    try {
+      console.log(`🔄 [useStorageData] Transformando datos para tipo: ${chartType}`)
+      console.log(`  - Mapping:`, mapping)
+      console.log(`  - Options:`, options)
+      
+      if (chartType === 'horizontal') {
+        return transformForHorizontalChart(rawData, mapping, options)
+      }
+      
+      // Otros tipos de transformación...
+      return rawData
+      
+    } catch (err) {
+      console.error('❌ [useStorageData] Error transformando datos:', err)
+      throw err
+    }
+  }
+  
+  /**
+   * Transformar datos para gráfico horizontal
+   */
+  const transformForHorizontalChart = (rawData, mapping, options = {}) => {
+    const { selectedEntity } = options
+    
+    if (!selectedEntity) {
+      console.warn('⚠️ [useStorageData] No hay entidad seleccionada')
       return []
     }
     
-    console.log('📊 Fila de datos encontrada:', dataRow)
+    // Buscar la fila de la entidad seleccionada
+    const categoryColumn = mapping.categoryColumn || mapping.stateColumn
+    const entityRow = rawData.find(row => row[categoryColumn] === selectedEntity)
     
-    // Mapear las variables configuradas con sus valores
-    const transformed = variables.map(varConfig => {
-      const rawValue = dataRow[varConfig.column]
-      
-      // Limpiar valor
-      let cleanValue = rawValue
-      if (typeof rawValue === 'string') {
-        cleanValue = rawValue.replace(/^["']+|["']+$/g, '').trim()
-        if (cleanValue === '' || cleanValue === '""' || cleanValue === '"""') {
-          cleanValue = '0'
-        } else {
-          // Limpiar puntos (separadores de miles) y comas
-          cleanValue = cleanValue.replace(/\./g, '').replace(/,/g, '.')
-        }
-      }
-      
-      const value = parseFloat(cleanValue) || 0
-      
-      console.log(`  ${varConfig.label}: ${rawValue} → ${cleanValue} → ${value}`)
+    if (!entityRow) {
+      console.warn(`⚠️ [useStorageData] No se encontró entidad: ${selectedEntity}`)
+      return []
+    }
+    
+    console.log(`✅ [useStorageData] Fila encontrada para ${selectedEntity}:`, entityRow)
+    
+    // Transformar cada variable según el mapping
+    const variables = mapping.variables || mapping.variableColumns
+    
+    return variables.map(variable => {
+      const value = entityRow[variable.column]
+      const numericValue = parseFloat(value) || 0
       
       return {
-        key: varConfig.key,
-        label: varConfig.label,
-        value: value,
-        color: varConfig.color,
-        active: false  // Inicialmente false, se activarán con animación
+        key: variable.key,
+        label: variable.label,
+        value: numericValue,
+        color: variable.color,
+        colorClass: variable.colorClass || 'default',
+        active: true // Por defecto todas activas
       }
     })
-    
-    // Ordenar por orden
-    transformed.sort((a, b) => {
-      const orderA = variables.find(v => v.key === a.key)?.order || 999
-      const orderB = variables.find(v => v.key === b.key)?.order || 999
-      return orderA - orderB
-    })
-    
-    console.log(`✅ Datos transformados para HorizontalBarChart: ${transformed.length} variables`)
-    return transformed
-  }
-  
-  const transform = (rawData, mapping, chartType = 'bar', options = {}) => {
-    switch (chartType) {
-      case 'bar':
-        return transformToBarChartData(rawData, mapping)
-      case 'linear':
-        return transformToLinearChartData(rawData, mapping)
-      case 'stacked':
-        return transformToStackedAreaData(rawData, mapping)
-      case 'ranking':
-        return transformToRankingData(rawData, mapping, options.stateFilter)
-      case 'horizontal':
-        return transformToHorizontalBarData(rawData, mapping, options)
-      default:
-        console.warn(`Tipo de gráfica no reconocido: ${chartType}`)
-        return rawData
-    }
-  }
-  
-  const logout = async () => {
-    loading.value = true
-    error.value = null
-    
-    try {
-      await service.logout()
-      isAuthenticated.value = false
-      console.log('✅ Sesión cerrada en composable')
-      return true
-    } catch (err) {
-      error.value = err.message
-      console.error('Error cerrando sesión:', err)
-      return false
-    } finally {
-      loading.value = false
-    }
-  }
-  
-  const clearError = () => {
-    error.value = null
-  }
-  
-  const getProvider = () => service.getProvider()
-  
-  // Verificar auth solo si es OneDrive
-  if (provider.value === 'onedrive') {
-    checkAuth()
   }
   
   return {
-    loading,
-    error,
-    isAuthenticated,
-    needsLogin,
-    provider,
-    authenticate,
-    logout,
-    checkAuth,
     fetchData,
-    fetchFiles,
-    fetchUserInfo,
-    transformToBarChartData,
-    transformToLinearChartData,
-    transformToStackedAreaData,
-    transformToRankingData,
-    transformToHorizontalBarData,
-    transform,
-    clearError,
-    getProvider,
-    config
+    fetchSheetNames, // ✅ NUEVA FUNCIÓN EXPORTADA
+    transform
   }
 }
-
-export default useStorageData
