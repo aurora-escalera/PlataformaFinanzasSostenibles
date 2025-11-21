@@ -47,9 +47,13 @@
         </div>
       </div>
 
-      <!-- Mostrar componente AmbientalesView cuando se selecciona "Ambientales" -->
+      <!-- ✅ Mostrar componente AmbientalesView cuando se selecciona "Ambientales" CON selectedEntity y selectedYear -->
       <div v-else-if="selectedCategory === 'ambientales'" class="inner-card">
-        <AmbientalesView @back="handleBack" />
+        <AmbientalesView 
+          :selectedEntity="props.selectedEntity"
+          :selectedYear="props.selectedYear"
+          @back="handleBack" 
+        />
       </div>
 
       <!-- Mensaje para otras categorías -->
@@ -70,13 +74,23 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import AmbientalesView from './AmbientalesView.vue'
 
 const props = defineProps({
   isExpanded: {
     type: Boolean,
     default: false
+  },
+  // ✅ NUEVO: Recibir la entidad seleccionada
+  selectedEntity: {
+    type: String,
+    default: null
+  },
+  // ✅ NUEVO: Recibir el año seleccionado
+  selectedYear: {
+    type: [String, Number],
+    default: null
   }
 })
 
@@ -84,6 +98,22 @@ const emit = defineEmits(['toggle', 'category-click'])
 
 // Estado local para categoría seleccionada
 const selectedCategory = ref(null)
+
+// ✅ Watch para debugging de entidad
+watch(() => props.selectedEntity, (newEntity, oldEntity) => {
+  console.log('🔄 [QualitativePanel] Entidad cambió')
+  console.log('  - Anterior:', oldEntity)
+  console.log('  - Nueva:', newEntity)
+  console.log('  - Categoría activa:', selectedCategory.value)
+}, { immediate: true })
+
+// ✅ NUEVO: Watch para debugging de año
+watch(() => props.selectedYear, (newYear, oldYear) => {
+  console.log('🔄 [QualitativePanel] Año cambió')
+  console.log('  - Anterior:', oldYear)
+  console.log('  - Nuevo:', newYear)
+  console.log('  - Categoría activa:', selectedCategory.value)
+}, { immediate: true })
 
 const togglePanel = () => {
   if (props.isExpanded && selectedCategory.value) {
@@ -97,10 +127,9 @@ const togglePanel = () => {
 
 const handleCategoryClick = (category) => {
   console.log('Categoría seleccionada:', category)
+  console.log('Entidad actual:', props.selectedEntity)
   console.log('Cambiando a vista interna, sin navegación')
   selectedCategory.value = category
-  // No emitir evento para evitar navegación no deseada
-  // emit('category-click', category)
 }
 
 const handleBack = () => {

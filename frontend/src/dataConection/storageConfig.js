@@ -1,13 +1,13 @@
 // src/dataConection/storageConfig.js
-// ✅ ACTUALIZADO con las columnas correctas de tu Google Sheet
-// ✅ Soporte MÍNIMO para años dinámicos desde nombres de hojas
+// ✅ ACTUALIZADO con configuración para Ambientales - VERSIÓN CORREGIDA
 
 console.log('API Key:', import.meta.env.VITE_GOOGLE_SHEETS_API_KEY)
 console.log('Sheet ID Principal:', import.meta.env.VITE_GOOGLE_SHEET_ID)
 console.log('Sheet ID Cuantitativos:', import.meta.env.VITE_GOOGLE_SHEET_ID_CUANTITATIVOS)
+console.log('Sheet ID Ambientales:', import.meta.env.VITE_GOOGLE_SHEET_ID_AMBIENTALES_INCENDIOS_FORESTALES)
 console.log('Provider:', import.meta.env.VITE_STORAGE_PROVIDER)
 
-// ✅ NUEVO: Variable global para el año activo (usado dinámicamente)
+// ✅ Variable global para el año activo
 let currentActiveYear = '2024'
 
 export const storageConfig = {
@@ -34,6 +34,12 @@ export const storageConfig = {
           chartsPresupuestos: '2024', 
           chartsIngresos: '2024'  
         }
+      },
+      ambientales: {
+        sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_AMBIENTALES_INCENDIOS_FORESTALES,
+        files: {
+          incendiosForestales: '2024'
+        }
       }
     },
     
@@ -45,13 +51,63 @@ export const storageConfig = {
       gastos: 'Gastos',
       estados: 'Estados',
       datosCuantitativos: '2024',
-      chartsPresupuestos: '2024',  
-      chartsIngresos: '2024' 
+      chartsPresupuestos: '2024',
+      chartsIngresos: '2024',
+      incendiosForestales: '2024'
     }
   },
   
   mappings: {
-    // ✅ MAPPING ACTUALIZADO: Presupuestos
+    // ✅ CORREGIDO: Mapping con nombres EXACTOS según los headers del Google Sheet
+    incendiosForestales: {
+      categoryColumn: 'Entidad Federativa',  // ← Primera columna con nombres de estados
+      variables: [
+        {
+          key: 'arbolado',
+          column: 'Arbolado Adulto',  // ← EXACTO del header
+          label: 'Arbolado Adulto',
+          color: '#0F3759',
+          order: 1
+        },
+        {
+          key: 'renuevo',
+          column: 'Renuevo',  // ← EXACTO del header
+          label: 'Renuevo',
+          color: '#3B5A70',
+          order: 2
+        },
+        {
+          key: 'arbustivo',
+          column: 'Arbustivo',  // ← EXACTO del header
+          label: 'Arbustivo',
+          color: '#4E6D82',
+          order: 3
+        },
+        {
+          key: 'herbaceo',
+          column: 'Herbaceo',  // ← EXACTO del header
+          label: 'Herbaceo',
+          color: '#D6D6D6',
+          order: 4
+        },
+        {
+          key: 'hojarasca',
+          column: 'Hojarasca',  // ← EXACTO del header
+          label: 'Hojarasca',
+          color: '#A1A1A1',
+          order: 5
+        },
+        {
+          key: 'total',
+          column: 'Total de Hectáreas',  // ← EXACTO del header (nota: con acento en "Héctareas")
+          label: 'Total de Hectáreas',
+          color: '#B0B0B0',
+          order: 6
+        }
+      ]
+    },
+
+    // ... resto de mappings existentes
     chartsPresupuestos: {
       stateColumn: 'Entidad Federativa',
       variableColumns: [
@@ -80,7 +136,6 @@ export const storageConfig = {
           order: 3
         }
       ],
-      // ✅ NUEVO: Sectores para donas de Presupuestos
       donutSectorsPS: [
         {
           key: 'ps_desastres',
@@ -122,7 +177,6 @@ export const storageConfig = {
       ]
     },
     
-    // ✅ MAPPING ACTUALIZADO: Ingresos
     chartsIngresos: {
       stateColumn: 'Entidad Federativa',
       variableColumns: [
@@ -151,7 +205,6 @@ export const storageConfig = {
           order: 3
         }
       ],
-      // ✅ NUEVO: Sectores para donas de Ingresos
       donutSectorsIS: [
         {
           key: 'is_ambiental',
@@ -200,16 +253,14 @@ export const storageConfig = {
       ]
     },
     
-    // ✅ NUEVO MAPPING: Ranking con columnas específicas por variable
     rankingCuantitativo: {
       stateColumn: 'Entidad Federativa',
-      // Mapeo de variables a columnas del sheet
       columnsByVariable: {
-        'IFSS': 'IFSS',  // Default (cuando no hay variable seleccionada o variable es "Todas")
-        'PS': 'PS (%)',  // Columna para Presupuestos Sostenibles
-        'IIC': 'IIC (%)', // Columna para Ingresos Intensivos en Carbono
-        'PIC': 'PIC (%)', // Columna para Presupuestos Intensivos en Carbono
-        'IS': 'IS (%)'   // Columna para Ingresos Sostenibles
+        'IFSS': 'IFSS',
+        'PS': 'PS (%)',
+        'IIC': 'IIC (%)',
+        'PIC': 'PIC (%)',
+        'IS': 'IS (%)'
       },
       variableColumns: [
         {
@@ -275,7 +326,7 @@ export const storageConfig = {
           key: 'IFS',
           column: 'IFS',
           label: 'IFS',
-          color: '#10b981'  // Verde
+          color: '#10b981'
         }
       ]
     },
@@ -467,13 +518,11 @@ export const storageConfig = {
   }
 }
 
-// ✅ NUEVO: Función para establecer el año activo
 export function setActiveYear(year) {
   console.log('📅 [storageConfig] Estableciendo año activo:', year)
   currentActiveYear = year || '2024'
 }
 
-// ✅ NUEVO: Función para obtener el año activo
 export function getActiveYear() {
   return currentActiveYear
 }
@@ -491,7 +540,6 @@ export function getCurrentConfig() {
   }
 }
 
-// ✅ MODIFICADO: Usar año activo para archivos de cuantitativos
 export function getSheetIdForFile(fileKey) {
   const config = storageConfig.googlesheets
   
@@ -500,7 +548,6 @@ export function getSheetIdForFile(fileKey) {
       if (sheetConfig.files && sheetConfig.files[fileKey]) {
         console.log(`📄 Archivo "${fileKey}" encontrado en sheet "${sheetKey}"`)
         
-        // ✅ Si es un archivo de cuantitativos, retornar el año activo
         if (sheetKey === 'cuantitativos') {
           console.log(`📅 Usando año activo para cuantitativos: ${currentActiveYear}`)
           return sheetConfig.sheetId
@@ -515,19 +562,18 @@ export function getSheetIdForFile(fileKey) {
   return config.sheetId
 }
 
-// ✅ NUEVA FUNCIÓN: Obtener el nombre de hoja dinámicamente según el año activo
 export function getSheetName(fileKey) {
   const config = storageConfig.googlesheets
   
-  // Si es un archivo de cuantitativos, usar el año activo
+  // ✅ ACTUALIZADO: Ahora incendiosForestales también usa año dinámico
   if (fileKey === 'datosCuantitativos' || 
       fileKey === 'chartsPresupuestos' || 
-      fileKey === 'chartsIngresos') {
+      fileKey === 'chartsIngresos' ||
+      fileKey === 'incendiosForestales') {  // ← NUEVO
     console.log(`📅 Nombre de hoja dinámico para "${fileKey}": ${currentActiveYear}`)
     return currentActiveYear
   }
   
-  // Para otros archivos, usar el nombre estático
   if (config.sheets) {
     for (const [sheetKey, sheetConfig] of Object.entries(config.sheets)) {
       if (sheetConfig.files && sheetConfig.files[fileKey]) {
@@ -536,7 +582,6 @@ export function getSheetName(fileKey) {
     }
   }
   
-  // Fallback al archivo estático
   return config.files[fileKey] || fileKey
 }
 

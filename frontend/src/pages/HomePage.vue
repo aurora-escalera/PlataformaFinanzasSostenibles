@@ -73,9 +73,10 @@
             </div>
           </transition>
           
-        <!-- ✅ COMPONENTE: Panel Cualitativo - SIN @category-click -->
+        <!-- ✅ COMPONENTE: Panel Cualitativo - Ahora recibe selectedEntity -->
         <QualitativePanel
           :isExpanded="isRetractableExpanded"
+          :selectedEntity="selectedEntity"
           @toggle="handleDatosCualitativosClick"
         />
 
@@ -284,9 +285,16 @@ const {
 const router = useRouter()
 const selectedVariable = ref('')
 const selectedYear = ref(null)
-const selectedEntity = ref('')
+const selectedEntity = ref('') // ✅ Esta es la entidad que se pasa a QualitativePanel
 const filterBarKey = ref(0)
 const { fetchData: fetchEntities } = useStorageData()
+
+// ✅ NUEVO: Watch para debugging de selectedEntity
+watch(selectedEntity, (newVal, oldVal) => {
+  console.log('🔍 [HomePage] selectedEntity cambió')
+  console.log('  - Anterior:', oldVal)
+  console.log('  - Nuevo:', newVal)
+}, { immediate: true })
 
 const entitiesData = ref([])
 const entitiesLoading = ref(false)
@@ -360,8 +368,13 @@ const loadEntitiesFromSheet = async () => {
 }
 
 const handleEntityChange = (entity) => {
-  selectedEntity.value = entity
+  console.log('📍 handleEntityChange llamado con:', entity)
   
+  // ✅ CRÍTICO: Actualizar selectedEntity SIEMPRE, incluso para string vacío
+  selectedEntity.value = entity
+  console.log('📍 selectedEntity actualizado a:', selectedEntity.value)
+  
+  // Lógica del mapa
   if (entity === '') {
     resetSelection()
     return
@@ -438,13 +451,6 @@ const handleDatosCualitativosClick = () => {
   console.log('🔄 Toggling panel cualitativo:', !isRetractableExpanded.value)
   isRetractableExpanded.value = !isRetractableExpanded.value
 }
-
-// ❌ ELIMINADA: La función navigateToQualitativeItem ya no es necesaria
-// La navegación ahora es interna al componente QualitativePanel
-// const navigateToQualitativeItem = (category) => {
-//   console.log(`Navegando a indicadores cualitativos: ${category}`)
-//   router.push(`/finanzas/cualitativos/item/${category}`)
-// }
 
 const handleMapContainerClick = (event) => {
   if (event.target.classList.contains('map-svg-container') || 

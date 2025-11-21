@@ -301,6 +301,95 @@ export function useStorageData() {
     console.log(`✅ Datos transformados para Ranking: ${transformed.length} variables`)
     return transformed
   }
+
+  // ✅ NUEVO: Transformar a formato de HorizontalBarChart
+  const transformToHorizontalBarData = (rawData, mapping, options = {}) => {
+    if (!rawData || rawData.length === 0) {
+      console.warn('⚠️ No hay datos para transformar')
+      return []
+    }
+    
+    const categoryColumn = mapping.categoryColumn // 'Entidad Federativa'
+    const variables = mapping.variables
+    const selectedEntity = options.selectedEntity // Entidad federativa seleccionada
+    
+    console.log('📊 Transformando datos para entidad:', selectedEntity)
+    
+    // ✅ NUEVO: Mostrar todas las entidades disponibles para debugging
+    const availableEntities = rawData.map(row => row[categoryColumn]?.toString().trim()).filter(Boolean)
+    console.log('📋 Entidades disponibles en el sheet:', availableEntities)
+    
+    // Buscar la fila correspondiente a la entidad seleccionada
+    let dataRow = null
+    
+    if (selectedEntity) {
+      // ✅ MEJORADO: Búsqueda más tolerante (case-insensitive y sin espacios extra)
+      const normalizedSelectedEntity = selectedEntity.toLowerCase().trim()
+      
+      dataRow = rawData.find(row => {
+        const entityName = row[categoryColumn]?.toString().trim()
+        const normalizedEntityName = entityName?.toLowerCase()
+        
+        console.log(`  Comparando: "${entityName}" vs "${selectedEntity}"`)
+        console.log(`    Normalizado: "${normalizedEntityName}" vs "${normalizedSelectedEntity}"`)
+        
+        return normalizedEntityName === normalizedSelectedEntity
+      })
+      
+      if (!dataRow) {
+        console.warn(`⚠️ No se encontraron datos para la entidad: ${selectedEntity}`)
+        console.warn('💡 Verifica que el nombre coincida exactamente con alguno de estos:', availableEntities)
+        return []
+      }
+      
+      console.log('✅ Fila encontrada:', dataRow)
+    } else {
+      // Si no hay entidad seleccionada, usar la primera fila (o retornar vacío)
+      console.warn('⚠️ No hay entidad seleccionada')
+      return []
+    }
+    
+    console.log('📊 Fila de datos encontrada:', dataRow)
+    
+    // Mapear las variables configuradas con sus valores
+    const transformed = variables.map(varConfig => {
+      const rawValue = dataRow[varConfig.column]
+      
+      // Limpiar valor
+      let cleanValue = rawValue
+      if (typeof rawValue === 'string') {
+        cleanValue = rawValue.replace(/^["']+|["']+$/g, '').trim()
+        if (cleanValue === '' || cleanValue === '""' || cleanValue === '"""') {
+          cleanValue = '0'
+        } else {
+          // Limpiar puntos (separadores de miles) y comas
+          cleanValue = cleanValue.replace(/\./g, '').replace(/,/g, '.')
+        }
+      }
+      
+      const value = parseFloat(cleanValue) || 0
+      
+      console.log(`  ${varConfig.label}: ${rawValue} → ${cleanValue} → ${value}`)
+      
+      return {
+        key: varConfig.key,
+        label: varConfig.label,
+        value: value,
+        color: varConfig.color,
+        active: false  // Inicialmente false, se activarán con animación
+      }
+    })
+    
+    // Ordenar por orden
+    transformed.sort((a, b) => {
+      const orderA = variables.find(v => v.key === a.key)?.order || 999
+      const orderB = variables.find(v => v.key === b.key)?.order || 999
+      return orderA - orderB
+    })
+    
+    console.log(`✅ Datos transformados para HorizontalBarChart: ${transformed.length} variables`)
+    return transformed
+  }
   
   const transform = (rawData, mapping, chartType = 'bar', options = {}) => {
     switch (chartType) {
@@ -312,6 +401,8 @@ export function useStorageData() {
         return transformToStackedAreaData(rawData, mapping)
       case 'ranking':
         return transformToRankingData(rawData, mapping, options.stateFilter)
+      case 'horizontal':
+        return transformToHorizontalBarData(rawData, mapping, options)
       default:
         console.warn(`Tipo de gráfica no reconocido: ${chartType}`)
         return rawData
@@ -363,6 +454,7 @@ export function useStorageData() {
     transformToLinearChartData,
     transformToStackedAreaData,
     transformToRankingData,
+    transformToHorizontalBarData,
     transform,
     clearError,
     getProvider,
