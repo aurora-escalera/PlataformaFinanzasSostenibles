@@ -211,13 +211,16 @@ const formatValue = (value) => {
   display: flex;
   flex-direction: column;
   background: white;
-  overflow: hidden;
+  overflow: hidden; /* ✅ CRÍTICO: Evita scroll externo */
+  border-radius: 12px; /* ✅ Mantener consistencia visual */
 }
 
 .chart-header {
   padding: 12px 15px;
   border-bottom: 1px solid #e5e7eb;
-  flex-shrink: 0;
+  flex-shrink: 0; /* ✅ No se comprime */
+  background: white;
+  z-index: 10; /* ✅ Siempre visible sobre el contenido */
 }
 
 .chart-title {
@@ -232,52 +235,60 @@ const formatValue = (value) => {
 
 .chart-body {
   flex: 1;
-  overflow-y: auto;
+  overflow-y: auto; /* auto para mostrar solo cuando sea necesario */
   overflow-x: hidden;
-  padding: 15px 10px;
+  padding: 15px 10px 15px 10px;
   scroll-behavior: smooth;
+  /* ✅ Sin scrollbar-gutter para que no reserve espacio */
+  position: relative;
 }
 
-/* ✅ Estilos del scrollbar - MÁS VISIBLE */
+/* ✅ OVERLAY SCROLLBAR - No afecta el ancho de la card */
 .chart-body::-webkit-scrollbar {
-  width: 10px; /* Más ancho para mejor visibilidad */
+  width: 12px; /* Ancha y visible */
 }
 
 .chart-body::-webkit-scrollbar-track {
-  background: #e5e7eb; /* Más visible */
-  border-radius: 5px;
-  margin: 5px 0;
-  border: 1px solid #d1d5db;
+  background: rgba(229, 231, 235, 0.4); /* Semi-transparente para overlay */
+  border-radius: 6px;
+  margin: 8px 0;
 }
 
 .chart-body::-webkit-scrollbar-thumb {
-  background: #94a3b8; /* Más oscuro por defecto */
-  border-radius: 5px;
-  transition: background 0.2s ease;
-  border: 2px solid #e5e7eb; /* Borde para contraste */
+  background: rgba(148, 163, 184, 0.8); /* Semi-transparente */
+  border-radius: 6px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  transition: all 0.2s ease;
+  /* ✅ Efecto de sombra para que se vea sobre el contenido */
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.1);
 }
 
 .chart-body::-webkit-scrollbar-thumb:hover {
-  background: #64748b; /* Aún más oscuro en hover */
+  background: rgba(100, 116, 139, 0.95); /* Más opaco en hover */
+  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.2);
 }
 
 .chart-body::-webkit-scrollbar-thumb:active {
-  background: #475569; /* Más oscuro al hacer clic */
+  background: rgba(71, 85, 105, 1); /* Totalmente opaco al arrastrar */
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
 }
 
-/* ✅ Scrollbar para Firefox - MÁS VISIBLE */
+/* ✅ Scrollbar para Firefox */
 .chart-body {
-  scrollbar-width: auto; /* 'auto' en lugar de 'thin' para que sea más ancho */
-  scrollbar-color: #94a3b8 #e5e7eb; /* thumb más oscuro, track más visible */
+  scrollbar-width: thin; 
+  scrollbar-color: rgba(148, 163, 184, 0.8) transparent;
 }
 
 .bullet-row {
   display: flex;
   align-items: center;
   margin-bottom: 10px;
-  padding: 6px 8px;
+  padding: 6px 8px 6px 8px;
   border-radius: 6px;
   transition: all 0.3s ease;
+  /* ✅ Margin derecho para evitar que el scrollbar tape el contenido */
+  margin-right: 4px;
 }
 
 .bullet-row:hover {

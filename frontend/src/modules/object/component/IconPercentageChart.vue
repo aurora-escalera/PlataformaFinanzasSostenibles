@@ -332,8 +332,8 @@ onMounted(() => {
 .icon-fill-wrapper {
   position: absolute;
   top: 0;
-  left: 15px;
-  width: 80%;
+  left: 8px;
+  width: 90%;
   height: 100%;
   display: flex;
   align-items: center;

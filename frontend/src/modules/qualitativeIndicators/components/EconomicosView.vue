@@ -1,5 +1,5 @@
 <!-- src/modules/qualitativeIndicators/components/EconomicosView.vue -->
-<!-- ✅ VERSIÓN CON BULLET CHART para ITAEE -->
+<!-- ✅ VERSIÓN FINAL CON PIB MEJORADO -->
 <template>
   <div class="ambientales-container">
     <div class="card-body">
@@ -78,58 +78,130 @@
 
       <!-- Right Side Container -->
       <div class="right-card-container">
-        <!-- Top Right Container -->
+        <!-- Top Right Container - PIB MEJORADO -->
         <div class="top-right-card-container">
-          <!-- ✅ PIB Chart - CON ICONO ANIMADO -->
           <div class="pib-chart card">
-            <div class="title-pib-chart">
-              <h3>Producto Interno Bruto Estatal (PIBE), anual en millones de pesos en 2024.</h3>
+            <!-- Header con título e info -->
+            <div class="card-header">
+              <div class="header-content">
+                <div class="icon-badge">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="1" x2="12" y2="23"></line>
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                  </svg>
+                </div>
+                <div class="header-text">
+                  <h3 class="card-title">PIB Estatal 2024</h3>
+                  <p class="card-subtitle">Millones de pesos</p>
+                </div>
+              </div>
+              
+              <!-- Info tooltip -->
+              <div class="info-tooltip">
+                <button class="info-btn" @click="showInfo = !showInfo">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  </svg>
+                </button>
+                
+                <Transition name="tooltip-fade">
+                  <div v-if="showInfo" class="tooltip-content">
+                    Producto Interno Bruto Estatal (PIBE), anual en millones de pesos en 2024.
+                  </div>
+                </Transition>
+              </div>
             </div>
-            <div class="pib-chart-container">
+
+            <!-- Card Body -->
+            <div class="card-body-pib">
               <!-- Loading State -->
-              <div v-if="PIBLoading" class="loading-state-small">
-                <div class="spinner-small"></div>
+              <div v-if="PIBLoading" class="state-container loading-state">
+                <div class="spinner"></div>
+                <p class="state-text">Cargando datos...</p>
               </div>
 
               <!-- Error State -->
-              <div v-else-if="PIBError" class="error-state-small">
-                <p>Error cargando datos</p>
-                <button @click="loadPIBData(selectedEntity, selectedYear)" class="retry-btn-small">
+              <div v-else-if="PIBError" class="state-container error-state">
+                <div class="error-icon">⚠️</div>
+                <p class="state-text">Error al cargar datos</p>
+                <button @click="loadPIBData(selectedEntity, selectedYear)" class="retry-btn">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="23 4 23 10 17 10"></polyline>
+                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                  </svg>
                   Reintentar
                 </button>
               </div>
 
               <!-- Empty State -->
-              <div v-else-if="!selectedEntity" class="empty-state-small">
-                <p>Selecciona una entidad</p>
+              <div v-else-if="!selectedEntity" class="state-container empty-state-pib">
+                <div class="empty-icon-pib">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                    <polyline points="7.5 4.21 12 6.81 16.5 4.21"></polyline>
+                    <polyline points="7.5 19.79 7.5 14.6 3 12"></polyline>
+                    <polyline points="21 12 16.5 14.6 16.5 19.79"></polyline>
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                    <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                  </svg>
+                </div>
+                <p class="state-text">Selecciona una entidad</p>
+                <p class="state-subtext">Para ver el PIB estatal</p>
               </div>
 
-              <!-- ✅ NUEVO: Icono PIB con porcentaje -->
-               
-              <div v-else class="pib-icon-wrapper">
-                <div class="pib-value">${{ formatNumber(pibValue) }} MDP</div>
-                 <div class="pib-icon">
+              <!-- Data State -->
+              <div v-else class="pib-data-container">
+                <!-- Valor principal destacado arriba -->
+                <div class="pib-main-value">
+                  <span class="currency-symbol">$</span>
+                  <span class="value-number">{{ formatNumber(pibValue) }}</span>
+                  <span class="value-unit">MDP</span>
+                </div>
+
+                <!-- Contenedor del icono y contexto -->
+                <div class="pib-content-wrapper">
+                  <!-- Icono visual -->
+                  <div class="pib-visual">
                     <IconPercentageChart
-                    iconPath="/public/icons/pib-icon.png"
-                    :value="pibPercentage"
-                    fillDirection="vertical"
-                    fillOrigin="bottom"
-                    width="70%"
-                    height="70%"
-                    iconWidth="80%"
-                    iconHeight="100%"
-                    :showPercentage="true"
-                    fillColor="#0F3759"
-                    :animated="true"
-                    :animationDuration="1.5"
+                      iconPath="/public/icons/pib-icon.png"
+                      :value="pibPercentage"
+                      fillDirection="vertical"
+                      fillOrigin="bottom"
+                      width="100%"
+                      height="100%"
+                      iconWidth="85%"
+                      iconHeight="95%"
+                      :showPercentage="true"
+                      fillColor="#0F3759"
+                      :animated="true"
+                      :animationDuration="1.5"
                     />
+                  </div>
+
+                  <!-- Información contextual -->
+                  <div class="pib-context">
+                    <div class="context-item">
+                      <span class="context-label">Entidad</span>
+                      <span class="context-value">{{ selectedEntity }}</span>
+                    </div>
+                    <div class="context-item">
+                      <span class="context-label">Periodo</span>
+                      <span class="context-value">{{ selectedYear }}</span>
+                    </div>
+                    <div class="context-item">
+                      <span class="context-label">% Nacional</span>
+                      <span class="context-value">{{ pibPercentage.toFixed(2) }}%</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
         
-        <!-- Bottom Right Container -- ITAEE con BULLET CHART -->
+        <!-- Bottom Right Container - ITAEE con BULLET CHART -->
         <div class="bottom-right-card-container">
           <div class="bottom-bar-graph card">
             <!-- Loading State -->
@@ -153,7 +225,7 @@
               <p>Selecciona una entidad federativa para ver el Indicador Trimestral de la Actividad Económica Estatal.</p>
             </div>
 
-            <!-- ✅ BULLET CHART - Muestra todas las entidades -->
+            <!-- BULLET CHART -->
             <BulletChart
               v-else
               :variables="itaeData"
@@ -195,42 +267,36 @@ const emit = defineEmits(['back'])
 // Composable de Google Sheets
 const { fetchData } = useStorageData()
 
+// Estado para tooltip del PIB
+const showInfo = ref(false)
+
 // ============================================
-// FUNCIÓN: Limpiar formato numérico - MEJORADA
+// FUNCIÓN: Limpiar formato numérico
 // ============================================
 const parseNumericValue = (value) => {
   console.log('🔍 [parseNumericValue] Input:', value, 'Type:', typeof value)
   
-  // Si ya es un número, retornarlo
   if (typeof value === 'number') {
     console.log('✅ [parseNumericValue] Ya es número:', value)
     return value
   }
   
-  // Si es null, undefined o string vacío
   if (!value || value === '') {
     console.log('⚠️ [parseNumericValue] Valor vacío o null')
     return 0
   }
   
-  // Convertir a string y limpiar
   let stringValue = String(value).trim()
-  
-  // Quitar espacios
   stringValue = stringValue.replace(/\s/g, '')
   
-  // Verificar si tiene punto Y coma (formato: 1.234,56)
   const hasCommaAndDot = stringValue.includes(',') && stringValue.includes('.')
   
   if (hasCommaAndDot) {
-    // Formato europeo: 1.234,56 → quitar puntos, cambiar coma por punto
     stringValue = stringValue.replace(/\./g, '')
     stringValue = stringValue.replace(/,/g, '.')
   } else if (stringValue.includes(',')) {
-    // Solo coma: -1,3 → cambiar coma por punto
     stringValue = stringValue.replace(/,/g, '.')
   }
-  // Si solo tiene punto, ya está en formato correcto
   
   const result = parseFloat(stringValue)
   
@@ -245,7 +311,7 @@ const parseNumericValue = (value) => {
 }
 
 // ============================================
-// Ingresos Totales (HorizontalBarChart)
+// Ingresos Totales
 // ============================================
 const ingresoTotalData = ref([])
 const ingresoTotalLoading = ref(false)
@@ -309,7 +375,7 @@ const loadIngresoTotalData = async (entityName = null, year = null) => {
 }
 
 // ============================================
-// PERSONAS ECONÓMICAMENTE ACTIVAS (PersonChart)
+// PERSONAS ECONÓMICAMENTE ACTIVAS
 // ============================================
 const peaValue = ref(0)
 const peaPercentage = ref(0)
@@ -372,7 +438,7 @@ const loadPersonasData = async (entityName = null, year = null) => {
 }
 
 // ============================================
-// ✅ PRODUCTO INTERNO BRUTO (PIB) - CORREGIDO
+// PRODUCTO INTERNO BRUTO (PIB)
 // ============================================
 const pibValue = ref(0)
 const pibPercentage = ref(0)
@@ -414,7 +480,6 @@ const loadPIBData = async (entityName = null, year = null) => {
       
       console.log('🔍 [PIB DEBUG] Valor parseado:', pibValue.value)
       
-      // Obtener todos los valores y calcular la suma total
       const allValues = rawData
         .map(row => {
           const val = parseNumericValue(row[mapping.valueColumn])
@@ -442,7 +507,7 @@ const loadPIBData = async (entityName = null, year = null) => {
 }
 
 // ============================================
-// ✅ ITAEE - CON BULLET CHART
+// ITAEE
 // ============================================
 const itaeData = ref([])
 const itaeLoading = ref(false)
@@ -457,7 +522,6 @@ const loadITAEData = async (entityName = null, year = null) => {
     console.log('  - Entidad seleccionada:', entityName)
     console.log('  - Año:', year)
     
-    // ✅ MANTENER: No cargar si no hay entidad seleccionada
     if (!entityName) {
       itaeData.value = []
       itaeLoading.value = false
@@ -482,8 +546,7 @@ const loadITAEData = async (entityName = null, year = null) => {
     console.log('🔍 [ITAEE] Primera fila de ejemplo:', rawData[0])
     console.log('🔍 [ITAEE] Columnas disponibles:', Object.keys(rawData[0]))
     
-    // ✅ Cargar TODAS las entidades para el BulletChart
-    const variableConfig = mapping.variables[0] // Solo hay una variable: "Variación Porcentual Anual"
+    const variableConfig = mapping.variables[0]
     
     console.log('🔍 [ITAEE] Buscando columna:', variableConfig.column)
     
@@ -542,12 +605,9 @@ watch(() => props.selectedEntity, (newEntity, oldEntity) => {
   loadPersonasData(newEntity, props.selectedYear)
   loadPIBData(newEntity, props.selectedYear)
   
-  // ✅ ITAEE: Solo cargar si hay entidad seleccionada
-  // Esto carga TODAS las entidades pero solo cuando se selecciona una
   if (newEntity) {
     loadITAEData(newEntity, props.selectedYear)
   } else {
-    // Si no hay entidad seleccionada, limpiar datos
     itaeData.value = []
   }
 }, { immediate: false })
@@ -775,100 +835,401 @@ h2 {
   padding-top: 20px;
 }
 
+/* ============================================ */
+/* RIGHT SIDE CONTAINER */
+/* ============================================ */
 .right-card-container {
   display: flex;
   flex-direction: column;
   width: 50%;
   height: 100%;
   gap: 10px;
+  overflow: hidden;
 }
 
 .top-right-card-container {
   display: flex;
   border-radius: 12px;
-  flex:5;
+  flex: 5;
   gap: 10px;
+  min-height: 0;
 }
 
-.pib-chart {
+/* ============================================ */
+/* PIB CARD MEJORADA */
+/* ============================================ */
+.pib-chart.card {
   width: 100%;
-  border-radius: 12px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(15, 55, 89, 0.08);
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-
+  transition: all 0.3s ease;
 }
 
-.title-pib-chart {
-  padding: 10px 10px 10px;
-  width: 100%;
+.pib-chart.card:hover {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+.card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, #0F3759 0%, #1a4d7a 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.header-content {
   display: flex;
   align-items: center;
-  justify-content: center;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.pib-chart-container {
-  width: 100%;
+  gap: 0.75rem;
   flex: 1;
+}
+
+.icon-badge {
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: white;
+  flex-shrink: 0;
 }
 
-/* ✅ NUEVO: Estilos para el icono PIB */
-.pib-icon-wrapper {
+.icon-badge svg {
+  width: 18px;
+  height: 18px;
+}
+
+.header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.card-title {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: white;
+  line-height: 1.2;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.card-subtitle {
+  margin: 0;
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.info-tooltip {
+  position: relative;
+}
+
+.info-btn {
+  width: 28px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.info-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.info-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.05);
+}
+
+.tooltip-content {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: #1f2937;
+  color: white;
+  padding: 0.6rem 0.85rem;
+  border-radius: 6px;
+  font-size: 0.65rem;
+  line-height: 1.3;
+  max-width: 200px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.tooltip-content::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  right: 12px;
+  border: 6px solid transparent;
+  border-bottom-color: #1f2937;
+}
+
+.card-body-pib {
+  flex: 1;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.state-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  text-align: center;
+  width: 100%;
+}
+
+.state-text {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #64748b;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.state-subtext {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #0F3759;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.error-icon {
+  font-size: 2.5rem;
+}
+
+.retry-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #0F3759;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.retry-btn:hover {
+  background: #1a4d7a;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(15, 55, 89, 0.3);
+}
+
+.empty-state-pib {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.empty-icon-pib {
+  color: #cbd5e1;
+  opacity: 0.7;
+}
+
+.pib-data-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem;
+  overflow: hidden;
+}
+
+.pib-main-value {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  font-weight: 800;
+  color: #0F3759;
+  text-align: center;
+  flex-wrap: wrap;
+  justify-content: center;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  padding-bottom: 0.4rem;
+  border-bottom: 2px solid #e2e8f0;
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.currency-symbol {
+  font-size: 0.9rem;
+}
+
+.value-number {
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.value-unit {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.pib-content-wrapper {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 20px;
-  height: 100%;
+  gap: 0.75rem;
   width: 100%;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
-.pib-value {
-  position: relative;
-  left: 20px;
-  width: 100%;
-  font-size: 18px;
-  font-weight: 600;
-  color: #0F3759;
+.pib-visual {
+  flex: 1;
+  max-width: 110px;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.pib-context {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-left: 0.75rem;
+  border-left: 2px solid #e2e8f0;
+  overflow: hidden;
+}
+
+.context-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  text-align: left;
+}
+
+.context-label {
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-.pib-icon{
-      position: relative;
-      left: -40px;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-h3 {
-  text-align: center;
+.context-value {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #0F3759;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-weight: 300;
-  color: #535353;
-  font-size: 16px;
-  padding-left: 15px;
-  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
+.tooltip-fade-enter-active,
+.tooltip-fade-leave-active {
+  transition: all 0.2s ease;
+}
+
+.tooltip-fade-enter-from,
+.tooltip-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+/* ============================================ */
+/* ITAEE SECTION */
+/* ============================================ */
 .bottom-right-card-container {
   flex: 5;
   border-radius: 12px;
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .bottom-bar-graph {
   height: 100%;
   border-radius: 12px;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .card-header {
+    padding: 1rem;
+  }
+
+  .card-body-pib {
+    padding: 1rem;
+  }
+
+  .value-number {
+    font-size: 1.3rem;
+  }
+
+  .pib-content-wrapper {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .pib-visual {
+    max-width: 100px;
+    height: 90px;
+  }
+
+  .pib-context {
+    border-left: none;
+    border-top: 2px solid #e2e8f0;
+    padding-left: 0;
+    padding-top: 0.75rem;
+    width: 100%;
+  }
 }
 </style>
