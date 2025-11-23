@@ -1,5 +1,5 @@
 // src/dataConection/storageConfig.js
-// ✅ ACTUALIZADO con configuración para TODOS los componentes de Ambientales y Económicos
+// ✅ ACTUALIZADO con configuración correcta para ITAEE
 
 console.log('API Key:', import.meta.env.VITE_GOOGLE_SHEETS_API_KEY)
 console.log('Sheet ID Principal:', import.meta.env.VITE_GOOGLE_SHEET_ID)
@@ -173,9 +173,19 @@ export const storageConfig = {
         }
       ]
     },
+    // ✅ CORREGIDO: ITAEE con estructura de variables para VerticalBarChart
     itaee: {
       categoryColumn: 'Entidad Federativa',
-      valueColumn: 'Variación Porcentual Anual',
+      variables: [
+        {
+          key: 'variacion',
+          column: 'Variación porcentual anual',
+          label: 'Variación %',
+          color: '#0F3759',
+          colorClass: 'blue',
+          order: 1
+        }
+      ]
     },
 
     //CUALITATIVOS - AMBIENTALES

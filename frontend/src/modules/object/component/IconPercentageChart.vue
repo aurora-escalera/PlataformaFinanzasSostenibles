@@ -201,10 +201,10 @@ const dynamicLabelStyle = computed(() => {
   const fillReachedText = props.fillOrigin === 'bottom' 
     ? animatedPercentage.value >= textPosition
     : animatedPercentage.value >= (100 - textPosition)
-  
+
   return {
-    color: showLabel.value ? '#0F3759' : (fillReachedText ? '#FFFFFF' : (props.fillColor || '#0F3759')),
-    backgroundColor: showLabel.value ? 'rgba(255, 255, 255, 0.9)' : 'transparent', // ✅ Fondo con 90% opacidad
+    color: showLabel.value ? '#FFFFFF' : (fillReachedText ? '#FFFFFF' : (props.fillColor || '#0F3759')),
+    backgroundColor: showLabel.value ? '#0F3759' : 'transparent', // ✅ Fondo con 90% opacidad
     borderRadius: showLabel.value ? '50%' : '0',
     padding: showLabel.value ? '0' : '0',
     width: showLabel.value ? '50px' : 'auto', // ✅ Más pequeño: 50px
@@ -212,11 +212,12 @@ const dynamicLabelStyle = computed(() => {
     display: showLabel.value ? 'flex' : 'block',
     alignItems: showLabel.value ? 'center' : 'normal',
     justifyContent: showLabel.value ? 'center' : 'normal',
-    border: showLabel.value ? `1px solid ${props.fillColor || '#0F3759'}` : 'none', // ✅ Borde más delgado
+    border: showLabel.value ? `1px solid #FFFFFF` : 'none', // ✅ Borde más delgado
     boxShadow: showLabel.value ? '0 2px 8px rgba(0, 0, 0, 0.1)' : 'none', // ✅ Sombra más suave
     fontSize: showLabel.value ? '16px' : '24px', // ✅ Letra más pequeña
     fontWeight: showLabel.value ? '600' : '700',
     transition: 'all 0.3s ease',
+    opacity: 0.8
   }
 })
 
@@ -331,8 +332,8 @@ onMounted(() => {
 .icon-fill-wrapper {
   position: absolute;
   top: 0;
-  left: 8px;
-  width: 90%;
+  left: 15px;
+  width: 80%;
   height: 100%;
   display: flex;
   align-items: center;

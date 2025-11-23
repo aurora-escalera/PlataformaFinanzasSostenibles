@@ -1,5 +1,5 @@
 <!-- src/modules/qualitativeIndicators/components/EconomicosView.vue -->
-<!-- ✅ VERSIÓN CORREGIDA: Con IconPercentageChart para PIB -->
+<!-- ✅ VERSIÓN CON BULLET CHART para ITAEE -->
 <template>
   <div class="ambientales-container">
     <div class="card-body">
@@ -129,41 +129,38 @@
           </div>
         </div>
         
-        <!-- Bottom Right Container -->
+        <!-- Bottom Right Container -- ITAEE con BULLET CHART -->
         <div class="bottom-right-card-container">
           <div class="bottom-bar-graph card">
             <!-- Loading State -->
-            <div v-if="areasLoading" class="loading-state">
+            <div v-if="itaeLoading" class="loading-state">
               <div class="spinner-small"></div>
               <p>Cargando datos...</p>
             </div>
 
             <!-- Error State -->
-            <div v-else-if="areasError" class="error-state">
-              <p>Error: {{ areasError }}</p>
-              <button @click="loadAreasNaturalesData(selectedEntity, selectedYear)" class="retry-btn-small">
+            <div v-else-if="itaeError" class="error-state">
+              <p>Error: {{ itaeError }}</p>
+              <button @click="loadITAEData(selectedEntity, selectedYear)" class="retry-btn-small">
                 Reintentar
               </button>
             </div>
 
             <!-- Empty State -->
             <div v-else-if="!selectedEntity" class="empty-state">
-              <div class="empty-icon">🗺️</div>
+              <div class="empty-icon">📊</div>
               <h4>Selecciona una entidad</h4>
-              <p>Selecciona una entidad federativa para ver las áreas naturales protegidas.</p>
+              <p>Selecciona una entidad federativa para ver el Indicador Trimestral de la Actividad Económica Estatal.</p>
             </div>
 
-            <!-- Datos -->
-            <VerticalBarChart
+            <!-- ✅ BULLET CHART - Muestra todas las entidades -->
+            <BulletChart
               v-else
-              :variables="areasNaturalesData"
-              width="100%"
-              height="100%"
-              title="Áreas naturales protegidas"
-              :showFilters="true"
-              :showLegend="true"
-              barHeight="20px"
-              barGap="1px"
+              :variables="itaeData"
+              title="Indicador Trimestral de la Actividad Económica Estatal (ITAEE)"
+              :highlightState="selectedEntity"
+              :showLegend="false"
+              :maxValue="20"
             />
           </div>
         </div>
@@ -177,7 +174,7 @@ import { ref, onMounted, watch } from 'vue'
 import HorizontalBarChart from '@/modules/charts/components/HorizontalBarChart.vue'
 import PersonChart from '../../object/component/PersonChart.vue'
 import IconPercentageChart from '@/modules/object/component/IconPercentageChart.vue'
-import VerticalBarChart from '@/modules/charts/components/VerticalBarChart.vue'
+import BulletChart from '@/modules/charts/components/BulletChart.vue'
 import { useStorageData } from '@/dataConection/useStorageData'
 import { getMapping, getSheetName, setActiveYear } from '@/dataConection/storageConfig'
 
@@ -199,14 +196,52 @@ const emit = defineEmits(['back'])
 const { fetchData } = useStorageData()
 
 // ============================================
-// FUNCIÓN: Limpiar formato numérico
+// FUNCIÓN: Limpiar formato numérico - MEJORADA
 // ============================================
 const parseNumericValue = (value) => {
-  if (!value) return 0
-  let stringValue = String(value)
-  stringValue = stringValue.replace(/\./g, '')
-  stringValue = stringValue.replace(/,/g, '.')
-  return parseFloat(stringValue) || 0
+  console.log('🔍 [parseNumericValue] Input:', value, 'Type:', typeof value)
+  
+  // Si ya es un número, retornarlo
+  if (typeof value === 'number') {
+    console.log('✅ [parseNumericValue] Ya es número:', value)
+    return value
+  }
+  
+  // Si es null, undefined o string vacío
+  if (!value || value === '') {
+    console.log('⚠️ [parseNumericValue] Valor vacío o null')
+    return 0
+  }
+  
+  // Convertir a string y limpiar
+  let stringValue = String(value).trim()
+  
+  // Quitar espacios
+  stringValue = stringValue.replace(/\s/g, '')
+  
+  // Verificar si tiene punto Y coma (formato: 1.234,56)
+  const hasCommaAndDot = stringValue.includes(',') && stringValue.includes('.')
+  
+  if (hasCommaAndDot) {
+    // Formato europeo: 1.234,56 → quitar puntos, cambiar coma por punto
+    stringValue = stringValue.replace(/\./g, '')
+    stringValue = stringValue.replace(/,/g, '.')
+  } else if (stringValue.includes(',')) {
+    // Solo coma: -1,3 → cambiar coma por punto
+    stringValue = stringValue.replace(/,/g, '.')
+  }
+  // Si solo tiene punto, ya está en formato correcto
+  
+  const result = parseFloat(stringValue)
+  
+  console.log('✅ [parseNumericValue] Output:', result)
+  
+  if (isNaN(result)) {
+    console.error('❌ [parseNumericValue] No se pudo parsear:', value)
+    return 0
+  }
+  
+  return result
 }
 
 // ============================================
@@ -407,65 +442,79 @@ const loadPIBData = async (entityName = null, year = null) => {
 }
 
 // ============================================
-// ÁREAS NATURALES PROTEGIDAS (VerticalBarChart)
+// ✅ ITAEE - CON BULLET CHART
 // ============================================
-const areasNaturalesData = ref([])
-const areasLoading = ref(false)
-const areasError = ref(null)
-const pibPercentageReal = ref(0)
+const itaeData = ref([])
+const itaeLoading = ref(false)
+const itaeError = ref(null)
 
-const loadAreasNaturalesData = async (entityName = null, year = null) => {
+const loadITAEData = async (entityName = null, year = null) => {
   try {
-    areasLoading.value = true
-    areasError.value = null
+    itaeLoading.value = true
+    itaeError.value = null
     
-    console.log('🌳 [Áreas Naturales] Cargando datos')
-    console.log('  - Entidad:', entityName)
+    console.log('📊 [ITAEE] Cargando datos')
+    console.log('  - Entidad seleccionada:', entityName)
     console.log('  - Año:', year)
     
+    // ✅ MANTENER: No cargar si no hay entidad seleccionada
     if (!entityName) {
-      areasNaturalesData.value = []
-      areasLoading.value = false
+      itaeData.value = []
+      itaeLoading.value = false
       return
     }
     
     if (year) setActiveYear(year)
     
-    const mapping = getMapping('areasNaturales')
-    const sheetName = getSheetName('areasNaturales')
+    const mapping = getMapping('itaee')
+    const sheetName = getSheetName('itaee')
     
-    const rawData = await fetchData('areasNaturales', sheetName)
+    console.log('🔍 [ITAEE] Mapping:', mapping)
+    console.log('🔍 [ITAEE] Sheet name:', sheetName)
+    
+    const rawData = await fetchData('itaee', sheetName)
     
     if (rawData.length === 0) {
       throw new Error('No se obtuvieron datos del Google Sheet')
     }
     
-    const entityRow = rawData.find(row => row[mapping.categoryColumn] === entityName)
+    console.log('🔍 [ITAEE] Datos cargados:', rawData.length, 'filas')
+    console.log('🔍 [ITAEE] Primera fila de ejemplo:', rawData[0])
+    console.log('🔍 [ITAEE] Columnas disponibles:', Object.keys(rawData[0]))
     
-    if (!entityRow) {
-      console.log('⚠️ [Áreas Naturales] No se encontraron datos para', entityName)
-      areasNaturalesData.value = []
-      areasLoading.value = false
-      return
-    }
+    // ✅ Cargar TODAS las entidades para el BulletChart
+    const variableConfig = mapping.variables[0] // Solo hay una variable: "Variación Porcentual Anual"
     
-    const transformedData = mapping.variables.map(variable => ({
-      key: variable.key,
-      label: variable.label,
-      value: parseNumericValue(entityRow[variable.column]),
-      color: variable.color,
-      colorClass: variable.colorClass || 'default',
-      active: false
-    }))
+    console.log('🔍 [ITAEE] Buscando columna:', variableConfig.column)
     
-    areasNaturalesData.value = transformedData
-    console.log('✅ [Áreas Naturales] Datos cargados:', transformedData.length, 'variables')
+    const transformedData = rawData.map(row => {
+      const entityName = row[mapping.categoryColumn]
+      const rawValue = row[variableConfig.column]
+      
+      console.log(`🔍 [ITAEE] ${entityName}: rawValue = "${rawValue}" (type: ${typeof rawValue})`)
+      
+      const value = parseNumericValue(rawValue)
+      
+      return {
+        key: entityName,
+        label: entityName,
+        value: value,
+        color: value >= 0 ? '#10b981' : '#ef4444',
+        colorClass: value >= 0 ? 'green' : 'red',
+        active: true
+      }
+    }).filter(item => item.label && item.label.trim() !== '')
+    
+    itaeData.value = transformedData
+    console.log('✅ [ITAEE] Datos cargados:', transformedData.length, 'entidades')
+    console.log('✅ [ITAEE] Primeras 3 entidades:', transformedData.slice(0, 3))
+    console.log('✅ [ITAEE] Entidad seleccionada:', entityName)
     
   } catch (err) {
-    console.error('❌ [Áreas Naturales] Error:', err)
-    areasError.value = err.message
+    console.error('❌ [ITAEE] Error:', err)
+    itaeError.value = err.message
   } finally {
-    areasLoading.value = false
+    itaeLoading.value = false
   }
 }
 
@@ -492,7 +541,15 @@ watch(() => props.selectedEntity, (newEntity, oldEntity) => {
   loadIngresoTotalData(newEntity, props.selectedYear)
   loadPersonasData(newEntity, props.selectedYear)
   loadPIBData(newEntity, props.selectedYear)
-  loadAreasNaturalesData(newEntity, props.selectedYear)
+  
+  // ✅ ITAEE: Solo cargar si hay entidad seleccionada
+  // Esto carga TODAS las entidades pero solo cuando se selecciona una
+  if (newEntity) {
+    loadITAEData(newEntity, props.selectedYear)
+  } else {
+    // Si no hay entidad seleccionada, limpiar datos
+    itaeData.value = []
+  }
 }, { immediate: false })
 
 watch(() => props.selectedYear, (newYear, oldYear) => {
@@ -504,7 +561,7 @@ watch(() => props.selectedYear, (newYear, oldYear) => {
     loadIngresoTotalData(props.selectedEntity, newYear)
     loadPersonasData(props.selectedEntity, newYear)
     loadPIBData(props.selectedEntity, newYear)
-    loadAreasNaturalesData(props.selectedEntity, newYear)
+    loadITAEData(props.selectedEntity, newYear)
   }
 }, { immediate: false })
 
@@ -520,7 +577,7 @@ onMounted(async () => {
     loadIngresoTotalData(props.selectedEntity, props.selectedYear),
     loadPersonasData(props.selectedEntity, props.selectedYear),
     loadPIBData(props.selectedEntity, props.selectedYear),
-    loadAreasNaturalesData(props.selectedEntity, props.selectedYear)
+    loadITAEData(props.selectedEntity, props.selectedYear)
   ])
   
   console.log('✅ [EconomicosView] Todos los datos iniciales cargados')
