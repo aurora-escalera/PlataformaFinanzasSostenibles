@@ -22,7 +22,7 @@
       </div>
       
       <!-- ✅ CAMBIO: Usar dynamicLabelStyle en vez de labelStyle -->
-      <div v-if="showPercentage" class="percentage-label" :style="dynamicLabelStyle">
+      <div v-if="showPercentage && showLabel" class="percentage-label" :style="dynamicLabelStyle">
         {{ displayedPercentage }}%
       </div>
     </div>
@@ -116,6 +116,7 @@ const props = defineProps({
 const animatedPercentage = ref(0)
 const displayedPercentage = ref(0)
 const isAnimating = ref(false)
+const showLabel = ref(false)
 
 const containerStyle = computed(() => ({
   width: typeof props.width === 'number' ? `${props.width}px` : props.width,
@@ -196,48 +197,79 @@ const labelStyle = computed(() => ({
 
 // ✅ NUEVO: Cambiar color del texto según el nivel de llenado
 const dynamicLabelStyle = computed(() => {
-  // El texto está al 30% desde abajo (70% desde arriba)
-  // Cuando el fill alcanza esa altura, cambiar a blanco
-  const textPosition = 30 // Debe coincidir con el bottom: 30% en el CSS
+  const textPosition = 40
   const fillReachedText = props.fillOrigin === 'bottom' 
     ? animatedPercentage.value >= textPosition
     : animatedPercentage.value >= (100 - textPosition)
   
   return {
-    color: fillReachedText ? '#FFFFFF' : (props.fillColor || '#0F3759'),
-    transition: 'color 0.3s ease'
+    color: showLabel.value ? '#0F3759' : (fillReachedText ? '#FFFFFF' : (props.fillColor || '#0F3759')),
+    backgroundColor: showLabel.value ? 'rgba(255, 255, 255, 0.9)' : 'transparent', // ✅ Fondo con 90% opacidad
+    borderRadius: showLabel.value ? '50%' : '0',
+    padding: showLabel.value ? '0' : '0',
+    width: showLabel.value ? '50px' : 'auto', // ✅ Más pequeño: 50px
+    height: showLabel.value ? '50px' : 'auto', // ✅ Más pequeño: 50px
+    display: showLabel.value ? 'flex' : 'block',
+    alignItems: showLabel.value ? 'center' : 'normal',
+    justifyContent: showLabel.value ? 'center' : 'normal',
+    border: showLabel.value ? `1px solid ${props.fillColor || '#0F3759'}` : 'none', // ✅ Borde más delgado
+    boxShadow: showLabel.value ? '0 2px 8px rgba(0, 0, 0, 0.1)' : 'none', // ✅ Sombra más suave
+    fontSize: showLabel.value ? '16px' : '24px', // ✅ Letra más pequeña
+    fontWeight: showLabel.value ? '600' : '700',
+    transition: 'all 0.3s ease',
   }
 })
 
 // ✅ FUNCIÓN: Animación de llenado progresivo
 const animateToValue = (targetValue) => {
   if (!props.progressiveAnimation || !props.animated) {
-    // Sin animación progresiva, saltar directo al valor
     animatedPercentage.value = targetValue
     displayedPercentage.value = Math.round(targetValue)
+    showLabel.value = true
     return
   }
 
   isAnimating.value = true
-  const startValue = animatedPercentage.value
-  const duration = props.animationDuration * 1000 // Convertir a ms
+  showLabel.value = false
+  const totalDuration = props.animationDuration * 1000
+  const phase1Duration = totalDuration * 0.33 // 33% - Llenar a 100
+  const phase2Duration = totalDuration * 0.33 // 33% - Vaciar a 0
+  const phase3Duration = totalDuration * 0.34 // 34% - Llenar al valor real
   const startTime = Date.now()
   
   const animate = () => {
     const currentTime = Date.now()
     const elapsed = currentTime - startTime
-    const progress = Math.min(elapsed / duration, 1)
     
-    // Easing function (ease-out)
-    const easeOut = 1 - Math.pow(1 - progress, 3)
-    
-    const currentValue = startValue + (targetValue - startValue) * easeOut
-    animatedPercentage.value = currentValue
-    displayedPercentage.value = Math.round(currentValue)
-    
-    if (progress < 1) {
+    if (elapsed < phase1Duration) {
+      // FASE 1: Llenar de 0 a 100
+      const progress = elapsed / phase1Duration
+      const easeOut = 1 - Math.pow(1 - progress, 3)
+      animatedPercentage.value = easeOut * 100
+      requestAnimationFrame(animate)
+    } else if (elapsed < phase1Duration + phase2Duration) {
+      // FASE 2: Vaciar de 100 a 0
+      const phase2Elapsed = elapsed - phase1Duration
+      const progress = phase2Elapsed / phase2Duration
+      const easeOut = 1 - Math.pow(1 - progress, 3)
+      animatedPercentage.value = 100 - (easeOut * 100)
+      requestAnimationFrame(animate)
+    } else if (elapsed < totalDuration) {
+      // FASE 3: Llenar de 0 al valor real Y mostrar número creciendo
+      if (!showLabel.value) {
+        showLabel.value = true // ✅ Mostrar número al inicio de fase 3
+      }
+      const phase3Elapsed = elapsed - phase1Duration - phase2Duration
+      const progress = phase3Elapsed / phase3Duration
+      const easeOut = 1 - Math.pow(1 - progress, 3)
+      animatedPercentage.value = easeOut * targetValue
+      displayedPercentage.value = Math.round(easeOut * targetValue) // ✅ Número crece junto con el fill
       requestAnimationFrame(animate)
     } else {
+      // Finalizar
+      animatedPercentage.value = targetValue
+      displayedPercentage.value = Math.round(targetValue)
+      showLabel.value = true
       isAnimating.value = false
     }
   }
@@ -287,25 +319,27 @@ onMounted(() => {
   height: 100%;
 }
 
-.icon-background {
+.icon-background { 
   display: block;
   width: 100%;
   height: 100%;
   object-fit: contain;
-  opacity: 0.3;
+  opacity: 0.4;
   filter: grayscale(100%);
 }
 
 .icon-fill-wrapper {
   position: absolute;
   top: 0;
-  left: 10;
-  width: 80%;
+  left: 8px;
+  width: 90%;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   opacity: 0.8;
+
+
 }
 
 .icon-fill {
@@ -317,7 +351,7 @@ onMounted(() => {
 
 .percentage-label {
   position: absolute;
-  bottom: 40%;
+  bottom: 30%;
   left: 50%;
   transform: translateX(-50%);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -325,6 +359,6 @@ onMounted(() => {
   font-weight: 700;
   white-space: nowrap;
   z-index: 10;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+
 }
 </style>

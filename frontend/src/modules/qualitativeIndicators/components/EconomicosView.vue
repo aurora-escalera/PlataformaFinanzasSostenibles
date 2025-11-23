@@ -114,9 +114,9 @@
                     :value="pibPercentage"
                     fillDirection="vertical"
                     fillOrigin="bottom"
-                    width="80%"
-                    height="80%"
-                    iconWidth="100%"
+                    width="70%"
+                    height="70%"
+                    iconWidth="80%"
                     iconHeight="100%"
                     :showPercentage="true"
                     fillColor="#0F3759"
@@ -369,25 +369,29 @@ const loadPIBData = async (entityName = null, year = null) => {
     
     if (rawData.length === 0) {
       throw new Error('No se obtuvieron datos')
-    }
-    
+    }    
     const entityRow = rawData.find(row => row[mapping.categoryColumn] === entityName)
     
     if (entityRow) {
-      // Obtener el valor
+      console.log('🔍 [PIB DEBUG] Fila encontrada:', entityRow)
+      
       pibValue.value = parseNumericValue(entityRow[mapping.valueColumn])
       
-      // Calcular porcentaje basado en el valor máximo de todos los estados
+      console.log('🔍 [PIB DEBUG] Valor parseado:', pibValue.value)
+      
+      // Obtener todos los valores y calcular la suma total
       const allValues = rawData
-        .map(row => parseNumericValue(row[mapping.valueColumn]))
+        .map(row => {
+          const val = parseNumericValue(row[mapping.valueColumn])
+          return val
+        })
         .filter(val => val > 0)
+      const totalSum = allValues.reduce((sum, val) => sum + val, 0)
+      pibPercentage.value = totalSum > 0 ? (pibValue.value / totalSum) * 100 : 0
       
-      const maxValue = Math.max(...allValues)
-      pibPercentage.value = maxValue > 0 ? (pibValue.value / maxValue) * 100 : 0
-      
-      console.log('✅ [PIB] Valor:', pibValue.value, 'MDP')
-      console.log('📊 [PIB] Porcentaje:', pibPercentage.value.toFixed(2), '%')
-      console.log('📊 [PIB] Valor máximo:', maxValue)
+      console.log('✅ [PIB] Valor:', pibValue.value, 'Millones De Pesos')
+      console.log('📊 [PIB] Porcentaje del total:', pibPercentage.value.toFixed(2), '%')
+      console.log('📊 [PIB] Suma total:', totalSum)
     } else {
       pibValue.value = 0
       pibPercentage.value = 0
@@ -408,6 +412,7 @@ const loadPIBData = async (entityName = null, year = null) => {
 const areasNaturalesData = ref([])
 const areasLoading = ref(false)
 const areasError = ref(null)
+const pibPercentageReal = ref(0)
 
 const loadAreasNaturalesData = async (entityName = null, year = null) => {
   try {
@@ -719,13 +724,12 @@ h2 {
   width: 50%;
   height: 100%;
   gap: 10px;
-  
 }
 
 .top-right-card-container {
   display: flex;
   border-radius: 12px;
-  flex:7;
+  flex:5;
   gap: 10px;
 }
 
@@ -767,20 +771,25 @@ h2 {
 
 .pib-value {
   position: relative;
-  left: 40px;
+  left: 20px;
+  width: 100%;
   font-size: 18px;
   font-weight: 600;
   color: #0F3759;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .pib-icon{
+      position: relative;
+      left: -40px;
     width: 100%;
     height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-
 }
 
 h3 {
@@ -788,14 +797,16 @@ h3 {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-weight: 300;
   color: #535353;
-  font-size: 14px;
+  font-size: 16px;
   padding-left: 15px;
   line-height: 1.3;
 }
 
 .bottom-right-card-container {
-  height: 30%;
+  flex: 5;
   border-radius: 12px;
+  display: flex;
+  flex-direction: column;
 }
 
 .bottom-bar-graph {
