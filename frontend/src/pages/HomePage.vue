@@ -51,7 +51,8 @@
             :getStateColor="getStateColor"
             :getStateInfo="getStateInfo"
             :getIFSSLabel="getIFSSLabel"
-            :show-info-card="true"
+            :show-info-card="!isRetractableExpanded"
+            :show-navigation="!isRetractableExpanded"
             @state-click="handleStateClickWithEmit"
             @state-hover="handleStateHover"
             @state-leave="handleStateLeave"
@@ -320,6 +321,11 @@ const entitiesError = ref(null)
 const isRetractableExpanded = ref(false)
 
 const showStackedArea = computed(() => {
+  // ✅ No mostrar StackedArea cuando el panel cualitativo está expandido
+  if (isRetractableExpanded.value) {
+    return false
+  }
+  
   const allFiltersDefault = selectedEntity.value === null && 
                            selectedYear.value === null && 
                            selectedVariable.value === null
@@ -328,10 +334,19 @@ const showStackedArea = computed(() => {
 })
 
 const showMapOverlay = computed(() => {
+  // ✅ No mostrar overlay cuando el panel cualitativo está expandido
+  if (isRetractableExpanded.value) {
+    return false
+  }
   return showStackedArea.value
 })
 
+// ✅ MODIFICADO: No bloquear el filtro cuando el panel cualitativo está expandido
 const isFilterBarLocked = computed(() => {
+  // No bloquear el filtro cuando el panel cualitativo está expandido
+  if (isRetractableExpanded.value) {
+    return false
+  }
   return showStackedArea.value
 })
 
@@ -383,25 +398,33 @@ const loadEntitiesFromSheet = async () => {
   }
 }
 
+// ✅ MODIFICADO: Siempre actualizar el mapa, incluso cuando el panel cualitativo está expandido
 const handleEntityChange = (entity) => {
-  console.log('📍 handleEntityChange llamado con:', entity)
+  console.log('📍 [HomePage] handleEntityChange llamado con:', entity)
+  console.log('📍 [HomePage] Panel cualitativo expandido:', isRetractableExpanded.value)
   
   selectedEntity.value = entity
-  console.log('📍 selectedEntity actualizado a:', selectedEntity.value)
+  console.log('📍 [HomePage] selectedEntity actualizado a:', selectedEntity.value)
   
   if (entity === '') {
+    // Resetear selección del mapa
     resetSelection()
     return
   }
   
   if (entity) {
+    // ✅ Siempre actualizar el mapa con el estado seleccionado
     handleStateClick(entity)
+    console.log('🗺️ [HomePage] Mapa actualizado con:', entity)
   } else {
     resetSelection()
-    if (selectedVariable.value && selectedVariable.value !== '') {
-      updateRankingByVariable(selectedVariable.value)
-    } else {
-      loadAllStatesRanking(null)
+    // Solo cargar ranking si NO estamos en modo cualitativo
+    if (!isRetractableExpanded.value) {
+      if (selectedVariable.value && selectedVariable.value !== '') {
+        updateRankingByVariable(selectedVariable.value)
+      } else {
+        loadAllStatesRanking(null)
+      }
     }
   }
 }
@@ -433,23 +456,38 @@ const handleFiltersChange = (filters) => {
   console.log('🔧 Filtros aplicados:', filters)
 }
 
+// ✅ MODIFICADO: Mejorar manejo de clicks en el mapa
 const handleStateClickWithEmit = async (stateName) => {
+  console.log('🗺️ [HomePage] Click en estado:', stateName)
+  console.log('🗺️ [HomePage] Panel cualitativo expandido:', isRetractableExpanded.value)
+  
   if (!stateName) {
+    // Click fuera de estados - resetear
     resetSelection()
+    selectedEntity.value = ''
     emit('region-selected', null)
-    if (selectedVariable.value && selectedVariable.value !== '') {
-      updateRankingByVariable(selectedVariable.value)
-    } else if (!selectedVariable.value) {
-      loadAllStatesRanking(null)
+    
+    // Solo cargar ranking si NO estamos en modo cualitativo
+    if (!isRetractableExpanded.value) {
+      if (selectedVariable.value && selectedVariable.value !== '') {
+        updateRankingByVariable(selectedVariable.value)
+      } else if (!selectedVariable.value) {
+        loadAllStatesRanking(null)
+      }
     }
     return
   }
   
+  // Click en un estado - actualizar tanto el mapa como el filtro
   handleStateClick(stateName)
+  selectedEntity.value = stateName
+  
   await nextTick()
+  
   if (selectedState.value === stateName) {
     const stateData = getStateInfo(stateName)
     emit('region-selected', { name: stateName, data: stateData })
+    console.log('✅ [HomePage] Estado seleccionado y sincronizado:', stateName)
   } else {
     emit('region-selected', null)
   }
@@ -626,8 +664,17 @@ watch(selectedYear, async (newYear, oldYear) => {
   }
 })
 
+// ✅ MODIFICADO: Sincronizar selectedEntity cuando selectedState cambia desde el mapa
 watch(selectedState, (newState, oldState) => {
+  console.log('👀 [HomePage] Watch selectedState:', { newState, oldState })
+  
   if (newState && newState !== oldState) {
+    // Sincronizar el filtro con el estado seleccionado en el mapa
+    if (selectedEntity.value !== newState) {
+      selectedEntity.value = newState
+      console.log('🔄 [HomePage] selectedEntity sincronizado con mapa:', newState)
+    }
+    
     const stateData = getStateInfo(newState)
     setChartData(stateData)
     emit('region-selected', {
@@ -635,8 +682,14 @@ watch(selectedState, (newState, oldState) => {
       data: stateData
     })
   } else if (!newState && oldState) {
+    // Solo limpiar selectedEntity si no está en modo cualitativo
+    if (!isRetractableExpanded.value) {
+      selectedEntity.value = ''
+    }
+    
     emit('region-selected', null)
-    if (selectedVariable.value !== '') {
+    
+    if (!isRetractableExpanded.value && selectedVariable.value !== '') {
       if (selectedVariable.value) {
         updateRankingByVariable(selectedVariable.value)
       } else {

@@ -35,6 +35,7 @@
         </div>
 
         <!-- FLEX 2: Dos filas (IFS Regional + Datos federales) -->
+        <!-- ✅ Solo mostrar si showNavigation es true -->
         <div 
           v-if="showNavigation"
           class="card-bottom-stack"
@@ -156,7 +157,7 @@
         <h4>{{ hoveredState }}</h4>
         <div class="tooltip-data">
           <p>IFSS: {{ getStateInfo(hoveredState).value || 0 }}</p>
-                    <p>Clasificación: {{ getIFSSLabel(getStateInfo(hoveredState).value || 0).label }}</p>
+          <p>Clasificación: {{ getIFSSLabel(getStateInfo(hoveredState).value || 0).label }}</p>
           <p>Año: {{ getStateInfo(hoveredState).year }}</p>
         </div>
       </div>
@@ -207,7 +208,7 @@ const props = defineProps({
     type: Boolean,
     default: true
   },
-  // Nueva prop para controlar la visibilidad de todo el map-info-card
+  // Prop para controlar la visibilidad de todo el map-info-card
   showInfoCard: {
     type: Boolean,
     default: true
