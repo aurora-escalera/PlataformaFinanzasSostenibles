@@ -1,11 +1,11 @@
 <!-- src/modules/qualitativeIndicators/components/EconomicosView.vue -->
-<!-- ✅ ACTUALIZADO: Todos los componentes vinculados con filtros y Google Sheets -->
+<!-- ✅ VERSIÓN CORREGIDA: Con IconPercentageChart para PIB -->
 <template>
   <div class="ambientales-container">
     <div class="card-body">
       <!-- Left Side Container -->
       <div class="left-card-container">
-        <!-- Top: Horizontal Bar Chart - Incendios Forestales -->
+        <!-- Top: Horizontal Bar Chart - Ingresos Totales -->
         <div class="bar-graph card">
           <!-- Loading State -->
           <div v-if="ingresoTotalLoading" class="loading-state">
@@ -25,7 +25,7 @@
           <div v-else-if="!selectedEntity" class="empty-state">
             <div class="empty-icon">🗺️</div>
             <h4>Selecciona una entidad</h4>
-            <p>Selecciona una entidad federativa en el filtro superior para ver los datos de incendios forestales.</p>
+            <p>Selecciona una entidad federativa en el filtro superior para ver los datos de ingresos totales.</p>
           </div>
 
           <!-- HorizontalBarChart con datos dinámicos -->
@@ -42,19 +42,19 @@
           />
         </div>
         
-        <!-- Bottom: Bottle Graph - Residuos Sólidos Urbanos -->
-        <div class="bottle-graphs card">
-          <div class="title-bottle">
-            <h2>Promedio diario de residuos sólidos urbanos recolectados</h2>
+        <!-- Bottom: Person Graph - Personas Económicamente Activas -->
+        <div class="person-graphs card">
+          <div class="person-bottle">
+            <h2>Población económicamente activa</h2>
           </div>
-          <div class="body-bottle">
+          <div class="body-person">
             <!-- Loading State -->
-            <div v-if="residuosLoading" class="loading-state-small">
+            <div v-if="peaLoading" class="loading-state-small">
               <div class="spinner-small"></div>
             </div>
 
             <!-- Error State -->
-            <div v-else-if="residuosError" class="error-state-small">
+            <div v-else-if="peaError" class="error-state-small">
               <p>Error cargando datos</p>
             </div>
 
@@ -65,10 +65,12 @@
 
             <!-- Datos -->
             <template v-else>
-              <div class="bottle-graph">
-                <BottleChart :value="residuosPercentage" />
+              <div class="person-graph">
+                <div class="person-number number">{{ formatNumber(peaValue) }} Personas</div>
+                <PersonChart 
+                  :value="peaPercentage" 
+                />
               </div>
-              <div class="bottle-number number">{{ formatNumber(residuosValue) }} kg</div>
             </template>
           </div>
         </div>
@@ -78,20 +80,23 @@
       <div class="right-card-container">
         <!-- Top Right Container -->
         <div class="top-right-card-container">
-          <!-- Area Chart - Emisiones Contaminantes -->
-          <div class="area-chart card">
-            <div class="title-area-chart">
-              <h3>Emisiones de contaminantes atmosféricos por fuente en toneladas.</h3>
+          <!-- ✅ PIB Chart - CON ICONO ANIMADO -->
+          <div class="pib-chart card">
+            <div class="title-pib-chart">
+              <h3>Producto Interno Bruto Estatal (PIBE), anual en millones de pesos en 2024.</h3>
             </div>
-            <div class="area-chart-container">
+            <div class="pib-chart-container">
               <!-- Loading State -->
-              <div v-if="emisionesLoading" class="loading-state-small">
+              <div v-if="PIBLoading" class="loading-state-small">
                 <div class="spinner-small"></div>
               </div>
 
               <!-- Error State -->
-              <div v-else-if="emisionesError" class="error-state-small">
+              <div v-else-if="PIBError" class="error-state-small">
                 <p>Error cargando datos</p>
+                <button @click="loadPIBData(selectedEntity, selectedYear)" class="retry-btn-small">
+                  Reintentar
+                </button>
               </div>
 
               <!-- Empty State -->
@@ -99,43 +104,28 @@
                 <p>Selecciona una entidad</p>
               </div>
 
-              <!-- Datos -->
-              <AreaChart 
-                v-else
-                :excelData="emisionesData"
-                title="Emisiones por fuente"
-              />
-            </div>
-          </div>
-          
-          <!-- Gauge Chart - Consumo de Energía Eléctrica -->
-          <div class="gauge-container card">
-            <div class="title-gauge">
-              <h3>Consumo de energía eléctrica</h3>
-            </div>
-            
-            <!-- Loading State -->
-            <div v-if="energiaLoading" class="loading-state-small">
-              <div class="spinner-small"></div>
-            </div>
-
-            <!-- Error State -->
-            <div v-else-if="energiaError" class="error-state-small">
-              <p>Error cargando datos</p>
-            </div>
-
-            <!-- Empty State -->
-            <div v-else-if="!selectedEntity" class="empty-state-small">
-              <p>Selecciona una entidad</p>
-            </div>
-
-            <!-- Datos -->
-            <template v-else>
-              <div class="gauge-graph">
-                <GaugeChart :value="energiaPercentage" />
+              <!-- ✅ NUEVO: Icono PIB con porcentaje -->
+               
+              <div v-else class="pib-icon-wrapper">
+                <div class="pib-value">${{ formatNumber(pibValue) }} MDP</div>
+                 <div class="pib-icon">
+                    <IconPercentageChart
+                    iconPath="/public/icons/pib-icon.png"
+                    :value="pibPercentage"
+                    fillDirection="vertical"
+                    fillOrigin="bottom"
+                    width="80%"
+                    height="80%"
+                    iconWidth="100%"
+                    iconHeight="100%"
+                    :showPercentage="true"
+                    fillColor="#0F3759"
+                    :animated="true"
+                    :animationDuration="1.5"
+                    />
+                </div>
               </div>
-              <div class="gauge-number number">{{ formatNumber(energiaValue) }} GWh</div>
-            </template>
+            </div>
           </div>
         </div>
         
@@ -185,9 +175,8 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import HorizontalBarChart from '@/modules/charts/components/HorizontalBarChart.vue'
-import BottleChart from '@/modules/object/component/bottleChart.vue'
-import AreaChart from '@/modules/charts/components/AreaChart.vue'
-import GaugeChart from '@/modules/object/component/GaugeChart.vue'
+import PersonChart from '../../object/component/PersonChart.vue'
+import IconPercentageChart from '@/modules/object/component/IconPercentageChart.vue'
 import VerticalBarChart from '@/modules/charts/components/VerticalBarChart.vue'
 import { useStorageData } from '@/dataConection/useStorageData'
 import { getMapping, getSheetName, setActiveYear } from '@/dataConection/storageConfig'
@@ -207,7 +196,18 @@ const props = defineProps({
 const emit = defineEmits(['back'])
 
 // Composable de Google Sheets
-const { fetchData, transform } = useStorageData()
+const { fetchData } = useStorageData()
+
+// ============================================
+// FUNCIÓN: Limpiar formato numérico
+// ============================================
+const parseNumericValue = (value) => {
+  if (!value) return 0
+  let stringValue = String(value)
+  stringValue = stringValue.replace(/\./g, '')
+  stringValue = stringValue.replace(/,/g, '.')
+  return parseFloat(stringValue) || 0
+}
 
 // ============================================
 // Ingresos Totales (HorizontalBarChart)
@@ -242,7 +242,6 @@ const loadIngresoTotalData = async (entityName = null, year = null) => {
       throw new Error('No se obtuvieron datos del Google Sheet')
     }
     
-    // Buscar la fila de la entidad
     const entityRow = rawData.find(row => row[mapping.categoryColumn] === entityName)
     
     if (!entityRow) {
@@ -252,18 +251,19 @@ const loadIngresoTotalData = async (entityName = null, year = null) => {
       return
     }
     
-    // ✅ Crear un array con UN SOLO elemento
-    const transformedData = [{
-      key: 'ingresoTotal',
-      label: 'Ingreso Total',
-      value: parseFloat(entityRow[mapping.valueColumn]) || 0,
-      color: '#0F3759',
-      colorClass: 'blue',
-      active: true
-    }]
+    const transformedData = mapping.variables
+      .sort((a, b) => a.order - b.order)
+      .map(variable => ({
+        key: variable.key,
+        label: variable.label,
+        value: parseNumericValue(entityRow[variable.column]),
+        color: variable.color,
+        colorClass: variable.colorClass || 'default',
+        active: true
+      }))
     
     ingresoTotalData.value = transformedData
-    console.log('✅ [Ingreso Total] Datos cargados:', transformedData)
+    console.log('✅ [Ingreso Total] Datos cargados:', transformedData.length, 'variables')
     
   } catch (err) {
     console.error('❌ [Ingreso Total] Error:', err)
@@ -274,170 +274,131 @@ const loadIngresoTotalData = async (entityName = null, year = null) => {
 }
 
 // ============================================
-// RESIDUOS SÓLIDOS URBANOS (BottleChart)
+// PERSONAS ECONÓMICAMENTE ACTIVAS (PersonChart)
 // ============================================
-const residuosValue = ref(0)
-const residuosPercentage = ref(0)
-const residuosLoading = ref(false)
-const residuosError = ref(null)
+const peaValue = ref(0)
+const peaPercentage = ref(0)
+const peaLoading = ref(false)
+const peaError = ref(null)
 
-const loadResiduosData = async (entityName = null, year = null) => {
+const loadPersonasData = async (entityName = null, year = null) => {
   try {
-    residuosLoading.value = true
-    residuosError.value = null
+    peaLoading.value = true
+    peaError.value = null
     
-    console.log('🗑️ [Residuos] Cargando datos')
+    console.log('👥 [PEA] Cargando datos')
     console.log('  - Entidad:', entityName)
     console.log('  - Año:', year)
     
     if (!entityName) {
-      residuosValue.value = 0
-      residuosPercentage.value = 0
-      residuosLoading.value = false
+      peaValue.value = 0
+      peaPercentage.value = 0
+      peaLoading.value = false
       return
     }
     
     if (year) setActiveYear(year)
     
-    const mapping = getMapping('residuosSolidos')
-    const sheetName = getSheetName('residuosSolidos')
+    const mapping = getMapping('pea')
+    const sheetName = getSheetName('pea')
     
-    const rawData = await fetchData('residuosSolidos', sheetName)
+    const rawData = await fetchData('pea', sheetName)
     
     if (rawData.length === 0) {
       throw new Error('No se obtuvieron datos')
     }
     
-    // Buscar la fila de la entidad
     const entityRow = rawData.find(row => row[mapping.categoryColumn] === entityName)
     
     if (entityRow) {
-      residuosValue.value = parseFloat(entityRow[mapping.valueColumn]) || 0
-      residuosPercentage.value = parseFloat(entityRow[mapping.percentageColumn]) || 0
-      console.log('✅ [Residuos] Datos cargados:', residuosValue.value, 'kg')
+      peaValue.value = parseNumericValue(entityRow[mapping.valueColumn])
+      
+      const allValues = rawData
+        .map(row => parseNumericValue(row[mapping.valueColumn]))
+        .filter(val => val > 0)
+      
+      const maxValue = Math.max(...allValues)
+      peaPercentage.value = maxValue > 0 ? (peaValue.value / maxValue) * 100 : 0
+      
+      console.log('✅ [PEA] Datos cargados:', peaValue.value, 'Personas')
+      console.log('📊 [PEA] Porcentaje calculado:', peaPercentage.value.toFixed(2), '%')
     } else {
-      residuosValue.value = 0
-      residuosPercentage.value = 0
-      console.log('⚠️ [Residuos] No se encontraron datos para', entityName)
+      peaValue.value = 0
+      peaPercentage.value = 0
+      console.log('⚠️ [PEA] No se encontraron datos para', entityName)
     }
     
   } catch (err) {
-    console.error('❌ [Residuos] Error:', err)
-    residuosError.value = err.message
+    console.error('❌ [PEA] Error:', err)
+    peaError.value = err.message
   } finally {
-    residuosLoading.value = false
+    peaLoading.value = false
   }
 }
 
 // ============================================
-// EMISIONES CONTAMINANTES (AreaChart)
+// ✅ PRODUCTO INTERNO BRUTO (PIB) - CORREGIDO
 // ============================================
-const emisionesData = ref([])
-const emisionesLoading = ref(false)
-const emisionesError = ref(null)
+const pibValue = ref(0)
+const pibPercentage = ref(0)
+const PIBLoading = ref(false)
+const PIBError = ref(null)
 
-const loadEmisionesData = async (entityName = null, year = null) => {
+const loadPIBData = async (entityName = null, year = null) => {
   try {
-    emisionesLoading.value = true
-    emisionesError.value = null
+    PIBLoading.value = true
+    PIBError.value = null
     
-    console.log('🏭 [Emisiones] Cargando datos')
+    console.log('🏭 [PIB] Cargando datos')
     console.log('  - Entidad:', entityName)
     console.log('  - Año:', year)
     
     if (!entityName) {
-      emisionesData.value = []
-      emisionesLoading.value = false
+      pibValue.value = 0
+      pibPercentage.value = 0
+      PIBLoading.value = false
       return
     }
     
     if (year) setActiveYear(year)
     
-    const mapping = getMapping('emisiones')
-    const sheetName = getSheetName('emisiones')
+    const mapping = getMapping('pib')
+    const sheetName = getSheetName('pib')
     
-    const rawData = await fetchData('emisiones', sheetName)
-    
-    if (rawData.length === 0) {
-      throw new Error('No se obtuvieron datos')
-    }
-    
-    // Buscar la fila de la entidad
-    const entityRow = rawData.find(row => row[mapping.categoryColumn] === entityName)
-    
-    if (entityRow) {
-      // Transformar a formato de AreaChart
-      emisionesData.value = mapping.variables.map(variable => ({
-        label: variable.label,
-        value: parseFloat(entityRow[variable.column]) || 0
-      }))
-      console.log('✅ [Emisiones] Datos cargados:', emisionesData.value.length, 'fuentes')
-    } else {
-      emisionesData.value = []
-      console.log('⚠️ [Emisiones] No se encontraron datos para', entityName)
-    }
-    
-  } catch (err) {
-    console.error('❌ [Emisiones] Error:', err)
-    emisionesError.value = err.message
-  } finally {
-    emisionesLoading.value = false
-  }
-}
-
-// ============================================
-// CONSUMO DE ENERGÍA ELÉCTRICA (GaugeChart)
-// ============================================
-const energiaValue = ref(0)
-const energiaPercentage = ref(0)
-const energiaLoading = ref(false)
-const energiaError = ref(null)
-
-const loadEnergiaData = async (entityName = null, year = null) => {
-  try {
-    energiaLoading.value = true
-    energiaError.value = null
-    
-    console.log('⚡ [Energía] Cargando datos')
-    console.log('  - Entidad:', entityName)
-    console.log('  - Año:', year)
-    
-    if (!entityName) {
-      energiaValue.value = 0
-      energiaPercentage.value = 0
-      energiaLoading.value = false
-      return
-    }
-    
-    if (year) setActiveYear(year)
-    
-    const mapping = getMapping('energia')
-    const sheetName = getSheetName('energia')
-    
-    const rawData = await fetchData('energia', sheetName)
+    const rawData = await fetchData('pib', sheetName)
     
     if (rawData.length === 0) {
       throw new Error('No se obtuvieron datos')
     }
     
-    // Buscar la fila de la entidad
     const entityRow = rawData.find(row => row[mapping.categoryColumn] === entityName)
     
     if (entityRow) {
-      energiaValue.value = parseFloat(entityRow[mapping.valueColumn]) || 0
-      energiaPercentage.value = parseFloat(entityRow[mapping.percentageColumn]) || 0
-      console.log('✅ [Energía] Datos cargados:', energiaValue.value, 'GWh')
+      // Obtener el valor
+      pibValue.value = parseNumericValue(entityRow[mapping.valueColumn])
+      
+      // Calcular porcentaje basado en el valor máximo de todos los estados
+      const allValues = rawData
+        .map(row => parseNumericValue(row[mapping.valueColumn]))
+        .filter(val => val > 0)
+      
+      const maxValue = Math.max(...allValues)
+      pibPercentage.value = maxValue > 0 ? (pibValue.value / maxValue) * 100 : 0
+      
+      console.log('✅ [PIB] Valor:', pibValue.value, 'MDP')
+      console.log('📊 [PIB] Porcentaje:', pibPercentage.value.toFixed(2), '%')
+      console.log('📊 [PIB] Valor máximo:', maxValue)
     } else {
-      energiaValue.value = 0
-      energiaPercentage.value = 0
-      console.log('⚠️ [Energía] No se encontraron datos para', entityName)
+      pibValue.value = 0
+      pibPercentage.value = 0
+      console.log('⚠️ [PIB] No se encontraron datos para', entityName)
     }
     
   } catch (err) {
-    console.error('❌ [Energía] Error:', err)
-    energiaError.value = err.message
+    console.error('❌ [PIB] Error:', err)
+    PIBError.value = err.message
   } finally {
-    energiaLoading.value = false
+    PIBLoading.value = false
   }
 }
 
@@ -474,7 +435,6 @@ const loadAreasNaturalesData = async (entityName = null, year = null) => {
       throw new Error('No se obtuvieron datos del Google Sheet')
     }
     
-    // ✅ CORREGIDO: Buscar la fila de la entidad
     const entityRow = rawData.find(row => row[mapping.categoryColumn] === entityName)
     
     if (!entityRow) {
@@ -484,19 +444,17 @@ const loadAreasNaturalesData = async (entityName = null, year = null) => {
       return
     }
     
-    // ✅ CORREGIDO: Transformar solo las variables definidas en el mapping
     const transformedData = mapping.variables.map(variable => ({
       key: variable.key,
       label: variable.label,
-      value: parseFloat(entityRow[variable.column]) || 0,
+      value: parseNumericValue(entityRow[variable.column]),
       color: variable.color,
       colorClass: variable.colorClass || 'default',
-      active: false  // ← Inicialmente todas inactivas
+      active: false
     }))
     
     areasNaturalesData.value = transformedData
     console.log('✅ [Áreas Naturales] Datos cargados:', transformedData.length, 'variables')
-    console.log('📊 [Áreas Naturales] Datos:', transformedData)
     
   } catch (err) {
     console.error('❌ [Áreas Naturales] Error:', err)
@@ -522,29 +480,25 @@ const handleBack = () => {
 // WATCHERS
 // ============================================
 watch(() => props.selectedEntity, (newEntity, oldEntity) => {
-  console.log('🔄 [AmbientalesView] Watch: entidad cambió')
+  console.log('🔄 [EconomicosView] Watch: entidad cambió')
   console.log('  - Anterior:', oldEntity)
   console.log('  - Nueva:', newEntity)
   
-  // Cargar datos de todos los componentes
   loadIngresoTotalData(newEntity, props.selectedYear)
-  loadResiduosData(newEntity, props.selectedYear)
-  loadEmisionesData(newEntity, props.selectedYear)
-  loadEnergiaData(newEntity, props.selectedYear)
+  loadPersonasData(newEntity, props.selectedYear)
+  loadPIBData(newEntity, props.selectedYear)
   loadAreasNaturalesData(newEntity, props.selectedYear)
 }, { immediate: false })
 
 watch(() => props.selectedYear, (newYear, oldYear) => {
-  console.log('🔄 [AmbientalesView] Watch: año cambió')
+  console.log('🔄 [EconomicosView] Watch: año cambió')
   console.log('  - Anterior:', oldYear)
   console.log('  - Nuevo:', newYear)
   
-  // Solo recargar si hay una entidad seleccionada
   if (props.selectedEntity) {
     loadIngresoTotalData(props.selectedEntity, newYear)
-    loadResiduosData(props.selectedEntity, newYear)
-    loadEmisionesData(props.selectedEntity, newYear)
-    loadEnergiaData(props.selectedEntity, newYear)
+    loadPersonasData(props.selectedEntity, newYear)
+    loadPIBData(props.selectedEntity, newYear)
     loadAreasNaturalesData(props.selectedEntity, newYear)
   }
 }, { immediate: false })
@@ -553,20 +507,18 @@ watch(() => props.selectedYear, (newYear, oldYear) => {
 // LIFECYCLE
 // ============================================
 onMounted(async () => {
-  console.log('🚀 [AmbientalesView] Montado')
+  console.log('🚀 [EconomicosView] Montado')
   console.log('📍 Entidad inicial:', props.selectedEntity)
   console.log('📅 Año inicial:', props.selectedYear)
   
-  // Cargar datos iniciales de todos los componentes
   await Promise.all([
     loadIngresoTotalData(props.selectedEntity, props.selectedYear),
-    loadResiduosData(props.selectedEntity, props.selectedYear),
-    loadEmisionesData(props.selectedEntity, props.selectedYear),
-    loadEnergiaData(props.selectedEntity, props.selectedYear),
+    loadPersonasData(props.selectedEntity, props.selectedYear),
+    loadPIBData(props.selectedEntity, props.selectedYear),
     loadAreasNaturalesData(props.selectedEntity, props.selectedYear)
   ])
   
-  console.log('✅ [AmbientalesView] Todos los datos iniciales cargados')
+  console.log('✅ [EconomicosView] Todos los datos iniciales cargados')
 })
 </script>
 
@@ -597,9 +549,6 @@ onMounted(async () => {
   overflow: hidden;
 }
 
-/* ============================
-   LEFT CARD CONTAINER
-   ============================ */
 .left-card-container {
   display: flex;
   flex-direction: column;
@@ -611,14 +560,13 @@ onMounted(async () => {
 }
 
 .bar-graph {
-  height: 75%;
+  height: 60%;
   border-radius: 12px;
   overflow: hidden;
   box-sizing: border-box;
   position: relative;
 }
 
-/* Loading & Error States */
 .loading-state, .error-state {
   display: flex;
   flex-direction: column;
@@ -682,7 +630,6 @@ onMounted(async () => {
   margin: 0;
 }
 
-/* Empty State */
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -717,9 +664,8 @@ onMounted(async () => {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* Bottle Graph */
-.bottle-graphs {
-  height: 25%;
+.person-graphs {
+  height: 40%;
   border-radius: 12px;
   flex: 0 0 auto;
   display: flex;
@@ -728,7 +674,7 @@ onMounted(async () => {
   box-sizing: border-box;
 }
 
-.title-bottle {
+.person-bottle {
   padding: 8px;
   border-bottom: 1px solid #e0e0e0;
 }
@@ -736,78 +682,105 @@ onMounted(async () => {
 h2 {
   text-align: center;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-weight: 400;
+  font-weight: 300;
   color: #535353;
-  font-size: 14px;
+  font-size: 16px;
   margin: 0;
 }
 
-.body-bottle {
+.body-person {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   overflow: hidden;
-  padding: 9px;
-  flex: 1;
+  height: 100%;
 }
 
-.bottle-graph {
-  width: 85%;
+.person-graph {
+  width: 100%;
   height: 100%;
   overflow: visible;
 }
 
 .number {
-  width: 35%;
+  display: flex;
+  justify-content: center;
+  width: 100%;
   color: #58778F;
   font-family: Verdana, Geneva, Tahoma, sans-serif;
-  font-weight: 600;
+  font-weight: 500;
   font-size: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   flex-shrink: 0;
+  padding-top: 20px;
 }
 
-/* ============================
-   RIGHT CARD CONTAINER
-   ============================ */
 .right-card-container {
   display: flex;
   flex-direction: column;
   width: 50%;
   height: 100%;
   gap: 10px;
+  
 }
 
-/* Top Right Container */
 .top-right-card-container {
   display: flex;
-  flex-direction: row;
   border-radius: 12px;
-  height: 50%;
+  flex:7;
   gap: 10px;
 }
 
-/* Area Chart */
-.area-chart {
-  width: 65%;
+.pib-chart {
+  width: 100%;
   border-radius: 12px;
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   overflow: hidden;
+
 }
 
-.title-area-chart {
-  padding: 15px 10px;
-  width: 35%;
+.title-pib-chart {
+  padding: 10px 10px 10px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.pib-chart-container {
+  width: 100%;
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.area-chart-container {
-  width: 65%;
-  padding: 10px;
+/* ✅ NUEVO: Estilos para el icono PIB */
+.pib-icon-wrapper {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 20px;
+  height: 100%;
+  width: 100%;
+}
+
+.pib-value {
+  position: relative;
+  left: 40px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #0F3759;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.pib-icon{
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
 }
 
 h3 {
@@ -820,47 +793,8 @@ h3 {
   line-height: 1.3;
 }
 
-/* Gauge Container */
-.gauge-container {
-  width: 35%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.title-gauge {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 15px 10px;
-  height: 30%;
-}
-
-.gauge-graph {
-  width: 100%;
-  height: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.gauge-number {
-  padding: 10px;
-  height: 20%;
-  width: 100%;
-  color: #58778F;
-  font-family: Verdana, Geneva, Tahoma, sans-serif;
-  font-weight: 600;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Bottom Right Container */
 .bottom-right-card-container {
-  height: 50%;
+  height: 30%;
   border-radius: 12px;
 }
 

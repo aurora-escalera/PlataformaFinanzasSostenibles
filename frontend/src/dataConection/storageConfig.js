@@ -91,10 +91,10 @@ export const storageConfig = {
             pea: '2024'
           }
         },
-        pibe: {
+        pib: {
           sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_ECONOMICOS_PIBE,
           files: {
-            pibe: '2024'
+            pib: '2024'
           }
         },
         itaee: {
@@ -124,7 +124,7 @@ export const storageConfig = {
       ingresoTotal: '2024',
       egresoTotal: '2024',
       pea: '2024',
-      pibe: '2024',
+      pib: '2024',
       itaee: '2024'
     }
   },
@@ -133,7 +133,24 @@ export const storageConfig = {
     //CUALITATIVOS - ECONOMICOS
     ingresoTotal: {
       categoryColumn: 'Entidad Federativa',
-      valueColumn: 'Ingresos',
+            variables: [
+        {
+          key: 'Ingresos',
+          column: 'Ingresos',
+          label: 'Ingresos',
+          color: '#0F3759',
+          colorClass: 'blue',
+          order: 1
+        },
+        {
+          key: 'Egresos',
+          column: 'Egresos',
+          label: 'Egresos',
+          color: '#3B5A70',
+          colorClass: 'blue',
+          order: 1
+        },
+      ]
     },
     egresoTotal: {
       categoryColumn: 'Entidad Federativa',
@@ -143,9 +160,18 @@ export const storageConfig = {
       categoryColumn: 'Entidad Federativa',
       valueColumn: 'Personas',
     },
-    pibe: {
+    pib: {
       categoryColumn: 'Entidad Federativa',
       valueColumn: 'PIBE',
+      variables: [
+        {
+          key: 'PIBE',
+          column: 'PIBE',
+          label: 'PIB Estatal',
+          color: '#0F3759',
+          order: 1
+        }
+      ]
     },
     itaee: {
       categoryColumn: 'Entidad Federativa',

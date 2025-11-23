@@ -295,12 +295,12 @@ const tooltipStyle = computed(() => {
   display: flex;
   flex-direction: column;
   position: relative;
+
 }
 
 .chart-container {
-  position: relative;
-  flex: 1;
-  min-height: 0;
+ left: 1000px;
+  width: 35%;
 }
 
 .legend {
