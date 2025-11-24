@@ -1,5 +1,5 @@
 // src/dataConection/storageConfig.js
-// ✅ ACTUALIZADO con configuración correcta para ITAEE
+// ✅ ACTUALIZADO con configuración correcta para ITAEE y SOCIALES
 
 console.log('API Key:', import.meta.env.VITE_GOOGLE_SHEETS_API_KEY)
 console.log('Sheet ID Principal:', import.meta.env.VITE_GOOGLE_SHEET_ID)
@@ -103,7 +103,45 @@ export const storageConfig = {
             itaee: '2024'
           }
         }
-      }
+      },
+      sociales: {
+        desocupacion: {
+          sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_SOCIALES_DESOCUPACION,
+          files: {
+            desocupacion: '2024'
+          }
+        },
+        marginacion: {
+          sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_SOCIALES_MARGINACION,
+          files: {
+            marginacion: '2024'
+          }
+        },
+        idh: {
+          sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_SOCIALES_IDH,
+          files: {
+            idh: '2024'
+          }
+        },
+        rezagoSocial: {
+          sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_SOCIALES_REZAGO_SOCIAL,
+          files: {
+            rezagoSocial: '2024'
+          }
+        },
+        indiceGini: {
+          sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_SOCIALES_INDICE_GINI,
+          files: {
+            indiceGini: '2024'
+          }
+        },
+        poblacion: {
+          sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_SOCIALES_POBLACION,
+          files: {
+            poblacion: '2024'
+          }
+        }
+      },
     },
     
     sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID,
@@ -188,6 +226,121 @@ export const storageConfig = {
       ]
     },
 
+    //CUALITATIVOS - SOCIALES
+    desocupacion: {
+      categoryColumn: 'Entidad Federativa',
+      variables: [
+        {
+          key: 'Tasa de desocupación',
+          column: 'Tasa de desocupación',
+          label: 'Tasa de desocupación',
+          color: '#0F3759',
+          order: 1
+        },
+        {
+          key: 'Tasa de informalidad laboral',
+          column: 'Tasa de informalidad laboral',
+          label: 'Tasa de informalidad laboral',
+          color: '#3B5A70',
+          order: 2
+        },
+        {
+          key: 'Tasa de participación',
+          column: 'Tasa de participación',
+          label: 'Tasa de participación',
+          color: '#4E6D82',
+          order: 3
+        }
+      ]
+    },
+    marginacion: {
+      categoryColumn: 'Entidad Federativa',
+      variables: [
+        {
+          key: 'Índice de Marginación',
+          column: 'Índice de Marginación',
+          label: 'Índice de Marginación',
+          color: '#0F3759',
+          order: 1
+        },
+        {
+          key: 'Grado de marginación',
+          column: 'Grado de marginación',
+          label: 'Grado de marginación',
+          color: '#3B5A70',
+          order: 2
+        },
+        {
+          key: 'Índice de marginación normalizado',
+          column: 'Índice de marginación normalizado',
+          label: 'Índice de marginación normalizado',
+          color: '#4E6D82',
+          order: 3
+        }
+      ]
+    },
+    idh: {
+      categoryColumn: 'Entidad Federativa',
+      variables: [
+        {
+          key: 'Índice de Desarrollo Humano',
+          column: 'Índice de Desarrollo Humano',
+          label: 'Índice de Desarrollo Humano',
+          color: '#0F3759',
+          order: 1
+        }
+      ]
+    },
+    rezagoSocial: {
+      categoryColumn: 'Entidad Federativa',
+      variables: [
+        {
+          key: 'Índice de Rezago Social',
+          column: 'Índice de Rezago Social',
+          label: 'Índice de Rezago Social',
+          color: '#0F3759',
+          order: 1
+        },
+        {
+          key: 'Grado de Rezago Social',
+          column: 'Grado de Rezago Social',
+          label: 'Grado de Rezago Social',
+          color: '#0F3759',
+          order: 2
+        }
+      ]
+    },
+    indiceGini: {
+      categoryColumn: 'Entidad Federativa',
+      variables: [
+        {
+          key: 'CONEVAL 2020',
+          column: 'CONEVAL 2020',
+          label: 'CONEVAL 2020',
+          color: '#0F3759',
+          order: 1
+        },
+        {
+          key: 'PNUD 2022',
+          column: 'PNUD 2022',
+          label: 'PNUD 2022',
+          color: '#0F3759',
+          order: 2
+        }
+      ]
+    },
+    poblacion: {
+      categoryColumn: 'Entidad Federativa',
+      variables: [
+        {
+          key: 'Personas',
+          column: 'Personas',
+          label: 'Personas',
+          color: '#0F3759',
+          order: 1
+        }
+      ]
+    },
     //CUALITATIVOS - AMBIENTALES
     // Mapping para Incendios Forestales (HorizontalBarChart)
     incendiosForestales: {
@@ -786,7 +939,7 @@ export function getCurrentConfig() {
   }
 }
 
-// ✅ CORREGIDO: Ahora busca primero en economicos
+// ✅ ACTUALIZADO: Ahora busca en economicos, sociales y ambientales
 export function getSheetIdForFile(fileKey) {
   const config = storageConfig.googlesheets
   
@@ -800,7 +953,17 @@ export function getSheetIdForFile(fileKey) {
     }
   }
   
-  // Buscar en sheets modulares de ambientales
+  // ✅ SEGUNDO: Buscar en sheets modulares de SOCIALES
+  if (config.sheets && config.sheets.sociales) {
+    for (const [componentKey, componentConfig] of Object.entries(config.sheets.sociales)) {
+      if (componentConfig.files && componentConfig.files[fileKey]) {
+        console.log(`📄 Archivo "${fileKey}" encontrado en sociales.${componentKey}`)
+        return componentConfig.sheetId
+      }
+    }
+  }
+  
+  // ✅ TERCERO: Buscar en sheets modulares de AMBIENTALES
   if (config.sheets && config.sheets.ambientales) {
     for (const [componentKey, componentConfig] of Object.entries(config.sheets.ambientales)) {
       if (componentConfig.files && componentConfig.files[fileKey]) {
@@ -831,7 +994,7 @@ export function getSheetIdForFile(fileKey) {
   return config.sheetId
 }
 
-// ✅ ACTUALIZADO: Retornar año dinámico para TODOS los sheets de ambientales
+// ✅ ACTUALIZADO: Retornar año dinámico para TODOS los sheets de ambientales, economicos y sociales
 export function getSheetName(fileKey) {
   const config = storageConfig.googlesheets
   
@@ -840,16 +1003,25 @@ export function getSheetName(fileKey) {
     'datosCuantitativos',
     'chartsPresupuestos',
     'chartsIngresos',
+    // Archivos ambientales
     'incendiosForestales',
     'residuosSolidos',
     'emisiones',
     'energia',
     'areasNaturales',
+    // Archivos económicos
     'ingresoTotal',
     'egresoTotal',
     'pea',
     'pibe',
-    'itaee'
+    'itaee',
+    // Archivos sociales
+    'desocupacion',
+    'marginacion',
+    'idh',
+    'rezagoSocial',
+    'indiceGini',
+    'poblacion'
   ]
   
   if (dynamicYearFiles.includes(fileKey)) {
@@ -857,6 +1029,14 @@ export function getSheetName(fileKey) {
     return currentActiveYear
   }
   
+  // Buscar en configuración modular de sociales
+  if (config.sheets && config.sheets.sociales) {
+    for (const [componentKey, componentConfig] of Object.entries(config.sheets.sociales)) {
+      if (componentConfig.files && componentConfig.files[fileKey]) {
+        return componentConfig.files[fileKey]
+      }
+    }
+  }
   
   // Buscar en configuración modular de economicos
   if (config.sheets && config.sheets.economicos) {

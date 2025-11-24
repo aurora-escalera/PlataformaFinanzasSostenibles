@@ -66,6 +66,13 @@
         />
       </div>
 
+      <div v-else-if="selectedCategory === 'sociales'" class="inner-card">
+        <SocialesView
+          :selectedEntity="props.selectedEntity"
+          :selectedYear="props.selectedYear"
+          @back="handleBack" 
+        />
+      </div>
       <!-- Mensaje para otras categorías -->
       <div v-else class="inner-card">
         <div class="card-header">
@@ -88,6 +95,7 @@ import { ref, watch } from 'vue'
 import AmbientalesView from './AmbientalesView.vue'
 import { useStorageData } from '@/dataConection/useStorageData'
 import EconomicosView from './EconomicosView.vue'
+import SocialesView from './SocialesView.vue'
 
 const props = defineProps({
   isExpanded: {
