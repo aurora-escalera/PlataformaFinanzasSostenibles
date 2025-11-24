@@ -142,6 +142,50 @@ export const storageConfig = {
           }
         }
       },
+      gobernabilidad: {
+        satisfaccionFederal: {
+          sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_GOB_SATISFACCION_FEDERAL,
+          files: {
+            satisfaccionFederal: '2024'
+          }
+        },
+        satisfaccionEstatal: {
+          sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_GOB_SATISFACCION_ESTATAL,
+          files: {
+            satisfaccionEstatal: '2024'
+          }
+        },
+        IGOPP: {
+          sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_GOB_IGOPP,
+          files: {
+            IGOPP: '2024'
+          }
+        },
+        BIPE: {
+          sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_GOB_BIPE,
+          files: {
+            BIPE: '2024'
+          }
+        },
+        ITDIF: {
+          sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_GOB_ITDIF,
+          files: {
+            ITDIF: '2024'
+          }
+        },
+        ICI: {
+          sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_GOB_ICI,
+          files: {
+            ICI: '2024'
+          }
+        },
+        PBRSED: {
+          sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_GOB_PBRSED,
+          files: {
+            PBRSED: '2024'
+          }
+        }
+      },
     },
     
     sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID,
@@ -163,11 +207,131 @@ export const storageConfig = {
       egresoTotal: '2024',
       pea: '2024',
       pib: '2024',
-      itaee: '2024'
+      itaee: '2024',
+      satisfaccionFederal: '2024',
+      satisfaccionEstatal: '2024',
+      IGOPP: '2024',
+      BIPE: '2024',
+      ITDIF: '2024',
+      ICI: '2024',
+      PBRSED: '2024'
     }
   },
   
   mappings: {
+    //CUALITATIVOS - GOBERNABILIDAD
+    satisfaccionFederal: {
+      categoryColumn: 'Entidad Federativa',
+      variables: [
+        {
+          key: 'Porcentaje de satisfación',
+          column: 'Porcentaje de satisfación',
+          label: 'Porcentaje de satisfación',
+          color: '#0F3759',
+          order: 1
+        }
+      ]
+    },
+    satisfaccionEstatal: {
+      categoryColumn: 'Entidad Federativa',
+      variables: [
+        {
+          key: 'Porcentaje de satisfación',
+          column: 'Porcentaje de satisfación',
+          label: 'Porcentaje de satisfación',
+          color: '#0F3759',
+          order: 1
+        }
+      ]
+    },
+    IGOPP: {
+      categoryColumn: 'Entidad Federativa',
+      variables: [
+        {
+          key: 'IGOPP',
+          column: 'IGOPP',
+          label: 'IGOPP',
+          color: '#0F3759',
+          order: 1
+        }
+      ]
+    },
+    BIPE: {
+      categoryColumn: 'Entidad Federativa',
+      variables: [
+        {
+          key: 'BIPE',
+          column: 'BIPE',
+          label: 'BIPE',
+          color: '#0F3759',
+          order: 1
+        }
+      ]
+    },
+    ITDIF: {
+      categoryColumn: 'Entidad Federativa',
+      variables: [
+        {
+          key: 'ITDIF',
+          column: 'ITDIF',
+          label: 'ITDIF',
+          color: '#0F3759',
+          order: 1
+        },
+      ]
+    },
+    ICI: {
+      categoryColumn: 'Entidad Federativa',
+      variables: [
+        {
+          key: 'ICI',
+          column: 'ICI',
+          label: 'ICI',
+          color: '#0F3759',
+          order: 1
+        },
+        {
+          key: 'Consistencia en RT',
+          column: 'Consistencia en RT',
+          label: 'Consistencia en RT',
+          color: '#0F3759',
+          order: 2
+        },
+        {
+          key: 'Proyectos',
+          column: 'Proyectos',
+          label: 'Proyectos',
+          color: '#0F3759',
+          order: 3
+        },
+        {
+          key: 'Indicadores',
+          column: 'Indicadores',
+          label: 'Indicadores',
+          color: '#0F3759',
+          order: 4
+        }
+      ]
+    },
+    PBRSED: {
+      categoryColumn: 'Entidad Federativa',
+      variables: [
+        {
+          key: 'PBRSED',
+          column: 'PBRSED',
+          label: 'PBRSED',
+          color: '#0F3759',
+          order: 1
+        },
+        {
+          key: 'Diagnóstico',
+          column: 'Diagnóstico',
+          label: 'Diagnóstico',
+          color: '#0F3759',
+          order: 2
+        }
+      ]
+    },
     //CUALITATIVOS - ECONOMICOS
     ingresoTotal: {
       categoryColumn: 'Entidad Federativa',
@@ -211,7 +375,6 @@ export const storageConfig = {
         }
       ]
     },
-    // ✅ CORREGIDO: ITAEE con estructura de variables para VerticalBarChart
     itaee: {
       categoryColumn: 'Entidad Federativa',
       variables: [
