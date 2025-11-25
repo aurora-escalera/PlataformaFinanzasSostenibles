@@ -1,5 +1,5 @@
 <!-- src/modules/qualitativeIndicators/components/QualitativePanel.vue -->
-<!-- ✅ ACTUALIZADO: Emite eventos 'years-loaded' y 'panel-closed' correctamente -->
+<!-- ✅ ACTUALIZADO: Incluye PresupuestosView -->
 <template>
   <div 
     class="qualitative-panel"
@@ -48,7 +48,7 @@
         </div>
       </div>
 
-      <!-- ✅ Mostrar componente EconomicosView cuando se selecciona "Ambientales" -->
+      <!-- ✅ Mostrar componente AmbientalesView cuando se selecciona "Ambientales" -->
       <div v-else-if="selectedCategory === 'ambientales'" class="inner-card">
         <AmbientalesView 
           :selectedEntity="props.selectedEntity"
@@ -57,7 +57,7 @@
         />
       </div>
 
-      <!-- ✅ Mostrar componente AmbientalesView cuando se selecciona "Ambientales" -->
+      <!-- ✅ Mostrar componente EconomicosView cuando se selecciona "Económicos" -->
       <div v-else-if="selectedCategory === 'economicos'" class="inner-card">
         <EconomicosView
           :selectedEntity="props.selectedEntity"
@@ -66,6 +66,7 @@
         />
       </div>
 
+      <!-- ✅ Mostrar componente SocialesView cuando se selecciona "Sociales" -->
       <div v-else-if="selectedCategory === 'sociales'" class="inner-card">
         <SocialesView
           :selectedEntity="props.selectedEntity"
@@ -73,6 +74,25 @@
           @back="handleBack" 
         />
       </div>
+
+      <!-- ✅ NUEVO: Mostrar componente PresupuestosView cuando se selecciona "Presupuestos" -->
+      <div v-else-if="selectedCategory === 'presupuestos'" class="inner-card">
+        <PresupuestosView
+          :selectedEntity="props.selectedEntity"
+          :selectedYear="props.selectedYear"
+          @back="handleBack" 
+        />
+      </div>
+
+      <!-- ✅ Mostrar componente GobernabilidadView cuando se selecciona "Gobernabilidad" -->
+      <div v-else-if="selectedCategory === 'gobernabilidad'" class="inner-card">
+        <GobernabilidadView
+          :selectedEntity="props.selectedEntity"
+          :selectedYear="props.selectedYear"
+          @back="handleBack" 
+        />
+      </div>
+
       <!-- Mensaje para otras categorías -->
       <div v-else class="inner-card">
         <div class="card-header">
@@ -96,6 +116,8 @@ import AmbientalesView from './AmbientalesView.vue'
 import { useStorageData } from '@/dataConection/useStorageData'
 import EconomicosView from './EconomicosView.vue'
 import SocialesView from './SocialesView.vue'
+import GobernabilidadView from './GobernabilidadView.vue'
+import PresupuestosView from './PresupuestosView.vue'
 
 const props = defineProps({
   isExpanded: {
@@ -127,6 +149,29 @@ const loadAmbientalesYears = async () => {
     
     // Obtener los nombres de las hojas del sheet de ambientales
     const sheetNames = await fetchSheetNames('incendiosForestales')
+    
+    // Filtrar solo los que parecen años (números de 4 dígitos)
+    const years = sheetNames
+      .filter(name => /^\d{4}$/.test(name))
+      .sort((a, b) => b - a) // Ordenar descendente
+    
+    console.log('✅ [QualitativePanel] Años encontrados:', years)
+    
+    // Emitir los años al HomePage
+    emit('years-loaded', years)
+    
+  } catch (err) {
+    console.error('❌ [QualitativePanel] Error cargando años:', err)
+  }
+}
+
+// ✅ Función para cargar años desde el sheet de presupuestos
+const loadPresupuestosYears = async () => {
+  try {
+    console.log('📅 [QualitativePanel] Cargando años de sheet presupuestos...')
+    
+    // Obtener los nombres de las hojas del sheet de presupuestos
+    const sheetNames = await fetchSheetNames('presupuestoEstatal')
     
     // Filtrar solo los que parecen años (números de 4 dígitos)
     const years = sheetNames
@@ -196,6 +241,11 @@ const handleCategoryClick = async (category) => {
   if (category === 'ambientales') {
     console.log('🌿 Cargando años de ambientales...')
     await loadAmbientalesYears()
+  }
+  // ✅ Si es presupuestos, cargar años dinámicos
+  else if (category === 'presupuestos') {
+    console.log('💰 Cargando años de presupuestos...')
+    await loadPresupuestosYears()
   }
 }
 
