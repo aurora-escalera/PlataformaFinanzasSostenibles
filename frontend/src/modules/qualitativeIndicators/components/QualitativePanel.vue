@@ -1,5 +1,5 @@
 <!-- src/modules/qualitativeIndicators/components/QualitativePanel.vue -->
-<!-- ✅ ACTUALIZADO: Incluye PresupuestosView -->
+<!-- ✅ ACTUALIZADO: Carga de años dinámicos para TODAS las categorías -->
 <template>
   <div 
     class="qualitative-panel"
@@ -75,7 +75,7 @@
         />
       </div>
 
-      <!-- ✅ NUEVO: Mostrar componente PresupuestosView cuando se selecciona "Presupuestos" -->
+      <!-- ✅ Mostrar componente PresupuestosView cuando se selecciona "Presupuestos" -->
       <div v-else-if="selectedCategory === 'presupuestos'" class="inner-card">
         <PresupuestosView
           :selectedEntity="props.selectedEntity"
@@ -142,51 +142,137 @@ const selectedCategory = ref(null)
 // ✅ Composable para obtener datos
 const { fetchSheetNames } = useStorageData()
 
-// ✅ Función para cargar años desde el sheet de ambientales
+// ============================================
+// ✅ FUNCIONES DE CARGA DE AÑOS POR CATEGORÍA
+// ============================================
+
+/**
+ * ✅ Cargar años desde el sheet de AMBIENTALES (incendiosForestales)
+ */
 const loadAmbientalesYears = async () => {
   try {
-    console.log('📅 [QualitativePanel] Cargando años de sheet ambientales...')
+    console.log('📅 [QualitativePanel] Cargando años de sheet AMBIENTALES...')
     
-    // Obtener los nombres de las hojas del sheet de ambientales
     const sheetNames = await fetchSheetNames('incendiosForestales')
     
-    // Filtrar solo los que parecen años (números de 4 dígitos)
     const years = sheetNames
       .filter(name => /^\d{4}$/.test(name))
-      .sort((a, b) => b - a) // Ordenar descendente
+      .sort((a, b) => b - a)
     
-    console.log('✅ [QualitativePanel] Años encontrados:', years)
+    console.log('✅ [QualitativePanel] Años AMBIENTALES encontrados:', years)
     
-    // Emitir los años al HomePage
     emit('years-loaded', years)
     
   } catch (err) {
-    console.error('❌ [QualitativePanel] Error cargando años:', err)
+    console.error('❌ [QualitativePanel] Error cargando años ambientales:', err)
   }
 }
 
-// ✅ Función para cargar años desde el sheet de presupuestos
-const loadPresupuestosYears = async () => {
+/**
+ * ✅ Cargar años desde el sheet de ECONÓMICOS (ingresoTotal)
+ */
+const loadEconomicosYears = async () => {
   try {
-    console.log('📅 [QualitativePanel] Cargando años de sheet presupuestos...')
+    console.log('📅 [QualitativePanel] Cargando años de sheet ECONÓMICOS...')
     
-    // Obtener los nombres de las hojas del sheet de presupuestos
-    const sheetNames = await fetchSheetNames('presupuestoEstatal')
+    // Usar ingresoTotal como referencia principal para económicos
+    const sheetNames = await fetchSheetNames('ingresoTotal')
     
-    // Filtrar solo los que parecen años (números de 4 dígitos)
     const years = sheetNames
       .filter(name => /^\d{4}$/.test(name))
-      .sort((a, b) => b - a) // Ordenar descendente
+      .sort((a, b) => b - a)
     
-    console.log('✅ [QualitativePanel] Años encontrados:', years)
+    console.log('✅ [QualitativePanel] Años ECONÓMICOS encontrados:', years)
     
-    // Emitir los años al HomePage
     emit('years-loaded', years)
     
   } catch (err) {
-    console.error('❌ [QualitativePanel] Error cargando años:', err)
+    console.error('❌ [QualitativePanel] Error cargando años económicos:', err)
   }
 }
+
+/**
+ * ✅ Cargar años desde el sheet de SOCIALES (desocupacion)
+ */
+const loadSocialesYears = async () => {
+  try {
+    console.log('📅 [QualitativePanel] Cargando años de sheet SOCIALES...')
+    
+    // Usar desocupacion como referencia principal para sociales
+    const sheetNames = await fetchSheetNames('desocupacion')
+    
+    const years = sheetNames
+      .filter(name => /^\d{4}$/.test(name))
+      .sort((a, b) => b - a)
+    
+    console.log('✅ [QualitativePanel] Años SOCIALES encontrados:', years)
+    
+    emit('years-loaded', years)
+    
+  } catch (err) {
+    console.error('❌ [QualitativePanel] Error cargando años sociales:', err)
+  }
+}
+
+/**
+ * ✅ Cargar años desde el sheet de PRESUPUESTOS (presupuestoEstatal)
+ */
+const loadPresupuestosYears = async () => {
+  try {
+    console.log('📅 [QualitativePanel] Cargando años de sheet PRESUPUESTOS...')
+    
+    const sheetNames = await fetchSheetNames('presupuestoEstatal')
+    
+    const years = sheetNames
+      .filter(name => /^\d{4}$/.test(name))
+      .sort((a, b) => b - a)
+    
+    console.log('✅ [QualitativePanel] Años PRESUPUESTOS encontrados:', years)
+    
+    emit('years-loaded', years)
+    
+  } catch (err) {
+    console.error('❌ [QualitativePanel] Error cargando años presupuestos:', err)
+  }
+}
+
+/**
+ * ✅ Cargar años desde el sheet de GOBERNABILIDAD (satisfaccionFederal)
+ */
+const loadGobernabilidadYears = async () => {
+  try {
+    console.log('📅 [QualitativePanel] Cargando años de sheet GOBERNABILIDAD...')
+    
+    // Usar satisfaccionFederal como referencia principal para gobernabilidad
+    const sheetNames = await fetchSheetNames('satisfaccionFederal')
+    
+    const years = sheetNames
+      .filter(name => /^\d{4}$/.test(name))
+      .sort((a, b) => b - a)
+    
+    console.log('✅ [QualitativePanel] Años GOBERNABILIDAD encontrados:', years)
+    
+    emit('years-loaded', years)
+    
+  } catch (err) {
+    console.error('❌ [QualitativePanel] Error cargando años gobernabilidad:', err)
+  }
+}
+
+// ============================================
+// ✅ MAPEO DE CATEGORÍAS A FUNCIONES DE CARGA
+// ============================================
+const categoryYearLoaders = {
+  'ambientales': loadAmbientalesYears,
+  'economicos': loadEconomicosYears,
+  'sociales': loadSocialesYears,
+  'presupuestos': loadPresupuestosYears,
+  'gobernabilidad': loadGobernabilidadYears
+}
+
+// ============================================
+// WATCHERS
+// ============================================
 
 // ✅ Watch para debugging de entidad
 watch(() => props.selectedEntity, (newEntity, oldEntity) => {
@@ -203,6 +289,10 @@ watch(() => props.selectedYear, (newYear, oldYear) => {
   console.log('  - Nuevo:', newYear)
   console.log('  - Categoría activa:', selectedCategory.value)
 }, { immediate: true })
+
+// ============================================
+// HANDLERS
+// ============================================
 
 // ✅ Toggle del panel con manejo de cierre
 const togglePanel = () => {
@@ -229,7 +319,7 @@ const togglePanel = () => {
   }
 }
 
-// ✅ Manejar click en categoría con carga de años
+// ✅ Manejar click en categoría con carga de años DINÁMICA
 const handleCategoryClick = async (category) => {
   console.log('📂 [QualitativePanel] Categoría seleccionada:', category)
   console.log('📍 Entidad actual:', props.selectedEntity)
@@ -237,15 +327,14 @@ const handleCategoryClick = async (category) => {
   
   selectedCategory.value = category
   
-  // ✅ Si es ambientales, cargar años dinámicos
-  if (category === 'ambientales') {
-    console.log('🌿 Cargando años de ambientales...')
-    await loadAmbientalesYears()
-  }
-  // ✅ Si es presupuestos, cargar años dinámicos
-  else if (category === 'presupuestos') {
-    console.log('💰 Cargando años de presupuestos...')
-    await loadPresupuestosYears()
+  // ✅ NUEVO: Cargar años dinámicos según la categoría
+  const yearLoader = categoryYearLoaders[category]
+  
+  if (yearLoader) {
+    console.log(`🔄 Cargando años para categoría: ${category}...`)
+    await yearLoader()
+  } else {
+    console.warn(`⚠️ No hay cargador de años definido para: ${category}`)
   }
 }
 
