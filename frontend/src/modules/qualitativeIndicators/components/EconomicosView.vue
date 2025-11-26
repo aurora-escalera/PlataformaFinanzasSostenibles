@@ -1,5 +1,5 @@
 <!-- src/modules/qualitativeIndicators/components/EconomicosView.vue -->
-<!-- ✅ ACTUALIZADO: Empty state centralizado cuando no hay entidad seleccionada -->
+<!-- ✅ ACTUALIZADO: Headers compactos con tooltips de información -->
 <template>
   <div class="economicos-container">
     <!-- ✅ EMPTY STATE CENTRALIZADO cuando no hay entidad seleccionada -->
@@ -24,38 +24,93 @@
       <!-- Left Side Container -->
       <div class="left-card-container">
         <!-- Top: Horizontal Bar Chart - Ingresos Totales -->
-        <div class="bar-graph card">
-          <div v-if="ingresoTotalLoading" class="loading-state">
-            <div class="spinner-small"></div>
-            <p>Cargando datos...</p>
+        <div class="ingresos-card">
+          <!-- ✅ Header Ingresos y Egresos con tooltip -->
+          <div class="card-header-dark">
+            <div class="card-header-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                <line x1="1" y1="10" x2="23" y2="10"></line>
+              </svg>
+            </div>
+            <span class="card-header-title">Ingresos y Egresos Totales</span>
+            
+            <!-- ✅ Botón de información -->
+            <div class="info-tooltip">
+              <button class="info-btn" @click="showInfoIngresos = !showInfoIngresos">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+              </button>
+              <Transition name="tooltip-fade">
+                <div v-if="showInfoIngresos" class="tooltip-content">
+                  Comparativa de ingresos y egresos totales de la entidad federativa seleccionada en miles de pesos.
+                </div>
+              </Transition>
+            </div>
           </div>
 
-          <div v-else-if="ingresoTotalError" class="error-state">
-            <p>Error: {{ ingresoTotalError }}</p>
-            <button @click="loadIngresoTotalData(selectedEntity, selectedYear)" class="retry-btn-small">
-              Reintentar
-            </button>
-          </div>
+          <div class="ingresos-body">
+            <div v-if="ingresoTotalLoading" class="loading-state">
+              <div class="spinner-small"></div>
+              <p>Cargando datos...</p>
+            </div>
 
-          <HorizontalBarChart
-            v-else
-            :variables="ingresoTotalData"
-            width="100%"
-            height="100%"
-            title="Ingresos y Egresos Totales"
-            :showFilters="true"
-            :showLegend="true"
-            barHeight="20px"
-            barGap="1px"
-          />
+            <div v-else-if="ingresoTotalError" class="error-state">
+              <p>Error: {{ ingresoTotalError }}</p>
+              <button @click="loadIngresoTotalData(selectedEntity, selectedYear)" class="retry-btn-small">
+                Reintentar
+              </button>
+            </div>
+
+            <HorizontalBarChart
+              v-else
+              :variables="ingresoTotalData"
+              width="100%"
+              height="100%"
+              title=""
+              :showFilters="true"
+              :showLegend="true"
+              barHeight="20px"
+              barGap="1px"
+            />
+          </div>
         </div>
         
         <!-- Bottom: Person Graph - Personas Económicamente Activas -->
-        <div class="person-graphs card">
-          <div class="person-bottle">
-            <h2>Población económicamente activa</h2>
+        <div class="pea-card">
+          <!-- ✅ Header PEA con tooltip -->
+          <div class="card-header-dark">
+            <div class="card-header-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+            </div>
+            <span class="card-header-title">Población económicamente activa</span>
+            
+            <!-- ✅ Botón de información -->
+            <div class="info-tooltip">
+              <button class="info-btn" @click="showInfoPEA = !showInfoPEA">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+              </button>
+              <Transition name="tooltip-fade">
+                <div v-if="showInfoPEA" class="tooltip-content">
+                  Población de 15 años y más que trabaja o busca activamente empleo en la entidad.
+                </div>
+              </Transition>
+            </div>
           </div>
-          <div class="body-person">
+
+          <div class="pea-body">
             <div v-if="peaLoading" class="loading-state-small">
               <div class="spinner-small"></div>
             </div>
@@ -66,7 +121,7 @@
 
             <template v-else>
               <div class="person-graph">
-                <div class="person-number number">{{ formatNumber(peaValue) }} Personas</div>
+                <div class="person-number">{{ formatNumber(peaValue) }} Personas</div>
                 <PersonChart 
                   :value="peaPercentage" 
                 />
@@ -80,48 +135,42 @@
       <div class="right-card-container">
         <!-- Top Right Container - PIB -->
         <div class="top-right-card-container">
-          <div class="pib-chart card">
-            <div class="card-header">
-              <div class="header-content">
-                <div class="icon-badge">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="12" y1="1" x2="12" y2="23"></line>
-                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-                  </svg>
-                </div>
-                <div class="header-text">
-                  <h3 class="card-title">PIB Estatal</h3>
-                  <p class="card-subtitle">Millones de pesos</p>
-                </div>
+          <div class="pib-card">
+            <!-- ✅ Header PIB con tooltip -->
+            <div class="card-header-dark">
+              <div class="card-header-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" y1="1" x2="12" y2="23"></line>
+                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                </svg>
               </div>
+              <span class="card-header-title">PIB Estatal (millones de pesos)</span>
               
+              <!-- ✅ Botón de información -->
               <div class="info-tooltip">
-                <button class="info-btn" @click="showInfo = !showInfo">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <button class="info-btn" @click="showInfoPIB = !showInfoPIB">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="12" r="10"></circle>
                     <line x1="12" y1="16" x2="12" y2="12"></line>
                     <line x1="12" y1="8" x2="12.01" y2="8"></line>
                   </svg>
                 </button>
-                
                 <Transition name="tooltip-fade">
-                  <div v-if="showInfo" class="tooltip-content">
-                    Producto Interno Bruto Estatal (PIBE), anual en millones de pesos.
+                  <div v-if="showInfoPIB" class="tooltip-content">
+                    Producto Interno Bruto Estatal (PIBE), valor anual en millones de pesos corrientes.
                   </div>
                 </Transition>
               </div>
             </div>
 
-            <div class="card-body-pib">
-              <div v-if="PIBLoading" class="state-container loading-state">
-                <div class="spinner"></div>
-                <p class="state-text">Cargando datos...</p>
+            <div class="pib-body">
+              <div v-if="PIBLoading" class="loading-state-small">
+                <div class="spinner-small"></div>
               </div>
 
-              <div v-else-if="PIBError" class="state-container error-state">
-                <div class="error-icon">⚠️</div>
-                <p class="state-text">Error al cargar datos</p>
-                <button @click="loadPIBData(selectedEntity, selectedYear)" class="retry-btn">
+              <div v-else-if="PIBError" class="error-state-small">
+                <p>Error al cargar datos</p>
+                <button @click="loadPIBData(selectedEntity, selectedYear)" class="retry-btn-small">
                   Reintentar
                 </button>
               </div>
@@ -173,27 +222,55 @@
         
         <!-- Bottom Right Container - ITAEE -->
         <div class="bottom-right-card-container">
-          <div class="bottom-bar-graph card">
-            <div v-if="itaeLoading" class="loading-state">
-              <div class="spinner-small"></div>
-              <p>Cargando datos...</p>
+          <div class="itaee-card">
+            <!-- ✅ Header ITAEE con tooltip -->
+            <div class="card-header-dark">
+              <div class="card-header-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                </svg>
+              </div>
+              <span class="card-header-title">Indicador Trimestral de la Actividad Económica Estatal (ITAEE)</span>
+              
+              <!-- ✅ Botón de información -->
+              <div class="info-tooltip">
+                <button class="info-btn" @click="showInfoITAEE = !showInfoITAEE">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  </svg>
+                </button>
+                <Transition name="tooltip-fade">
+                  <div v-if="showInfoITAEE" class="tooltip-content">
+                    Indicador que mide la evolución trimestral de la actividad económica de las entidades federativas.
+                  </div>
+                </Transition>
+              </div>
             </div>
 
-            <div v-else-if="itaeError" class="error-state">
-              <p>Error: {{ itaeError }}</p>
-              <button @click="loadITAEData(selectedEntity, selectedYear)" class="retry-btn-small">
-                Reintentar
-              </button>
-            </div>
+            <div class="itaee-body">
+              <div v-if="itaeLoading" class="loading-state">
+                <div class="spinner-small"></div>
+                <p>Cargando datos...</p>
+              </div>
 
-            <BulletChart
-              v-else
-              :variables="itaeData"
-              title="Indicador Trimestral de la Actividad Económica Estatal (ITAEE)"
-              :highlightState="selectedEntity"
-              :showLegend="false"
-              :maxValue="20"
-            />
+              <div v-else-if="itaeError" class="error-state">
+                <p>Error: {{ itaeError }}</p>
+                <button @click="loadITAEData(selectedEntity, selectedYear)" class="retry-btn-small">
+                  Reintentar
+                </button>
+              </div>
+
+              <BulletChart
+                v-else
+                :variables="itaeData"
+                title=""
+                :highlightState="selectedEntity"
+                :showLegend="false"
+                :maxValue="20"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -225,7 +302,11 @@ const emit = defineEmits(['back'])
 
 const { fetchData } = useStorageData()
 
-const showInfo = ref(false)
+// ✅ Estados para tooltips de cada card
+const showInfoIngresos = ref(false)
+const showInfoPEA = ref(false)
+const showInfoPIB = ref(false)
+const showInfoITAEE = ref(false)
 
 const parseNumericValue = (value) => {
   if (typeof value === 'number') return value
@@ -576,6 +657,7 @@ onMounted(async () => {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
+/* CARD BODY */
 .card-body {
   height: 100%;
   display: flex;
@@ -583,12 +665,6 @@ onMounted(async () => {
   gap: 10px;
   overflow: hidden;
   box-sizing: border-box;
-}
-
-.card {
-  border: 1px solid #b0b0b0;
-  border-radius: 12px;
-  overflow: hidden;
 }
 
 .left-card-container {
@@ -601,100 +677,155 @@ onMounted(async () => {
   box-sizing: border-box;
 }
 
-.bar-graph {
+/* ============================================
+   ✅ HEADER OSCURO - MISMO ESTILO QUE AMBIENTALES
+   ============================================ */
+.card-header-dark {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: linear-gradient(135deg, #1e3a5f 0%, #153d5e 100%);
+  border-bottom: 1px solid #3b6b8a;
+  flex-shrink: 0;
+}
+
+.card-header-icon {
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.card-header-icon svg {
+  width: 12px;
+  height: 12px;
+}
+
+.card-header-title {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  color: white;
+  line-height: 1.1;
+  letter-spacing: 0.1px;
+  flex: 1;
+}
+
+/* ============================================
+   ✅ TOOLTIP E INFO BUTTON
+   ============================================ */
+.info-tooltip {
+  position: relative;
+  margin-left: auto;
+}
+
+.info-btn {
+  width: 18px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.info-btn svg {
+  width: 12px;
+  height: 12px;
+}
+
+.info-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.05);
+}
+
+.tooltip-content {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: #1f2937;
+  color: white;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 10px;
+  line-height: 1.4;
+  max-width: 200px;
+  min-width: 150px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.tooltip-content::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  right: 6px;
+  border: 5px solid transparent;
+  border-bottom-color: #1f2937;
+}
+
+.tooltip-fade-enter-active,
+.tooltip-fade-leave-active {
+  transition: all 0.2s ease;
+}
+
+.tooltip-fade-enter-from,
+.tooltip-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+/* ============================================
+   ✅ CARD INGRESOS Y EGRESOS
+   ============================================ */
+.ingresos-card {
   height: 60%;
   border-radius: 12px;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
-  box-sizing: border-box;
-  position: relative;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
 }
 
-.loading-state, .error-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  width: 100%;
-  padding: 20px;
+.ingresos-body {
+  flex: 1;
+  overflow: hidden;
+  background: white;
 }
 
-.loading-state-small, .error-state-small {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  width: 100%;
-  padding: 10px;
-  text-align: center;
-}
-
-.spinner-small {
-  width: 30px;
-  height: 30px;
-  border: 3px solid rgb(203, 199, 199);
-  border-top: 3px solid #4CAF50;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 15px;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.retry-btn-small {
-  background: #f44336;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 13px;
-  margin-top: 10px;
-}
-
-.retry-btn-small:hover {
-  background: #d32f2f;
-}
-
-.error-state p, .error-state-small p {
-  color: #666;
-  font-size: 14px;
-  margin: 0 0 10px 0;
-}
-
-.person-graphs {
+/* ============================================
+   ✅ CARD PEA
+   ============================================ */
+.pea-card {
   height: 40%;
   border-radius: 12px;
-  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-sizing: border-box;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
 }
 
-.person-bottle {
-  padding: 8px;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-h2 {
-  text-align: center;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-weight: 300;
-  color: #535353;
-  font-size: 16px;
-  margin: 0;
-}
-
-.body-person {
+.pea-body {
+  flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  height: 100%;
+  background: white;
+  padding: 5px;
 }
 
 .person-graph {
@@ -703,18 +834,21 @@ h2 {
   overflow: visible;
 }
 
-.number {
+.person-number {
   display: flex;
   justify-content: center;
   width: 100%;
-  color: #58778F;
+  color: #1e3a5f;
   font-family: Verdana, Geneva, Tahoma, sans-serif;
-  font-weight: 500;
-  font-size: 16px;
+  font-weight: 600;
+  font-size: 14px;
   flex-shrink: 0;
-  padding-top: 20px;
+  padding-top: 8px;
 }
 
+/* ============================================
+   ✅ RIGHT SIDE
+   ============================================ */
 .right-card-container {
   display: flex;
   flex-direction: column;
@@ -732,136 +866,26 @@ h2 {
   min-height: 0;
 }
 
-.pib-chart.card {
+/* ============================================
+   ✅ CARD PIB
+   ============================================ */
+.pib-card {
   width: 100%;
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(15, 55, 89, 0.08);
-  overflow: hidden;
+  border-radius: 12px;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
   transition: all 0.3s ease;
 }
 
-.pib-chart.card:hover {
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-  transform: translateY(-2px);
+.pib-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
 }
 
-.card-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  padding: 0.75rem 1rem;
-  background: linear-gradient(135deg, #0F3759 0%, #1a4d7a 100%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  gap: 0.75rem;
-  flex-shrink: 0;
-}
-
-.header-content {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex: 1;
-}
-
-.icon-badge {
-  width: 36px;
-  height: 36px;
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(10px);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  flex-shrink: 0;
-}
-
-.icon-badge svg {
-  width: 18px;
-  height: 18px;
-}
-
-.header-text {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.card-title {
-  margin: 0;
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: white;
-  line-height: 1.2;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-.card-subtitle {
-  margin: 0;
-  font-size: 0.65rem;
-  color: rgba(255, 255, 255, 0.8);
-  font-weight: 500;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-.info-tooltip {
-  position: relative;
-}
-
-.info-btn {
-  width: 28px;
-  height: 28px;
-  background: rgba(255, 255, 255, 0.15);
-  border: none;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.info-btn svg {
-  width: 16px;
-  height: 16px;
-}
-
-.info-btn:hover {
-  background: rgba(255, 255, 255, 0.25);
-  transform: scale(1.05);
-}
-
-.tooltip-content {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  background: #1f2937;
-  color: white;
-  padding: 0.6rem 0.85rem;
-  border-radius: 6px;
-  font-size: 0.65rem;
-  line-height: 1.3;
-  max-width: 200px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  z-index: 100;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-.tooltip-content::before {
-  content: '';
-  position: absolute;
-  bottom: 100%;
-  right: 12px;
-  border: 6px solid transparent;
-  border-bottom-color: #1f2937;
-}
-
-.card-body-pib {
+.pib-body {
   flex: 1;
   padding: 0.75rem;
   display: flex;
@@ -870,59 +894,7 @@ h2 {
   align-items: center;
   min-height: 0;
   overflow: hidden;
-}
-
-.state-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  text-align: center;
-  width: 100%;
-}
-
-.state-text {
-  margin: 0;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #64748b;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid #e2e8f0;
-  border-top-color: #0F3759;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-.error-icon {
-  font-size: 2.5rem;
-}
-
-.retry-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background: #0F3759;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-.retry-btn:hover {
-  background: #1a4d7a;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(15, 55, 89, 0.3);
+  background: white;
 }
 
 .pib-data-container {
@@ -941,7 +913,7 @@ h2 {
   align-items: baseline;
   gap: 0.3rem;
   font-weight: 800;
-  color: #0F3759;
+  color: #1e3a5f;
   text-align: center;
   flex-wrap: wrap;
   justify-content: center;
@@ -1016,24 +988,16 @@ h2 {
 .context-value {
   font-size: 0.75rem;
   font-weight: 700;
-  color: #0F3759;
+  color: #1e3a5f;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.tooltip-fade-enter-active,
-.tooltip-fade-leave-active {
-  transition: all 0.2s ease;
-}
-
-.tooltip-fade-enter-from,
-.tooltip-fade-leave-to {
-  opacity: 0;
-  transform: translateY(-4px);
-}
-
+/* ============================================
+   ✅ CARD ITAEE
+   ============================================ */
 .bottom-right-card-container {
   flex: 5;
   border-radius: 12px;
@@ -1043,11 +1007,78 @@ h2 {
   overflow: hidden;
 }
 
-.bottom-bar-graph {
+.itaee-card {
   height: 100%;
   border-radius: 12px;
-  overflow: hidden;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+}
+
+.itaee-body {
+  flex: 1;
+  background: white;
+  overflow: hidden;
+}
+
+/* ============================================
+   ✅ LOADING & ERROR STATES
+   ============================================ */
+.loading-state, .error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+  padding: 20px;
+}
+
+.loading-state-small, .error-state-small {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+  padding: 10px;
+  text-align: center;
+}
+
+.spinner-small {
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgb(203, 199, 199);
+  border-top: 3px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.retry-btn-small {
+  background: #f44336;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  margin-top: 10px;
+}
+
+.retry-btn-small:hover {
+  background: #d32f2f;
+}
+
+.error-state p, .error-state-small p {
+  color: #666;
+  font-size: 14px;
+  margin: 0 0 10px 0;
 }
 </style>

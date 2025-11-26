@@ -1,4 +1,5 @@
 <!-- src/modules/qualitativeIndicators/components/AmbientalesView.vue -->
+<!-- ✅ ACTUALIZADO: Headers con tooltips de información -->
 <template>
   <div class="ambientales-container">
     <!-- ✅ EMPTY STATE CENTRALIZADO cuando no hay entidad seleccionada -->
@@ -24,7 +25,7 @@
       <div class="left-card-container">
         <!-- Top: Horizontal Bar Chart - Incendios Forestales -->
         <div class="incendios-card">
-          <!-- ✅ Header Incendios -->
+          <!-- ✅ Header Incendios con tooltip -->
           <div class="card-header-dark">
             <div class="card-header-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -32,6 +33,22 @@
               </svg>
             </div>
             <span class="card-header-title">Incendios forestales en hectáreas</span>
+            
+            <!-- ✅ Botón de información -->
+            <div class="info-tooltip">
+              <button class="info-btn" @click="showInfoIncendios = !showInfoIncendios">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+              </button>
+              <Transition name="tooltip-fade">
+                <div v-if="showInfoIncendios" class="tooltip-content">
+                  Superficie afectada por incendios forestales desglosada por tipo de vegetación: arbolado adulto, renuevo, arbustivo, herbáceo y hojarasca.
+                </div>
+              </Transition>
+            </div>
           </div>
           
           <!-- Body -->
@@ -62,10 +79,10 @@
           </div>
         </div>
         
-        <!-- ✅ Card de Residuos -->
+        <!-- ✅ Card de Residuos con tooltip -->
         <div class="bottle-card">
-          <div class="bottle-header">
-            <div class="bottle-header-icon">
+          <div class="card-header-dark">
+            <div class="card-header-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M3 6h18"/>
                 <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
@@ -74,7 +91,23 @@
                 <line x1="14" y1="11" x2="14" y2="17"/>
               </svg>
             </div>
-            <span class="bottle-header-title">Promedio diario de residuos sólidos urbanos recolectados</span>
+            <span class="card-header-title">Promedio diario de residuos sólidos urbanos recolectados</span>
+            
+            <!-- ✅ Botón de información -->
+            <div class="info-tooltip">
+              <button class="info-btn" @click="showInfoResiduos = !showInfoResiduos">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+              </button>
+              <Transition name="tooltip-fade">
+                <div v-if="showInfoResiduos" class="tooltip-content">
+                  Cantidad promedio diaria de residuos sólidos urbanos recolectados en kilogramos por habitante.
+                </div>
+              </Transition>
+            </div>
           </div>
           
           <div class="bottle-body">
@@ -116,6 +149,22 @@
                 </svg>
               </div>
               <span class="card-header-title">Emisiones de contaminantes atmosféricos por fuente en toneladas</span>
+              
+              <!-- ✅ Botón de información -->
+              <div class="info-tooltip">
+                <button class="info-btn" @click="showInfoEmisiones = !showInfoEmisiones">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  </svg>
+                </button>
+                <Transition name="tooltip-fade">
+                  <div v-if="showInfoEmisiones" class="tooltip-content">
+                    Emisiones de contaminantes atmosféricos clasificadas por fuente: fijas, aéreas, carreteras, no carreteras y naturales.
+                  </div>
+                </Transition>
+              </div>
             </div>
             
             <div class="emisiones-body">
@@ -143,6 +192,22 @@
                 </svg>
               </div>
               <span class="card-header-title">Consumo de energía eléctrica</span>
+              
+              <!-- ✅ Botón de información -->
+              <div class="info-tooltip">
+                <button class="info-btn" @click="showInfoEnergia = !showInfoEnergia">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  </svg>
+                </button>
+                <Transition name="tooltip-fade">
+                  <div v-if="showInfoEnergia" class="tooltip-content">
+                    Consumo total de energía eléctrica de la entidad expresado en Gigawatts-hora (GWh).
+                  </div>
+                </Transition>
+              </div>
             </div>
             
             <div class="energia-body">
@@ -177,6 +242,22 @@
                 </svg>
               </div>
               <span class="card-header-title">Áreas naturales protegidas</span>
+              
+              <!-- ✅ Botón de información -->
+              <div class="info-tooltip">
+                <button class="info-btn" @click="showInfoAreas = !showInfoAreas">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  </svg>
+                </button>
+                <Transition name="tooltip-fade">
+                  <div v-if="showInfoAreas" class="tooltip-content">
+                    Superficie de áreas naturales protegidas por categoría: flora y fauna, recursos naturales, monumentos naturales, parques nacionales, reservas de la biósfera y santuarios.
+                  </div>
+                </Transition>
+              </div>
             </div>
             
             <div class="areas-body">
@@ -236,6 +317,13 @@ const props = defineProps({
 const emit = defineEmits(['back'])
 
 const { fetchData } = useStorageData()
+
+// ✅ Estados para tooltips de cada card
+const showInfoIncendios = ref(false)
+const showInfoResiduos = ref(false)
+const showInfoEmisiones = ref(false)
+const showInfoEnergia = ref(false)
+const showInfoAreas = ref(false)
 
 // ============================================
 // INCENDIOS FORESTALES
@@ -712,6 +800,77 @@ onMounted(async () => {
   color: white;
   line-height: 1.1;
   letter-spacing: 0.1px;
+  flex: 1;
+}
+
+/* ============================================
+   ✅ TOOLTIP E INFO BUTTON
+   ============================================ */
+.info-tooltip {
+  position: relative;
+  margin-left: auto;
+}
+
+.info-btn {
+  width: 18px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.info-btn svg {
+  width: 12px;
+  height: 12px;
+}
+
+.info-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.05);
+}
+
+.tooltip-content {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: #1f2937;
+  color: white;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 10px;
+  line-height: 1.4;
+  max-width: 200px;
+  min-width: 150px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.tooltip-content::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  right: 6px;
+  border: 5px solid transparent;
+  border-bottom-color: #1f2937;
+}
+
+.tooltip-fade-enter-active,
+.tooltip-fade-leave-active {
+  transition: all 0.2s ease;
+}
+
+.tooltip-fade-enter-from,
+.tooltip-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 
 .bar-graph {
@@ -787,42 +946,6 @@ onMounted(async () => {
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   border: 1px solid #e2e8f0;
-}
-
-.bottle-header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
-  background: linear-gradient(135deg, #1e3a5f 0%, #153d5e 100%);
-  border-bottom: 1px solid #3b6b8a;
-  flex-shrink: 0;
-}
-
-.bottle-header-icon {
-  width: 18px;
-  height: 18px;
-  min-width: 18px;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.15);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-}
-
-.bottle-header-icon svg {
-  width: 12px;
-  height: 12px;
-}
-
-.bottle-header-title {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 10px;
-  font-weight: 500;
-  color: white;
-  line-height: 1.1;
-  letter-spacing: 0.1px;
 }
 
 .bottle-body {
