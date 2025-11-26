@@ -31,7 +31,7 @@
 
         <!-- Valor y Porcentaje -->
         <div class="bar-right">
-          <span class="bar-money">{{ formatCurrency(item.value) }}</span>
+          <span class="bar-value">{{ formatValue(item.value) }}</span>
           <span class="bar-percentage">{{ getPercentage(item.value) }}%</span>
         </div>
       </div>
@@ -51,6 +51,10 @@ const props = defineProps({
   showIcons: {
     type: Boolean,
     default: true
+  },
+  formatAsCurrency: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -62,7 +66,7 @@ const sortedData = computed(() => {
   return [...props.data].sort((a, b) => b.value - a.value)
 })
 
-// Calcular la SUMA TOTAL de todos los presupuestos
+// Calcular la SUMA TOTAL de todos los valores
 const totalSum = computed(() => {
   if (sortedData.value.length === 0) return 0
   return sortedData.value.reduce((sum, item) => sum + item.value, 0)
@@ -86,33 +90,37 @@ const getBarWidth = (value) => {
   return Math.round((value / maxValue.value) * 100)
 }
 
-// Formatear valor como moneda
-const formatCurrency = (value) => {
-  if (!value) return '$0'
+// Formatear valor (sin símbolo de moneda para indicadores sociales)
+const formatValue = (value) => {
+  if (!value) return '0'
   
-  // Si es mayor a 1 millón, mostrar en millones
-  if (value >= 1000000) {
-    const millions = (value / 1000000).toFixed(1)
-    return `$${millions}M`
+  if (props.formatAsCurrency) {
+    if (value >= 1000000) {
+      return `$${(value / 1000000).toFixed(1)}M`
+    }
+    if (value >= 1000) {
+      return `$${(value / 1000).toFixed(0)}K`
+    }
+    return `$${Math.round(value)}`
   }
   
-  // Si es mayor a 1000, mostrar en miles
-  if (value >= 1000) {
-    const thousands = (value / 1000).toFixed(0)
-    return `$${thousands}K`
+  // Para indicadores sociales, mostrar el valor con decimales si es necesario
+  if (value < 10) {
+    return value.toFixed(1)
   }
-  
-  return `$${Math.round(value)}`
+  return Math.round(value).toString()
 }
 
 // Obtener gradiente basado en color
 const getGradient = (color) => {
-  // Convertir hex a rgb y crear gradiente
+  if (!color || !color.startsWith('#')) {
+    color = '#0F3759'
+  }
+  
   const r = parseInt(color.slice(1, 3), 16)
   const g = parseInt(color.slice(3, 5), 16)
   const b = parseInt(color.slice(5, 7), 16)
   
-  // Color más oscuro para el gradiente
   const darkerR = Math.max(0, r - 30)
   const darkerG = Math.max(0, g - 30)
   const darkerB = Math.max(0, b - 30)
@@ -123,6 +131,71 @@ const getGradient = (color) => {
 // Mapear iconos según la categoría
 const getIcon = (label) => {
   const iconMap = {
+    'Tasa de participación': () => h('svg', {
+      xmlns: 'http://www.w3.org/2000/svg',
+      width: '16',
+      height: '16',
+      viewBox: '0 0 24 24',
+      fill: 'none',
+      stroke: 'currentColor',
+      'stroke-width': '2'
+    }, [
+      h('path', { d: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2' }),
+      h('circle', { cx: '9', cy: '7', r: '4' }),
+      h('path', { d: 'M23 21v-2a4 4 0 0 0-3-3.87' }),
+      h('path', { d: 'M16 3.13a4 4 0 0 1 0 7.75' })
+    ]),
+    'Tasa de informalidad laboral': () => h('svg', {
+      xmlns: 'http://www.w3.org/2000/svg',
+      width: '16',
+      height: '16',
+      viewBox: '0 0 24 24',
+      fill: 'none',
+      stroke: 'currentColor',
+      'stroke-width': '2'
+    }, [
+      h('rect', { x: '2', y: '7', width: '20', height: '14', rx: '2', ry: '2' }),
+      h('path', { d: 'M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16' })
+    ]),
+    'Tasa de desocupación': () => h('svg', {
+      xmlns: 'http://www.w3.org/2000/svg',
+      width: '16',
+      height: '16',
+      viewBox: '0 0 24 24',
+      fill: 'none',
+      stroke: 'currentColor',
+      'stroke-width': '2'
+    }, [
+      h('circle', { cx: '12', cy: '12', r: '10' }),
+      h('line', { x1: '4.93', y1: '4.93', x2: '19.07', y2: '19.07' })
+    ]),
+    'CONEVAL 2020': () => h('svg', {
+      xmlns: 'http://www.w3.org/2000/svg',
+      width: '16',
+      height: '16',
+      viewBox: '0 0 24 24',
+      fill: 'none',
+      stroke: 'currentColor',
+      'stroke-width': '2'
+    }, [
+      h('path', { d: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z' }),
+      h('polyline', { points: '14 2 14 8 20 8' }),
+      h('line', { x1: '16', y1: '13', x2: '8', y2: '13' }),
+      h('line', { x1: '16', y1: '17', x2: '8', y2: '17' })
+    ]),
+    'PNUD 2022': () => h('svg', {
+      xmlns: 'http://www.w3.org/2000/svg',
+      width: '16',
+      height: '16',
+      viewBox: '0 0 24 24',
+      fill: 'none',
+      stroke: 'currentColor',
+      'stroke-width': '2'
+    }, [
+      h('circle', { cx: '12', cy: '12', r: '10' }),
+      h('line', { x1: '2', y1: '12', x2: '22', y2: '12' }),
+      h('path', { d: 'M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z' })
+    ]),
     'Agua y drenaje': () => h('svg', {
       xmlns: 'http://www.w3.org/2000/svg',
       width: '16',
@@ -289,28 +362,33 @@ const getIcon = (label) => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
 .bars-list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 2px 0;
+  height: 100%;
+  padding: 4px 0;
 }
 
 .bar-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 4px 8px;
+  padding: 8px 12px;
   background: #f8fafc;
   border-radius: 8px;
-  min-height: 36px;
+  flex: 1;
+  min-height: 0;
   opacity: 0;
   animation: slideInBar 0.5s ease-out forwards;
   transition: all 0.2s ease;
+  margin-bottom: 6px;
+}
+
+.bar-item:last-child {
+  margin-bottom: 0;
 }
 
 .bar-item:hover {
@@ -332,15 +410,15 @@ const getIcon = (label) => {
 .bar-left {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex-shrink: 0;
-  min-width: 110px;
+  min-width: 140px;
 }
 
 .bar-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -349,7 +427,7 @@ const getIcon = (label) => {
 }
 
 .bar-label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   color: #475569;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -359,20 +437,22 @@ const getIcon = (label) => {
 .bar-center {
   flex: 1;
   min-width: 0;
+  display: flex;
+  align-items: center;
 }
 
 .bar-background {
   position: relative;
   width: 100%;
-  height: 10px;
+  height: 12px;
   background: #e2e8f0;
-  border-radius: 5px;
+  border-radius: 6px;
   overflow: hidden;
 }
 
 .bar-fill {
   height: 100%;
-  border-radius: 5px;
+  border-radius: 6px;
   transition: width 1s ease-out;
   position: relative;
 }
@@ -381,13 +461,13 @@ const getIcon = (label) => {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 1px;
+  gap: 2px;
   flex-shrink: 0;
   min-width: 50px;
 }
 
-.bar-money {
-  font-size: 13px;
+.bar-value {
+  font-size: 16px;
   font-weight: 700;
   color: #0F3759;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -395,7 +475,7 @@ const getIcon = (label) => {
 }
 
 .bar-percentage {
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
   color: #64748b;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;

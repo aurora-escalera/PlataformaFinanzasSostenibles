@@ -1,29 +1,48 @@
-<!-- PersonChart.vue - Figura humana escalable según población -->
+<!-- ScalablePerson.vue - Figura humana escalable según población -->
+<!-- ✅ MODIFICADO: Personaje más grande, sin barra, sin animación de crecimiento -->
 <template>
   <div class="person-chart">
     <svg 
       :viewBox="`0 0 100 ${svgHeight}`" 
       class="person-svg"
-      :style="{ height: containerHeight + 'px' }"
     >
       <defs>
         <linearGradient id="personGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stop-color="#1a4d7a" />
+          <stop offset="0%" stop-color="#2d5a87" />
+          <stop offset="100%" stop-color="#0F3759" />
+        </linearGradient>
+        
+        <linearGradient id="personGradientHead" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#1e3a5f" />
           <stop offset="100%" stop-color="#0F3759" />
         </linearGradient>
         
         <filter id="personShadow">
-          <feDropShadow dx="0" dy="4" stdDeviation="3" flood-opacity="0.3"/>
+          <feDropShadow dx="0" dy="3" stdDeviation="2" flood-opacity="0.25"/>
         </filter>
       </defs>
+      
+      <!-- Círculos de onda animados -->
+      <circle 
+        v-for="(ring, index) in 3" 
+        :key="'ring-' + index"
+        cx="50" 
+        :cy="personY"
+        :r="personScale * (25 + index * 15)"
+        fill="none"
+        :stroke="'rgba(30, 58, 95, ' + (0.15 - index * 0.04) + ')'"
+        stroke-width="1.5"
+        class="pulse-ring"
+        :style="{ animationDelay: index * 0.4 + 's' }"
+      />
       
       <!-- Sombra en el suelo -->
       <ellipse 
         :cx="50" 
-        :cy="svgHeight - 3"
+        :cy="svgHeight - 2"
         :rx="personScale * 15" 
-        :ry="personScale * 3"
-        fill="rgba(15, 55, 89, 0.2)"
+        :ry="personScale * 4"
+        fill="rgba(15, 55, 89, 0.15)"
         class="ground-shadow"
       />
       
@@ -38,8 +57,17 @@
           cx="0" 
           cy="-30" 
           r="10" 
-          fill="url(#personGradient)"
+          fill="url(#personGradientHead)"
           class="person-head"
+        />
+        
+        <!-- Brillo en cabeza -->
+        <ellipse
+          cx="-3"
+          cy="-33"
+          rx="3"
+          ry="2"
+          fill="rgba(255, 255, 255, 0.25)"
         />
         
         <!-- Cuerpo -->
@@ -48,7 +76,7 @@
           y="-20"
           width="14"
           height="24"
-          rx="2.5"
+          rx="3"
           fill="url(#personGradient)"
           class="person-body"
         />
@@ -95,23 +123,22 @@
       </g>
     </svg>
     
-    <!-- Indicador de escala -->
-    <div class="scale-indicator">
-      <div class="scale-bar">
-        <div 
-          class="scale-fill" 
-          :style="{ width: animatedValue + '%', background: scaleColor }"
-        ></div>
-      </div>
-      <div class="scale-label">
-        {{ formatPopulation(props.value) }}
+    <!-- Indicador de puntos -->
+    <div class="scale-dots-indicator">
+      <div class="dots-container">
+        <span 
+          v-for="n in 5" 
+          :key="n" 
+          class="dot"
+          :class="{ 'active': n <= scaleLevel }"
+        ></span>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { computed } from 'vue'
 
 const props = defineProps({
   value: { 
@@ -120,106 +147,56 @@ const props = defineProps({
   }
 })
 
-const animatedValue = ref(0)
-
 // Normalizar población a escala 0-100 usando escala logarítmica
 const normalizedValue = computed(() => {
   if (props.value === 0) return 0
   
-  // Escala logarítmica para mejor visualización
-  // Poblaciones típicas en México: 50,000 a 10,000,000
-  const minPop = 50000  // Población mínima esperada
-  const maxPop = 10000000  // Población máxima esperada (Ej: CDMX)
+  const minPop = 50000
+  const maxPop = 10000000
   
-  // Normalizar con logaritmo para mejor distribución visual
   const logValue = Math.log10(props.value)
   const logMin = Math.log10(minPop)
   const logMax = Math.log10(maxPop)
   
   const normalized = ((logValue - logMin) / (logMax - logMin)) * 100
   
-  // Limitar entre 0 y 100
   return Math.max(0, Math.min(100, normalized))
 })
 
-// Altura del contenedor según el valor normalizado
-const containerHeight = computed(() => {
-  return 55 + (animatedValue.value / 100) * 20
+// Calcular nivel de escala (1-5) basado en el valor
+const scaleLevel = computed(() => {
+  const val = props.value
+  if (val >= 8000000) return 5
+  if (val >= 4000000) return 4
+  if (val >= 2000000) return 3
+  if (val >= 1000000) return 2
+  return 1
 })
 
-// Altura del SVG
+// Altura del SVG - más grande
 const svgHeight = computed(() => {
-  return 75 + (animatedValue.value / 100) * 20
+  return 95
 })
 
-// Escala de la persona (0.6 a 1.0) - Reducida para evitar desbordamiento
+// Escala de la persona - MÁS GRANDE (0.9 a 1.3)
 const personScale = computed(() => {
-  return 0.6 + (animatedValue.value / 100) * 0.4
+  return 0.9 + (normalizedValue.value / 100) * 0.4
 })
 
-// Posición Y de la persona para mantenerla en el suelo
+// Posición Y de la persona
 const personY = computed(() => {
-  return svgHeight.value - 25
-})
-
-// Color de la barra según el valor
-const scaleColor = computed(() => {
-  if (animatedValue.value < 500) return '#f59e0b'
-  if (animatedValue.value < 500) return '#3b82f6'
-  return '#22c55e'
-})
-
-// Formatear población para mostrar
-function formatPopulation(value) {
-  if (value === 0) return 'Sin datos'
-  if (value < 100000) return 'Población Pequeña'
-  if (value < 500000) return 'Población Baja'
-  if (value < 2000000) return 'Población Media'
-  if (value < 5000000) return 'Población Alta'
-  return 'Población Muy Alta'
-}
-
-// Animación del valor normalizado
-function animateValue(targetValue) {
-  const startValue = animatedValue.value
-  const startTime = performance.now()
-  const duration = 1000 // Aumentado de 1500ms a 2500ms para animación más lenta
-  
-  function animate(currentTime) {
-    const elapsed = currentTime - startTime
-    const progress = Math.min(elapsed / duration, 1)
-    
-    // Easing function (ease-out-cubic)
-    const eased = 1 - Math.pow(0.0001 - progress, 3)
-    
-    animatedValue.value = startValue + (targetValue - startValue) * eased
-    
-    if (progress < 1) {
-      requestAnimationFrame(animate)
-    }
-  }
-  
-  requestAnimationFrame(animate)
-}
-
-watch(() => normalizedValue.value, (newValue) => {
-  animateValue(newValue)
-}, { immediate: false })
-
-onMounted(() => {
-  // Iniciar animación inmediatamente sin delay
-  animateValue(normalizedValue.value)
+  return svgHeight.value - 22
 })
 </script>
 
 <style scoped>
 .person-chart {
   width: 100%;
-  max-height: 95px;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: center;
   gap: 6px;
   padding: 5px;
   overflow: hidden;
@@ -227,22 +204,34 @@ onMounted(() => {
 
 .person-svg {
   width: 100%;
-  max-width: 100px;
-  max-height: 75px;
-  transition: height 2.5s cubic-bezier(0.4, 0, 0.2, 1);
+  height: auto;
+  max-width: 70px;
+  flex: 1;
+  min-height: 0;
 }
 
-.ground-shadow {
-  transition: rx 2.5s cubic-bezier(0.4, 0, 0.2, 1), 
-              ry 2.5s cubic-bezier(0.4, 0, 0.2, 1);
+/* Círculos de onda pulsante */
+.pulse-ring {
+  opacity: 0;
+  animation: pulseRing 3s ease-out infinite;
+}
+
+@keyframes pulseRing {
+  0% {
+    opacity: 0.6;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.3);
+  }
 }
 
 .person-figure {
-  transition: transform 2.5s cubic-bezier(0.4, 0, 0.2, 1);
   transform-origin: center bottom;
 }
 
-/* Animación sutil de respiración */
+/* Animación de respiración */
 .person-head {
   animation: breathe 3s ease-in-out infinite;
   transform-origin: center;
@@ -253,11 +242,11 @@ onMounted(() => {
     transform: scale(1);
   }
   50% {
-    transform: scale(1.05);
+    transform: scale(1.03);
   }
 }
 
-/* Animación de brazos */
+/* Animación sutil de brazos */
 .person-arm-left,
 .person-arm-right {
   animation: wave 4s ease-in-out infinite;
@@ -274,40 +263,37 @@ onMounted(() => {
     transform: rotate(0deg);
   }
   25% {
-    transform: rotate(-5deg);
+    transform: rotate(-3deg);
   }
   75% {
-    transform: rotate(5deg);
+    transform: rotate(3deg);
   }
 }
 
-.scale-indicator {
-  width: 100%;
+/* Indicador de puntos */
+.scale-dots-indicator {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
 }
 
-.scale-bar {
-  width: 100%;
-  height: 4px;
+.dots-container {
+  display: flex;
+  gap: 5px;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
   background: #e2e8f0;
-  border-radius: 2px;
-  overflow: hidden;
+  transition: all 0.3s ease;
 }
 
-.scale-fill {
-  height: 100%;
-  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-              background 0.3s ease;
-  border-radius: 2px;
-}
-
-.scale-label {
-  font-size: 8px;
-  color: #64748b;
-  font-weight: 600;
-  text-align: center;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+.dot.active {
+  background: linear-gradient(135deg, #1e3a5f 0%, #3b82f6 100%);
+  box-shadow: 0 2px 6px rgba(30, 58, 95, 0.35);
 }
 </style>
