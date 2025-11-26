@@ -1,5 +1,4 @@
 <!-- src/modules/qualitativeIndicators/components/AmbientalesView.vue -->
-<!-- ✅ ACTUALIZADO: Card de residuos con botellas más compactas -->
 <template>
   <div class="ambientales-container">
     <!-- ✅ EMPTY STATE CENTRALIZADO cuando no hay entidad seleccionada -->
@@ -28,7 +27,6 @@
           <!-- ✅ Header Incendios -->
           <div class="card-header-dark">
             <div class="card-header-icon">
-              <!-- Icono de fuego -->
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
               </svg>
@@ -64,9 +62,8 @@
           </div>
         </div>
         
-        <!-- ✅ ACTUALIZADO: Card de Residuos con nuevo diseño compacto -->
+        <!-- ✅ Card de Residuos -->
         <div class="bottle-card">
-          <!-- ✅ Header oscuro -->
           <div class="bottle-header">
             <div class="bottle-header-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -80,7 +77,6 @@
             <span class="bottle-header-title">Promedio diario de residuos sólidos urbanos recolectados</span>
           </div>
           
-          <!-- Body con botellas y valores -->
           <div class="bottle-body">
             <div v-if="residuosLoading" class="loading-state-small">
               <div class="spinner-small"></div>
@@ -91,12 +87,10 @@
             </div>
 
             <template v-else>
-              <!-- Contenedor de botellas -->
               <div class="bottle-graph-container">
                 <BottleChart :value="residuosPercentage" />
               </div>
               
-              <!-- ✅ Valor de kg solamente -->
               <div class="bottle-values">
                 <div class="bottle-value-item">
                   <span class="bottle-value-number">{{ formatNumber(residuosValue) }}</span>
@@ -112,12 +106,10 @@
       <div class="right-card-container">
         <!-- Top Right Container -->
         <div class="top-right-card-container">
-          <!-- Area Chart - Emisiones Contaminantes (layout vertical con header arriba) -->
+          <!-- Area Chart - Emisiones Contaminantes -->
           <div class="emisiones-card">
-            <!-- ✅ Header Emisiones -->
             <div class="card-header-dark">
               <div class="card-header-icon">
-                <!-- Icono de nube/contaminación -->
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
                   <path d="M22 10a3 3 0 0 0-3-3h-2.207a5.502 5.502 0 0 0-10.702.5"/>
@@ -126,7 +118,6 @@
               <span class="card-header-title">Emisiones de contaminantes atmosféricos por fuente en toneladas</span>
             </div>
             
-            <!-- Body -->
             <div class="emisiones-body">
               <div v-if="emisionesLoading" class="loading-state-small">
                 <div class="spinner-small"></div>
@@ -137,6 +128,7 @@
               </div>
 
               <EmisionesBarChart 
+                v-else
                 :excelData="emisionesData"
               />  
             </div>
@@ -144,10 +136,8 @@
           
           <!-- Gauge Chart - Consumo de Energía Eléctrica -->
           <div class="energia-card">
-            <!-- ✅ Header Energía -->
             <div class="card-header-dark">
               <div class="card-header-icon">
-                <!-- Icono de rayo/electricidad -->
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
                 </svg>
@@ -155,7 +145,6 @@
               <span class="card-header-title">Consumo de energía eléctrica</span>
             </div>
             
-            <!-- Body -->
             <div class="energia-body">
               <div v-if="energiaLoading" class="loading-state-small">
                 <div class="spinner-small"></div>
@@ -178,10 +167,8 @@
         <!-- Bottom Right Container -->
         <div class="bottom-right-card-container">
           <div class="areas-card">
-            <!-- ✅ Header Áreas Naturales -->
             <div class="card-header-dark">
               <div class="card-header-icon">
-                <!-- Icono de árbol/naturaleza -->
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M10 10v.2A3 3 0 0 1 8.9 16v0H5v0h0a3 3 0 0 1-1-5.8V10a3 3 0 0 1 6 0Z"/>
                   <path d="M7 16v6"/>
@@ -192,7 +179,6 @@
               <span class="card-header-title">Áreas naturales protegidas</span>
             </div>
             
-            <!-- Body -->
             <div class="areas-body">
               <div v-if="areasLoading" class="loading-state">
                 <div class="spinner-small"></div>
@@ -235,6 +221,7 @@ import VerticalBarChart from '@/modules/charts/components/VerticalBarChart.vue'
 import { useStorageData } from '@/dataConection/useStorageData'
 import { getMapping, getSheetName, setActiveYear } from '@/dataConection/storageConfig'
 import EmisionesBarChart from '../../charts/components/EmisionesBarChart.vue'
+
 const props = defineProps({
   selectedEntity: {
     type: String,
@@ -248,7 +235,7 @@ const props = defineProps({
 
 const emit = defineEmits(['back'])
 
-const { fetchData, transform } = useStorageData()
+const { fetchData } = useStorageData()
 
 // ============================================
 // INCENDIOS FORESTALES
@@ -337,28 +324,25 @@ const loadResiduosData = async (entityName = null, year = null) => {
       throw new Error('No se obtuvieron datos')
     }
     
-    // ✅ Encontrar el valor máximo de todos los estados
     const maxValue = rawData.reduce((max, row) => {
       const value = parseFloat(row[mapping.valueColumn]) || 0
       return value > max ? value : max
     }, 0)
     
-    // Buscar el valor de la entidad seleccionada
     const entityRow = rawData.find(row => row[mapping.categoryColumn] === entityName)
     
     if (entityRow) {
       const entityValue = parseFloat(entityRow[mapping.valueColumn]) || 0
       residuosValue.value = entityValue
       
-      // ✅ Calcular porcentaje respecto al valor máximo × 100 (para mejor visualización)
       if (maxValue > 0) {
         const rawPercentage = (entityValue / maxValue) * 100 * 100
-        residuosPercentage.value = Math.min(rawPercentage, 100) // Limitar a 100
+        residuosPercentage.value = Math.min(rawPercentage, 100)
       } else {
         residuosPercentage.value = 0
       }
       
-      console.log(`📊 [Residuos] ${entityName}: ${entityValue.toLocaleString()} kg (${residuosPercentage.value.toFixed(1)}% botellas)`)
+
     } else {
       residuosValue.value = 0
       residuosPercentage.value = 0
@@ -427,6 +411,15 @@ const energiaPercentage = ref(0)
 const energiaLoading = ref(false)
 const energiaError = ref(null)
 
+// Función para parsear números en formato español (1.456,90 → 1456.90)
+const parseSpanishNumber = (value) => {
+  if (!value) return 0
+  const cleaned = String(value)
+    .replace(/\./g, '')   // Quitar puntos (separador de miles)
+    .replace(',', '.')    // Coma a punto (separador decimal)
+  return parseFloat(cleaned) || 0
+}
+
 const loadEnergiaData = async (entityName = null, year = null) => {
   try {
     energiaLoading.value = true
@@ -439,28 +432,37 @@ const loadEnergiaData = async (entityName = null, year = null) => {
       return
     }
     
-    if (year) setActiveYear(year)
-    
     const mapping = getMapping('energia')
-    const sheetName = getSheetName('energia')
+    const sheetName = '2024'
     const rawData = await fetchData('energia', sheetName)
     
     if (rawData.length === 0) {
       throw new Error('No se obtuvieron datos')
     }
     
+    const maxValue = rawData.reduce((max, row) => {
+      const value = parseSpanishNumber(row[mapping.valueColumn])
+      return value > max ? value : max
+    }, 0)
+    
     const entityRow = rawData.find(row => row[mapping.categoryColumn] === entityName)
     
     if (entityRow) {
-      energiaValue.value = parseFloat(entityRow[mapping.valueColumn]) || 0
-      energiaPercentage.value = parseFloat(entityRow[mapping.percentageColumn]) || 0
+      const entityValue = parseSpanishNumber(entityRow[mapping.valueColumn])
+      energiaValue.value = entityValue
+      
+      if (maxValue > 0) {
+        energiaPercentage.value = (entityValue / maxValue) * 100
+      } else {
+        energiaPercentage.value = 0
+      }
     } else {
       energiaValue.value = 0
       energiaPercentage.value = 0
     }
     
   } catch (err) {
-    console.error('❌ [Energía] Error:', err)
+    console.error('Error cargando energía:', err)
     energiaError.value = err.message
   } finally {
     energiaLoading.value = false
@@ -555,13 +557,15 @@ watch(() => props.selectedYear, (newYear) => {
 // LIFECYCLE
 // ============================================
 onMounted(async () => {
-  await Promise.all([
-    loadIncendiosData(props.selectedEntity, props.selectedYear),
-    loadResiduosData(props.selectedEntity, props.selectedYear),
-    loadEmisionesData(props.selectedEntity, props.selectedYear),
-    loadEnergiaData(props.selectedEntity, props.selectedYear),
-    loadAreasNaturalesData(props.selectedEntity, props.selectedYear)
-  ])
+  if (props.selectedEntity) {
+    await Promise.all([
+      loadIncendiosData(props.selectedEntity, props.selectedYear),
+      loadResiduosData(props.selectedEntity, props.selectedYear),
+      loadEmisionesData(props.selectedEntity, props.selectedYear),
+      loadEnergiaData(props.selectedEntity, props.selectedYear),
+      loadAreasNaturalesData(props.selectedEntity, props.selectedYear)
+    ])
+  }
 })
 </script>
 
@@ -673,7 +677,7 @@ onMounted(async () => {
   background: white;
 }
 
-/* ✅ Header oscuro genérico para todas las cards - COMPACTO */
+/* ✅ Header oscuro genérico */
 .card-header-dark {
   display: flex;
   align-items: center;
@@ -774,7 +778,7 @@ onMounted(async () => {
   margin: 0 0 10px 0;
 }
 
-/* ✅ NUEVO: Card de Residuos Sólidos - Diseño compacto */
+/* Card de Residuos Sólidos */
 .bottle-card {
   height: 25%;
   border-radius: 12px;
@@ -785,7 +789,6 @@ onMounted(async () => {
   border: 1px solid #e2e8f0;
 }
 
-/* ✅ Header oscuro compacto - Residuos */
 .bottle-header {
   display: flex;
   align-items: center;
@@ -822,7 +825,6 @@ onMounted(async () => {
   letter-spacing: 0.1px;
 }
 
-/* ✅ Body compacto */
 .bottle-body {
   display: flex;
   flex-direction: row;
@@ -844,7 +846,6 @@ onMounted(async () => {
   max-height: 60px;
 }
 
-/* ✅ Valores compactos */
 .bottle-values {
   display: flex;
   flex-direction: column;
@@ -888,7 +889,6 @@ onMounted(async () => {
   background: #e2e8f0;
 }
 
-/* Rest of styles - sin cambios */
 h2 {
   text-align: center;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -926,7 +926,7 @@ h2 {
   gap: 10px;
 }
 
-/* ✅ Card Emisiones - Layout vertical */
+/* Card Emisiones */
 .emisiones-card {
   width: 65%;
   border-radius: 12px;
@@ -947,7 +947,7 @@ h2 {
   justify-content: center;
 }
 
-/* ✅ Card Energía */
+/* Card Energía */
 .energia-card {
   width: 35%;
   border-radius: 12px;
@@ -995,7 +995,7 @@ h2 {
   border-radius: 12px;
 }
 
-/* ✅ Card Áreas Naturales */
+/* Card Áreas Naturales */
 .areas-card {
   height: 100%;
   border-radius: 12px;

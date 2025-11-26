@@ -1,5 +1,5 @@
 // src/dataConection/storageConfig.js
-// ✅ ACTUALIZADO con configuración completa para PRESUPUESTOS
+// ✅ ACTUALIZADO con configuración correcta para ITAEE y SOCIALES
 
 console.log('API Key:', import.meta.env.VITE_GOOGLE_SHEETS_API_KEY)
 console.log('Sheet ID Principal:', import.meta.env.VITE_GOOGLE_SHEET_ID)
@@ -186,27 +186,6 @@ export const storageConfig = {
           }
         }
       },
-      // ✅ NUEVO: Configuración para PRESUPUESTOS
-      presupuestos: {
-        presupuestoEstatal: {
-          sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_PRESUPUESTO_PRESUPUESTO_ESTATAL,
-          files: {
-            presupuestoEstatal: '2024'
-          }
-        },
-        financiamientos: {
-          sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_PRESUPUESTO_FINANCIAMIENTOS,
-          files: {
-            financiamientos: '2024'
-          }
-        },
-        programas: {
-          sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_PRESUPUESTO_PROGRAMAS,
-          files: {
-            programas: '2024'
-          }
-        }
-      }
     },
     
     sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID,
@@ -235,212 +214,12 @@ export const storageConfig = {
       BIPE: '2024',
       ITDIF: '2024',
       ICI: '2024',
-      PBRSED: '2024',
-      // ✅ NUEVO: Archivos de presupuestos
-      presupuestoEstatal: '2024',
-      financiamientos: '2024',
-      programas: '2024'
+      PBRSED: '2024'
     }
   },
   
   mappings: {
-    // ============================================
-    // ✅ NUEVO: CUALITATIVOS - PRESUPUESTOS
-    // ============================================
-    presupuestoEstatal: {
-      categoryColumn: 'Entidad Federativa',
-      variables: [
-        {
-          key: 'Presupuesto Total',
-          column: 'Presupuesto Total',
-          label: 'Presupuesto Total',
-          color: '#0F3759',
-          order: 1
-        }
-      ]
-    },
-    financiamientos: {
-      categoryColumn: 'Entidad Federativa',
-      variables: [
-        {
-          key: 'Agua y drenaje',
-          column: 'Agua y drenaje',
-          label: 'Agua y drenaje',
-          color: '#0F3759',
-          order: 1
-        },
-        {
-          key: 'Suelos',
-          column: 'Suelos',
-          label: 'Suelos',
-          color: '#3B5A70',
-          order: 2
-        },
-        {
-          key: 'Residuos',
-          column: 'Residuos',
-          label: 'Residuos',
-          color: '#4E6D82',
-          order: 3
-        },
-        {
-          key: 'Energía',
-          column: 'Energía',
-          label: 'Energía',
-          color: '#6B8FA3',
-          order: 4
-        },
-        {
-          key: 'Atmósfera',
-          column: 'Atmósfera',
-          label: 'Atmósfera',
-          color: '#0F3759',
-          order: 5
-        },
-        {
-          key: 'Bioecosistemas',
-          column: 'Bioecosistemas',
-          label: 'Bioecosistemas',
-          color: '#3B5A70',
-          order: 6
-        },
-        {
-          key: 'Cambio Climático',
-          column: 'Cambio Climático',
-          label: 'Cambio Climático',
-          color: '#4E6D82',
-          order: 7
-        },
-        {
-          key: 'Asentamientos',
-          column: 'Asentamientos',
-          label: 'Asentamientos',
-          color: '#6B8FA3',
-          order: 8
-        },
-        {
-          key: 'Eduambiental',
-          column: 'Eduambiental',
-          label: 'Eduambiental',
-          color: '#0F3759',
-          order: 9
-        },
-        {
-          key: 'Admsostenible',
-          column: 'Admsostenible',
-          label: 'Admsostenible',
-          color: '#3B5A70',
-          order: 10
-        },
-        {
-          key: 'Transporte',
-          column: 'Transporte',
-          label: 'Transporte',
-          color: '#4E6D82',
-          order: 11
-        },
-        {
-          key: 'Otros Programas',
-          column: 'Otros Programas',
-          label: 'Otros Programas',
-          color: '#6B8FA3',
-          order: 12
-        }
-      ]
-    },
-    programas: {
-      categoryColumn: 'Entidad Federativa',
-      variables: [
-        {
-          key: 'Agua y drenaje',
-          column: 'Agua y drenaje',
-          label: 'Agua y drenaje',
-          color: '#0F3759',
-          order: 1
-        },
-        {
-          key: 'Suelos',
-          column: 'Suelos',
-          label: 'Suelos',
-          color: '#3B5A70',
-          order: 2
-        },
-        {
-          key: 'Residuos',
-          column: 'Residuos',
-          label: 'Residuos',
-          color: '#4E6D82',
-          order: 3
-        },
-        {
-          key: 'Energía',
-          column: 'Energía',
-          label: 'Energía',
-          color: '#6B8FA3',
-          order: 4
-        },
-        {
-          key: 'Atmósfera',
-          column: 'Atmósfera',
-          label: 'Atmósfera',
-          color: '#0F3759',
-          order: 5
-        },
-        {
-          key: 'Bioecosistemas',
-          column: 'Bioecosistemas',
-          label: 'Bioecosistemas',
-          color: '#3B5A70',
-          order: 6
-        },
-        {
-          key: 'Cambio Climático',
-          column: 'Cambio Climático',
-          label: 'Cambio Climático',
-          color: '#4E6D82',
-          order: 7
-        },
-        {
-          key: 'Asentamientos',
-          column: 'Asentamientos',
-          label: 'Asentamientos',
-          color: '#6B8FA3',
-          order: 8
-        },
-        {
-          key: 'Eduambiental',
-          column: 'Eduambiental',
-          label: 'Eduambiental',
-          color: '#0F3759',
-          order: 9
-        },
-        {
-          key: 'Admsostenible',
-          column: 'Admsostenible',
-          label: 'Admsostenible',
-          color: '#3B5A70',
-          order: 10
-        },
-        {
-          key: 'Transporte',
-          column: 'Transporte',
-          label: 'Transporte',
-          color: '#4E6D82',
-          order: 11
-        },
-        {
-          key: 'Otros Programas',
-          column: 'Otros Programas',
-          label: 'Otros Programas',
-          color: '#6B8FA3',
-          order: 12
-        }
-      ]
-    },
-
-    // ============================================
-    // CUALITATIVOS - GOBERNABILIDAD
-    // ============================================
+    //CUALITATIVOS - GOBERNABILIDAD
     satisfaccionFederal: {
       categoryColumn: 'Entidad Federativa',
       variables: [
@@ -515,21 +294,21 @@ export const storageConfig = {
           key: 'Consistencia en RT',
           column: 'Consistencia en RT',
           label: 'Consistencia en RT',
-          color: '#3B5A70',
+          color: '#0F3759',
           order: 2
         },
         {
           key: 'Proyectos',
           column: 'Proyectos',
           label: 'Proyectos',
-          color: '#4E6D82',
+          color: '#0F3759',
           order: 3
         },
         {
           key: 'Indicadores',
           column: 'Indicadores',
           label: 'Indicadores',
-          color: '#6B8FA3',
+          color: '#0F3759',
           order: 4
         }
       ]
@@ -553,13 +332,10 @@ export const storageConfig = {
         }
       ]
     },
-
-    // ============================================
-    // CUALITATIVOS - ECONOMICOS
-    // ============================================
+    //CUALITATIVOS - ECONOMICOS
     ingresoTotal: {
       categoryColumn: 'Entidad Federativa',
-      variables: [
+            variables: [
         {
           key: 'Ingresos',
           column: 'Ingresos',
@@ -574,7 +350,7 @@ export const storageConfig = {
           label: 'Egresos',
           color: '#3B5A70',
           colorClass: 'blue',
-          order: 2
+          order: 1
         },
       ]
     },
@@ -613,9 +389,7 @@ export const storageConfig = {
       ]
     },
 
-    // ============================================
-    // CUALITATIVOS - SOCIALES
-    // ============================================
+    //CUALITATIVOS - SOCIALES
     desocupacion: {
       categoryColumn: 'Entidad Federativa',
       variables: [
@@ -730,10 +504,8 @@ export const storageConfig = {
         }
       ]
     },
-
-    // ============================================
-    // CUALITATIVOS - AMBIENTALES
-    // ============================================
+    //CUALITATIVOS - AMBIENTALES
+    // Mapping para Incendios Forestales (HorizontalBarChart)
     incendiosForestales: {
       categoryColumn: 'Entidad Federativa',
       variables: [
@@ -787,10 +559,14 @@ export const storageConfig = {
         }
       ]
     },
+
+    // Mapping para Residuos Sólidos Urbanos (BottleChart)
     residuosSolidos: {
       categoryColumn: 'Entidad Federativa',
       valueColumn: 'Sólidos Urbanos',
     },
+
+    // Mapping para Emisiones Contaminantes (AreaChart)
     emisiones: {
       categoryColumn: 'Entidad Federativa',
       variables: [
@@ -831,10 +607,14 @@ export const storageConfig = {
         }
       ]
     },
+
+    // ✅ NUEVO: Mapping para Consumo de Energía Eléctrica (GaugeChart)
     energia: {
       categoryColumn: 'Entidad Federativa',
       valueColumn: 'Consumo Energía'
     },
+
+    // ✅ NUEVO: Mapping para Áreas Naturales Protegidas (VerticalBarChart)
     areasNaturales: {
       categoryColumn: 'Entidad Federativa',
       variables: [
@@ -889,9 +669,7 @@ export const storageConfig = {
       ]
     },
 
-    // ============================================
-    // CUANTITATIVOS
-    // ============================================
+    // ... resto de mappings existentes
     chartsPresupuestos: {
       stateColumn: 'Entidad Federativa',
       variableColumns: [
@@ -1324,31 +1102,11 @@ export function getCurrentConfig() {
   }
 }
 
-// ✅ ACTUALIZADO: Ahora busca en PRESUPUESTOS, economicos, sociales, gobernabilidad y ambientales
+// ✅ ACTUALIZADO: Ahora busca en economicos, sociales y ambientales
 export function getSheetIdForFile(fileKey) {
   const config = storageConfig.googlesheets
   
-  // ✅ PRIMERO: Buscar en sheets modulares de PRESUPUESTOS
-  if (config.sheets && config.sheets.presupuestos) {
-    for (const [componentKey, componentConfig] of Object.entries(config.sheets.presupuestos)) {
-      if (componentConfig.files && componentConfig.files[fileKey]) {
-        console.log(`📄 Archivo "${fileKey}" encontrado en presupuestos.${componentKey}`)
-        return componentConfig.sheetId
-      }
-    }
-  }
-  
-  // ✅ SEGUNDO: Buscar en sheets modulares de GOBERNABILIDAD
-  if (config.sheets && config.sheets.gobernabilidad) {
-    for (const [componentKey, componentConfig] of Object.entries(config.sheets.gobernabilidad)) {
-      if (componentConfig.files && componentConfig.files[fileKey]) {
-        console.log(`📄 Archivo "${fileKey}" encontrado en gobernabilidad.${componentKey}`)
-        return componentConfig.sheetId
-      }
-    }
-  }
-  
-  // ✅ TERCERO: Buscar en sheets modulares de ECONOMICOS
+  // ✅ PRIMERO: Buscar en sheets modulares de ECONOMICOS
   if (config.sheets && config.sheets.economicos) {
     for (const [componentKey, componentConfig] of Object.entries(config.sheets.economicos)) {
       if (componentConfig.files && componentConfig.files[fileKey]) {
@@ -1358,7 +1116,7 @@ export function getSheetIdForFile(fileKey) {
     }
   }
   
-  // ✅ CUARTO: Buscar en sheets modulares de SOCIALES
+  // ✅ SEGUNDO: Buscar en sheets modulares de SOCIALES
   if (config.sheets && config.sheets.sociales) {
     for (const [componentKey, componentConfig] of Object.entries(config.sheets.sociales)) {
       if (componentConfig.files && componentConfig.files[fileKey]) {
@@ -1368,7 +1126,7 @@ export function getSheetIdForFile(fileKey) {
     }
   }
   
-  // ✅ QUINTO: Buscar en sheets modulares de AMBIENTALES
+  // ✅ TERCERO: Buscar en sheets modulares de AMBIENTALES
   if (config.sheets && config.sheets.ambientales) {
     for (const [componentKey, componentConfig] of Object.entries(config.sheets.ambientales)) {
       if (componentConfig.files && componentConfig.files[fileKey]) {
@@ -1399,7 +1157,7 @@ export function getSheetIdForFile(fileKey) {
   return config.sheetId
 }
 
-// ✅ ACTUALIZADO: Retornar año dinámico para TODOS los sheets
+// ✅ ACTUALIZADO: Retornar año dinámico para TODOS los sheets de ambientales, economicos y sociales
 export function getSheetName(fileKey) {
   const config = storageConfig.googlesheets
   
@@ -1426,42 +1184,12 @@ export function getSheetName(fileKey) {
     'idh',
     'rezagoSocial',
     'indiceGini',
-    'poblacion',
-    // Archivos gobernabilidad
-    'satisfaccionFederal',
-    'satisfaccionEstatal',
-    'IGOPP',
-    'BIPE',
-    'ITDIF',
-    'ICI',
-    'PBRSED',
-    // ✅ NUEVO: Archivos presupuestos
-    'presupuestoEstatal',
-    'financiamientos',
-    'programas'
+    'poblacion'
   ]
   
   if (dynamicYearFiles.includes(fileKey)) {
     console.log(`📅 Nombre de hoja dinámico para "${fileKey}": ${currentActiveYear}`)
     return currentActiveYear
-  }
-  
-  // Buscar en configuración modular de presupuestos
-  if (config.sheets && config.sheets.presupuestos) {
-    for (const [componentKey, componentConfig] of Object.entries(config.sheets.presupuestos)) {
-      if (componentConfig.files && componentConfig.files[fileKey]) {
-        return componentConfig.files[fileKey]
-      }
-    }
-  }
-
-  // Buscar en configuración modular de gobernabilidad
-  if (config.sheets && config.sheets.gobernabilidad) {
-    for (const [componentKey, componentConfig] of Object.entries(config.sheets.gobernabilidad)) {
-      if (componentConfig.files && componentConfig.files[fileKey]) {
-        return componentConfig.files[fileKey]
-      }
-    }
   }
   
   // Buscar en configuración modular de sociales
