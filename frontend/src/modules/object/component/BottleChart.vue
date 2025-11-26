@@ -21,11 +21,11 @@
               <stop offset="100%" stop-color="#c8cbd0"/>
             </linearGradient>
             
-            <!-- Gradiente para el líquido -->
+            <!-- Gradiente para el líquido - Azul oscuro como el header -->
             <linearGradient :id="'liquidGradient-' + index" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stop-color="#60a5fa"/>
-              <stop offset="50%" stop-color="#3b82f6"/>
-              <stop offset="100%" stop-color="#2563eb"/>
+              <stop offset="0%" stop-color="#2a5478"/>
+              <stop offset="50%" stop-color="#1e3a5f"/>
+              <stop offset="100%" stop-color="#153d5e"/>
             </linearGradient>
             
             <!-- Clip path para el cuerpo de la botella -->
@@ -207,15 +207,15 @@ onMounted(() => {
   transform: scale(1.08);
 }
 
-/* Animación del líquido - más lenta para cada botella */
+/* Animación del líquido */
 .liquid-fill {
-  transition: y 0.6s cubic-bezier(0.4, 0, 0.2, 1), 
-              height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: y 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+              height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .liquid-shine {
-  transition: y 0.6s cubic-bezier(0.4, 0, 0.2, 1), 
-              height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: y 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+              height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   opacity: 0.9;
 }
 </style>

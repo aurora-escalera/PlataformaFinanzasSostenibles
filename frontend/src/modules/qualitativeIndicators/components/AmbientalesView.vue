@@ -24,30 +24,44 @@
       <!-- Left Side Container -->
       <div class="left-card-container">
         <!-- Top: Horizontal Bar Chart - Incendios Forestales -->
-        <div class="bar-graph card">
-          <div v-if="incendiosLoading" class="loading-state">
-            <div class="spinner-small"></div>
-            <p>Cargando datos...</p>
+        <div class="incendios-card">
+          <!-- ✅ Header Incendios -->
+          <div class="card-header-dark">
+            <div class="card-header-icon">
+              <!-- Icono de fuego -->
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
+              </svg>
+            </div>
+            <span class="card-header-title">Incendios forestales en hectáreas</span>
           </div>
+          
+          <!-- Body -->
+          <div class="incendios-body">
+            <div v-if="incendiosLoading" class="loading-state">
+              <div class="spinner-small"></div>
+              <p>Cargando datos...</p>
+            </div>
 
-          <div v-else-if="incendiosError" class="error-state">
-            <p>Error: {{ incendiosError }}</p>
-            <button @click="loadIncendiosData(selectedEntity, selectedYear)" class="retry-btn-small">
-              Reintentar
-            </button>
+            <div v-else-if="incendiosError" class="error-state">
+              <p>Error: {{ incendiosError }}</p>
+              <button @click="loadIncendiosData(selectedEntity, selectedYear)" class="retry-btn-small">
+                Reintentar
+              </button>
+            </div>
+
+            <HorizontalBarChart
+              v-else
+              :variables="incendiosData"
+              width="100%"
+              height="100%"
+              title=""
+              :showFilters="true"
+              :showLegend="true"
+              barHeight="20px"
+              barGap="1px"
+            />
           </div>
-
-          <HorizontalBarChart
-            v-else
-            :variables="incendiosData"
-            width="100%"
-            height="100%"
-            title="Incendios forestales en hectáreas"
-            :showFilters="true"
-            :showLegend="true"
-            barHeight="20px"
-            barGap="1px"
-          />
         </div>
         
         <!-- ✅ ACTUALIZADO: Card de Residuos con nuevo diseño compacto -->
@@ -98,12 +112,22 @@
       <div class="right-card-container">
         <!-- Top Right Container -->
         <div class="top-right-card-container">
-          <!-- Area Chart - Emisiones Contaminantes -->
-          <div class="area-chart card">
-            <div class="title-area-chart">
-              <h3>Emisiones de contaminantes atmosféricos por fuente en toneladas.</h3>
+          <!-- Area Chart - Emisiones Contaminantes (layout vertical con header arriba) -->
+          <div class="emisiones-card">
+            <!-- ✅ Header Emisiones -->
+            <div class="card-header-dark">
+              <div class="card-header-icon">
+                <!-- Icono de nube/contaminación -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
+                  <path d="M22 10a3 3 0 0 0-3-3h-2.207a5.502 5.502 0 0 0-10.702.5"/>
+                </svg>
+              </div>
+              <span class="card-header-title">Emisiones de contaminantes atmosféricos por fuente en toneladas</span>
             </div>
-            <div class="area-chart-container">
+            
+            <!-- Body -->
+            <div class="emisiones-body">
               <div v-if="emisionesLoading" class="loading-state-small">
                 <div class="spinner-small"></div>
               </div>
@@ -115,60 +139,87 @@
               <AreaChart 
                 v-else
                 :excelData="emisionesData"
-                title="Emisiones por fuente"
+                title=""
               />
             </div>
           </div>
           
           <!-- Gauge Chart - Consumo de Energía Eléctrica -->
-          <div class="gauge-container card">
-            <div class="title-gauge">
-              <h3>Consumo de energía eléctrica</h3>
+          <div class="energia-card">
+            <!-- ✅ Header Energía -->
+            <div class="card-header-dark">
+              <div class="card-header-icon">
+                <!-- Icono de rayo/electricidad -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                </svg>
+              </div>
+              <span class="card-header-title">Consumo de energía eléctrica</span>
             </div>
             
-            <div v-if="energiaLoading" class="loading-state-small">
-              <div class="spinner-small"></div>
-            </div>
-
-            <div v-else-if="energiaError" class="error-state-small">
-              <p>Error cargando datos</p>
-            </div>
-
-            <template v-else>
-              <div class="gauge-graph">
-                <GaugeChart :value="energiaPercentage" />
+            <!-- Body -->
+            <div class="energia-body">
+              <div v-if="energiaLoading" class="loading-state-small">
+                <div class="spinner-small"></div>
               </div>
-              <div class="gauge-number number">{{ formatNumber(energiaValue) }} GWh</div>
-            </template>
+
+              <div v-else-if="energiaError" class="error-state-small">
+                <p>Error cargando datos</p>
+              </div>
+
+              <template v-else>
+                <div class="gauge-graph">
+                  <GaugeChart :value="energiaPercentage" />
+                </div>
+                <div class="gauge-number">{{ formatNumber(energiaValue) }} GWh</div>
+              </template>
+            </div>
           </div>
         </div>
         
         <!-- Bottom Right Container -->
         <div class="bottom-right-card-container">
-          <div class="bottom-bar-graph card">
-            <div v-if="areasLoading" class="loading-state">
-              <div class="spinner-small"></div>
-              <p>Cargando datos...</p>
+          <div class="areas-card">
+            <!-- ✅ Header Áreas Naturales -->
+            <div class="card-header-dark">
+              <div class="card-header-icon">
+                <!-- Icono de árbol/naturaleza -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M10 10v.2A3 3 0 0 1 8.9 16v0H5v0h0a3 3 0 0 1-1-5.8V10a3 3 0 0 1 6 0Z"/>
+                  <path d="M7 16v6"/>
+                  <path d="M13 19v3"/>
+                  <path d="M18 10v.2A3 3 0 0 1 16.9 16v0H13v0h0a3 3 0 0 1-1-5.8V10a3 3 0 0 1 6 0Z"/>
+                </svg>
+              </div>
+              <span class="card-header-title">Áreas naturales protegidas</span>
             </div>
+            
+            <!-- Body -->
+            <div class="areas-body">
+              <div v-if="areasLoading" class="loading-state">
+                <div class="spinner-small"></div>
+                <p>Cargando datos...</p>
+              </div>
 
-            <div v-else-if="areasError" class="error-state">
-              <p>Error: {{ areasError }}</p>
-              <button @click="loadAreasNaturalesData(selectedEntity, selectedYear)" class="retry-btn-small">
-                Reintentar
-              </button>
+              <div v-else-if="areasError" class="error-state">
+                <p>Error: {{ areasError }}</p>
+                <button @click="loadAreasNaturalesData(selectedEntity, selectedYear)" class="retry-btn-small">
+                  Reintentar
+                </button>
+              </div>
+
+              <VerticalBarChart
+                v-else
+                :variables="areasNaturalesData"
+                width="100%"
+                height="100%"
+                title=""
+                :showFilters="true"
+                :showLegend="true"
+                barHeight="20px"
+                barGap="1px"
+              />
             </div>
-
-            <VerticalBarChart
-              v-else
-              :variables="areasNaturalesData"
-              width="100%"
-              height="100%"
-              title="Áreas naturales protegidas"
-              :showFilters="true"
-              :showLegend="true"
-              barHeight="20px"
-              barGap="1px"
-            />
           </div>
         </div>
       </div>
@@ -301,7 +352,7 @@ const loadResiduosData = async (entityName = null, year = null) => {
       const entityValue = parseFloat(entityRow[mapping.valueColumn]) || 0
       residuosValue.value = entityValue
       
-      // ✅ Calcular porcentaje respecto al valor máximo × 10 (para mejor visualización)
+      // ✅ Calcular porcentaje respecto al valor máximo × 100 (para mejor visualización)
       if (maxValue > 0) {
         const rawPercentage = (entityValue / maxValue) * 100 * 100
         residuosPercentage.value = Math.min(rawPercentage, 100) // Limitar a 100
@@ -309,7 +360,7 @@ const loadResiduosData = async (entityName = null, year = null) => {
         residuosPercentage.value = 0
       }
       
-      console.log(`📊 [Residuos] ${entityName}: ${entityValue.toLocaleString()} kg (botellas: ${residuosPercentage.value.toFixed(1)}%)`)
+      console.log(`📊 [Residuos] ${entityName}: ${entityValue.toLocaleString()} kg (${residuosPercentage.value.toFixed(1)}% botellas)`)
     } else {
       residuosValue.value = 0
       residuosPercentage.value = 0
@@ -607,6 +658,60 @@ onMounted(async () => {
   box-sizing: border-box;
 }
 
+/* ✅ Card Incendios Forestales */
+.incendios-card {
+  height: 75%;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+}
+
+.incendios-body {
+  flex: 1;
+  overflow: hidden;
+  background: white;
+}
+
+/* ✅ Header oscuro genérico para todas las cards - COMPACTO */
+.card-header-dark {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: linear-gradient(135deg, #1e3a5f 0%, #153d5e 100%);
+  border-bottom: 1px solid #3b6b8a;
+  flex-shrink: 0;
+}
+
+.card-header-icon {
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.card-header-icon svg {
+  width: 12px;
+  height: 12px;
+}
+
+.card-header-title {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  color: white;
+  line-height: 1.1;
+  letter-spacing: 0.1px;
+}
+
 .bar-graph {
   height: 75%;
   border-radius: 12px;
@@ -682,22 +787,22 @@ onMounted(async () => {
   border: 1px solid #e2e8f0;
 }
 
-/* ✅ Header oscuro compacto */
+/* ✅ Header oscuro compacto - Residuos */
 .bottle-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
+  gap: 6px;
+  padding: 4px 8px;
   background: linear-gradient(135deg, #1e3a5f 0%, #153d5e 100%);
-  border-bottom: 2px solid #3b6b8a;
+  border-bottom: 1px solid #3b6b8a;
   flex-shrink: 0;
 }
 
 .bottle-header-icon {
-  width: 24px;
-  height: 24px;
-  min-width: 24px;
-  border-radius: 5px;
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  border-radius: 4px;
   background: rgba(255, 255, 255, 0.15);
   display: flex;
   align-items: center;
@@ -705,12 +810,17 @@ onMounted(async () => {
   color: white;
 }
 
+.bottle-header-icon svg {
+  width: 12px;
+  height: 12px;
+}
+
 .bottle-header-title {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 500;
   color: white;
-  line-height: 1.2;
+  line-height: 1.1;
   letter-spacing: 0.1px;
 }
 
@@ -818,72 +928,68 @@ h2 {
   gap: 10px;
 }
 
-.area-chart {
+/* ✅ Card Emisiones - Layout vertical */
+.emisiones-card {
   width: 65%;
   border-radius: 12px;
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
 }
 
-.title-area-chart {
-  padding: 15px 10px;
-  width: 35%;
+.emisiones-body {
+  flex: 1;
+  padding: 5px;
+  background: white;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.area-chart-container {
-  width: 65%;
-  padding: 10px;
-}
-
-h3 {
-  text-align: center;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-weight: 300;
-  color: #535353;
-  font-size: 14px;
-  padding-left: 15px;
-  line-height: 1.3;
-}
-
-.gauge-container {
+/* ✅ Card Energía */
+.energia-card {
   width: 35%;
-  height: 100%;
+  border-radius: 12px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
 }
 
-.title-gauge {
+.energia-body {
+  flex: 1;
+  background: white;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 15px 10px;
-  height: 30%;
+  padding: 5px;
 }
 
 .gauge-graph {
   width: 100%;
-  height: 50%;
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 0;
 }
 
 .gauge-number {
-  padding: 10px;
-  height: 20%;
+  padding: 5px;
   width: 100%;
-  color: #58778F;
+  color: #1e3a5f;
   font-family: Verdana, Geneva, Tahoma, sans-serif;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .bottom-right-card-container {
@@ -891,9 +997,20 @@ h3 {
   border-radius: 12px;
 }
 
-.bottom-bar-graph {
+/* ✅ Card Áreas Naturales */
+.areas-card {
   height: 100%;
   border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+}
+
+.areas-body {
+  flex: 1;
+  background: white;
   overflow: hidden;
 }
 </style>
