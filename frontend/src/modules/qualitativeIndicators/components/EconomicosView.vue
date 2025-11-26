@@ -120,11 +120,17 @@
             </div>
 
             <template v-else>
-              <div class="person-graph">
-                <div class="person-number">{{ formatNumber(peaValue) }} Personas</div>
+              <div class="person-graph-container">
                 <PersonChart 
                   :value="peaPercentage" 
                 />
+              </div>
+              
+              <div class="person-values">
+                <div class="person-value-item">
+                  <span class="person-value-number">{{ formatNumber(peaValue) }}</span>
+                  <span class="person-value-unit">Personas</span>
+                </div>
               </div>
             </template>
           </div>
@@ -318,10 +324,25 @@ const parseNumericValue = (value) => {
   const hasCommaAndDot = stringValue.includes(',') && stringValue.includes('.')
   
   if (hasCommaAndDot) {
+    // Formato europeo: 1.234.567,89 → 1234567.89
     stringValue = stringValue.replace(/\./g, '')
     stringValue = stringValue.replace(/,/g, '.')
   } else if (stringValue.includes(',')) {
+    // Coma como decimal: 1234,56 → 1234.56
     stringValue = stringValue.replace(/,/g, '.')
+  } else if (stringValue.includes('.')) {
+    // ✅ Detectar si el punto es separador de miles
+    // Casos: "644.192" o "8.230.321" (puntos como separadores de miles)
+    const parts = stringValue.split('.')
+    const multipleDots = parts.length > 2
+    const lastPartHasThreeDigits = parts[parts.length - 1].length === 3
+    
+    // Si hay múltiples puntos O el último grupo tiene exactamente 3 dígitos
+    // entonces los puntos son separadores de miles
+    if (multipleDots || (parts.length === 2 && lastPartHasThreeDigits)) {
+      stringValue = stringValue.replace(/\./g, '')
+    }
+    // Si no, es un decimal normal (ej: "3.14")
   }
   
   const result = parseFloat(stringValue)
@@ -791,7 +812,7 @@ onMounted(async () => {
    ✅ CARD INGRESOS Y EGRESOS
    ============================================ */
 .ingresos-card {
-  height: 60%;
+  height: 75%;
   border-radius: 12px;
   display: flex;
   flex-direction: column;
@@ -810,7 +831,7 @@ onMounted(async () => {
    ✅ CARD PEA
    ============================================ */
 .pea-card {
-  height: 40%;
+  height: 25%;
   border-radius: 12px;
   display: flex;
   flex-direction: column;
@@ -820,30 +841,59 @@ onMounted(async () => {
 }
 
 .pea-body {
+  display: flex;
+  flex-direction: row;
   flex: 1;
+  padding: 6px 10px;
+  gap: 10px;
+  background: white;
+  align-items: center;
+  min-height: 0;
+}
+
+.person-graph-container {
+  flex: 1;
+  height: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-height: 55px;
+}
+
+.person-values {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  background: white;
-  padding: 5px;
-}
-
-.person-graph {
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-}
-
-.person-number {
-  display: flex;
+  align-items: center;
   justify-content: center;
-  width: 100%;
-  color: #1e3a5f;
-  font-family: Verdana, Geneva, Tahoma, sans-serif;
-  font-weight: 600;
+  gap: 2px;
+  min-width: 80px;
+  padding: 4px 6px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.person-value-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.person-value-number {
+  font-family: 'Segoe UI', Verdana, Geneva, Tahoma, sans-serif;
   font-size: 14px;
-  flex-shrink: 0;
-  padding-top: 8px;
+  font-weight: 700;
+  color: #1e3a5f;
+}
+
+.person-value-unit {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 9px;
+  font-weight: 500;
+  color: #64748b;
+  text-transform: uppercase;
 }
 
 /* ============================================
