@@ -1,5 +1,5 @@
 <!-- src/modules/qualitativeIndicators/components/AmbientalesView.vue -->
-<!-- ✅ ACTUALIZADO: Empty state centralizado cuando no hay entidad seleccionada -->
+<!-- ✅ ACTUALIZADO: Card de residuos con botellas más compactas -->
 <template>
   <div class="ambientales-container">
     <!-- ✅ EMPTY STATE CENTRALIZADO cuando no hay entidad seleccionada -->
@@ -50,12 +50,24 @@
           />
         </div>
         
-        <!-- Bottom: Bottle Graph - Residuos Sólidos Urbanos -->
-        <div class="bottle-graphs card">
-          <div class="title-bottle">
-            <h2>Promedio diario de residuos sólidos urbanos recolectados</h2>
+        <!-- ✅ ACTUALIZADO: Card de Residuos con nuevo diseño compacto -->
+        <div class="bottle-card">
+          <!-- ✅ Header oscuro -->
+          <div class="bottle-header">
+            <div class="bottle-header-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 6h18"/>
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                <line x1="10" y1="11" x2="10" y2="17"/>
+                <line x1="14" y1="11" x2="14" y2="17"/>
+              </svg>
+            </div>
+            <span class="bottle-header-title">Promedio diario de residuos sólidos urbanos recolectados</span>
           </div>
-          <div class="body-bottle">
+          
+          <!-- Body con botellas y valores -->
+          <div class="bottle-body">
             <div v-if="residuosLoading" class="loading-state-small">
               <div class="spinner-small"></div>
             </div>
@@ -65,10 +77,18 @@
             </div>
 
             <template v-else>
-              <div class="bottle-graph">
+              <!-- Contenedor de botellas -->
+              <div class="bottle-graph-container">
                 <BottleChart :value="residuosPercentage" />
               </div>
-              <div class="bottle-number number">{{ formatNumber(residuosValue) }} kg</div>
+              
+              <!-- ✅ Valor de kg solamente -->
+              <div class="bottle-values">
+                <div class="bottle-value-item">
+                  <span class="bottle-value-number">{{ formatNumber(residuosValue) }}</span>
+                  <span class="bottle-value-unit">kg</span>
+                </div>
+              </div>
             </template>
           </div>
         </div>
@@ -159,7 +179,7 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import HorizontalBarChart from '@/modules/charts/components/HorizontalBarChart.vue'
-import BottleChart from '@/modules/object/component/bottleChart.vue'
+import BottleChart from '@/modules/object/component/BottleChart.vue'
 import AreaChart from '@/modules/charts/components/AreaChart.vue'
 import GaugeChart from '@/modules/object/component/GaugeChart.vue'
 import VerticalBarChart from '@/modules/charts/components/VerticalBarChart.vue'
@@ -268,11 +288,28 @@ const loadResiduosData = async (entityName = null, year = null) => {
       throw new Error('No se obtuvieron datos')
     }
     
+    // ✅ Encontrar el valor máximo de todos los estados
+    const maxValue = rawData.reduce((max, row) => {
+      const value = parseFloat(row[mapping.valueColumn]) || 0
+      return value > max ? value : max
+    }, 0)
+    
+    // Buscar el valor de la entidad seleccionada
     const entityRow = rawData.find(row => row[mapping.categoryColumn] === entityName)
     
     if (entityRow) {
-      residuosValue.value = parseFloat(entityRow[mapping.valueColumn]) || 0
-      residuosPercentage.value = parseFloat(entityRow[mapping.percentageColumn]) || 0
+      const entityValue = parseFloat(entityRow[mapping.valueColumn]) || 0
+      residuosValue.value = entityValue
+      
+      // ✅ Calcular porcentaje respecto al valor máximo × 10 (para mejor visualización)
+      if (maxValue > 0) {
+        const rawPercentage = (entityValue / maxValue) * 100 * 100
+        residuosPercentage.value = Math.min(rawPercentage, 100) // Limitar a 100
+      } else {
+        residuosPercentage.value = 0
+      }
+      
+      console.log(`📊 [Residuos] ${entityName}: ${entityValue.toLocaleString()} kg (botellas: ${residuosPercentage.value.toFixed(1)}%)`)
     } else {
       residuosValue.value = 0
       residuosPercentage.value = 0
@@ -600,13 +637,12 @@ onMounted(async () => {
 }
 
 .spinner-small {
-  width: 30px;
-  height: 30px;
+  width: 24px;
+  height: 24px;
   border: 3px solid rgb(203, 199, 199);
-  border-top: 3px solid #4CAF50;
+  border-top: 3px solid #3b82f6;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin-bottom: 15px;
 }
 
 @keyframes spin {
@@ -635,21 +671,116 @@ onMounted(async () => {
   margin: 0 0 10px 0;
 }
 
-.bottle-graphs {
+/* ✅ NUEVO: Card de Residuos Sólidos - Diseño compacto */
+.bottle-card {
   height: 25%;
   border-radius: 12px;
-  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-sizing: border-box;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
 }
 
-.title-bottle {
-  padding: 8px;
-  border-bottom: 1px solid #e0e0e0;
+/* ✅ Header oscuro compacto */
+.bottle-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: linear-gradient(135deg, #1e3a5f 0%, #153d5e 100%);
+  border-bottom: 2px solid #3b6b8a;
+  flex-shrink: 0;
 }
 
+.bottle-header-icon {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.bottle-header-title {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: white;
+  line-height: 1.2;
+  letter-spacing: 0.1px;
+}
+
+/* ✅ Body compacto */
+.bottle-body {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  padding: 6px 10px;
+  gap: 10px;
+  background: white;
+  align-items: center;
+  min-height: 0;
+}
+
+.bottle-graph-container {
+  flex: 1;
+  height: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-height: 60px;
+}
+
+/* ✅ Valores compactos */
+.bottle-values {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 65px;
+  padding: 4px 6px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.bottle-value-item {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.bottle-value-number {
+  font-family: 'Segoe UI', Verdana, Geneva, Tahoma, sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e3a5f;
+}
+
+.bottle-value-unit {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.bottle-value-item.percentage .bottle-value-number {
+  color: #2563eb;
+}
+
+.bottle-value-divider {
+  width: 30px;
+  height: 1px;
+  background: #e2e8f0;
+}
+
+/* Rest of styles - sin cambios */
 h2 {
   text-align: center;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -657,20 +788,6 @@ h2 {
   color: #535353;
   font-size: 14px;
   margin: 0;
-}
-
-.body-bottle {
-  display: flex;
-  flex-direction: row;
-  overflow: hidden;
-  padding: 9px;
-  flex: 1;
-}
-
-.bottle-graph {
-  width: 85%;
-  height: 100%;
-  overflow: visible;
 }
 
 .number {
