@@ -1,5 +1,5 @@
 <!-- src/modules/qualitativeIndicators/components/EconomicosView.vue -->
-<!-- ✅ ACTUALIZADO: ITAEE a la izquierda, Ingresos a la derecha -->
+<!-- ✅ ACTUALIZADO: PIB con diseño Split Diagonal + Donut -->
 <template>
   <div class="economicos-container">
     <!-- ✅ EMPTY STATE CENTRALIZADO cuando no hay entidad seleccionada -->
@@ -25,7 +25,7 @@
            LEFT SIDE CONTAINER
            ======================================== -->
       <div class="left-card-container">
-        <!-- ✅ TOP LEFT: ITAEE (movido desde bottom-right) -->
+        <!-- ✅ TOP LEFT: ITAEE -->
         <div class="itaee-card">
           <div class="card-header-dark">
             <div class="card-header-icon">
@@ -133,7 +133,7 @@
            RIGHT SIDE CONTAINER
            ======================================== -->
       <div class="right-card-container">
-        <!-- ✅ TOP RIGHT: PIB -->
+        <!-- ✅ TOP RIGHT: PIB con nuevo diseño Split Diagonal -->
         <div class="top-right-card-container">
           <div class="pib-card">
             <div class="card-header-dark">
@@ -173,52 +173,27 @@
                 </button>
               </div>
 
-              <div v-else class="pib-data-container">
-                <div class="pib-main-value">
-                  <span class="currency-symbol">$</span>
-                  <span class="value-number">{{ formatNumber(pibValue) }}</span>
-                  <span class="value-unit">MDP</span>
-                </div>
-
-                <div class="pib-content-wrapper">
-                  <div class="pib-visual">
-                    <IconPercentageChart
-                      iconPath="/public/icons/pib-icon.png"
-                      :value="pibPercentage"
-                      fillDirection="vertical"
-                      fillOrigin="bottom"
-                      width="100%"
-                      height="100%"
-                      iconWidth="85%"
-                      iconHeight="95%"
-                      :showPercentage="true"
-                      fillColor="#0F3759"
-                      :animated="true"
-                      :animationDuration="1.5"
-                    />
-                  </div>
-
-                  <div class="pib-context">
-                    <div class="context-item">
-                      <span class="context-label">Entidad</span>
-                      <span class="context-value">{{ selectedEntity }}</span>
-                    </div>
-                    <div class="context-item">
-                      <span class="context-label">Periodo</span>
-                      <span class="context-value">{{ selectedYear }}</span>
-                    </div>
-                    <div class="context-item">
-                      <span class="context-label">% Nacional</span>
-                      <span class="context-value">{{ pibPercentage.toFixed(2) }}%</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <!-- ✅ IconPercentageChart con diseño Split Diagonal -->
+              <IconPercentageChart
+                v-else
+                iconPath="/public/icons/pib-icon.png"
+                :value="pibPercentage"
+                :mainValue="pibValue"
+                mainLabel="PIB Estatal"
+                currencySymbol="$"
+                valueUnit="MDP"
+                :entity="selectedEntity"
+                :period="selectedYear"
+                :animated="true"
+                :animationDuration="1.5"
+                :startDelay="300"
+                :showPercentage="true"
+              />
             </div>
           </div>
         </div>
         
-        <!-- ✅ BOTTOM RIGHT: INGRESOS Y EGRESOS (movido desde top-left) -->
+        <!-- ✅ BOTTOM RIGHT: INGRESOS Y EGRESOS -->
         <div class="bottom-right-card-container">
           <div class="ingresos-card">
             <div class="card-header-dark">
@@ -911,7 +886,7 @@ onMounted(async () => {
 }
 
 /* ============================================
-   ✅ CARD PIB (RIGHT TOP)
+   ✅ CARD PIB (RIGHT TOP) - NUEVO DISEÑO
    ============================================ */
 .pib-card {
   width: 100%;
@@ -931,112 +906,10 @@ onMounted(async () => {
 
 .pib-body {
   flex: 1;
-  padding: 0.75rem;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
   min-height: 0;
   overflow: hidden;
   background: white;
-}
-
-.pib-data-container {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.25rem;
-  overflow: hidden;
-}
-
-.pib-main-value {
-  display: flex;
-  align-items: baseline;
-  gap: 0.3rem;
-  font-weight: 800;
-  color: #1e3a5f;
-  text-align: center;
-  flex-wrap: wrap;
-  justify-content: center;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  padding-bottom: 0.4rem;
-  border-bottom: 2px solid #e2e8f0;
-  width: 100%;
-  flex-shrink: 0;
-}
-
-.currency-symbol {
-  font-size: 0.9rem;
-}
-
-.value-number {
-  font-size: 1.3rem;
-  line-height: 1;
-}
-
-.value-unit {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #64748b;
-}
-
-.pib-content-wrapper {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 0.75rem;
-  width: 100%;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.pib-visual {
-  flex: 1;
-  max-width: 110px;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.pib-context {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding-left: 0.75rem;
-  border-left: 2px solid #e2e8f0;
-  overflow: hidden;
-}
-
-.context-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  text-align: left;
-}
-
-.context-label {
-  font-size: 0.6rem;
-  font-weight: 600;
-  color: #94a3b8;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-.context-value {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #1e3a5f;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 /* ============================================

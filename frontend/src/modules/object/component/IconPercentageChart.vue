@@ -1,252 +1,222 @@
 <!-- src/modules/object/component/IconPercentageChart.vue -->
-<!-- ✅ VERSIÓN MEJORADA: Con animación de llenado progresivo -->
+<!-- ✅ REDISEÑADO: Sin fondo azul, icono visible, textos grandes -->
 <template>
   <div class="icon-percentage-container" :style="containerStyle">
-    <div class="icon-wrapper">
-      <!-- Imagen de fondo (gris/desaturada) -->
-      <img 
-        :src="iconPath" 
-        :alt="altText"
-        class="icon-background"
-        :style="iconStyle"
-      />
-      
-      <!-- Imagen coloreada (se recorta según el porcentaje) -->
-      <div class="icon-fill-wrapper" :style="fillWrapperStyle">
-        <img 
-          :src="iconPath" 
-          :alt="altText"
-          class="icon-fill"
-          :style="iconStyle"
-        />
+    <!-- Panel Izquierdo - Donut con icono -->
+    <div class="left-panel">
+      <div class="donut-container">
+        <!-- Anillo del Donut SVG -->
+        <svg class="donut-svg" viewBox="0 0 100 100">
+          <!-- Fondo del anillo (gris claro) -->
+          <circle
+            class="donut-bg"
+            cx="50"
+            cy="50"
+            r="46"
+            fill="none"
+            stroke="#e2e8f0"
+            stroke-width="5"
+          />
+          <!-- Anillo de progreso animado -->
+          <circle
+            class="donut-progress"
+            cx="50"
+            cy="50"
+            r="46"
+            fill="none"
+            stroke="#1e3a5f"
+            stroke-width="5"
+            stroke-linecap="round"
+            :stroke-dasharray="circumference"
+            :stroke-dashoffset="progressOffset"
+            transform="rotate(-90 50 50)"
+          />
+        </svg>
+        
+        <!-- Icono centrado que abarca todo el espacio -->
+        <div class="donut-inner">
+          <img 
+            v-if="iconPath && !iconError" 
+            :src="iconPath" 
+            :alt="altText"
+            class="donut-icon"
+            @error="iconError = true"
+          />
+          <div v-else class="donut-icon-placeholder">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            </svg>
+          </div>
+        </div>
       </div>
-      
-      <!-- ✅ CAMBIO: Usar dynamicLabelStyle en vez de labelStyle -->
-      <div v-if="showPercentage && showLabel" class="percentage-label" :style="dynamicLabelStyle">
-        {{ displayedPercentage }}%
+      <!-- Porcentaje debajo del donut -->
+      <div class="donut-percent">{{ displayedPercentage }}%</div>
+
+    </div>
+
+    <!-- Panel Derecho - Datos -->
+    <div class="right-panel">
+      <!-- Valor Principal -->
+      <div class="main-value-section">
+        <span class="main-label">{{ mainLabel }}</span>
+        <div class="main-value-row">
+          <span v-if="currencySymbol" class="currency-symbol">{{ currencySymbol }}</span>
+          <span class="main-value">{{ formattedMainValue }}</span>
+          <span v-if="valueUnit" class="value-unit">{{ valueUnit }}</span>
+        </div>
+      </div>
+
+      <!-- Grid de información -->
+      <div class="info-grid">
+        <div class="info-item">
+          <span class="info-label">Entidad</span>
+          <span class="info-value">{{ entity }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Periodo</span>
+          <span class="info-value">{{ period }}</span>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, ref, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 
 const props = defineProps({
-  // Ruta del icono PNG
+  // ============================================
+  // PROPS ORIGINALES (compatibilidad)
+  // ============================================
   iconPath: {
     type: String,
-    required: true
+    default: ''
   },
-  // Porcentaje a mostrar (0-100)
   value: {
     type: Number,
     default: 0,
     validator: (value) => value >= 0 && value <= 100
   },
-  // Dirección del llenado: 'vertical' o 'horizontal'
-  fillDirection: {
-    type: String,
-    default: 'vertical',
-    validator: (value) => ['vertical', 'horizontal'].includes(value)
-  },
-  // Origen del llenado: 'bottom', 'top', 'left', 'right'
-  fillOrigin: {
-    type: String,
-    default: 'bottom'
-  },
-  // Color del filtro para el icono lleno (opcional)
   fillColor: {
     type: String,
-    default: null
+    default: '#1e3a5f'
   },
-  // Ancho del contenedor
   width: {
     type: [String, Number],
     default: '100%'
   },
-  // Alto del contenedor
   height: {
     type: [String, Number],
     default: '100%'
   },
-  // Tamaño del icono (ancho)
-  iconWidth: {
-    type: [String, Number],
-    default: '100%'
-  },
-  // Tamaño del icono (alto)
-  iconHeight: {
-    type: [String, Number],
-    default: 'auto'
-  },
-  // Mostrar etiqueta de porcentaje
   showPercentage: {
     type: Boolean,
-    default: false
+    default: true
   },
-  // Texto alternativo
   altText: {
     type: String,
     default: 'Icono'
   },
-  // Animación
   animated: {
     type: Boolean,
     default: true
   },
-  // Duración de la animación en segundos
   animationDuration: {
     type: Number,
     default: 1.5
   },
-  // ✅ NUEVO: Animación de llenado progresivo
   progressiveAnimation: {
     type: Boolean,
     default: true
   },
-  // ✅ NUEVO: Retraso antes de iniciar la animación (en ms)
   startDelay: {
     type: Number,
     default: 300
+  },
+
+  // ============================================
+  // NUEVAS PROPS PARA SPLIT CARD
+  // ============================================
+  mainValue: {
+    type: Number,
+    default: 0
+  },
+  mainLabel: {
+    type: String,
+    default: 'PIB Estatal'
+  },
+  currencySymbol: {
+    type: String,
+    default: '$'
+  },
+  valueUnit: {
+    type: String,
+    default: 'MDP'
+  },
+  entity: {
+    type: String,
+    default: ''
+  },
+  period: {
+    type: [String, Number],
+    default: ''
   }
 })
 
-// ✅ NUEVO: Estado para el porcentaje animado
+// Estados para animación
 const animatedPercentage = ref(0)
 const displayedPercentage = ref(0)
 const isAnimating = ref(false)
-const showLabel = ref(false)
+const iconError = ref(false)
 
+// Circunferencia del círculo (2 * PI * radio)
+const circumference = computed(() => 2 * Math.PI * 46)
+
+// Offset para el progreso del donut
+const progressOffset = computed(() => {
+  const progress = animatedPercentage.value / 100
+  return circumference.value * (1 - progress)
+})
+
+// Estilos del contenedor
 const containerStyle = computed(() => ({
   width: typeof props.width === 'number' ? `${props.width}px` : props.width,
   height: typeof props.height === 'number' ? `${props.height}px` : props.height
 }))
 
-const iconStyle = computed(() => ({
-  width: typeof props.iconWidth === 'number' ? `${props.iconWidth}px` : props.iconWidth,
-  height: typeof props.iconHeight === 'number' ? `${props.iconHeight}px` : props.iconHeight
-}))
-
-const fillWrapperStyle = computed(() => {
-  // Usar el porcentaje animado en lugar del valor directo
-  const percentage = Math.max(0, Math.min(100, animatedPercentage.value))
-  const transition = props.animated && !isAnimating.value 
-    ? `clip-path ${props.animationDuration}s cubic-bezier(0.4, 0.0, 0.2, 1)` 
-    : 'none'
-  
-  let clipPath = ''
-  
-  // Determinar el clip-path según la dirección y origen
-  if (props.fillDirection === 'vertical') {
-    if (props.fillOrigin === 'bottom') {
-      const topPercentage = 100 - percentage
-      clipPath = `inset(${topPercentage}% 0% 0% 0%)`
-    } else if (props.fillOrigin === 'top') {
-      const bottomPercentage = 100 - percentage
-      clipPath = `inset(0% 0% ${bottomPercentage}% 0%)`
-    }
-  } else if (props.fillDirection === 'horizontal') {
-    if (props.fillOrigin === 'left') {
-      const rightPercentage = 100 - percentage
-      clipPath = `inset(0% ${rightPercentage}% 0% 0%)`
-    } else if (props.fillOrigin === 'right') {
-      const leftPercentage = 100 - percentage
-      clipPath = `inset(0% 0% 0% ${leftPercentage}%)`
-    }
-  }
-  
-  const style = {
-    clipPath,
-    WebkitClipPath: clipPath,
-    transition
-  }
-  
-  // Aplicar color si se proporciona
-  if (props.fillColor) {
-    // Convertir imagen a color usando filter
-    const hexToRgb = (hex) => {
-      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
-      return result ? {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16)
-      } : null
-    }
-    
-    const rgb = hexToRgb(props.fillColor)
-    if (rgb) {
-      // Crear filtro CSS para colorear la imagen
-      style.filter = `
-        brightness(0) 
-        saturate(100%) 
-        invert(${rgb.r / 255}) 
-        sepia(1) 
-        saturate(5) 
-        hue-rotate(${Math.atan2(rgb.g - 128, rgb.r - 128) * 180 / Math.PI}deg)
-      `.replace(/\s+/g, ' ').trim()
-    }
-  }
-  
-  return style
+// Valor principal formateado
+const formattedMainValue = computed(() => {
+  if (!props.mainValue) return '0'
+  return new Intl.NumberFormat('es-MX').format(props.mainValue)
 })
 
-const labelStyle = computed(() => ({
-  color: props.fillColor || '#0F3759'
-}))
-
-// ✅ NUEVO: Cambiar color del texto según el nivel de llenado
-const dynamicLabelStyle = computed(() => {
-  const textPosition = 40
-  const fillReachedText = props.fillOrigin === 'bottom' 
-    ? animatedPercentage.value >= textPosition
-    : animatedPercentage.value >= (100 - textPosition)
-
-  return {
-    color: showLabel.value ? '#FFFFFF' : (fillReachedText ? '#FFFFFF' : (props.fillColor || '#0F3759')),
-    backgroundColor: showLabel.value ? '#0F3759' : 'transparent', // ✅ Fondo con 90% opacidad
-    borderRadius: showLabel.value ? '50%' : '0',
-    padding: showLabel.value ? '0' : '0',
-    width: showLabel.value ? '50px' : 'auto', // ✅ Más pequeño: 50px
-    height: showLabel.value ? '50px' : 'auto', // ✅ Más pequeño: 50px
-    display: showLabel.value ? 'flex' : 'block',
-    alignItems: showLabel.value ? 'center' : 'normal',
-    justifyContent: showLabel.value ? 'center' : 'normal',
-    border: showLabel.value ? `1px solid #FFFFFF` : 'none', // ✅ Borde más delgado
-    boxShadow: showLabel.value ? '0 2px 8px rgba(0, 0, 0, 0.1)' : 'none', // ✅ Sombra más suave
-    fontSize: showLabel.value ? '16px' : '24px', // ✅ Letra más pequeña
-    fontWeight: showLabel.value ? '600' : '700',
-    transition: 'all 0.3s ease',
-    opacity: 0.8
-  }
-})
-
-// ✅ FUNCIÓN: Animación de llenado progresivo
+// ============================================
+// ANIMACIÓN PROGRESIVA (3 FASES)
+// ============================================
 const animateToValue = (targetValue) => {
   if (!props.progressiveAnimation || !props.animated) {
     animatedPercentage.value = targetValue
-    displayedPercentage.value = Math.round(targetValue)
-    showLabel.value = true
+    displayedPercentage.value = Math.round(targetValue * 100) / 100
     return
   }
 
   isAnimating.value = true
-  showLabel.value = false
   const totalDuration = props.animationDuration * 1000
-  const phase1Duration = totalDuration * 0.33 // 33% - Llenar a 100
-  const phase2Duration = totalDuration * 0.33 // 33% - Vaciar a 0
-  const phase3Duration = totalDuration * 0.34 // 34% - Llenar al valor real
+  const phase1Duration = totalDuration * 0.33 // Llenar a 100
+  const phase2Duration = totalDuration * 0.33 // Vaciar a 0
+  const phase3Duration = totalDuration * 0.34 // Llenar al valor real
   const startTime = Date.now()
-  
+
   const animate = () => {
-    const currentTime = Date.now()
-    const elapsed = currentTime - startTime
-    
+    const elapsed = Date.now() - startTime
+
     if (elapsed < phase1Duration) {
       // FASE 1: Llenar de 0 a 100
       const progress = elapsed / phase1Duration
       const easeOut = 1 - Math.pow(1 - progress, 3)
       animatedPercentage.value = easeOut * 100
+      displayedPercentage.value = Math.round(easeOut * 100 * 100) / 100
       requestAnimationFrame(animate)
     } else if (elapsed < phase1Duration + phase2Duration) {
       // FASE 2: Vaciar de 100 a 0
@@ -254,47 +224,45 @@ const animateToValue = (targetValue) => {
       const progress = phase2Elapsed / phase2Duration
       const easeOut = 1 - Math.pow(1 - progress, 3)
       animatedPercentage.value = 100 - (easeOut * 100)
+      displayedPercentage.value = Math.round((100 - (easeOut * 100)) * 100) / 100
       requestAnimationFrame(animate)
     } else if (elapsed < totalDuration) {
-      // FASE 3: Llenar de 0 al valor real Y mostrar número creciendo
-      if (!showLabel.value) {
-        showLabel.value = true // ✅ Mostrar número al inicio de fase 3
-      }
+      // FASE 3: Llenar de 0 al valor real
       const phase3Elapsed = elapsed - phase1Duration - phase2Duration
       const progress = phase3Elapsed / phase3Duration
       const easeOut = 1 - Math.pow(1 - progress, 3)
       animatedPercentage.value = easeOut * targetValue
-      displayedPercentage.value = Math.round(easeOut * targetValue) // ✅ Número crece junto con el fill
+      displayedPercentage.value = Math.round((easeOut * targetValue) * 100) / 100
       requestAnimationFrame(animate)
     } else {
       // Finalizar
       animatedPercentage.value = targetValue
-      displayedPercentage.value = Math.round(targetValue)
-      showLabel.value = true
+      displayedPercentage.value = Math.round(targetValue * 100) / 100
       isAnimating.value = false
     }
   }
-  
+
   requestAnimationFrame(animate)
 }
 
-// ✅ Watch para cambios en el valor
+// Watch para cambios en el valor
 watch(() => props.value, (newValue) => {
   if (props.startDelay > 0) {
-    setTimeout(() => {
-      animateToValue(newValue)
-    }, props.startDelay)
+    setTimeout(() => animateToValue(newValue), props.startDelay)
   } else {
     animateToValue(newValue)
   }
 })
 
-// ✅ Iniciar animación al montar el componente
+// Watch para resetear error del icono cuando cambia
+watch(() => props.iconPath, () => {
+  iconError.value = false
+})
+
+// Iniciar animación al montar
 onMounted(() => {
   if (props.startDelay > 0) {
-    setTimeout(() => {
-      animateToValue(props.value)
-    }, props.startDelay)
+    setTimeout(() => animateToValue(props.value), props.startDelay)
   } else {
     animateToValue(props.value)
   }
@@ -304,62 +272,228 @@ onMounted(() => {
 <style scoped>
 .icon-percentage-container {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
   width: 100%;
   height: 100%;
+  min-height: 120px;
+  overflow: hidden;
+  background: white;
 }
 
-.icon-wrapper {
-  position: relative;
+/* ============================================
+   PANEL IZQUIERDO - DONUT SIN FONDO AZUL
+   ============================================ */
+.left-panel {
+  width: 45%;
+  padding: 12px 10px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  height: 100%;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-right: 1px solid #e2e8f0;
 }
 
-.icon-background { 
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  opacity: 0.4;
-  filter: grayscale(100%);
+/* Contenedor del Donut - MÁS GRANDE */
+.donut-container {
+  position: relative;
+  width: 130px;
+  height: 130px;
 }
 
-.icon-fill-wrapper {
+.donut-svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.1));
+}
+
+.donut-bg {
+  opacity: 1;
+}
+
+.donut-progress {
+  transition: stroke-dashoffset 0.1s ease-out;
+}
+
+/* Interior del Donut - ICONO GRANDE */
+.donut-inner {
   position: absolute;
-  top: 0;
-  left: 8px;
-  width: 90%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0.8;
-
-
-}
-
-.icon-fill {
-  display: block;
-  width: 100%;
-  height: 100%;
-  border-radius: 100%;
-}
-
-.percentage-label {
-  position: absolute;
-  bottom: 30%;
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 24px;
-  font-weight: 700;
-  white-space: nowrap;
-  z-index: 10;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 85%;
+  height: 85%;
+}
 
+.donut-icon {
+  width: 70%;
+  height: 70%;
+  object-fit: contain;
+  opacity: 1;
+}
+
+.donut-icon-placeholder {
+  width: 70%;
+  height: 70%;
+  color: #1e3a5f;
+  opacity: 1;
+}
+
+.donut-icon-placeholder svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Porcentaje DEBAJO del donut */
+.donut-percent {
+  font-size: 24px;
+  font-weight: 800;
+  color: #1e3a5f;
+  line-height: 1;
+  margin-top: 8px;
+}
+
+.donut-label {
+  font-size: 10px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+  font-weight: 600;
+}
+
+/* ============================================
+   PANEL DERECHO - DATOS
+   ============================================ */
+.right-panel {
+  flex: 1;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 14px;
+  background: white;
+}
+
+/* Valor Principal */
+.main-value-section {
+  padding-bottom: 12px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.main-label {
+  font-size: 12px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.main-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.currency-symbol {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1e3a5f;
+}
+
+.main-value {
+  font-size: 28px;
+  font-weight: 800;
+  color: #1e3a5f;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.value-unit {
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+  margin-left: 4px;
+}
+
+/* Grid de información */
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.info-label {
+  font-size: 11px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-weight: 600;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.info-value {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1e3a5f;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 350px) {
+  .left-panel {
+    width: 42%;
+    padding: 10px 8px;
+  }
+  
+  .donut-container {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .donut-icon {
+    width: 65%;
+    height: 65%;
+  }
+  
+  .donut-percent {
+    font-size: 18px;
+  }
+  
+  .donut-label {
+    font-size: 8px;
+  }
+  
+  .main-value {
+    font-size: 22px;
+  }
+  
+  .currency-symbol {
+    font-size: 16px;
+  }
+  
+  .info-value {
+    font-size: 14px;
+  }
+  
+  .info-label {
+    font-size: 9px;
+  }
 }
 </style>
