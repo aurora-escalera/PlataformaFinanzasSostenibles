@@ -1,20 +1,35 @@
 <!-- src/modules/qualitativeIndicators/components/SocialesView.vue -->
+<!-- ✅ ACTUALIZADO: Empty state centralizado cuando no hay entidad seleccionada -->
 <template>
   <div class="sociales-container">
-    <div class="card-body">
-      <!-- ============================================ -->
+    <!-- ✅ EMPTY STATE CENTRALIZADO cuando no hay entidad seleccionada -->
+    <div v-if="!selectedEntity" class="global-empty-state">
+      <div class="empty-state-content">
+        <div class="empty-state-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#718096" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+            <line x1="8" y1="2" x2="8" y2="18"/>
+            <line x1="16" y1="6" x2="16" y2="22"/>
+          </svg>
+        </div>
+        <h2 class="empty-state-title">Selecciona una entidad</h2>
+        <p class="empty-state-description">
+          Selecciona una entidad federativa en el filtro superior para visualizar los indicadores sociales.
+        </p>
+      </div>
+    </div>
+
+    <!-- ✅ CONTENIDO NORMAL cuando hay entidad seleccionada -->
+    <div v-else class="card-body">
       <!-- FILA 1: 3 Secciones -->
-      <!-- ============================================ -->
       <div class="top-row">
-        <!-- SECCIÓN 1: DESOCUPACIÓN (VerticalBarChart) -->
+        <!-- SECCIÓN 1: DESOCUPACIÓN -->
         <div class="desocupacion-section card">
-          <!-- Loading State -->
           <div v-if="desocupacionLoading" class="loading-state">
             <div class="spinner-small"></div>
             <p>Cargando datos...</p>
           </div>
 
-          <!-- Error State -->
           <div v-else-if="desocupacionError" class="error-state">
             <p>Error: {{ desocupacionError }}</p>
             <button @click="loadDesocupacionData(selectedEntity, selectedYear)" class="retry-btn-small">
@@ -22,14 +37,6 @@
             </button>
           </div>
 
-          <!-- Empty State -->
-          <div v-else-if="!selectedEntity" class="empty-state">
-            <div class="empty-icon">📊</div>
-            <h4>Selecciona una entidad</h4>
-            <p>Selecciona una entidad federativa para ver las tasas de desocupación.</p>
-          </div>
-
-          <!-- VerticalBarChart -->
           <VerticalBarChart
             v-else
             :variables="desocupacionData"
@@ -41,25 +48,16 @@
           />
         </div>
 
-        <!-- SECCIÓN 2: REZAGO SOCIAL (Movido desde bottom) -->
+        <!-- SECCIÓN 2: REZAGO SOCIAL -->
         <div class="rezago-section card">
-          <!-- Loading State -->
           <div v-if="rezagoLoading" class="loading-state-small">
             <div class="spinner-small"></div>
           </div>
 
-          <!-- Error State -->
           <div v-else-if="rezagoError" class="error-state-small">
             <p>Error cargando datos</p>
           </div>
 
-          <!-- Empty State -->
-          <div v-else-if="!selectedEntity" class="empty-state-small">
-            <div class="empty-icon-small">🗺️</div>
-            <p>Selecciona una entidad</p>
-          </div>
-
-          <!-- Datos de Rezago Social -->
           <div v-else class="rezago-content">
             <div class="metric-header">
               <div class="icon-badge">
@@ -71,15 +69,12 @@
               <h3 class="metric-title">Rezago Social</h3>
             </div>
             
-            <!-- Dos cards horizontales: Índice y Grado -->
             <div class="rezago-cards-row">
-              <!-- Card de Índice -->
               <div class="rezago-mini-card">
                 <div class="mini-card-label">ÍNDICE</div>
                 <div class="mini-card-value">{{ formatNumber(rezagoIndice) }}</div>
               </div>
               
-              <!-- Card de Grado -->
               <div class="rezago-mini-card">
                 <div class="mini-card-label">GRADO</div>
                 <div 
@@ -91,26 +86,16 @@
               </div>
             </div>
             
-            <!-- Barra de progreso normalizada -->
             <div class="rezago-progress-section">
               <div class="progress-label">NORMALIZADO</div>
               <div class="rezago-progress-bar-horizontal">
                 <div class="progress-track-horizontal">
-                  <!-- Zona negativa (izquierda - verde) -->
                   <div class="progress-zone zone-negative"></div>
-                  
-                  <!-- Línea central (0) -->
                   <div class="center-line-horizontal"></div>
-                  
-                  <!-- Zona positiva (derecha - rojo) -->
                   <div class="progress-zone zone-positive"></div>
-                  
-                  <!-- Barra de relleno animada -->
                   <div 
                     class="progress-fill-horizontal"
-                    :style="{ 
-                      width: getRezagoPercentage(rezagoIndice) + '%'
-                    }"
+                    :style="{ width: getRezagoPercentage(rezagoIndice) + '%' }"
                   >
                     <span class="progress-percentage">{{ getRezagoPercentage(rezagoIndice).toFixed(1) }}%</span>
                   </div>
@@ -120,15 +105,13 @@
           </div>
         </div>
 
-        <!-- SECCIÓN 3: ÍNDICE GINI (VerticalBarChart) -->
+        <!-- SECCIÓN 3: ÍNDICE GINI -->
         <div class="gini-section card">
-          <!-- Loading -->
           <div v-if="giniLoading" class="loading-state">
             <div class="spinner-small"></div>
             <p>Cargando datos...</p>
           </div>
 
-          <!-- Error -->
           <div v-else-if="giniError" class="error-state">
             <p>Error: {{ giniError }}</p>
             <button @click="loadGiniData(selectedEntity, selectedYear)" class="retry-btn-small">
@@ -136,14 +119,6 @@
             </button>
           </div>
 
-          <!-- Empty -->
-          <div v-else-if="!selectedEntity" class="empty-state">
-            <div class="empty-icon">📈</div>
-            <h4>Selecciona una entidad</h4>
-            <p>Selecciona una entidad para ver el Índice de Gini.</p>
-          </div>
-
-          <!-- VerticalBarChart -->
           <VerticalBarChart
             v-else
             :variables="giniData"
@@ -156,29 +131,18 @@
         </div>
       </div>
 
-      <!-- ============================================ -->
       <!-- FILA 2: 2 Secciones -->
-      <!-- ============================================ -->
       <div class="bottom-row">
-        <!-- SECCIÓN 4: MARGINACIÓN (Movido desde top) -->
+        <!-- SECCIÓN 4: MARGINACIÓN -->
         <div class="marginacion-section card">
-          <!-- Loading State -->
           <div v-if="marginacionLoading" class="loading-state-small">
             <div class="spinner-small"></div>
           </div>
 
-          <!-- Error State -->
           <div v-else-if="marginacionError" class="error-state-small">
             <p>Error cargando datos</p>
           </div>
 
-          <!-- Empty State -->
-          <div v-else-if="!selectedEntity" class="empty-state-small">
-            <div class="empty-icon-small">🗺️</div>
-            <p>Selecciona una entidad</p>
-          </div>
-
-          <!-- Datos de Marginación -->
           <div v-else class="marginacion-content">
             <div class="metric-header">
               <div class="icon-badge">
@@ -217,27 +181,17 @@
           </div>
         </div>
 
-        <!-- SECCIÓN 5: IDH + POBLACIÓN (Side by Side, movido desde top) -->
+        <!-- SECCIÓN 5: IDH + POBLACIÓN -->
         <div class="idh-poblacion-section card">
-          <!-- Loading State -->
           <div v-if="idhLoading || poblacionLoading" class="loading-state-small">
             <div class="spinner-small"></div>
           </div>
 
-          <!-- Error State -->
           <div v-else-if="idhError || poblacionError" class="error-state-small">
             <p>Error cargando datos</p>
           </div>
 
-          <!-- Empty State -->
-          <div v-else-if="!selectedEntity" class="empty-state-small">
-            <div class="empty-icon-small">📈</div>
-            <p>Selecciona una entidad</p>
-          </div>
-
-          <!-- IDH + Población Side by Side -->
           <div v-else class="dual-metrics-container">
-            <!-- IDH Card -->
             <div class="metric-card idh-card">
               <div class="metric-card-header">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -255,7 +209,6 @@
               </div>
             </div>
 
-            <!-- Población Card -->
             <div class="metric-card poblacion-card">
               <div class="metric-card-header">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -284,13 +237,11 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import VerticalBarChart from '@/modules/charts/components/VerticalBarChart.vue'
-import PersonChart from '../../object/component/PersonChart.vue'
 import ScalablePerson from '../../object/component/ScalablePerson.vue'
 import IDHGauge from '../../object/component/IDHGauge.vue'
 import { useStorageData } from '@/dataConection/useStorageData'
 import { getMapping, getSheetName, setActiveYear } from '@/dataConection/storageConfig'
 
-// Props
 const props = defineProps({
   selectedEntity: {
     type: String,
@@ -304,53 +255,23 @@ const props = defineProps({
 
 const emit = defineEmits(['back'])
 
-// Composable de Google Sheets
 const { fetchData } = useStorageData()
 
-// ============================================
-// FUNCIÓN: Limpiar formato numérico
-// Formato mexicano/europeo: puntos = miles, comas = decimales
-// Ejemplo: 1.520.604,50 → 1520604.50
-// ============================================
 const parseNumericValue = (value) => {
-  console.log('🔍 [parseNumericValue] Input:', value, 'Type:', typeof value)
-  
-  if (typeof value === 'number') {
-    return value
-  }
-  
-  if (!value || value === '') {
-    return 0
-  }
+  if (typeof value === 'number') return value
+  if (!value || value === '') return 0
   
   let stringValue = String(value).trim()
-  
-  // Eliminar espacios
   stringValue = stringValue.replace(/\s/g, '')
-  
-  // FORMATO MEXICANO/EUROPEO:
-  // Puntos (.) = separadores de miles
-  // Comas (,) = separador decimal
-  
-  // Paso 1: Eliminar TODOS los puntos (separadores de miles)
   stringValue = stringValue.replace(/\./g, '')
-  
-  // Paso 2: Reemplazar coma por punto (para JavaScript)
   stringValue = stringValue.replace(/,/g, '.')
   
   const result = parseFloat(stringValue)
-  
-  if (isNaN(result)) {
-    console.error('❌ [parseNumericValue] No se pudo parsear:', value)
-    return 0
-  }
-  
-  console.log('✅ [parseNumericValue] Output:', result)
-  return result
+  return isNaN(result) ? 0 : result
 }
 
 // ============================================
-// SECCIÓN 1: DESOCUPACIÓN
+// DESOCUPACIÓN
 // ============================================
 const desocupacionData = ref([])
 const desocupacionLoading = ref(false)
@@ -360,10 +281,6 @@ const loadDesocupacionData = async (entityName = null, year = null) => {
   try {
     desocupacionLoading.value = true
     desocupacionError.value = null
-    
-    console.log('💼 [Desocupación] Cargando datos')
-    console.log('  - Entidad:', entityName)
-    console.log('  - Año:', year)
     
     if (!entityName) {
       desocupacionData.value = []
@@ -375,7 +292,6 @@ const loadDesocupacionData = async (entityName = null, year = null) => {
     
     const mapping = getMapping('desocupacion')
     const sheetName = getSheetName('desocupacion')
-    
     const rawData = await fetchData('desocupacion', sheetName)
     
     if (rawData.length === 0) {
@@ -385,7 +301,6 @@ const loadDesocupacionData = async (entityName = null, year = null) => {
     const entityRow = rawData.find(row => row[mapping.categoryColumn] === entityName)
     
     if (!entityRow) {
-      console.log('⚠️ [Desocupación] No se encontraron datos para', entityName)
       desocupacionData.value = []
       desocupacionLoading.value = false
       return
@@ -403,7 +318,6 @@ const loadDesocupacionData = async (entityName = null, year = null) => {
       }))
     
     desocupacionData.value = transformedData
-    console.log('✅ [Desocupación] Datos cargados:', transformedData.length, 'variables')
     
   } catch (err) {
     console.error('❌ [Desocupación] Error:', err)
@@ -414,7 +328,7 @@ const loadDesocupacionData = async (entityName = null, year = null) => {
 }
 
 // ============================================
-// SECCIÓN 2: MARGINACIÓN
+// MARGINACIÓN
 // ============================================
 const marginacionIndice = ref(0)
 const marginacionGrado = ref('')
@@ -426,10 +340,6 @@ const loadMarginacionData = async (entityName = null, year = null) => {
   try {
     marginacionLoading.value = true
     marginacionError.value = null
-    
-    console.log('📍 [Marginación] Cargando datos')
-    console.log('  - Entidad:', entityName)
-    console.log('  - Año:', year)
     
     if (!entityName) {
       marginacionIndice.value = 0
@@ -443,7 +353,6 @@ const loadMarginacionData = async (entityName = null, year = null) => {
     
     const mapping = getMapping('marginacion')
     const sheetName = getSheetName('marginacion')
-    
     const rawData = await fetchData('marginacion', sheetName)
     
     if (rawData.length === 0) {
@@ -456,16 +365,10 @@ const loadMarginacionData = async (entityName = null, year = null) => {
       marginacionIndice.value = parseNumericValue(entityRow[mapping.variables[0].column])
       marginacionGrado.value = entityRow[mapping.variables[1].column] || ''
       marginacionNormalizado.value = parseNumericValue(entityRow[mapping.variables[2].column])
-      
-      console.log('✅ [Marginación] Datos cargados')
-      console.log('  - Índice:', marginacionIndice.value)
-      console.log('  - Grado:', marginacionGrado.value)
-      console.log('  - Normalizado:', marginacionNormalizado.value)
     } else {
       marginacionIndice.value = 0
       marginacionGrado.value = ''
       marginacionNormalizado.value = 0
-      console.log('⚠️ [Marginación] No se encontraron datos para', entityName)
     }
     
   } catch (err) {
@@ -487,10 +390,8 @@ const getMarginacionBadgeClass = (grado) => {
 }
 
 // ============================================
-// SECCIÓN 3: IDH Y POBLACIÓN (Side by Side)
-// ============================================
-
 // IDH
+// ============================================
 const idhValue = ref(0)
 const idhLoading = ref(false)
 const idhError = ref(null)
@@ -499,10 +400,6 @@ const loadIDHData = async (entityName = null, year = null) => {
   try {
     idhLoading.value = true
     idhError.value = null
-    
-    console.log('📊 [IDH] Cargando datos')
-    console.log('  - Entidad:', entityName)
-    console.log('  - Año:', year)
     
     if (!entityName) {
       idhValue.value = 0
@@ -514,7 +411,6 @@ const loadIDHData = async (entityName = null, year = null) => {
     
     const mapping = getMapping('idh')
     const sheetName = getSheetName('idh')
-    
     const rawData = await fetchData('idh', sheetName)
     
     if (rawData.length === 0) {
@@ -525,10 +421,8 @@ const loadIDHData = async (entityName = null, year = null) => {
     
     if (entityRow) {
       idhValue.value = parseNumericValue(entityRow[mapping.variables[0].column])
-      console.log('✅ [IDH] Valor:', idhValue.value)
     } else {
       idhValue.value = 0
-      console.log('⚠️ [IDH] No se encontraron datos para', entityName)
     }
     
   } catch (err) {
@@ -539,7 +433,9 @@ const loadIDHData = async (entityName = null, year = null) => {
   }
 }
 
-// Población
+// ============================================
+// POBLACIÓN
+// ============================================
 const poblacionValue = ref(0)
 const poblacionPercentage = ref(0)
 const poblacionLoading = ref(false)
@@ -549,10 +445,6 @@ const loadPoblacionData = async (entityName = null, year = null) => {
   try {
     poblacionLoading.value = true
     poblacionError.value = null
-    
-    console.log('👥 [Población] Cargando datos')
-    console.log('  - Entidad:', entityName)
-    console.log('  - Año:', year)
     
     if (!entityName) {
       poblacionValue.value = 0
@@ -565,7 +457,6 @@ const loadPoblacionData = async (entityName = null, year = null) => {
     
     const mapping = getMapping('poblacion')
     const sheetName = getSheetName('poblacion')
-    
     const rawData = await fetchData('poblacion', sheetName)
     
     if (rawData.length === 0) {
@@ -577,20 +468,15 @@ const loadPoblacionData = async (entityName = null, year = null) => {
     if (entityRow) {
       poblacionValue.value = parseNumericValue(entityRow[mapping.variables[0].column])
       
-      // Calcular porcentaje respecto al máximo
       const allValues = rawData
         .map(row => parseNumericValue(row[mapping.variables[0].column]))
         .filter(val => val > 0)
       
       const maxValue = Math.max(...allValues)
       poblacionPercentage.value = maxValue > 0 ? (poblacionValue.value / maxValue) * 100 : 0
-      
-      console.log('✅ [Población] Valor:', poblacionValue.value)
-      console.log('  - Porcentaje:', poblacionPercentage.value.toFixed(2), '%')
     } else {
       poblacionValue.value = 0
       poblacionPercentage.value = 0
-      console.log('⚠️ [Población] No se encontraron datos para', entityName)
     }
     
   } catch (err) {
@@ -602,7 +488,7 @@ const loadPoblacionData = async (entityName = null, year = null) => {
 }
 
 // ============================================
-// SECCIÓN 4: REZAGO SOCIAL
+// REZAGO SOCIAL
 // ============================================
 const rezagoIndice = ref(0)
 const rezagoGrado = ref('')
@@ -613,10 +499,6 @@ const loadRezagoData = async (entityName = null, year = null) => {
   try {
     rezagoLoading.value = true
     rezagoError.value = null
-    
-    console.log('🏠 [Rezago Social] Cargando datos')
-    console.log('  - Entidad:', entityName)
-    console.log('  - Año:', year)
     
     if (!entityName) {
       rezagoIndice.value = 0
@@ -629,7 +511,6 @@ const loadRezagoData = async (entityName = null, year = null) => {
     
     const mapping = getMapping('rezagoSocial')
     const sheetName = getSheetName('rezagoSocial')
-    
     const rawData = await fetchData('rezagoSocial', sheetName)
     
     if (rawData.length === 0) {
@@ -641,14 +522,9 @@ const loadRezagoData = async (entityName = null, year = null) => {
     if (entityRow) {
       rezagoIndice.value = parseNumericValue(entityRow[mapping.variables[0].column])
       rezagoGrado.value = entityRow[mapping.variables[1].column] || ''
-      
-      console.log('✅ [Rezago Social] Datos cargados')
-      console.log('  - Índice:', rezagoIndice.value)
-      console.log('  - Grado:', rezagoGrado.value)
     } else {
       rezagoIndice.value = 0
       rezagoGrado.value = ''
-      console.log('⚠️ [Rezago Social] No se encontraron datos para', entityName)
     }
     
   } catch (err) {
@@ -669,28 +545,23 @@ const getRezagoBadgeClass = (grado) => {
   return 'badge-default'
 }
 
-// Calcular porcentaje de posición en la barra de rezago
-// 0 = centro (50%), negativo = izquierda (0-50%), positivo = derecha (50-100%)
 const getRezagoPercentage = (value) => {
-  // Rangos aproximados según los datos
-  const maxNegative = -1300000 // Extremo izquierdo
-  const maxPositive = 2700000  // Extremo derecho
+  const maxNegative = -1300000
+  const maxPositive = 2700000
   
-  if (value === 0) return 50 // Centro exacto
+  if (value === 0) return 50
   
   if (value < 0) {
-    // Negativo: mapear de maxNegative (-1.3M) a 0 → 0% a 50%
     const percentage = 50 - ((Math.abs(value) / Math.abs(maxNegative)) * 50)
     return Math.max(0, percentage)
   } else {
-    // Positivo: mapear de 0 a maxPositive (2.7M) → 50% a 100%
     const percentage = 50 + ((value / maxPositive) * 50)
     return Math.min(100, percentage)
   }
 }
 
 // ============================================
-// SECCIÓN 5: ÍNDICE GINI
+// ÍNDICE GINI
 // ============================================
 const giniData = ref([])
 const giniLoading = ref(false)
@@ -700,10 +571,6 @@ const loadGiniData = async (entityName = null, year = null) => {
   try {
     giniLoading.value = true
     giniError.value = null
-    
-    console.log('📈 [Índice Gini] Cargando datos')
-    console.log('  - Entidad:', entityName)
-    console.log('  - Año:', year)
     
     if (!entityName) {
       giniData.value = []
@@ -715,7 +582,6 @@ const loadGiniData = async (entityName = null, year = null) => {
     
     const mapping = getMapping('indiceGini')
     const sheetName = getSheetName('indiceGini')
-    
     const rawData = await fetchData('indiceGini', sheetName)
     
     if (rawData.length === 0) {
@@ -725,7 +591,6 @@ const loadGiniData = async (entityName = null, year = null) => {
     const entityRow = rawData.find(row => row[mapping.categoryColumn] === entityName)
     
     if (!entityRow) {
-      console.log('⚠️ [Índice Gini] No se encontraron datos para', entityName)
       giniData.value = []
       giniLoading.value = false
       return
@@ -743,7 +608,6 @@ const loadGiniData = async (entityName = null, year = null) => {
       }))
     
     giniData.value = transformedData
-    console.log('✅ [Índice Gini] Datos cargados:', transformedData.length, 'variables')
     
   } catch (err) {
     console.error('❌ [Índice Gini] Error:', err)
@@ -773,18 +637,10 @@ const formatNumberCompact = (value) => {
   return new Intl.NumberFormat('es-MX').format(value)
 }
 
-const handleBack = () => {
-  emit('back')
-}
-
 // ============================================
 // WATCHERS
 // ============================================
-watch(() => props.selectedEntity, (newEntity, oldEntity) => {
-  console.log('🔄 [SocialesView] Watch: entidad cambió')
-  console.log('  - Anterior:', oldEntity)
-  console.log('  - Nueva:', newEntity)
-  
+watch(() => props.selectedEntity, (newEntity) => {
   loadDesocupacionData(newEntity, props.selectedYear)
   loadMarginacionData(newEntity, props.selectedYear)
   loadIDHData(newEntity, props.selectedYear)
@@ -793,11 +649,7 @@ watch(() => props.selectedEntity, (newEntity, oldEntity) => {
   loadGiniData(newEntity, props.selectedYear)
 }, { immediate: false })
 
-watch(() => props.selectedYear, (newYear, oldYear) => {
-  console.log('🔄 [SocialesView] Watch: año cambió')
-  console.log('  - Anterior:', oldYear)
-  console.log('  - Nuevo:', newYear)
-  
+watch(() => props.selectedYear, (newYear) => {
   if (props.selectedEntity) {
     loadDesocupacionData(props.selectedEntity, newYear)
     loadMarginacionData(props.selectedEntity, newYear)
@@ -812,10 +664,6 @@ watch(() => props.selectedYear, (newYear, oldYear) => {
 // LIFECYCLE
 // ============================================
 onMounted(async () => {
-  console.log('🚀 [SocialesView] Montado')
-  console.log('📍 Entidad inicial:', props.selectedEntity)
-  console.log('📅 Año inicial:', props.selectedYear)
-  
   await Promise.all([
     loadDesocupacionData(props.selectedEntity, props.selectedYear),
     loadMarginacionData(props.selectedEntity, props.selectedYear),
@@ -824,13 +672,10 @@ onMounted(async () => {
     loadRezagoData(props.selectedEntity, props.selectedYear),
     loadGiniData(props.selectedEntity, props.selectedYear)
   ])
-  
-  console.log('✅ [SocialesView] Todos los datos iniciales cargados')
 })
 </script>
 
 <style scoped>
-/* Container principal */
 .sociales-container {
   background-color: white;
   border-radius: 15px;
@@ -840,6 +685,59 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+/* ✅ GLOBAL EMPTY STATE */
+.global-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+}
+
+.empty-state-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  max-width: 400px;
+  padding: 40px;
+}
+
+.empty-state-icon {
+  width: 120px;
+  height: 120px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+  border-radius: 50%;
+  box-shadow: 
+    0 4px 15px rgba(0, 0, 0, 0.08),
+    inset 0 2px 4px rgba(255, 255, 255, 0.8);
+}
+
+.empty-state-icon svg {
+  opacity: 0.7;
+}
+
+.empty-state-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: #2d3748;
+  margin: 0 0 12px 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.empty-state-description {
+  font-size: 14px;
+  color: #718096;
+  margin: 0;
+  line-height: 1.6;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .card-body {
@@ -858,9 +756,6 @@ onMounted(async () => {
   background: white;
 }
 
-/* ============================================ */
-/* FILA 1: 3 secciones (33% each) */
-/* ============================================ */
 .top-row {
   display: flex;
   flex-direction: row;
@@ -870,33 +765,11 @@ onMounted(async () => {
   min-height: 0;
 }
 
-.desocupacion-section {
+.desocupacion-section, .rezago-section, .gini-section {
   flex: 1;
   min-width: 0;
 }
 
-.rezago-section {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.gini-section {
-  flex: 1;
-  min-width: 0;
-}
-
-.idh-poblacion-section {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-/* ============================================ */
-/* FILA 2: 2 secciones (50% each) */
-/* ============================================ */
 .bottom-row {
   display: flex;
   flex-direction: row;
@@ -907,7 +780,7 @@ onMounted(async () => {
   overflow: hidden;
 }
 
-.bottom-row .marginacion-section {
+.marginacion-section, .idh-poblacion-section {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -915,17 +788,6 @@ onMounted(async () => {
   overflow: hidden;
 }
 
-.bottom-row .idh-poblacion-section {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-/* ============================================ */
-/* LOADING, ERROR, EMPTY STATES */
-/* ============================================ */
 .loading-state, .error-state {
   display: flex;
   flex-direction: column;
@@ -936,7 +798,7 @@ onMounted(async () => {
   padding: 20px;
 }
 
-.loading-state-small, .error-state-small, .empty-state-small {
+.loading-state-small, .error-state-small {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -983,55 +845,7 @@ onMounted(async () => {
   margin: 0 0 10px 0;
 }
 
-.empty-state-small p {
-  color: #999;
-  font-size: 12px;
-  margin: 0;
-}
-
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  width: 100%;
-  padding: 40px 20px;
-  text-align: center;
-}
-
-.empty-icon {
-  font-size: 64px;
-  margin-bottom: 20px;
-  opacity: 0.5;
-}
-
-.empty-icon-small {
-  font-size: 40px;
-  margin-bottom: 10px;
-  opacity: 0.4;
-}
-
-.empty-state h4 {
-  font-size: 18px;
-  font-weight: 500;
-  color: #535353;
-  margin: 0 0 10px 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-.empty-state p {
-  font-size: 14px;
-  color: #999;
-  margin: 0;
-  max-width: 400px;
-  line-height: 1.5;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-/* ============================================ */
-/* MARGINACIÓN CONTENT */
-/* ============================================ */
+/* MARGINACIÓN */
 .marginacion-content {
   padding: 10px;
   height: 100%;
@@ -1133,35 +947,12 @@ onMounted(async () => {
   line-height: 1.2;
 }
 
-.metric-badge.badge-success {
-  background: #d4edda;
-  color: #155724;
-}
-
-.metric-badge.badge-info {
-  background: #d1ecf1;
-  color: #0c5460;
-}
-
-.metric-badge.badge-warning {
-  background: #fff3cd;
-  color: #856404;
-}
-
-.metric-badge.badge-danger {
-  background: #f8d7da;
-  color: #721c24;
-}
-
-.metric-badge.badge-critical {
-  background: #dc3545;
-  color: white;
-}
-
-.metric-badge.badge-default {
-  background: #e2e8f0;
-  color: #475569;
-}
+.metric-badge.badge-success { background: #d4edda; color: #155724; }
+.metric-badge.badge-info { background: #d1ecf1; color: #0c5460; }
+.metric-badge.badge-warning { background: #fff3cd; color: #856404; }
+.metric-badge.badge-danger { background: #f8d7da; color: #721c24; }
+.metric-badge.badge-critical { background: #dc3545; color: white; }
+.metric-badge.badge-default { background: #e2e8f0; color: #475569; }
 
 .progress-container {
   position: relative;
@@ -1191,9 +982,7 @@ onMounted(async () => {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* ============================================ */
-/* IDH/POBLACIÓN DUAL LAYOUT (Side by Side) */
-/* ============================================ */
+/* IDH/POBLACIÓN */
 .dual-metrics-container {
   display: flex;
   gap: 10px;
@@ -1225,10 +1014,6 @@ onMounted(async () => {
   align-items: center;
   gap: 6px;
   color: #0F3759;
-}
-
-.metric-card-header svg {
-  flex-shrink: 0;
 }
 
 .metric-card-title {
@@ -1275,9 +1060,7 @@ onMounted(async () => {
   overflow: hidden;
 }
 
-/* ============================================ */
-/* REZAGO SOCIAL CONTENT */
-/* ============================================ */
+/* REZAGO SOCIAL */
 .rezago-content {
   padding: 12px;
   height: 100%;
@@ -1286,7 +1069,6 @@ onMounted(async () => {
   gap: 10px;
 }
 
-/* Dos cards horizontales */
 .rezago-cards-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1329,38 +1111,13 @@ onMounted(async () => {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* Colores del badge */
-.mini-card-badge.badge-success {
-  background: #22c55e;
-  color: white;
-}
+.mini-card-badge.badge-success { background: #22c55e; color: white; }
+.mini-card-badge.badge-info { background: #3b82f6; color: white; }
+.mini-card-badge.badge-warning { background: #fbbf24; color: #78350f; }
+.mini-card-badge.badge-danger { background: #f97316; color: white; }
+.mini-card-badge.badge-critical { background: #ef4444; color: white; }
+.mini-card-badge.badge-default { background: #e2e8f0; color: #475569; }
 
-.mini-card-badge.badge-info {
-  background: #3b82f6;
-  color: white;
-}
-
-.mini-card-badge.badge-warning {
-  background: #fbbf24;
-  color: #78350f;
-}
-
-.mini-card-badge.badge-danger {
-  background: #f97316;
-  color: white;
-}
-
-.mini-card-badge.badge-critical {
-  background: #ef4444;
-  color: white;
-}
-
-.mini-card-badge.badge-default {
-  background: #e2e8f0;
-  color: #475569;
-}
-
-/* Sección de progreso normalizado */
 .rezago-progress-section {
   display: flex;
   flex-direction: column;
@@ -1423,6 +1180,4 @@ onMounted(async () => {
   transform: translateX(-50%);
   z-index: 1;
 }
-
-
 </style>

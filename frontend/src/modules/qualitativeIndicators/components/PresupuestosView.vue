@@ -1,136 +1,126 @@
 <!-- src/modules/qualitativeIndicators/components/PresupuestosView.vue -->
+<!-- ✅ ACTUALIZADO: Empty state centralizado cuando no hay entidad seleccionada -->
 <template>
   <div class="presupuestos-container">
-    <div class="card-body">
-      <!-- ============================================ -->
-      <!-- SECCIÓN 1: PRESUPUESTO TOTAL (100% ancho, arriba) -->
-      <!-- ============================================ -->
-      <div class="presupuesto-section card">
-        <!-- Loading State -->
-        <div v-if="presupuestoLoading" class="loading-state-compact">
-          <div class="spinner-tiny"></div>
+    <!-- ✅ EMPTY STATE CENTRALIZADO cuando no hay entidad seleccionada -->
+    <div v-if="!selectedEntity" class="global-empty-state">
+      <div class="empty-state-content">
+        <div class="empty-state-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#718096" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+            <line x1="8" y1="2" x2="8" y2="18"/>
+            <line x1="16" y1="6" x2="16" y2="22"/>
+          </svg>
+        </div>
+        <h2 class="empty-state-title">Selecciona una entidad</h2>
+        <p class="empty-state-description">
+          Selecciona una entidad federativa en el filtro superior para visualizar los indicadores de presupuesto y programas.
+        </p>
+      </div>
+    </div>
+
+    <!-- ✅ CONTENIDO NORMAL cuando hay entidad seleccionada -->
+    <div v-else class="card-body">
+      <!-- Sección Superior: Presupuesto Total -->
+      <div class="top-section card">
+        <div v-if="presupuestoLoading" class="loading-state-small">
+          <div class="spinner-small"></div>
         </div>
 
-        <!-- Error State -->
-        <div v-else-if="presupuestoError" class="error-state-compact">
-          <p>Error</p>
+        <div v-else-if="presupuestoError" class="error-state-small">
+          <p>Error cargando datos</p>
         </div>
 
-        <!-- Empty State -->
-        <div v-else-if="!selectedEntity" class="empty-state-compact">
-          <div class="empty-icon-tiny">💰</div>
-          <p>Selecciona una entidad</p>
-        </div>
-
-        <!-- Presupuesto Total -->
-        <div v-else class="presupuesto-content">
-          <div class="presupuesto-left">
-            <div class="presupuesto-header">
-              <div class="icon-badge-compact">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="12" cy="12" r="10"/>
-                  <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/>
-                  <path d="M12 18V6"/>
-                </svg>
-              </div>
-              <div class="presupuesto-info">
-                <span class="presupuesto-label">Presupuesto Total</span>
-                <div class="presupuesto-value">
-                  ${{ formatCurrency(presupuestoTotal) }}
-                </div>
-              </div>
+        <div v-else class="presupuesto-total-content">
+          <div class="presupuesto-header">
+            <div class="icon-badge-large">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="1" x2="12" y2="23"/>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+              </svg>
+            </div>
+            <div class="header-text">
+              <h2 class="presupuesto-title">Presupuesto Estatal {{ selectedYear }}</h2>
+              <p class="presupuesto-subtitle">{{ selectedEntity }}</p>
             </div>
           </div>
           
-          <div class="presupuesto-right">
-            <div class="categorias-badge">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-              </svg>
-              <span>{{ categoriasActivas }} categorías activas</span>
+          <div class="presupuesto-value-container">
+            <span class="currency-symbol">$</span>
+            <span class="presupuesto-value">{{ formatNumberLarge(presupuestoTotal) }}</span>
+            <span class="currency-unit">MDP</span>
+          </div>
+
+          <div class="categories-badge-container">
+            <div class="categories-badge">
+              <span class="badge-label">Sectores activos:</span>
+              <span class="badge-count">{{ activeSectorsCount }}</span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- ============================================ -->
-      <!-- FILA INFERIOR: Financiamientos + Programas -->
-      <!-- ============================================ -->
-      <div class="bottom-row">
-        <!-- SECCIÓN 2: FINANCIAMIENTOS (55% ancho) - BARRAS HORIZONTALES -->
+      <!-- Sección Inferior: Financiamientos y Programas -->
+      <div class="bottom-section">
+        <!-- Financiamientos -->
         <div class="financiamientos-section card">
-          <!-- Loading State -->
           <div v-if="financiamientosLoading" class="loading-state">
             <div class="spinner-small"></div>
-            <p>Cargando financiamientos...</p>
+            <p>Cargando datos...</p>
           </div>
 
-          <!-- Error State -->
           <div v-else-if="financiamientosError" class="error-state">
             <p>Error: {{ financiamientosError }}</p>
+            <button @click="loadFinanciamientosData(selectedEntity, selectedYear)" class="retry-btn-small">
+              Reintentar
+            </button>
           </div>
 
-          <!-- Empty State -->
-          <div v-else-if="!selectedEntity" class="empty-state">
-            <div class="empty-icon">📊</div>
-            <p>Selecciona una entidad</p>
-          </div>
-
-          <!-- Gráfico de Barras Horizontales -->
-          <div v-else class="bars-wrapper">
-            <div class="bars-header">
-              <h3 class="bars-title">Financiamientos por Sector</h3>
-            </div>
-            <HorizontalBarsList
-              :data="financiamientosData"
-              :showIcons="true"
-            />
-          </div>
+          <HorizontalBarsList
+            v-else
+            :data="financiamientosData"
+            :title="'Financiamientos por Sector'"
+            :width="'100%'"
+            :height="'100%'"
+            :showLegend="false"
+          />
         </div>
 
-        <!-- SECCIÓN 3: PROGRAMAS (45% ancho) - RADAR CHART -->
+        <!-- Programas -->
         <div class="programas-section card">
-          <!-- Loading State -->
           <div v-if="programasLoading" class="loading-state">
             <div class="spinner-small"></div>
-            <p>Cargando programas...</p>
+            <p>Cargando datos...</p>
           </div>
 
-          <!-- Error State -->
           <div v-else-if="programasError" class="error-state">
             <p>Error: {{ programasError }}</p>
+            <button @click="loadProgramasData(selectedEntity, selectedYear)" class="retry-btn-small">
+              Reintentar
+            </button>
           </div>
 
-          <!-- Empty State -->
-          <div v-else-if="!selectedEntity" class="empty-state">
-            <div class="empty-icon">🗺️</div>
-            <p>Selecciona una entidad</p>
-          </div>
-
-          <!-- Radar Chart de Programas -->
-          <div v-else class="radar-wrapper">
-            <div class="radar-header">
-              <div class="radar-title-with-stats">
-                <h3 class="radar-title">Programas por Sector</h3>
-                <div class="stats-mini">
-                  <div class="stat-item">
-                    <span class="stat-value">{{ totalProgramas }}</span>
-                    <span class="stat-label">Total</span>
-                  </div>
-                  <div class="stat-item">
-                    <span class="stat-value">{{ sectoresActivos }}</span>
-                    <span class="stat-label">Activos</span>
-                  </div>
-                </div>
+          <div v-else class="programas-content">
+            <div class="programas-header">
+              <h3 class="section-title">Programas por Sector</h3>
+            </div>
+            <div class="radar-container">
+              <RadarChart
+                :data="programasData"
+                :width="'100%'"
+                :height="'100%'"
+              />
+            </div>
+            <div class="programas-stats">
+              <div class="stat-item">
+                <span class="stat-value">{{ totalProgramas }}</span>
+                <span class="stat-label">Total Programas</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-value">{{ avgProgramas.toFixed(1) }}</span>
+                <span class="stat-label">Promedio/Sector</span>
               </div>
             </div>
-            <RadarChart
-              :data="programasData"
-              :width="'100%'"
-              :height="'100%'"
-              :maxValue="maxProgramas"
-              :showLegend="false"
-            />
           </div>
         </div>
       </div>
@@ -139,13 +129,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue'
-import RadarChart from '@/modules/charts/components/RadarChart.vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import HorizontalBarsList from '@/modules/charts/components/HorizontalBarsList.vue'
+import RadarChart from '@/modules/charts/components/RadarChart.vue'
 import { useStorageData } from '@/dataConection/useStorageData'
 import { getMapping, getSheetName, setActiveYear } from '@/dataConection/storageConfig'
 
-// Props
 const props = defineProps({
   selectedEntity: {
     type: String,
@@ -159,62 +148,25 @@ const props = defineProps({
 
 const emit = defineEmits(['back'])
 
-// Composable de Google Sheets
 const { fetchData } = useStorageData()
 
-// ============================================
-// FUNCIÓN: Limpiar formato numérico (MEJORADA)
-// ============================================
 const parseNumericValue = (value) => {
-  // Si es número, retornar directamente
-  if (typeof value === 'number') {
-    return value
-  }
+  if (typeof value === 'number') return value
+  if (!value || value === '' || value === 'NA' || value === 'ND' || value === 'N/A') return 0
   
-  // Si es null, undefined o vacío, retornar 0
-  if (!value || value === '' || value === null || value === undefined) {
-    return 0
-  }
-  
-  // Convertir a string y limpiar espacios
-  let stringValue = String(value).trim().toUpperCase()
-  
-  // ✅ CRÍTICO: Manejar valores especiales 'NA' y 'ND'
-  if (stringValue === 'NA' || stringValue === 'ND' || stringValue === 'N/A') {
-    console.log('⚠️ [parseNumericValue] Valor especial detectado:', value, '→ 0')
-    return 0
-  }
-  
-  // Limpiar formato: remover espacios, puntos (separador de miles) y convertir coma decimal a punto
-  stringValue = stringValue.replace(/\s/g, '')  // Quitar espacios
-  
-  // Detectar si tiene coma como decimal (formato europeo)
-  const hasCommaDecimal = stringValue.includes(',') && !stringValue.includes('.')
-  
-  if (hasCommaDecimal) {
-    // Formato europeo: 1.234.567,89 → 1234567.89
-    stringValue = stringValue.replace(/\./g, '')  // Quitar puntos (miles)
-    stringValue = stringValue.replace(/,/g, '.')  // Cambiar coma a punto (decimal)
-  } else {
-    // Formato estándar o sin decimales: 1.234.567 o 122274902
-    stringValue = stringValue.replace(/\./g, '')  // Quitar todos los puntos
-  }
+  let stringValue = String(value).trim()
+  stringValue = stringValue.replace(/\s/g, '')
+  stringValue = stringValue.replace(/\./g, '')
+  stringValue = stringValue.replace(/,/g, '.')
   
   const result = parseFloat(stringValue)
-  
-  if (isNaN(result)) {
-    console.error('❌ [parseNumericValue] No se pudo parsear:', value, '→ 0')
-    return 0
-  }
-  
-  return result
+  return isNaN(result) ? 0 : result
 }
 
 // ============================================
-// SECCIÓN 1: PRESUPUESTO TOTAL
+// PRESUPUESTO TOTAL
 // ============================================
 const presupuestoTotal = ref(0)
-const categoriasActivas = ref(0)
 const presupuestoLoading = ref(false)
 const presupuestoError = ref(null)
 
@@ -223,13 +175,8 @@ const loadPresupuestoData = async (entityName = null, year = null) => {
     presupuestoLoading.value = true
     presupuestoError.value = null
     
-    console.log('💰 [Presupuesto] Cargando datos')
-    console.log('  - Entidad:', entityName)
-    console.log('  - Año:', year)
-    
     if (!entityName) {
       presupuestoTotal.value = 0
-      categoriasActivas.value = 0
       presupuestoLoading.value = false
       return
     }
@@ -247,13 +194,9 @@ const loadPresupuestoData = async (entityName = null, year = null) => {
     const entityRow = rawData.find(row => row[mapping.categoryColumn] === entityName)
     
     if (entityRow) {
-      const rawValue = entityRow[mapping.variables[0].column]
-      console.log('📊 [Presupuesto] Valor crudo:', rawValue)
-      presupuestoTotal.value = parseNumericValue(rawValue)
-      console.log('✅ [Presupuesto] Valor parseado:', presupuestoTotal.value)
+      presupuestoTotal.value = parseNumericValue(entityRow[mapping.variables[0].column])
     } else {
       presupuestoTotal.value = 0
-      console.log('⚠️ [Presupuesto] No se encontraron datos para', entityName)
     }
     
   } catch (err) {
@@ -265,7 +208,7 @@ const loadPresupuestoData = async (entityName = null, year = null) => {
 }
 
 // ============================================
-// SECCIÓN 2: FINANCIAMIENTOS (Barras Horizontales)
+// FINANCIAMIENTOS
 // ============================================
 const financiamientosData = ref([])
 const financiamientosLoading = ref(false)
@@ -275,8 +218,6 @@ const loadFinanciamientosData = async (entityName = null, year = null) => {
   try {
     financiamientosLoading.value = true
     financiamientosError.value = null
-    
-    console.log('📊 [Financiamientos] Cargando datos')
     
     if (!entityName) {
       financiamientosData.value = []
@@ -291,43 +232,29 @@ const loadFinanciamientosData = async (entityName = null, year = null) => {
     const rawData = await fetchData('financiamientos', sheetName)
     
     if (rawData.length === 0) {
-      throw new Error('No se obtuvieron datos')
+      throw new Error('No se obtuvieron datos del Google Sheet')
     }
     
     const entityRow = rawData.find(row => row[mapping.categoryColumn] === entityName)
     
     if (!entityRow) {
-      console.log('⚠️ [Financiamientos] No se encontraron datos para', entityName)
       financiamientosData.value = []
       financiamientosLoading.value = false
       return
     }
     
-    console.log('📊 [Financiamientos] Fila encontrada:', entityRow)
-    
-    const transformedData = mapping.variables.map(variable => {
-      const rawValue = entityRow[variable.column]
-      const parsedValue = parseNumericValue(rawValue)
-      
-      console.log(`  - ${variable.label}: "${rawValue}" → ${parsedValue}`)
-      
-      return {
+    const transformedData = mapping.variables
+      .sort((a, b) => a.order - b.order)
+      .map(variable => ({
+        key: variable.key,
         label: variable.label,
-        value: parsedValue,
-        color: variable.color
-      }
-    })
-    
-    // Ordenar por valor descendente
-    transformedData.sort((a, b) => b.value - a.value)
+        value: parseNumericValue(entityRow[variable.column]),
+        color: variable.color,
+        colorClass: variable.colorClass || 'blue',
+        active: true
+      }))
     
     financiamientosData.value = transformedData
-    
-    // Calcular categorías activas (valores > 0)
-    categoriasActivas.value = transformedData.filter(d => d.value > 0).length
-    
-    console.log('✅ [Financiamientos] Datos cargados:', transformedData.length, 'categorías')
-    console.log('✅ [Financiamientos] Categorías activas:', categoriasActivas.value)
     
   } catch (err) {
     console.error('❌ [Financiamientos] Error:', err)
@@ -338,32 +265,16 @@ const loadFinanciamientosData = async (entityName = null, year = null) => {
 }
 
 // ============================================
-// SECCIÓN 3: PROGRAMAS (Radar Chart)
+// PROGRAMAS
 // ============================================
 const programasData = ref([])
 const programasLoading = ref(false)
 const programasError = ref(null)
 
-const maxProgramas = computed(() => {
-  if (programasData.value.length === 0) return 100
-  const maxValue = Math.max(...programasData.value.map(d => d.value))
-  return Math.ceil(maxValue * 1.2)
-})
-
-const totalProgramas = computed(() => {
-  return programasData.value.reduce((sum, d) => sum + d.value, 0)
-})
-
-const sectoresActivos = computed(() => {
-  return programasData.value.filter(d => d.value > 0).length
-})
-
 const loadProgramasData = async (entityName = null, year = null) => {
   try {
     programasLoading.value = true
     programasError.value = null
-    
-    console.log('🗺️ [Programas] Cargando datos')
     
     if (!entityName) {
       programasData.value = []
@@ -378,37 +289,29 @@ const loadProgramasData = async (entityName = null, year = null) => {
     const rawData = await fetchData('programas', sheetName)
     
     if (rawData.length === 0) {
-      throw new Error('No se obtuvieron datos')
+      throw new Error('No se obtuvieron datos del Google Sheet')
     }
     
     const entityRow = rawData.find(row => row[mapping.categoryColumn] === entityName)
     
     if (!entityRow) {
-      console.log('⚠️ [Programas] No se encontraron datos para', entityName)
       programasData.value = []
       programasLoading.value = false
       return
     }
     
-    console.log('🗺️ [Programas] Fila encontrada:', entityRow)
-    
-    const transformedData = mapping.variables.map(variable => {
-      const rawValue = entityRow[variable.column]
-      const parsedValue = parseNumericValue(rawValue)
-      
-      console.log(`  - ${variable.label}: "${rawValue}" → ${parsedValue}`)
-      
-      return {
+    const transformedData = mapping.variables
+      .sort((a, b) => a.order - b.order)
+      .map(variable => ({
+        key: variable.key,
         label: variable.label,
-        value: parsedValue,
-        color: variable.color
-      }
-    })
+        value: parseNumericValue(entityRow[variable.column]),
+        color: variable.color,
+        colorClass: variable.colorClass || 'blue',
+        active: true
+      }))
     
     programasData.value = transformedData
-    console.log('✅ [Programas] Datos cargados:', transformedData.length, 'categorías')
-    console.log('✅ [Programas] Total programas:', totalProgramas.value)
-    console.log('✅ [Programas] Sectores activos:', sectoresActivos.value)
     
   } catch (err) {
     console.error('❌ [Programas] Error:', err)
@@ -419,46 +322,48 @@ const loadProgramasData = async (entityName = null, year = null) => {
 }
 
 // ============================================
+// COMPUTED
+// ============================================
+const activeSectorsCount = computed(() => {
+  return financiamientosData.value.filter(item => item.value > 0).length
+})
+
+const totalProgramas = computed(() => {
+  return programasData.value.reduce((sum, item) => sum + item.value, 0)
+})
+
+const avgProgramas = computed(() => {
+  if (programasData.value.length === 0) return 0
+  return totalProgramas.value / programasData.value.length
+})
+
+// ============================================
 // UTILIDADES
 // ============================================
-const formatCurrency = (value) => {
+const formatNumberLarge = (value) => {
   if (!value) return '0'
   
-  // Formatear en millones si es muy grande
-  if (value >= 1000000) {
-    const millions = (value / 1000000).toFixed(1)
-    return `${millions}M`
+  if (value >= 1000000000) {
+    return (value / 1000000000).toFixed(2) + ' B'
+  } else if (value >= 1000000) {
+    return (value / 1000000).toFixed(2) + ' M'
+  } else if (value >= 1000) {
+    return (value / 1000).toFixed(2) + ' K'
   }
   
-  // Formatear en miles
-  if (value >= 1000) {
-    const thousands = (value / 1000).toFixed(0)
-    return `${thousands}K`
-  }
-  
-  return new Intl.NumberFormat('es-MX', {
-    maximumFractionDigits: 0
-  }).format(value)
+  return new Intl.NumberFormat('es-MX').format(value)
 }
 
 // ============================================
 // WATCHERS
 // ============================================
-watch(() => props.selectedEntity, (newEntity, oldEntity) => {
-  console.log('🔄 [PresupuestosView] Watch: entidad cambió')
-  console.log('  - Anterior:', oldEntity)
-  console.log('  - Nueva:', newEntity)
-  
+watch(() => props.selectedEntity, (newEntity) => {
   loadPresupuestoData(newEntity, props.selectedYear)
   loadFinanciamientosData(newEntity, props.selectedYear)
   loadProgramasData(newEntity, props.selectedYear)
 }, { immediate: false })
 
-watch(() => props.selectedYear, (newYear, oldYear) => {
-  console.log('🔄 [PresupuestosView] Watch: año cambió')
-  console.log('  - Anterior:', oldYear)
-  console.log('  - Nuevo:', newYear)
-  
+watch(() => props.selectedYear, (newYear) => {
   if (props.selectedEntity) {
     loadPresupuestoData(props.selectedEntity, newYear)
     loadFinanciamientosData(props.selectedEntity, newYear)
@@ -470,73 +375,110 @@ watch(() => props.selectedYear, (newYear, oldYear) => {
 // LIFECYCLE
 // ============================================
 onMounted(async () => {
-  console.log('🚀 [PresupuestosView] Montado')
-  console.log('📍 Entidad inicial:', props.selectedEntity)
-  console.log('📅 Año inicial:', props.selectedYear)
-  
   await Promise.all([
     loadPresupuestoData(props.selectedEntity, props.selectedYear),
     loadFinanciamientosData(props.selectedEntity, props.selectedYear),
     loadProgramasData(props.selectedEntity, props.selectedYear)
   ])
-  
-  console.log('✅ [PresupuestosView] Todos los datos iniciales cargados')
 })
 </script>
 
 <style scoped>
-/* Container principal */
 .presupuestos-container {
   background-color: white;
   border-radius: 15px;
   height: 100%;
   width: 100%;
-  padding: 12px;
+  padding: 15px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+/* ✅ GLOBAL EMPTY STATE */
+.global-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+}
+
+.empty-state-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  max-width: 400px;
+  padding: 40px;
+}
+
+.empty-state-icon {
+  width: 120px;
+  height: 120px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+  border-radius: 50%;
+  box-shadow: 
+    0 4px 15px rgba(0, 0, 0, 0.08),
+    inset 0 2px 4px rgba(255, 255, 255, 0.8);
+}
+
+.empty-state-icon svg {
+  opacity: 0.7;
+}
+
+.empty-state-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: #2d3748;
+  margin: 0 0 12px 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.empty-state-description {
+  font-size: 14px;
+  color: #718096;
+  margin: 0;
+  line-height: 1.6;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .card-body {
   height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   overflow: hidden;
   box-sizing: border-box;
 }
 
 .card {
   border: 1px solid #b0b0b0;
-  border-radius: 10px;
+  border-radius: 12px;
   overflow: hidden;
   background: white;
 }
 
-/* ============================================ */
-/* SECCIÓN 1: PRESUPUESTO TOTAL (arriba, 100%) */
-/* ============================================ */
-.presupuesto-section {
-  flex: 0 0 auto;
-  height: 80px;
-  padding: 12px 20px;
-  display: flex;
-  align-items: center;
+/* TOP SECTION - Presupuesto Total */
+.top-section {
+  height: 25%;
+  min-height: 100px;
+  flex-shrink: 0;
 }
 
-.presupuesto-content {
+.presupuesto-total-content {
+  height: 100%;
   display: flex;
-  flex-direction: row;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
-  width: 100%;
+  padding: 15px 25px;
+  background: linear-gradient(135deg, #0F3759 0%, #1a4d7a 100%);
   gap: 20px;
-}
-
-.presupuesto-left {
-  display: flex;
-  align-items: center;
-  gap: 15px;
 }
 
 .presupuesto-header {
@@ -545,11 +487,12 @@ onMounted(async () => {
   gap: 15px;
 }
 
-.icon-badge-compact {
-  width: 44px;
-  height: 44px;
-  background: linear-gradient(135deg, #0F3759 0%, #1a4d7a 100%);
-  border-radius: 10px;
+.icon-badge-large {
+  width: 50px;
+  height: 50px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -557,214 +500,135 @@ onMounted(async () => {
   flex-shrink: 0;
 }
 
-.presupuesto-info {
+.icon-badge-large svg {
+  width: 28px;
+  height: 28px;
+}
+
+.header-text {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.presupuesto-label {
-  font-size: 11px;
+.presupuesto-title {
+  font-size: 18px;
   font-weight: 700;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  color: white;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.presupuesto-subtitle {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.presupuesto-value-container {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.currency-symbol {
+  font-size: 24px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .presupuesto-value {
-  font-size: 24px;
-  font-weight: 700;
-  color: #0F3759;
+  font-size: 42px;
+  font-weight: 800;
+  color: white;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   line-height: 1;
 }
 
-.presupuesto-right {
-  display: flex;
-  align-items: center;
-}
-
-.categorias-badge {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  background: #f1f5f9;
-  border-radius: 8px;
-  font-size: 12px;
+.currency-unit {
+  font-size: 16px;
   font-weight: 600;
-  color: #475569;
+  color: rgba(255, 255, 255, 0.7);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-.categorias-badge svg {
-  color: #0F3759;
-  flex-shrink: 0;
+.categories-badge-container {
+  display: flex;
+  align-items: center;
 }
 
-/* ============================================ */
-/* FILA INFERIOR: Financiamientos + Programas */
-/* ============================================ */
-.bottom-row {
+.categories-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 10px 16px;
+  border-radius: 20px;
+}
+
+.badge-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.badge-count {
+  font-size: 18px;
+  font-weight: 700;
+  color: white;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* BOTTOM SECTION */
+.bottom-section {
+  flex: 1;
   display: flex;
   flex-direction: row;
-  gap: 8px;
-  flex: 1;
+  gap: 10px;
   min-height: 0;
   overflow: hidden;
 }
 
-/* SECCIÓN 2: FINANCIAMIENTOS (55% ancho) */
-.financiamientos-section {
-  flex: 0 0 55%;
+.financiamientos-section, .programas-section {
+  flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
-/* SECCIÓN 3: PROGRAMAS (45% ancho) */
-.programas-section {
-  flex: 0 0 45%;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-/* ============================================ */
-/* BARRAS HORIZONTALES WRAPPER */
-/* ============================================ */
-.bars-wrapper {
-  height: 100%;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  padding: 12px;
-  overflow: hidden;
-}
-
-.bars-header {
-  margin-bottom: 8px;
-  flex-shrink: 0;
-}
-
-.bars-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #535353;
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-/* ============================================ */
-/* RADAR CHARTS WRAPPER */
-/* ============================================ */
-.radar-wrapper {
-  height: 100%;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  padding: 12px;
-  overflow: hidden;
-}
-
-.radar-header {
-  margin-bottom: 8px;
-  flex-shrink: 0;
-}
-
-.radar-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #535353;
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-.radar-title-with-stats {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.stats-mini {
-  display: flex;
-  gap: 10px;
-}
-
-.stat-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 6px 12px;
-  background: #f8fafc;
-  border-radius: 6px;
-  border: 1px solid #e2e8f0;
-}
-
-.stat-value {
-  font-size: 18px;
-  font-weight: 700;
-  color: #0F3759;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  line-height: 1;
-}
-
-.stat-label {
-  font-size: 9px;
-  font-weight: 600;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-top: 3px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-/* ============================================ */
-/* LOADING, ERROR, EMPTY STATES */
-/* ============================================ */
-.loading-state, .error-state, .empty-state {
+/* Loading & Error States */
+.loading-state, .error-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   height: 100%;
   width: 100%;
-  padding: 15px;
-  text-align: center;
+  padding: 20px;
 }
 
-.loading-state-compact, .error-state-compact, .empty-state-compact {
+.loading-state-small, .error-state-small {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   height: 100%;
   width: 100%;
-  padding: 8px;
+  padding: 10px;
   text-align: center;
 }
 
 .spinner-small {
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border: 3px solid rgb(203, 199, 199);
-  border-top: 3px solid #0F3759;
+  border-top: 3px solid #4CAF50;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin-bottom: 12px;
-}
-
-.spinner-tiny {
-  width: 20px;
-  height: 20px;
-  border: 2px solid rgb(203, 199, 199);
-  border-top: 2px solid #0F3759;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 8px;
+  margin-bottom: 15px;
 }
 
 @keyframes spin {
@@ -772,35 +636,89 @@ onMounted(async () => {
   100% { transform: rotate(360deg); }
 }
 
-.empty-icon {
-  font-size: 48px;
-  margin-bottom: 12px;
-  opacity: 0.5;
+.retry-btn-small {
+  background: #f44336;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  margin-top: 10px;
 }
 
-.empty-icon-tiny {
-  font-size: 24px;
-  margin-bottom: 6px;
-  opacity: 0.4;
+.retry-btn-small:hover {
+  background: #d32f2f;
 }
 
-.empty-state p, .empty-state-compact p {
-  font-size: 11px;
-  color: #999;
+.error-state p, .error-state-small p {
+  color: #666;
+  font-size: 14px;
+  margin: 0 0 10px 0;
+}
+
+/* PROGRAMAS */
+.programas-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  overflow: hidden;
+}
+
+.programas-header {
+  flex-shrink: 0;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #e2e8f0;
+  margin-bottom: 10px;
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #535353;
   margin: 0;
-  line-height: 1.3;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-.error-state p {
-  font-size: 12px;
-  color: #ef4444;
-  margin: 0;
+.radar-container {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
-.error-state-compact p {
-  font-size: 10px;
-  color: #ef4444;
-  margin: 0;
+.programas-stats {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  padding-top: 10px;
+  border-top: 1px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0F3759;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.stat-label {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 </style>

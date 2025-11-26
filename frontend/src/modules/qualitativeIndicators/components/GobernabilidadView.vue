@@ -1,20 +1,35 @@
 <!-- src/modules/qualitativeIndicators/components/GobernabilidadView.vue -->
+<!-- ✅ ACTUALIZADO: Empty state centralizado cuando no hay entidad seleccionada -->
 <template>
   <div class="gobernabilidad-container">
-    <div class="card-body">
-      <!-- ============================================ -->
-      <!-- FILA 1: 3 Secciones (33% cada una) -->
-      <!-- ============================================ -->
+    <!-- ✅ EMPTY STATE CENTRALIZADO cuando no hay entidad seleccionada -->
+    <div v-if="!selectedEntity" class="global-empty-state">
+      <div class="empty-state-content">
+        <div class="empty-state-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#718096" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+            <line x1="8" y1="2" x2="8" y2="18"/>
+            <line x1="16" y1="6" x2="16" y2="22"/>
+          </svg>
+        </div>
+        <h2 class="empty-state-title">Selecciona una entidad</h2>
+        <p class="empty-state-description">
+          Selecciona una entidad federativa en el filtro superior para visualizar los indicadores de gobernabilidad y transparencia.
+        </p>
+      </div>
+    </div>
+
+    <!-- ✅ CONTENIDO NORMAL cuando hay entidad seleccionada -->
+    <div v-else class="card-body">
+      <!-- FILA 1: 3 Secciones -->
       <div class="top-row">
-        <!-- SECCIÓN 1: SATISFACCIÓN CIUDADANA (VerticalBarChart) -->
+        <!-- SECCIÓN 1: SATISFACCIÓN CIUDADANA -->
         <div class="satisfaccion-section card">
-          <!-- Loading State -->
           <div v-if="satisfaccionLoading" class="loading-state">
             <div class="spinner-small"></div>
             <p>Cargando datos...</p>
           </div>
 
-          <!-- Error State -->
           <div v-else-if="satisfaccionError" class="error-state">
             <p>Error: {{ satisfaccionError }}</p>
             <button @click="loadSatisfaccionData(selectedEntity, selectedYear)" class="retry-btn-small">
@@ -22,14 +37,6 @@
             </button>
           </div>
 
-          <!-- Empty State -->
-          <div v-else-if="!selectedEntity" class="empty-state">
-            <div class="empty-icon">📊</div>
-            <h4>Selecciona una entidad</h4>
-            <p>Selecciona una entidad federativa para ver la satisfacción ciudadana.</p>
-          </div>
-
-          <!-- VerticalBarChart -->
           <VerticalBarChart
             v-else
             :variables="satisfaccionData"
@@ -43,23 +50,14 @@
 
         <!-- SECCIÓN 2: IGOPP -->
         <div class="igopp-section card">
-          <!-- Loading State -->
           <div v-if="igoppLoading" class="loading-state-small">
             <div class="spinner-small"></div>
           </div>
 
-          <!-- Error State -->
           <div v-else-if="igoppError" class="error-state-small">
             <p>Error cargando datos</p>
           </div>
 
-          <!-- Empty State -->
-          <div v-else-if="!selectedEntity" class="empty-state-small">
-            <div class="empty-icon-small">📊</div>
-            <p>Selecciona una entidad</p>
-          </div>
-
-          <!-- Datos de IGOPP -->
           <div v-else class="metric-card-content">
             <div class="metric-header">
               <div class="icon-badge">
@@ -87,23 +85,14 @@
 
         <!-- SECCIÓN 3: BIPE -->
         <div class="bipe-section card">
-          <!-- Loading State -->
           <div v-if="bipeLoading" class="loading-state-small">
             <div class="spinner-small"></div>
           </div>
 
-          <!-- Error State -->
           <div v-else-if="bipeError" class="error-state-small">
             <p>Error cargando datos</p>
           </div>
 
-          <!-- Empty State -->
-          <div v-else-if="!selectedEntity" class="empty-state-small">
-            <div class="empty-icon-small">🏛️</div>
-            <p>Selecciona una entidad</p>
-          </div>
-
-          <!-- Datos de BIPE -->
           <div v-else class="metric-card-content">
             <div class="metric-header">
               <div class="icon-badge">
@@ -130,31 +119,19 @@
         </div>
       </div>
 
-      <!-- ============================================ -->
-      <!-- FILA 2: 2 Secciones (50% cada una) -->
-      <!-- ============================================ -->
+      <!-- FILA 2: 2 Secciones -->
       <div class="bottom-row">
         <!-- SECCIÓN 4: ITDIF + ICI -->
         <div class="itdif-ici-section card">
-          <!-- Loading State -->
           <div v-if="itdifLoading || iciLoading" class="loading-state-small">
             <div class="spinner-small"></div>
           </div>
 
-          <!-- Error State -->
           <div v-else-if="itdifError || iciError" class="error-state-small">
             <p>Error cargando datos</p>
           </div>
 
-          <!-- Empty State -->
-          <div v-else-if="!selectedEntity" class="empty-state-small">
-            <div class="empty-icon-small">📑</div>
-            <p>Selecciona una entidad</p>
-          </div>
-
-          <!-- Datos de ITDIF + ICI -->
           <div v-else class="itdif-ici-content">
-            <!-- ITDIF (arriba) -->
             <div class="itdif-compact">
               <div class="metric-header-inline">
                 <div class="icon-badge-small">
@@ -175,7 +152,6 @@
               </div>
             </div>
 
-            <!-- ICI VerticalBarChart (abajo) -->
             <div class="ici-chart-wrapper">
               <VerticalBarChart
                 :variables="iciData"
@@ -191,23 +167,14 @@
 
         <!-- SECCIÓN 5: PbR-SED -->
         <div class="pbrsed-section card">
-          <!-- Loading State -->
           <div v-if="pbrsedLoading" class="loading-state-small">
             <div class="spinner-small"></div>
           </div>
 
-          <!-- Error State -->
           <div v-else-if="pbrsedError" class="error-state-small">
             <p>Error cargando datos</p>
           </div>
 
-          <!-- Empty State -->
-          <div v-else-if="!selectedEntity" class="empty-state-small">
-            <div class="empty-icon-small">💰</div>
-            <p>Selecciona una entidad</p>
-          </div>
-
-          <!-- Datos de PbR-SED -->
           <div v-else class="pbrsed-content">
             <div class="metric-header">
               <div class="icon-badge">
@@ -219,7 +186,6 @@
               <h3 class="metric-title">PbR-SED</h3>
             </div>
 
-            <!-- Mini-card 1: PBRSED -->
             <div class="pbrsed-mini-card">
               <div class="mini-card-header">
                 <span class="mini-card-label">PBRSED</span>
@@ -232,7 +198,6 @@
               </div>
             </div>
 
-            <!-- Mini-card 2: Diagnóstico -->
             <div class="pbrsed-mini-card">
               <div class="mini-card-header">
                 <span class="mini-card-label">Diagnóstico</span>
@@ -259,7 +224,6 @@ import VerticalBarChart from '@/modules/charts/components/VerticalBarChart.vue'
 import { useStorageData } from '@/dataConection/useStorageData'
 import { getMapping, getSheetName, setActiveYear } from '@/dataConection/storageConfig'
 
-// Props
 const props = defineProps({
   selectedEntity: {
     type: String,
@@ -273,20 +237,11 @@ const props = defineProps({
 
 const emit = defineEmits(['back'])
 
-// Composable de Google Sheets
 const { fetchData } = useStorageData()
 
-// ============================================
-// FUNCIÓN: Limpiar formato numérico
-// ============================================
 const parseNumericValue = (value) => {
-  if (typeof value === 'number') {
-    return value
-  }
-  
-  if (!value || value === '') {
-    return 0
-  }
+  if (typeof value === 'number') return value
+  if (!value || value === '') return 0
   
   let stringValue = String(value).trim()
   stringValue = stringValue.replace(/\s/g, '')
@@ -294,17 +249,11 @@ const parseNumericValue = (value) => {
   stringValue = stringValue.replace(/,/g, '.')
   
   const result = parseFloat(stringValue)
-  
-  if (isNaN(result)) {
-    console.error('❌ [parseNumericValue] No se pudo parsear:', value)
-    return 0
-  }
-  
-  return result
+  return isNaN(result) ? 0 : result
 }
 
 // ============================================
-// SECCIÓN 1: SATISFACCIÓN CIUDADANA (Federal + Estatal)
+// SATISFACCIÓN CIUDADANA
 // ============================================
 const satisfaccionData = ref([])
 const satisfaccionLoading = ref(false)
@@ -315,10 +264,6 @@ const loadSatisfaccionData = async (entityName = null, year = null) => {
     satisfaccionLoading.value = true
     satisfaccionError.value = null
     
-    console.log('📊 [Satisfacción] Cargando datos')
-    console.log('  - Entidad:', entityName)
-    console.log('  - Año:', year)
-    
     if (!entityName) {
       satisfaccionData.value = []
       satisfaccionLoading.value = false
@@ -327,12 +272,10 @@ const loadSatisfaccionData = async (entityName = null, year = null) => {
     
     if (year) setActiveYear(year)
     
-    // Cargar Satisfacción Federal
     const mappingFederal = getMapping('satisfaccionFederal')
     const sheetNameFederal = getSheetName('satisfaccionFederal')
     const rawDataFederal = await fetchData('satisfaccionFederal', sheetNameFederal)
     
-    // Cargar Satisfacción Estatal
     const mappingEstatal = getMapping('satisfaccionEstatal')
     const sheetNameEstatal = getSheetName('satisfaccionEstatal')
     const rawDataEstatal = await fetchData('satisfaccionEstatal', sheetNameEstatal)
@@ -345,7 +288,6 @@ const loadSatisfaccionData = async (entityName = null, year = null) => {
     const entityRowEstatal = rawDataEstatal.find(row => row[mappingEstatal.categoryColumn] === entityName)
     
     if (!entityRowFederal || !entityRowEstatal) {
-      console.log('⚠️ [Satisfacción] No se encontraron datos para', entityName)
       satisfaccionData.value = []
       satisfaccionLoading.value = false
       return
@@ -371,7 +313,6 @@ const loadSatisfaccionData = async (entityName = null, year = null) => {
     ]
     
     satisfaccionData.value = transformedData
-    console.log('✅ [Satisfacción] Datos cargados:', transformedData)
     
   } catch (err) {
     console.error('❌ [Satisfacción] Error:', err)
@@ -382,7 +323,7 @@ const loadSatisfaccionData = async (entityName = null, year = null) => {
 }
 
 // ============================================
-// SECCIÓN 2: IGOPP
+// IGOPP
 // ============================================
 const igoppValue = ref(0)
 const igoppLoading = ref(false)
@@ -392,10 +333,6 @@ const loadIGOPPData = async (entityName = null, year = null) => {
   try {
     igoppLoading.value = true
     igoppError.value = null
-    
-    console.log('📊 [IGOPP] Cargando datos')
-    console.log('  - Entidad:', entityName)
-    console.log('  - Año:', year)
     
     if (!entityName) {
       igoppValue.value = 0
@@ -417,10 +354,8 @@ const loadIGOPPData = async (entityName = null, year = null) => {
     
     if (entityRow) {
       igoppValue.value = parseNumericValue(entityRow[mapping.variables[0].column])
-      console.log('✅ [IGOPP] Valor:', igoppValue.value)
     } else {
       igoppValue.value = 0
-      console.log('⚠️ [IGOPP] No se encontraron datos para', entityName)
     }
     
   } catch (err) {
@@ -432,7 +367,7 @@ const loadIGOPPData = async (entityName = null, year = null) => {
 }
 
 // ============================================
-// SECCIÓN 3: BIPE
+// BIPE
 // ============================================
 const bipeValue = ref(0)
 const bipeLoading = ref(false)
@@ -442,10 +377,6 @@ const loadBIPEData = async (entityName = null, year = null) => {
   try {
     bipeLoading.value = true
     bipeError.value = null
-    
-    console.log('🏛️ [BIPE] Cargando datos')
-    console.log('  - Entidad:', entityName)
-    console.log('  - Año:', year)
     
     if (!entityName) {
       bipeValue.value = 0
@@ -467,10 +398,8 @@ const loadBIPEData = async (entityName = null, year = null) => {
     
     if (entityRow) {
       bipeValue.value = parseNumericValue(entityRow[mapping.variables[0].column])
-      console.log('✅ [BIPE] Valor:', bipeValue.value)
     } else {
       bipeValue.value = 0
-      console.log('⚠️ [BIPE] No se encontraron datos para', entityName)
     }
     
   } catch (err) {
@@ -482,7 +411,7 @@ const loadBIPEData = async (entityName = null, year = null) => {
 }
 
 // ============================================
-// SECCIÓN 4: ITDIF
+// ITDIF
 // ============================================
 const itdifValue = ref(0)
 const itdifLoading = ref(false)
@@ -492,10 +421,6 @@ const loadITDIFData = async (entityName = null, year = null) => {
   try {
     itdifLoading.value = true
     itdifError.value = null
-    
-    console.log('📑 [ITDIF] Cargando datos')
-    console.log('  - Entidad:', entityName)
-    console.log('  - Año:', year)
     
     if (!entityName) {
       itdifValue.value = 0
@@ -517,10 +442,8 @@ const loadITDIFData = async (entityName = null, year = null) => {
     
     if (entityRow) {
       itdifValue.value = parseNumericValue(entityRow[mapping.variables[0].column])
-      console.log('✅ [ITDIF] Valor:', itdifValue.value)
     } else {
       itdifValue.value = 0
-      console.log('⚠️ [ITDIF] No se encontraron datos para', entityName)
     }
     
   } catch (err) {
@@ -532,7 +455,7 @@ const loadITDIFData = async (entityName = null, year = null) => {
 }
 
 // ============================================
-// SECCIÓN 4: ICI (VerticalBarChart)
+// ICI
 // ============================================
 const iciData = ref([])
 const iciLoading = ref(false)
@@ -542,10 +465,6 @@ const loadICIData = async (entityName = null, year = null) => {
   try {
     iciLoading.value = true
     iciError.value = null
-    
-    console.log('📊 [ICI] Cargando datos')
-    console.log('  - Entidad:', entityName)
-    console.log('  - Año:', year)
     
     if (!entityName) {
       iciData.value = []
@@ -566,7 +485,6 @@ const loadICIData = async (entityName = null, year = null) => {
     const entityRow = rawData.find(row => row[mapping.categoryColumn] === entityName)
     
     if (!entityRow) {
-      console.log('⚠️ [ICI] No se encontraron datos para', entityName)
       iciData.value = []
       iciLoading.value = false
       return
@@ -584,7 +502,6 @@ const loadICIData = async (entityName = null, year = null) => {
       }))
     
     iciData.value = transformedData
-    console.log('✅ [ICI] Datos cargados:', transformedData.length, 'variables')
     
   } catch (err) {
     console.error('❌ [ICI] Error:', err)
@@ -595,7 +512,7 @@ const loadICIData = async (entityName = null, year = null) => {
 }
 
 // ============================================
-// SECCIÓN 5: PbR-SED (PBRSED + Diagnóstico)
+// PbR-SED
 // ============================================
 const pbrsedValue = ref(0)
 const diagnosticoValue = ref(0)
@@ -606,10 +523,6 @@ const loadPBRSEDData = async (entityName = null, year = null) => {
   try {
     pbrsedLoading.value = true
     pbrsedError.value = null
-    
-    console.log('💰 [PBRSED] Cargando datos')
-    console.log('  - Entidad:', entityName)
-    console.log('  - Año:', year)
     
     if (!entityName) {
       pbrsedValue.value = 0
@@ -633,14 +546,9 @@ const loadPBRSEDData = async (entityName = null, year = null) => {
     if (entityRow) {
       pbrsedValue.value = parseNumericValue(entityRow[mapping.variables[0].column])
       diagnosticoValue.value = parseNumericValue(entityRow[mapping.variables[1].column])
-      
-      console.log('✅ [PBRSED] Datos cargados')
-      console.log('  - PBRSED:', pbrsedValue.value)
-      console.log('  - Diagnóstico:', diagnosticoValue.value)
     } else {
       pbrsedValue.value = 0
       diagnosticoValue.value = 0
-      console.log('⚠️ [PBRSED] No se encontraron datos para', entityName)
     }
     
   } catch (err) {
@@ -659,18 +567,10 @@ const formatNumber = (value) => {
   return new Intl.NumberFormat('es-MX').format(value)
 }
 
-const handleBack = () => {
-  emit('back')
-}
-
 // ============================================
 // WATCHERS
 // ============================================
-watch(() => props.selectedEntity, (newEntity, oldEntity) => {
-  console.log('🔄 [GobernabilidadView] Watch: entidad cambió')
-  console.log('  - Anterior:', oldEntity)
-  console.log('  - Nueva:', newEntity)
-  
+watch(() => props.selectedEntity, (newEntity) => {
   loadSatisfaccionData(newEntity, props.selectedYear)
   loadIGOPPData(newEntity, props.selectedYear)
   loadBIPEData(newEntity, props.selectedYear)
@@ -679,11 +579,7 @@ watch(() => props.selectedEntity, (newEntity, oldEntity) => {
   loadPBRSEDData(newEntity, props.selectedYear)
 }, { immediate: false })
 
-watch(() => props.selectedYear, (newYear, oldYear) => {
-  console.log('🔄 [GobernabilidadView] Watch: año cambió')
-  console.log('  - Anterior:', oldYear)
-  console.log('  - Nuevo:', newYear)
-  
+watch(() => props.selectedYear, (newYear) => {
   if (props.selectedEntity) {
     loadSatisfaccionData(props.selectedEntity, newYear)
     loadIGOPPData(props.selectedEntity, newYear)
@@ -698,10 +594,6 @@ watch(() => props.selectedYear, (newYear, oldYear) => {
 // LIFECYCLE
 // ============================================
 onMounted(async () => {
-  console.log('🚀 [GobernabilidadView] Montado')
-  console.log('📍 Entidad inicial:', props.selectedEntity)
-  console.log('📅 Año inicial:', props.selectedYear)
-  
   await Promise.all([
     loadSatisfaccionData(props.selectedEntity, props.selectedYear),
     loadIGOPPData(props.selectedEntity, props.selectedYear),
@@ -710,13 +602,10 @@ onMounted(async () => {
     loadICIData(props.selectedEntity, props.selectedYear),
     loadPBRSEDData(props.selectedEntity, props.selectedYear)
   ])
-  
-  console.log('✅ [GobernabilidadView] Todos los datos iniciales cargados')
 })
 </script>
 
 <style scoped>
-/* Container principal */
 .gobernabilidad-container {
   background-color: white;
   border-radius: 15px;
@@ -726,6 +615,59 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+/* ✅ GLOBAL EMPTY STATE */
+.global-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+}
+
+.empty-state-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  max-width: 400px;
+  padding: 40px;
+}
+
+.empty-state-icon {
+  width: 120px;
+  height: 120px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+  border-radius: 50%;
+  box-shadow: 
+    0 4px 15px rgba(0, 0, 0, 0.08),
+    inset 0 2px 4px rgba(255, 255, 255, 0.8);
+}
+
+.empty-state-icon svg {
+  opacity: 0.7;
+}
+
+.empty-state-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: #2d3748;
+  margin: 0 0 12px 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.empty-state-description {
+  font-size: 14px;
+  color: #718096;
+  margin: 0;
+  line-height: 1.6;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .card-body {
@@ -744,9 +686,6 @@ onMounted(async () => {
   background: white;
 }
 
-/* ============================================ */
-/* FILA 1: 3 secciones (33% each) */
-/* ============================================ */
 .top-row {
   display: flex;
   flex-direction: row;
@@ -756,28 +695,11 @@ onMounted(async () => {
   min-height: 0;
 }
 
-.satisfaccion-section {
+.satisfaccion-section, .igopp-section, .bipe-section {
   flex: 1;
   min-width: 0;
 }
 
-.igopp-section {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.bipe-section {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-/* ============================================ */
-/* FILA 2: 2 secciones (50% each) */
-/* ============================================ */
 .bottom-row {
   display: flex;
   flex-direction: row;
@@ -788,7 +710,7 @@ onMounted(async () => {
   overflow: hidden;
 }
 
-.itdif-ici-section {
+.itdif-ici-section, .pbrsed-section {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -796,17 +718,6 @@ onMounted(async () => {
   overflow: hidden;
 }
 
-.pbrsed-section {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-/* ============================================ */
-/* LOADING, ERROR, EMPTY STATES */
-/* ============================================ */
 .loading-state, .error-state {
   display: flex;
   flex-direction: column;
@@ -817,7 +728,7 @@ onMounted(async () => {
   padding: 20px;
 }
 
-.loading-state-small, .error-state-small, .empty-state-small {
+.loading-state-small, .error-state-small {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -864,55 +775,7 @@ onMounted(async () => {
   margin: 0 0 10px 0;
 }
 
-.empty-state-small p {
-  color: #999;
-  font-size: 12px;
-  margin: 0;
-}
-
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  width: 100%;
-  padding: 40px 20px;
-  text-align: center;
-}
-
-.empty-icon {
-  font-size: 64px;
-  margin-bottom: 20px;
-  opacity: 0.5;
-}
-
-.empty-icon-small {
-  font-size: 40px;
-  margin-bottom: 10px;
-  opacity: 0.4;
-}
-
-.empty-state h4 {
-  font-size: 18px;
-  font-weight: 500;
-  color: #535353;
-  margin: 0 0 10px 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-.empty-state p {
-  font-size: 14px;
-  color: #999;
-  margin: 0;
-  max-width: 400px;
-  line-height: 1.5;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-/* ============================================ */
-/* METRIC CARD CONTENT (IGOPP, BIPE) */
-/* ============================================ */
+/* METRIC CARD */
 .metric-card-content {
   padding: 12px;
   height: 100%;
@@ -1006,9 +869,7 @@ onMounted(async () => {
   line-height: 1.3;
 }
 
-/* ============================================ */
-/* ITDIF + ICI CONTENT */
-/* ============================================ */
+/* ITDIF + ICI */
 .itdif-ici-content {
   display: flex;
   flex-direction: column;
@@ -1093,9 +954,7 @@ onMounted(async () => {
   overflow: hidden;
 }
 
-/* ============================================ */
-/* PBRSED CONTENT */
-/* ============================================ */
+/* PBRSED */
 .pbrsed-content {
   padding: 12px;
   height: 100%;

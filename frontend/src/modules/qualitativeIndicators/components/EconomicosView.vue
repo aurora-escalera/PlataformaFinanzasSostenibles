@@ -1,19 +1,35 @@
 <!-- src/modules/qualitativeIndicators/components/EconomicosView.vue -->
-<!-- ✅ VERSIÓN FINAL CON PIB MEJORADO -->
+<!-- ✅ ACTUALIZADO: Empty state centralizado cuando no hay entidad seleccionada -->
 <template>
-  <div class="ambientales-container">
-    <div class="card-body">
+  <div class="economicos-container">
+    <!-- ✅ EMPTY STATE CENTRALIZADO cuando no hay entidad seleccionada -->
+    <div v-if="!selectedEntity" class="global-empty-state">
+      <div class="empty-state-content">
+        <div class="empty-state-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#718096" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+            <line x1="8" y1="2" x2="8" y2="18"/>
+            <line x1="16" y1="6" x2="16" y2="22"/>
+          </svg>
+        </div>
+        <h2 class="empty-state-title">Selecciona una entidad</h2>
+        <p class="empty-state-description">
+          Selecciona una entidad federativa en el filtro superior para visualizar los indicadores económicos.
+        </p>
+      </div>
+    </div>
+
+    <!-- ✅ CONTENIDO NORMAL cuando hay entidad seleccionada -->
+    <div v-else class="card-body">
       <!-- Left Side Container -->
       <div class="left-card-container">
         <!-- Top: Horizontal Bar Chart - Ingresos Totales -->
         <div class="bar-graph card">
-          <!-- Loading State -->
           <div v-if="ingresoTotalLoading" class="loading-state">
             <div class="spinner-small"></div>
             <p>Cargando datos...</p>
           </div>
 
-          <!-- Error State -->
           <div v-else-if="ingresoTotalError" class="error-state">
             <p>Error: {{ ingresoTotalError }}</p>
             <button @click="loadIngresoTotalData(selectedEntity, selectedYear)" class="retry-btn-small">
@@ -21,20 +37,12 @@
             </button>
           </div>
 
-          <!-- Empty State cuando no hay entidad seleccionada -->
-          <div v-else-if="!selectedEntity" class="empty-state">
-            <div class="empty-icon">🗺️</div>
-            <h4>Selecciona una entidad</h4>
-            <p>Selecciona una entidad federativa en el filtro superior para ver los datos de ingresos totales.</p>
-          </div>
-
-          <!-- HorizontalBarChart con datos dinámicos -->
           <HorizontalBarChart
             v-else
             :variables="ingresoTotalData"
             width="100%"
             height="100%"
-            title="Ingresos Totales en 2024"
+            title="Ingresos y Egresos Totales"
             :showFilters="true"
             :showLegend="true"
             barHeight="20px"
@@ -48,22 +56,14 @@
             <h2>Población económicamente activa</h2>
           </div>
           <div class="body-person">
-            <!-- Loading State -->
             <div v-if="peaLoading" class="loading-state-small">
               <div class="spinner-small"></div>
             </div>
 
-            <!-- Error State -->
             <div v-else-if="peaError" class="error-state-small">
               <p>Error cargando datos</p>
             </div>
 
-            <!-- Empty State -->
-            <div v-else-if="!selectedEntity" class="empty-state-small">
-              <p>Selecciona una entidad</p>
-            </div>
-
-            <!-- Datos -->
             <template v-else>
               <div class="person-graph">
                 <div class="person-number number">{{ formatNumber(peaValue) }} Personas</div>
@@ -78,10 +78,9 @@
 
       <!-- Right Side Container -->
       <div class="right-card-container">
-        <!-- Top Right Container - PIB MEJORADO -->
+        <!-- Top Right Container - PIB -->
         <div class="top-right-card-container">
           <div class="pib-chart card">
-            <!-- Header con título e info -->
             <div class="card-header">
               <div class="header-content">
                 <div class="icon-badge">
@@ -91,12 +90,11 @@
                   </svg>
                 </div>
                 <div class="header-text">
-                  <h3 class="card-title">PIB Estatal 2024</h3>
+                  <h3 class="card-title">PIB Estatal</h3>
                   <p class="card-subtitle">Millones de pesos</p>
                 </div>
               </div>
               
-              <!-- Info tooltip -->
               <div class="info-tooltip">
                 <button class="info-btn" @click="showInfo = !showInfo">
                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -108,61 +106,34 @@
                 
                 <Transition name="tooltip-fade">
                   <div v-if="showInfo" class="tooltip-content">
-                    Producto Interno Bruto Estatal (PIBE), anual en millones de pesos en 2024.
+                    Producto Interno Bruto Estatal (PIBE), anual en millones de pesos.
                   </div>
                 </Transition>
               </div>
             </div>
 
-            <!-- Card Body -->
             <div class="card-body-pib">
-              <!-- Loading State -->
               <div v-if="PIBLoading" class="state-container loading-state">
                 <div class="spinner"></div>
                 <p class="state-text">Cargando datos...</p>
               </div>
 
-              <!-- Error State -->
               <div v-else-if="PIBError" class="state-container error-state">
                 <div class="error-icon">⚠️</div>
                 <p class="state-text">Error al cargar datos</p>
                 <button @click="loadPIBData(selectedEntity, selectedYear)" class="retry-btn">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="23 4 23 10 17 10"></polyline>
-                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-                  </svg>
                   Reintentar
                 </button>
               </div>
 
-              <!-- Empty State -->
-              <div v-else-if="!selectedEntity" class="state-container empty-state-pib">
-                <div class="empty-icon-pib">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-                    <polyline points="7.5 4.21 12 6.81 16.5 4.21"></polyline>
-                    <polyline points="7.5 19.79 7.5 14.6 3 12"></polyline>
-                    <polyline points="21 12 16.5 14.6 16.5 19.79"></polyline>
-                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-                    <line x1="12" y1="22.08" x2="12" y2="12"></line>
-                  </svg>
-                </div>
-                <p class="state-text">Selecciona una entidad</p>
-                <p class="state-subtext">Para ver el PIB estatal</p>
-              </div>
-
-              <!-- Data State -->
               <div v-else class="pib-data-container">
-                <!-- Valor principal destacado arriba -->
                 <div class="pib-main-value">
                   <span class="currency-symbol">$</span>
                   <span class="value-number">{{ formatNumber(pibValue) }}</span>
                   <span class="value-unit">MDP</span>
                 </div>
 
-                <!-- Contenedor del icono y contexto -->
                 <div class="pib-content-wrapper">
-                  <!-- Icono visual -->
                   <div class="pib-visual">
                     <IconPercentageChart
                       iconPath="/public/icons/pib-icon.png"
@@ -180,7 +151,6 @@
                     />
                   </div>
 
-                  <!-- Información contextual -->
                   <div class="pib-context">
                     <div class="context-item">
                       <span class="context-label">Entidad</span>
@@ -201,16 +171,14 @@
           </div>
         </div>
         
-        <!-- Bottom Right Container - ITAEE con BULLET CHART -->
+        <!-- Bottom Right Container - ITAEE -->
         <div class="bottom-right-card-container">
           <div class="bottom-bar-graph card">
-            <!-- Loading State -->
             <div v-if="itaeLoading" class="loading-state">
               <div class="spinner-small"></div>
               <p>Cargando datos...</p>
             </div>
 
-            <!-- Error State -->
             <div v-else-if="itaeError" class="error-state">
               <p>Error: {{ itaeError }}</p>
               <button @click="loadITAEData(selectedEntity, selectedYear)" class="retry-btn-small">
@@ -218,14 +186,6 @@
               </button>
             </div>
 
-            <!-- Empty State -->
-            <div v-else-if="!selectedEntity" class="empty-state">
-              <div class="empty-icon">📊</div>
-              <h4>Selecciona una entidad</h4>
-              <p>Selecciona una entidad federativa para ver el Indicador Trimestral de la Actividad Económica Estatal.</p>
-            </div>
-
-            <!-- BULLET CHART -->
             <BulletChart
               v-else
               :variables="itaeData"
@@ -250,7 +210,6 @@ import BulletChart from '@/modules/charts/components/BulletChart.vue'
 import { useStorageData } from '@/dataConection/useStorageData'
 import { getMapping, getSheetName, setActiveYear } from '@/dataConection/storageConfig'
 
-// Props
 const props = defineProps({
   selectedEntity: {
     type: String,
@@ -264,27 +223,13 @@ const props = defineProps({
 
 const emit = defineEmits(['back'])
 
-// Composable de Google Sheets
 const { fetchData } = useStorageData()
 
-// Estado para tooltip del PIB
 const showInfo = ref(false)
 
-// ============================================
-// FUNCIÓN: Limpiar formato numérico
-// ============================================
 const parseNumericValue = (value) => {
-  console.log('🔍 [parseNumericValue] Input:', value, 'Type:', typeof value)
-  
-  if (typeof value === 'number') {
-    console.log('✅ [parseNumericValue] Ya es número:', value)
-    return value
-  }
-  
-  if (!value || value === '') {
-    console.log('⚠️ [parseNumericValue] Valor vacío o null')
-    return 0
-  }
+  if (typeof value === 'number') return value
+  if (!value || value === '') return 0
   
   let stringValue = String(value).trim()
   stringValue = stringValue.replace(/\s/g, '')
@@ -299,15 +244,7 @@ const parseNumericValue = (value) => {
   }
   
   const result = parseFloat(stringValue)
-  
-  console.log('✅ [parseNumericValue] Output:', result)
-  
-  if (isNaN(result)) {
-    console.error('❌ [parseNumericValue] No se pudo parsear:', value)
-    return 0
-  }
-  
-  return result
+  return isNaN(result) ? 0 : result
 }
 
 // ============================================
@@ -322,10 +259,6 @@ const loadIngresoTotalData = async (entityName = null, year = null) => {
     ingresoTotalLoading.value = true
     ingresoTotalError.value = null
     
-    console.log('💰 [Ingreso Total] Cargando datos')
-    console.log('  - Entidad:', entityName)
-    console.log('  - Año:', year)
-    
     if (!entityName) {
       ingresoTotalData.value = []
       ingresoTotalLoading.value = false
@@ -336,7 +269,6 @@ const loadIngresoTotalData = async (entityName = null, year = null) => {
     
     const mapping = getMapping('ingresoTotal')
     const sheetName = getSheetName('ingresoTotal')
-    
     const rawData = await fetchData('ingresoTotal', sheetName)
     
     if (rawData.length === 0) {
@@ -346,7 +278,6 @@ const loadIngresoTotalData = async (entityName = null, year = null) => {
     const entityRow = rawData.find(row => row[mapping.categoryColumn] === entityName)
     
     if (!entityRow) {
-      console.log('⚠️ [Ingreso Total] No se encontraron datos para', entityName)
       ingresoTotalData.value = []
       ingresoTotalLoading.value = false
       return
@@ -364,7 +295,6 @@ const loadIngresoTotalData = async (entityName = null, year = null) => {
       }))
     
     ingresoTotalData.value = transformedData
-    console.log('✅ [Ingreso Total] Datos cargados:', transformedData.length, 'variables')
     
   } catch (err) {
     console.error('❌ [Ingreso Total] Error:', err)
@@ -387,10 +317,6 @@ const loadPersonasData = async (entityName = null, year = null) => {
     peaLoading.value = true
     peaError.value = null
     
-    console.log('👥 [PEA] Cargando datos')
-    console.log('  - Entidad:', entityName)
-    console.log('  - Año:', year)
-    
     if (!entityName) {
       peaValue.value = 0
       peaPercentage.value = 0
@@ -402,7 +328,6 @@ const loadPersonasData = async (entityName = null, year = null) => {
     
     const mapping = getMapping('pea')
     const sheetName = getSheetName('pea')
-    
     const rawData = await fetchData('pea', sheetName)
     
     if (rawData.length === 0) {
@@ -420,13 +345,9 @@ const loadPersonasData = async (entityName = null, year = null) => {
       
       const maxValue = Math.max(...allValues)
       peaPercentage.value = maxValue > 0 ? (peaValue.value / maxValue) * 100 : 0
-      
-      console.log('✅ [PEA] Datos cargados:', peaValue.value, 'Personas')
-      console.log('📊 [PEA] Porcentaje calculado:', peaPercentage.value.toFixed(2), '%')
     } else {
       peaValue.value = 0
       peaPercentage.value = 0
-      console.log('⚠️ [PEA] No se encontraron datos para', entityName)
     }
     
   } catch (err) {
@@ -450,10 +371,6 @@ const loadPIBData = async (entityName = null, year = null) => {
     PIBLoading.value = true
     PIBError.value = null
     
-    console.log('🏭 [PIB] Cargando datos')
-    console.log('  - Entidad:', entityName)
-    console.log('  - Año:', year)
-    
     if (!entityName) {
       pibValue.value = 0
       pibPercentage.value = 0
@@ -465,37 +382,26 @@ const loadPIBData = async (entityName = null, year = null) => {
     
     const mapping = getMapping('pib')
     const sheetName = getSheetName('pib')
-    
     const rawData = await fetchData('pib', sheetName)
     
     if (rawData.length === 0) {
       throw new Error('No se obtuvieron datos')
-    }    
+    }
+    
     const entityRow = rawData.find(row => row[mapping.categoryColumn] === entityName)
     
     if (entityRow) {
-      console.log('🔍 [PIB DEBUG] Fila encontrada:', entityRow)
-      
       pibValue.value = parseNumericValue(entityRow[mapping.valueColumn])
       
-      console.log('🔍 [PIB DEBUG] Valor parseado:', pibValue.value)
-      
       const allValues = rawData
-        .map(row => {
-          const val = parseNumericValue(row[mapping.valueColumn])
-          return val
-        })
+        .map(row => parseNumericValue(row[mapping.valueColumn]))
         .filter(val => val > 0)
+      
       const totalSum = allValues.reduce((sum, val) => sum + val, 0)
       pibPercentage.value = totalSum > 0 ? (pibValue.value / totalSum) * 100 : 0
-      
-      console.log('✅ [PIB] Valor:', pibValue.value, 'Millones De Pesos')
-      console.log('📊 [PIB] Porcentaje del total:', pibPercentage.value.toFixed(2), '%')
-      console.log('📊 [PIB] Suma total:', totalSum)
     } else {
       pibValue.value = 0
       pibPercentage.value = 0
-      console.log('⚠️ [PIB] No se encontraron datos para', entityName)
     }
     
   } catch (err) {
@@ -518,10 +424,6 @@ const loadITAEData = async (entityName = null, year = null) => {
     itaeLoading.value = true
     itaeError.value = null
     
-    console.log('📊 [ITAEE] Cargando datos')
-    console.log('  - Entidad seleccionada:', entityName)
-    console.log('  - Año:', year)
-    
     if (!entityName) {
       itaeData.value = []
       itaeLoading.value = false
@@ -532,30 +434,17 @@ const loadITAEData = async (entityName = null, year = null) => {
     
     const mapping = getMapping('itaee')
     const sheetName = getSheetName('itaee')
-    
-    console.log('🔍 [ITAEE] Mapping:', mapping)
-    console.log('🔍 [ITAEE] Sheet name:', sheetName)
-    
     const rawData = await fetchData('itaee', sheetName)
     
     if (rawData.length === 0) {
       throw new Error('No se obtuvieron datos del Google Sheet')
     }
     
-    console.log('🔍 [ITAEE] Datos cargados:', rawData.length, 'filas')
-    console.log('🔍 [ITAEE] Primera fila de ejemplo:', rawData[0])
-    console.log('🔍 [ITAEE] Columnas disponibles:', Object.keys(rawData[0]))
-    
     const variableConfig = mapping.variables[0]
-    
-    console.log('🔍 [ITAEE] Buscando columna:', variableConfig.column)
     
     const transformedData = rawData.map(row => {
       const entityName = row[mapping.categoryColumn]
       const rawValue = row[variableConfig.column]
-      
-      console.log(`🔍 [ITAEE] ${entityName}: rawValue = "${rawValue}" (type: ${typeof rawValue})`)
-      
       const value = parseNumericValue(rawValue)
       
       return {
@@ -569,9 +458,6 @@ const loadITAEData = async (entityName = null, year = null) => {
     }).filter(item => item.label && item.label.trim() !== '')
     
     itaeData.value = transformedData
-    console.log('✅ [ITAEE] Datos cargados:', transformedData.length, 'entidades')
-    console.log('✅ [ITAEE] Primeras 3 entidades:', transformedData.slice(0, 3))
-    console.log('✅ [ITAEE] Entidad seleccionada:', entityName)
     
   } catch (err) {
     console.error('❌ [ITAEE] Error:', err)
@@ -589,22 +475,13 @@ const formatNumber = (value) => {
   return new Intl.NumberFormat('es-MX').format(value)
 }
 
-const handleBack = () => {
-  emit('back')
-}
-
 // ============================================
 // WATCHERS
 // ============================================
-watch(() => props.selectedEntity, (newEntity, oldEntity) => {
-  console.log('🔄 [EconomicosView] Watch: entidad cambió')
-  console.log('  - Anterior:', oldEntity)
-  console.log('  - Nueva:', newEntity)
-  
+watch(() => props.selectedEntity, (newEntity) => {
   loadIngresoTotalData(newEntity, props.selectedYear)
   loadPersonasData(newEntity, props.selectedYear)
   loadPIBData(newEntity, props.selectedYear)
-  
   if (newEntity) {
     loadITAEData(newEntity, props.selectedYear)
   } else {
@@ -612,11 +489,7 @@ watch(() => props.selectedEntity, (newEntity, oldEntity) => {
   }
 }, { immediate: false })
 
-watch(() => props.selectedYear, (newYear, oldYear) => {
-  console.log('🔄 [EconomicosView] Watch: año cambió')
-  console.log('  - Anterior:', oldYear)
-  console.log('  - Nuevo:', newYear)
-  
+watch(() => props.selectedYear, (newYear) => {
   if (props.selectedEntity) {
     loadIngresoTotalData(props.selectedEntity, newYear)
     loadPersonasData(props.selectedEntity, newYear)
@@ -629,23 +502,17 @@ watch(() => props.selectedYear, (newYear, oldYear) => {
 // LIFECYCLE
 // ============================================
 onMounted(async () => {
-  console.log('🚀 [EconomicosView] Montado')
-  console.log('📍 Entidad inicial:', props.selectedEntity)
-  console.log('📅 Año inicial:', props.selectedYear)
-  
   await Promise.all([
     loadIngresoTotalData(props.selectedEntity, props.selectedYear),
     loadPersonasData(props.selectedEntity, props.selectedYear),
     loadPIBData(props.selectedEntity, props.selectedYear),
     loadITAEData(props.selectedEntity, props.selectedYear)
   ])
-  
-  console.log('✅ [EconomicosView] Todos los datos iniciales cargados')
 })
 </script>
 
 <style scoped>
-.ambientales-container {
+.economicos-container {
   background-color: white;
   border-radius: 15px;
   height: 100%;
@@ -654,6 +521,59 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+/* ✅ GLOBAL EMPTY STATE */
+.global-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+}
+
+.empty-state-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  max-width: 400px;
+  padding: 40px;
+}
+
+.empty-state-icon {
+  width: 120px;
+  height: 120px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+  border-radius: 50%;
+  box-shadow: 
+    0 4px 15px rgba(0, 0, 0, 0.08),
+    inset 0 2px 4px rgba(255, 255, 255, 0.8);
+}
+
+.empty-state-icon svg {
+  opacity: 0.7;
+}
+
+.empty-state-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: #2d3748;
+  margin: 0 0 12px 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.empty-state-description {
+  font-size: 14px;
+  color: #718096;
+  margin: 0;
+  line-height: 1.6;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .card-body {
@@ -699,7 +619,7 @@ onMounted(async () => {
   padding: 20px;
 }
 
-.loading-state-small, .error-state-small, .empty-state-small {
+.loading-state-small, .error-state-small {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -744,46 +664,6 @@ onMounted(async () => {
   color: #666;
   font-size: 14px;
   margin: 0 0 10px 0;
-}
-
-.empty-state-small p {
-  color: #999;
-  font-size: 12px;
-  margin: 0;
-}
-
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  width: 100%;
-  padding: 40px 20px;
-  text-align: center;
-}
-
-.empty-icon {
-  font-size: 64px;
-  margin-bottom: 20px;
-  opacity: 0.5;
-}
-
-.empty-state h4 {
-  font-size: 18px;
-  font-weight: 500;
-  color: #535353;
-  margin: 0 0 10px 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-.empty-state p {
-  font-size: 14px;
-  color: #999;
-  margin: 0;
-  max-width: 400px;
-  line-height: 1.5;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .person-graphs {
@@ -835,9 +715,6 @@ h2 {
   padding-top: 20px;
 }
 
-/* ============================================ */
-/* RIGHT SIDE CONTAINER */
-/* ============================================ */
 .right-card-container {
   display: flex;
   flex-direction: column;
@@ -855,9 +732,6 @@ h2 {
   min-height: 0;
 }
 
-/* ============================================ */
-/* PIB CARD MEJORADA */
-/* ============================================ */
 .pib-chart.card {
   width: 100%;
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
@@ -1016,13 +890,6 @@ h2 {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-.state-subtext {
-  margin: 0;
-  font-size: 0.75rem;
-  color: #94a3b8;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
 .spinner {
   width: 40px;
   height: 40px;
@@ -1056,19 +923,6 @@ h2 {
   background: #1a4d7a;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(15, 55, 89, 0.3);
-}
-
-.empty-state-pib {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-}
-
-.empty-icon-pib {
-  color: #cbd5e1;
-  opacity: 0.7;
 }
 
 .pib-data-container {
@@ -1180,9 +1034,6 @@ h2 {
   transform: translateY(-4px);
 }
 
-/* ============================================ */
-/* ITAEE SECTION */
-/* ============================================ */
 .bottom-right-card-container {
   flex: 5;
   border-radius: 12px;
@@ -1198,38 +1049,5 @@ h2 {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .card-header {
-    padding: 1rem;
-  }
-
-  .card-body-pib {
-    padding: 1rem;
-  }
-
-  .value-number {
-    font-size: 1.3rem;
-  }
-
-  .pib-content-wrapper {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .pib-visual {
-    max-width: 100px;
-    height: 90px;
-  }
-
-  .pib-context {
-    border-left: none;
-    border-top: 2px solid #e2e8f0;
-    padding-left: 0;
-    padding-top: 0.75rem;
-    width: 100%;
-  }
 }
 </style>

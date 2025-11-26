@@ -1,19 +1,35 @@
 <!-- src/modules/qualitativeIndicators/components/AmbientalesView.vue -->
-<!-- ✅ ACTUALIZADO: Todos los componentes vinculados con filtros y Google Sheets -->
+<!-- ✅ ACTUALIZADO: Empty state centralizado cuando no hay entidad seleccionada -->
 <template>
   <div class="ambientales-container">
-    <div class="card-body">
+    <!-- ✅ EMPTY STATE CENTRALIZADO cuando no hay entidad seleccionada -->
+    <div v-if="!selectedEntity" class="global-empty-state">
+      <div class="empty-state-content">
+        <div class="empty-state-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#718096" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+            <line x1="8" y1="2" x2="8" y2="18"/>
+            <line x1="16" y1="6" x2="16" y2="22"/>
+          </svg>
+        </div>
+        <h2 class="empty-state-title">Selecciona una entidad</h2>
+        <p class="empty-state-description">
+          Selecciona una entidad federativa en el filtro superior para visualizar los indicadores ambientales.
+        </p>
+      </div>
+    </div>
+
+    <!-- ✅ CONTENIDO NORMAL cuando hay entidad seleccionada -->
+    <div v-else class="card-body">
       <!-- Left Side Container -->
       <div class="left-card-container">
         <!-- Top: Horizontal Bar Chart - Incendios Forestales -->
         <div class="bar-graph card">
-          <!-- Loading State -->
           <div v-if="incendiosLoading" class="loading-state">
             <div class="spinner-small"></div>
             <p>Cargando datos...</p>
           </div>
 
-          <!-- Error State -->
           <div v-else-if="incendiosError" class="error-state">
             <p>Error: {{ incendiosError }}</p>
             <button @click="loadIncendiosData(selectedEntity, selectedYear)" class="retry-btn-small">
@@ -21,20 +37,12 @@
             </button>
           </div>
 
-          <!-- Empty State cuando no hay entidad seleccionada -->
-          <div v-else-if="!selectedEntity" class="empty-state">
-            <div class="empty-icon">🗺️</div>
-            <h4>Selecciona una entidad</h4>
-            <p>Selecciona una entidad federativa en el filtro superior para ver los datos de incendios forestales.</p>
-          </div>
-
-          <!-- HorizontalBarChart con datos dinámicos -->
           <HorizontalBarChart
             v-else
             :variables="incendiosData"
             width="100%"
             height="100%"
-            title="Incendios forestales en hectáreas en 2024"
+            title="Incendios forestales en hectáreas"
             :showFilters="true"
             :showLegend="true"
             barHeight="20px"
@@ -48,22 +56,14 @@
             <h2>Promedio diario de residuos sólidos urbanos recolectados</h2>
           </div>
           <div class="body-bottle">
-            <!-- Loading State -->
             <div v-if="residuosLoading" class="loading-state-small">
               <div class="spinner-small"></div>
             </div>
 
-            <!-- Error State -->
             <div v-else-if="residuosError" class="error-state-small">
               <p>Error cargando datos</p>
             </div>
 
-            <!-- Empty State -->
-            <div v-else-if="!selectedEntity" class="empty-state-small">
-              <p>Selecciona una entidad</p>
-            </div>
-
-            <!-- Datos -->
             <template v-else>
               <div class="bottle-graph">
                 <BottleChart :value="residuosPercentage" />
@@ -84,22 +84,14 @@
               <h3>Emisiones de contaminantes atmosféricos por fuente en toneladas.</h3>
             </div>
             <div class="area-chart-container">
-              <!-- Loading State -->
               <div v-if="emisionesLoading" class="loading-state-small">
                 <div class="spinner-small"></div>
               </div>
 
-              <!-- Error State -->
               <div v-else-if="emisionesError" class="error-state-small">
                 <p>Error cargando datos</p>
               </div>
 
-              <!-- Empty State -->
-              <div v-else-if="!selectedEntity" class="empty-state-small">
-                <p>Selecciona una entidad</p>
-              </div>
-
-              <!-- Datos -->
               <AreaChart 
                 v-else
                 :excelData="emisionesData"
@@ -114,22 +106,14 @@
               <h3>Consumo de energía eléctrica</h3>
             </div>
             
-            <!-- Loading State -->
             <div v-if="energiaLoading" class="loading-state-small">
               <div class="spinner-small"></div>
             </div>
 
-            <!-- Error State -->
             <div v-else-if="energiaError" class="error-state-small">
               <p>Error cargando datos</p>
             </div>
 
-            <!-- Empty State -->
-            <div v-else-if="!selectedEntity" class="empty-state-small">
-              <p>Selecciona una entidad</p>
-            </div>
-
-            <!-- Datos -->
             <template v-else>
               <div class="gauge-graph">
                 <GaugeChart :value="energiaPercentage" />
@@ -142,13 +126,11 @@
         <!-- Bottom Right Container -->
         <div class="bottom-right-card-container">
           <div class="bottom-bar-graph card">
-            <!-- Loading State -->
             <div v-if="areasLoading" class="loading-state">
               <div class="spinner-small"></div>
               <p>Cargando datos...</p>
             </div>
 
-            <!-- Error State -->
             <div v-else-if="areasError" class="error-state">
               <p>Error: {{ areasError }}</p>
               <button @click="loadAreasNaturalesData(selectedEntity, selectedYear)" class="retry-btn-small">
@@ -156,14 +138,6 @@
               </button>
             </div>
 
-            <!-- Empty State -->
-            <div v-else-if="!selectedEntity" class="empty-state">
-              <div class="empty-icon">🗺️</div>
-              <h4>Selecciona una entidad</h4>
-              <p>Selecciona una entidad federativa para ver las áreas naturales protegidas.</p>
-            </div>
-
-            <!-- Datos -->
             <VerticalBarChart
               v-else
               :variables="areasNaturalesData"
@@ -192,7 +166,6 @@ import VerticalBarChart from '@/modules/charts/components/VerticalBarChart.vue'
 import { useStorageData } from '@/dataConection/useStorageData'
 import { getMapping, getSheetName, setActiveYear } from '@/dataConection/storageConfig'
 
-// Props
 const props = defineProps({
   selectedEntity: {
     type: String,
@@ -206,11 +179,10 @@ const props = defineProps({
 
 const emit = defineEmits(['back'])
 
-// Composable de Google Sheets
 const { fetchData, transform } = useStorageData()
 
 // ============================================
-// INCENDIOS FORESTALES (HorizontalBarChart)
+// INCENDIOS FORESTALES
 // ============================================
 const incendiosData = ref([])
 const incendiosLoading = ref(false)
@@ -220,10 +192,6 @@ const loadIncendiosData = async (entityName = null, year = null) => {
   try {
     incendiosLoading.value = true
     incendiosError.value = null
-    
-    console.log('🔥 [Incendios] Cargando datos')
-    console.log('  - Entidad:', entityName)
-    console.log('  - Año:', year)
     
     if (!entityName) {
       incendiosData.value = []
@@ -235,38 +203,32 @@ const loadIncendiosData = async (entityName = null, year = null) => {
     
     const mapping = getMapping('incendiosForestales')
     const sheetName = getSheetName('incendiosForestales')
-    
     const rawData = await fetchData('incendiosForestales', sheetName)
     
     if (rawData.length === 0) {
       throw new Error('No se obtuvieron datos del Google Sheet')
     }
     
-    // ✅ CORREGIDO: Buscar la fila de la entidad
     const entityRow = rawData.find(row => row[mapping.categoryColumn] === entityName)
     
     if (!entityRow) {
-      console.log('⚠️ [Incendios] No se encontraron datos para', entityName)
       incendiosData.value = []
       incendiosLoading.value = false
       return
     }
     
-    // ✅ CORREGIDO: Transformar solo las variables definidas en el mapping
     const transformedData = mapping.variables
-      .sort((a, b) => a.order - b.order)  // Ordenar por el campo 'order'
+      .sort((a, b) => a.order - b.order)
       .map(variable => ({
         key: variable.key,
         label: variable.label,
         value: parseFloat(entityRow[variable.column]) || 0,
         color: variable.color,
         colorClass: variable.colorClass || 'default',
-        active: true  // ← Horizontal chart muestra todas activas por defecto
+        active: true
       }))
     
     incendiosData.value = transformedData
-    console.log('✅ [Incendios] Datos cargados:', transformedData.length, 'variables')
-    console.log('📊 [Incendios] Datos:', transformedData)
     
   } catch (err) {
     console.error('❌ [Incendios] Error:', err)
@@ -277,7 +239,7 @@ const loadIncendiosData = async (entityName = null, year = null) => {
 }
 
 // ============================================
-// RESIDUOS SÓLIDOS URBANOS (BottleChart)
+// RESIDUOS SÓLIDOS URBANOS
 // ============================================
 const residuosValue = ref(0)
 const residuosPercentage = ref(0)
@@ -288,10 +250,6 @@ const loadResiduosData = async (entityName = null, year = null) => {
   try {
     residuosLoading.value = true
     residuosError.value = null
-    
-    console.log('🗑️ [Residuos] Cargando datos')
-    console.log('  - Entidad:', entityName)
-    console.log('  - Año:', year)
     
     if (!entityName) {
       residuosValue.value = 0
@@ -304,24 +262,20 @@ const loadResiduosData = async (entityName = null, year = null) => {
     
     const mapping = getMapping('residuosSolidos')
     const sheetName = getSheetName('residuosSolidos')
-    
     const rawData = await fetchData('residuosSolidos', sheetName)
     
     if (rawData.length === 0) {
       throw new Error('No se obtuvieron datos')
     }
     
-    // Buscar la fila de la entidad
     const entityRow = rawData.find(row => row[mapping.categoryColumn] === entityName)
     
     if (entityRow) {
       residuosValue.value = parseFloat(entityRow[mapping.valueColumn]) || 0
       residuosPercentage.value = parseFloat(entityRow[mapping.percentageColumn]) || 0
-      console.log('✅ [Residuos] Datos cargados:', residuosValue.value, 'kg')
     } else {
       residuosValue.value = 0
       residuosPercentage.value = 0
-      console.log('⚠️ [Residuos] No se encontraron datos para', entityName)
     }
     
   } catch (err) {
@@ -333,7 +287,7 @@ const loadResiduosData = async (entityName = null, year = null) => {
 }
 
 // ============================================
-// EMISIONES CONTAMINANTES (AreaChart)
+// EMISIONES CONTAMINANTES
 // ============================================
 const emisionesData = ref([])
 const emisionesLoading = ref(false)
@@ -343,10 +297,6 @@ const loadEmisionesData = async (entityName = null, year = null) => {
   try {
     emisionesLoading.value = true
     emisionesError.value = null
-    
-    console.log('🏭 [Emisiones] Cargando datos')
-    console.log('  - Entidad:', entityName)
-    console.log('  - Año:', year)
     
     if (!entityName) {
       emisionesData.value = []
@@ -358,26 +308,21 @@ const loadEmisionesData = async (entityName = null, year = null) => {
     
     const mapping = getMapping('emisiones')
     const sheetName = getSheetName('emisiones')
-    
     const rawData = await fetchData('emisiones', sheetName)
     
     if (rawData.length === 0) {
       throw new Error('No se obtuvieron datos')
     }
     
-    // Buscar la fila de la entidad
     const entityRow = rawData.find(row => row[mapping.categoryColumn] === entityName)
     
     if (entityRow) {
-      // Transformar a formato de AreaChart
       emisionesData.value = mapping.variables.map(variable => ({
         label: variable.label,
         value: parseFloat(entityRow[variable.column]) || 0
       }))
-      console.log('✅ [Emisiones] Datos cargados:', emisionesData.value.length, 'fuentes')
     } else {
       emisionesData.value = []
-      console.log('⚠️ [Emisiones] No se encontraron datos para', entityName)
     }
     
   } catch (err) {
@@ -389,7 +334,7 @@ const loadEmisionesData = async (entityName = null, year = null) => {
 }
 
 // ============================================
-// CONSUMO DE ENERGÍA ELÉCTRICA (GaugeChart)
+// CONSUMO DE ENERGÍA ELÉCTRICA
 // ============================================
 const energiaValue = ref(0)
 const energiaPercentage = ref(0)
@@ -400,10 +345,6 @@ const loadEnergiaData = async (entityName = null, year = null) => {
   try {
     energiaLoading.value = true
     energiaError.value = null
-    
-    console.log('⚡ [Energía] Cargando datos')
-    console.log('  - Entidad:', entityName)
-    console.log('  - Año:', year)
     
     if (!entityName) {
       energiaValue.value = 0
@@ -416,24 +357,20 @@ const loadEnergiaData = async (entityName = null, year = null) => {
     
     const mapping = getMapping('energia')
     const sheetName = getSheetName('energia')
-    
     const rawData = await fetchData('energia', sheetName)
     
     if (rawData.length === 0) {
       throw new Error('No se obtuvieron datos')
     }
     
-    // Buscar la fila de la entidad
     const entityRow = rawData.find(row => row[mapping.categoryColumn] === entityName)
     
     if (entityRow) {
       energiaValue.value = parseFloat(entityRow[mapping.valueColumn]) || 0
       energiaPercentage.value = parseFloat(entityRow[mapping.percentageColumn]) || 0
-      console.log('✅ [Energía] Datos cargados:', energiaValue.value, 'GWh')
     } else {
       energiaValue.value = 0
       energiaPercentage.value = 0
-      console.log('⚠️ [Energía] No se encontraron datos para', entityName)
     }
     
   } catch (err) {
@@ -445,7 +382,7 @@ const loadEnergiaData = async (entityName = null, year = null) => {
 }
 
 // ============================================
-// ÁREAS NATURALES PROTEGIDAS (VerticalBarChart)
+// ÁREAS NATURALES PROTEGIDAS
 // ============================================
 const areasNaturalesData = ref([])
 const areasLoading = ref(false)
@@ -455,10 +392,6 @@ const loadAreasNaturalesData = async (entityName = null, year = null) => {
   try {
     areasLoading.value = true
     areasError.value = null
-    
-    console.log('🌳 [Áreas Naturales] Cargando datos')
-    console.log('  - Entidad:', entityName)
-    console.log('  - Año:', year)
     
     if (!entityName) {
       areasNaturalesData.value = []
@@ -470,36 +403,30 @@ const loadAreasNaturalesData = async (entityName = null, year = null) => {
     
     const mapping = getMapping('areasNaturales')
     const sheetName = getSheetName('areasNaturales')
-    
     const rawData = await fetchData('areasNaturales', sheetName)
     
     if (rawData.length === 0) {
       throw new Error('No se obtuvieron datos del Google Sheet')
     }
     
-    // ✅ CORREGIDO: Buscar la fila de la entidad
     const entityRow = rawData.find(row => row[mapping.categoryColumn] === entityName)
     
     if (!entityRow) {
-      console.log('⚠️ [Áreas Naturales] No se encontraron datos para', entityName)
       areasNaturalesData.value = []
       areasLoading.value = false
       return
     }
     
-    // ✅ CORREGIDO: Transformar solo las variables definidas en el mapping
     const transformedData = mapping.variables.map(variable => ({
       key: variable.key,
       label: variable.label,
       value: parseFloat(entityRow[variable.column]) || 0,
       color: variable.color,
       colorClass: variable.colorClass || 'default',
-      active: false  // ← Inicialmente todas inactivas
+      active: false
     }))
     
     areasNaturalesData.value = transformedData
-    console.log('✅ [Áreas Naturales] Datos cargados:', transformedData.length, 'variables')
-    console.log('📊 [Áreas Naturales] Datos:', transformedData)
     
   } catch (err) {
     console.error('❌ [Áreas Naturales] Error:', err)
@@ -517,19 +444,10 @@ const formatNumber = (value) => {
   return new Intl.NumberFormat('es-MX').format(value)
 }
 
-const handleBack = () => {
-  emit('back')
-}
-
 // ============================================
 // WATCHERS
 // ============================================
-watch(() => props.selectedEntity, (newEntity, oldEntity) => {
-  console.log('🔄 [AmbientalesView] Watch: entidad cambió')
-  console.log('  - Anterior:', oldEntity)
-  console.log('  - Nueva:', newEntity)
-  
-  // Cargar datos de todos los componentes
+watch(() => props.selectedEntity, (newEntity) => {
   loadIncendiosData(newEntity, props.selectedYear)
   loadResiduosData(newEntity, props.selectedYear)
   loadEmisionesData(newEntity, props.selectedYear)
@@ -537,12 +455,7 @@ watch(() => props.selectedEntity, (newEntity, oldEntity) => {
   loadAreasNaturalesData(newEntity, props.selectedYear)
 }, { immediate: false })
 
-watch(() => props.selectedYear, (newYear, oldYear) => {
-  console.log('🔄 [AmbientalesView] Watch: año cambió')
-  console.log('  - Anterior:', oldYear)
-  console.log('  - Nuevo:', newYear)
-  
-  // Solo recargar si hay una entidad seleccionada
+watch(() => props.selectedYear, (newYear) => {
   if (props.selectedEntity) {
     loadIncendiosData(props.selectedEntity, newYear)
     loadResiduosData(props.selectedEntity, newYear)
@@ -556,11 +469,6 @@ watch(() => props.selectedYear, (newYear, oldYear) => {
 // LIFECYCLE
 // ============================================
 onMounted(async () => {
-  console.log('🚀 [AmbientalesView] Montado')
-  console.log('📍 Entidad inicial:', props.selectedEntity)
-  console.log('📅 Año inicial:', props.selectedYear)
-  
-  // Cargar datos iniciales de todos los componentes
   await Promise.all([
     loadIncendiosData(props.selectedEntity, props.selectedYear),
     loadResiduosData(props.selectedEntity, props.selectedYear),
@@ -568,8 +476,6 @@ onMounted(async () => {
     loadEnergiaData(props.selectedEntity, props.selectedYear),
     loadAreasNaturalesData(props.selectedEntity, props.selectedYear)
   ])
-  
-  console.log('✅ [AmbientalesView] Todos los datos iniciales cargados')
 })
 </script>
 
@@ -585,6 +491,60 @@ onMounted(async () => {
   overflow: hidden;
 }
 
+/* ✅ GLOBAL EMPTY STATE */
+.global-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+}
+
+.empty-state-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  max-width: 400px;
+  padding: 40px;
+}
+
+.empty-state-icon {
+  width: 120px;
+  height: 120px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+  border-radius: 50%;
+  box-shadow: 
+    0 4px 15px rgba(0, 0, 0, 0.08),
+    inset 0 2px 4px rgba(255, 255, 255, 0.8);
+}
+
+.empty-state-icon svg {
+  opacity: 0.7;
+}
+
+.empty-state-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: #2d3748;
+  margin: 0 0 12px 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.empty-state-description {
+  font-size: 14px;
+  color: #718096;
+  margin: 0;
+  line-height: 1.6;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* CARD BODY */
 .card-body {
   height: 100%;
   display: flex;
@@ -600,9 +560,6 @@ onMounted(async () => {
   overflow: hidden;
 }
 
-/* ============================
-   LEFT CARD CONTAINER
-   ============================ */
 .left-card-container {
   display: flex;
   flex-direction: column;
@@ -621,7 +578,6 @@ onMounted(async () => {
   position: relative;
 }
 
-/* Loading & Error States */
 .loading-state, .error-state {
   display: flex;
   flex-direction: column;
@@ -632,7 +588,7 @@ onMounted(async () => {
   padding: 20px;
 }
 
-.loading-state-small, .error-state-small, .empty-state-small {
+.loading-state-small, .error-state-small {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -679,48 +635,6 @@ onMounted(async () => {
   margin: 0 0 10px 0;
 }
 
-.empty-state-small p {
-  color: #999;
-  font-size: 12px;
-  margin: 0;
-}
-
-/* Empty State */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  width: 100%;
-  padding: 40px 20px;
-  text-align: center;
-}
-
-.empty-icon {
-  font-size: 64px;
-  margin-bottom: 20px;
-  opacity: 0.5;
-}
-
-.empty-state h4 {
-  font-size: 18px;
-  font-weight: 500;
-  color: #535353;
-  margin: 0 0 10px 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-.empty-state p {
-  font-size: 14px;
-  color: #999;
-  margin: 0;
-  max-width: 400px;
-  line-height: 1.5;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-/* Bottle Graph */
 .bottle-graphs {
   height: 25%;
   border-radius: 12px;
@@ -771,9 +685,6 @@ h2 {
   flex-shrink: 0;
 }
 
-/* ============================
-   RIGHT CARD CONTAINER
-   ============================ */
 .right-card-container {
   display: flex;
   flex-direction: column;
@@ -782,7 +693,6 @@ h2 {
   gap: 10px;
 }
 
-/* Top Right Container */
 .top-right-card-container {
   display: flex;
   flex-direction: row;
@@ -791,7 +701,6 @@ h2 {
   gap: 10px;
 }
 
-/* Area Chart */
 .area-chart {
   width: 65%;
   border-radius: 12px;
@@ -823,7 +732,6 @@ h3 {
   line-height: 1.3;
 }
 
-/* Gauge Container */
 .gauge-container {
   width: 35%;
   height: 100%;
@@ -861,7 +769,6 @@ h3 {
   justify-content: center;
 }
 
-/* Bottom Right Container */
 .bottom-right-card-container {
   height: 50%;
   border-radius: 12px;
