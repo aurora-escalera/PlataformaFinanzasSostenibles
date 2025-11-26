@@ -1,5 +1,5 @@
 <!-- src/modules/qualitativeIndicators/components/EconomicosView.vue -->
-<!-- ✅ ACTUALIZADO: Headers compactos con tooltips de información -->
+<!-- ✅ ACTUALIZADO: ITAEE a la izquierda, Ingresos a la derecha -->
 <template>
   <div class="economicos-container">
     <!-- ✅ EMPTY STATE CENTRALIZADO cuando no hay entidad seleccionada -->
@@ -21,23 +21,22 @@
 
     <!-- ✅ CONTENIDO NORMAL cuando hay entidad seleccionada -->
     <div v-else class="card-body">
-      <!-- Left Side Container -->
+      <!-- ========================================
+           LEFT SIDE CONTAINER
+           ======================================== -->
       <div class="left-card-container">
-        <!-- Top: Horizontal Bar Chart - Ingresos Totales -->
-        <div class="ingresos-card">
-          <!-- ✅ Header Ingresos y Egresos con tooltip -->
+        <!-- ✅ TOP LEFT: ITAEE (movido desde bottom-right) -->
+        <div class="itaee-card">
           <div class="card-header-dark">
             <div class="card-header-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
-                <line x1="1" y1="10" x2="23" y2="10"></line>
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
               </svg>
             </div>
-            <span class="card-header-title">Ingresos y Egresos Totales</span>
+            <span class="card-header-title">Indicador Trimestral de la Actividad Económica Estatal (ITAEE)</span>
             
-            <!-- ✅ Botón de información -->
             <div class="info-tooltip">
-              <button class="info-btn" @click="showInfoIngresos = !showInfoIngresos">
+              <button class="info-btn" @click="showInfoITAEE = !showInfoITAEE">
                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="12" cy="12" r="10"></circle>
                   <line x1="12" y1="16" x2="12" y2="12"></line>
@@ -45,43 +44,39 @@
                 </svg>
               </button>
               <Transition name="tooltip-fade">
-                <div v-if="showInfoIngresos" class="tooltip-content">
-                  Comparativa de ingresos y egresos totales de la entidad federativa seleccionada en miles de pesos.
+                <div v-if="showInfoITAEE" class="tooltip-content">
+                  Indicador que mide la evolución trimestral de la actividad económica de las entidades federativas.
                 </div>
               </Transition>
             </div>
           </div>
 
-          <div class="ingresos-body">
-            <div v-if="ingresoTotalLoading" class="loading-state">
+          <div class="itaee-body">
+            <div v-if="itaeLoading" class="loading-state">
               <div class="spinner-small"></div>
               <p>Cargando datos...</p>
             </div>
 
-            <div v-else-if="ingresoTotalError" class="error-state">
-              <p>Error: {{ ingresoTotalError }}</p>
-              <button @click="loadIngresoTotalData(selectedEntity, selectedYear)" class="retry-btn-small">
+            <div v-else-if="itaeError" class="error-state">
+              <p>Error: {{ itaeError }}</p>
+              <button @click="loadITAEData(selectedEntity, selectedYear)" class="retry-btn-small">
                 Reintentar
               </button>
             </div>
 
-            <HorizontalBarChart
+            <BulletChart
               v-else
-              :variables="ingresoTotalData"
-              width="100%"
-              height="100%"
+              :variables="itaeData"
               title=""
-              :showFilters="true"
-              :showLegend="true"
-              barHeight="20px"
-              barGap="1px"
+              :highlightState="selectedEntity"
+              :showLegend="false"
+              :maxValue="20"
             />
           </div>
         </div>
         
-        <!-- Bottom: Person Graph - Personas Económicamente Activas -->
+        <!-- ✅ BOTTOM LEFT: PEA -->
         <div class="pea-card">
-          <!-- ✅ Header PEA con tooltip -->
           <div class="card-header-dark">
             <div class="card-header-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -93,7 +88,6 @@
             </div>
             <span class="card-header-title">Población económicamente activa</span>
             
-            <!-- ✅ Botón de información -->
             <div class="info-tooltip">
               <button class="info-btn" @click="showInfoPEA = !showInfoPEA">
                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -121,9 +115,7 @@
 
             <template v-else>
               <div class="person-graph-container">
-                <PersonChart 
-                  :value="peaPercentage" 
-                />
+                <PersonChart :value="peaPercentage" />
               </div>
               
               <div class="person-values">
@@ -137,12 +129,13 @@
         </div>
       </div>
 
-      <!-- Right Side Container -->
+      <!-- ========================================
+           RIGHT SIDE CONTAINER
+           ======================================== -->
       <div class="right-card-container">
-        <!-- Top Right Container - PIB -->
+        <!-- ✅ TOP RIGHT: PIB -->
         <div class="top-right-card-container">
           <div class="pib-card">
-            <!-- ✅ Header PIB con tooltip -->
             <div class="card-header-dark">
               <div class="card-header-icon">
                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -152,7 +145,6 @@
               </div>
               <span class="card-header-title">PIB Estatal (millones de pesos)</span>
               
-              <!-- ✅ Botón de información -->
               <div class="info-tooltip">
                 <button class="info-btn" @click="showInfoPIB = !showInfoPIB">
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -226,21 +218,20 @@
           </div>
         </div>
         
-        <!-- Bottom Right Container - ITAEE -->
+        <!-- ✅ BOTTOM RIGHT: INGRESOS Y EGRESOS (movido desde top-left) -->
         <div class="bottom-right-card-container">
-          <div class="itaee-card">
-            <!-- ✅ Header ITAEE con tooltip -->
+          <div class="ingresos-card">
             <div class="card-header-dark">
               <div class="card-header-icon">
                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                  <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                  <line x1="1" y1="10" x2="23" y2="10"></line>
                 </svg>
               </div>
-              <span class="card-header-title">Indicador Trimestral de la Actividad Económica Estatal (ITAEE)</span>
+              <span class="card-header-title">Ingresos y Egresos Totales</span>
               
-              <!-- ✅ Botón de información -->
               <div class="info-tooltip">
-                <button class="info-btn" @click="showInfoITAEE = !showInfoITAEE">
+                <button class="info-btn" @click="showInfoIngresos = !showInfoIngresos">
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="12" r="10"></circle>
                     <line x1="12" y1="16" x2="12" y2="12"></line>
@@ -248,33 +239,36 @@
                   </svg>
                 </button>
                 <Transition name="tooltip-fade">
-                  <div v-if="showInfoITAEE" class="tooltip-content">
-                    Indicador que mide la evolución trimestral de la actividad económica de las entidades federativas.
+                  <div v-if="showInfoIngresos" class="tooltip-content">
+                    Comparativa de ingresos y egresos totales de la entidad federativa seleccionada en miles de pesos.
                   </div>
                 </Transition>
               </div>
             </div>
 
-            <div class="itaee-body">
-              <div v-if="itaeLoading" class="loading-state">
+            <div class="ingresos-body">
+              <div v-if="ingresoTotalLoading" class="loading-state">
                 <div class="spinner-small"></div>
                 <p>Cargando datos...</p>
               </div>
 
-              <div v-else-if="itaeError" class="error-state">
-                <p>Error: {{ itaeError }}</p>
-                <button @click="loadITAEData(selectedEntity, selectedYear)" class="retry-btn-small">
+              <div v-else-if="ingresoTotalError" class="error-state">
+                <p>Error: {{ ingresoTotalError }}</p>
+                <button @click="loadIngresoTotalData(selectedEntity, selectedYear)" class="retry-btn-small">
                   Reintentar
                 </button>
               </div>
 
-              <BulletChart
+              <HorizontalBarChart
                 v-else
-                :variables="itaeData"
+                :variables="ingresoTotalData"
+                width="100%"
+                height="100%"
                 title=""
-                :highlightState="selectedEntity"
-                :showLegend="false"
-                :maxValue="20"
+                :showFilters="true"
+                :showLegend="true"
+                barHeight="20px"
+                barGap="1px"
               />
             </div>
           </div>
@@ -308,7 +302,7 @@ const emit = defineEmits(['back'])
 
 const { fetchData } = useStorageData()
 
-// ✅ Estados para tooltips de cada card
+// Estados para tooltips
 const showInfoIngresos = ref(false)
 const showInfoPEA = ref(false)
 const showInfoPIB = ref(false)
@@ -324,25 +318,18 @@ const parseNumericValue = (value) => {
   const hasCommaAndDot = stringValue.includes(',') && stringValue.includes('.')
   
   if (hasCommaAndDot) {
-    // Formato europeo: 1.234.567,89 → 1234567.89
     stringValue = stringValue.replace(/\./g, '')
     stringValue = stringValue.replace(/,/g, '.')
   } else if (stringValue.includes(',')) {
-    // Coma como decimal: 1234,56 → 1234.56
     stringValue = stringValue.replace(/,/g, '.')
   } else if (stringValue.includes('.')) {
-    // ✅ Detectar si el punto es separador de miles
-    // Casos: "644.192" o "8.230.321" (puntos como separadores de miles)
     const parts = stringValue.split('.')
     const multipleDots = parts.length > 2
     const lastPartHasThreeDigits = parts[parts.length - 1].length === 3
     
-    // Si hay múltiples puntos O el último grupo tiene exactamente 3 dígitos
-    // entonces los puntos son separadores de miles
     if (multipleDots || (parts.length === 2 && lastPartHasThreeDigits)) {
       stringValue = stringValue.replace(/\./g, '')
     }
-    // Si no, es un decimal normal (ej: "3.14")
   }
   
   const result = parseFloat(stringValue)
@@ -350,7 +337,7 @@ const parseNumericValue = (value) => {
 }
 
 // ============================================
-// Ingresos Totales
+// INGRESOS TOTALES
 // ============================================
 const ingresoTotalData = ref([])
 const ingresoTotalLoading = ref(false)
@@ -553,8 +540,6 @@ const loadITAEData = async (entityName = null, year = null) => {
         key: entityName,
         label: entityName,
         value: value,
-        color: value >= 0 ? '#10b981' : '#ef4444',
-        colorClass: value >= 0 ? 'green' : 'red',
         active: true
       }
     }).filter(item => item.label && item.label.trim() !== '')
@@ -699,7 +684,7 @@ onMounted(async () => {
 }
 
 /* ============================================
-   ✅ HEADER OSCURO - MISMO ESTILO QUE AMBIENTALES
+   ✅ HEADER OSCURO
    ============================================ */
 .card-header-dark {
   display: flex;
@@ -809,9 +794,9 @@ onMounted(async () => {
 }
 
 /* ============================================
-   ✅ CARD INGRESOS Y EGRESOS
+   ✅ CARD ITAEE (LEFT TOP - 75%)
    ============================================ */
-.ingresos-card {
+.itaee-card {
   height: 75%;
   border-radius: 12px;
   display: flex;
@@ -821,14 +806,14 @@ onMounted(async () => {
   border: 1px solid #e2e8f0;
 }
 
-.ingresos-body {
+.itaee-body {
   flex: 1;
-  overflow: hidden;
   background: white;
+  overflow: hidden;
 }
 
 /* ============================================
-   ✅ CARD PEA
+   ✅ CARD PEA (LEFT BOTTOM - 25%)
    ============================================ */
 .pea-card {
   height: 25%;
@@ -911,13 +896,22 @@ onMounted(async () => {
 .top-right-card-container {
   display: flex;
   border-radius: 12px;
-  flex: 5;
+  flex: 1;
   gap: 10px;
   min-height: 0;
 }
 
+.bottom-right-card-container {
+  flex: 1;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
 /* ============================================
-   ✅ CARD PIB
+   ✅ CARD PIB (RIGHT TOP)
    ============================================ */
 .pib-card {
   width: 100%;
@@ -1046,18 +1040,9 @@ onMounted(async () => {
 }
 
 /* ============================================
-   ✅ CARD ITAEE
+   ✅ CARD INGRESOS (RIGHT BOTTOM)
    ============================================ */
-.bottom-right-card-container {
-  flex: 5;
-  border-radius: 12px;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.itaee-card {
+.ingresos-card {
   height: 100%;
   border-radius: 12px;
   display: flex;
@@ -1067,10 +1052,10 @@ onMounted(async () => {
   border: 1px solid #e2e8f0;
 }
 
-.itaee-body {
+.ingresos-body {
   flex: 1;
-  background: white;
   overflow: hidden;
+  background: white;
 }
 
 /* ============================================
