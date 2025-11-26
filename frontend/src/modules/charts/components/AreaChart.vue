@@ -1,7 +1,5 @@
 <template>
   <div class="area-chart-cont">    
-    <!-- ✅ DEBUG INFO REMOVIDO -->
-    
     <div class="legend" v-if="showLegend">
       <div 
         v-for="(item, index) in chartData"
@@ -20,7 +18,7 @@
         :viewBox="`0 0 ${size} ${size}`"
         preserveAspectRatio="xMidYMid meet"
       >
-        <!-- Círculos de fondo (anillos) -->
+        <!-- Círculos de fondo (anillos) - más visibles -->
         <circle
           v-for="ring in rings"
           :key="ring"
@@ -28,8 +26,19 @@
           :cy="centerY"
           :r="ring"
           fill="none"
-          stroke="#f0f0f0"
-          stroke-width="1"
+          stroke="#d0d5dd"
+          stroke-width="1.5"
+          stroke-dasharray="4 2"
+        />
+        
+        <!-- Círculo exterior más marcado -->
+        <circle
+          :cx="centerX"
+          :cy="centerY"
+          :r="maxRadius"
+          fill="none"
+          stroke="#b0b8c4"
+          stroke-width="2"
         />
         
         <!-- Sectores de datos -->
@@ -39,9 +48,9 @@
           :d="segment.path"
           :fill="segment.color"
           :class="['segment', { 'hovered': hoveredIndex === index }]"
-          @mouseenter.native="handleMouseEnter(index, segment, $event)"
-          @mousemove.native="handleMouseMove($event)"
-          @mouseleave.native="handleMouseLeave"
+          @mouseenter="handleMouseEnter(index, segment, $event)"
+          @mousemove="handleMouseMove($event)"
+          @mouseleave="handleMouseLeave"
         >
           <title>{{ segment.label }}: {{ segment.value }}</title>
         </path>
@@ -71,7 +80,7 @@
           <div class="tooltip-color" :style="{ backgroundColor: tooltip.color }"></div>
           <div class="tooltip-info">
             <div class="tooltip-label">{{ tooltip.label }}</div>
-            <div class="tooltip-value">Valor: {{ tooltip.value }}</div>
+            <div class="tooltip-value">Valor: {{ formatNumber(tooltip.value) }}</div>
           </div>
         </div>
       </div>
@@ -137,6 +146,12 @@ const tooltip = ref({
   value: '',
   color: ''
 })
+
+// Formatear números para el tooltip
+const formatNumber = (value) => {
+  if (!value) return '0'
+  return new Intl.NumberFormat('es-MX').format(value)
+}
 
 onMounted(() => {
   setTimeout(() => {
@@ -295,12 +310,23 @@ const tooltipStyle = computed(() => {
   display: flex;
   flex-direction: column;
   position: relative;
-
+  align-items: center;
 }
 
+/* ✅ CORREGIDO: Contenedor centrado y más grande */
 .chart-container {
- left: 1000px;
-  width: 35%;
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  padding: 5px;
+}
+
+.chart-container svg {
+  max-width: 100%;
+  max-height: 100%;
 }
 
 .legend {
@@ -308,38 +334,38 @@ const tooltipStyle = computed(() => {
   flex-direction: row;
   justify-content: center;
   flex-wrap: wrap;
-  padding: 10px 5px 0px 0;
+  padding: 5px 5px 0 0;
+  gap: 2px 8px;
 }
 
 .legend-item {
   display: flex;
   align-items: center;
-  gap: 1px;
-  font-size: 10px;
-  color: #666;
-  padding-left: 8px;
+  gap: 3px;
+  font-size: 9px;
+  color: #4a5568;
 }
 
 .legend-color {
-  width: 12px;
+  width: 10px;
   height: 4px;
+  border-radius: 1px;
 }
 
 .legend-label {
-  padding-top: 0px;
-  font-weight: 100;
+  font-weight: 500;
 }
 
 .segment {
   cursor: pointer;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.2s ease, filter 0.2s ease;
   stroke: transparent;
   stroke-width: 5;
 }
 
 .segment:hover {
-  opacity: 0.8;
-  stroke: rgba(255, 255, 255, 0.3);
+  opacity: 0.85;
+  stroke: rgba(255, 255, 255, 0.4);
 }
 
 .segment.hovered {
@@ -348,13 +374,13 @@ const tooltipStyle = computed(() => {
 
 .tooltip {
   position: fixed;
-  background: rgba(0, 0, 0, 0.85);
+  background: rgba(30, 58, 95, 0.95);
   color: white;
-  padding: 4px 6px; 
-  border-radius: 4px; 
-  font-size: 8px; 
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 11px;
   white-space: nowrap;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   pointer-events: none;
   z-index: 999999;
 }
@@ -362,28 +388,29 @@ const tooltipStyle = computed(() => {
 .tooltip-content {
   display: flex;
   align-items: center;
-  gap: 5px; 
+  gap: 8px;
 }
 
 .tooltip-color {
-  width: 8px; 
-  height: 8px; 
-  border-radius: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
 }
 
 .tooltip-info {
   display: flex;
   flex-direction: column;
-  gap: 1px; 
+  gap: 2px;
 }
 
 .tooltip-label {
   font-weight: 600;
-  font-size: 7px; 
+  font-size: 11px;
 }
 
 .tooltip-value {
-  font-size: 6px; 
+  font-size: 10px;
   opacity: 0.9;
 }
 </style>

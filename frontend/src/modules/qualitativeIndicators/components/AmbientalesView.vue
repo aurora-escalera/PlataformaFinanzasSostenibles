@@ -136,11 +136,9 @@
                 <p>Error cargando datos</p>
               </div>
 
-              <AreaChart 
-                v-else
+              <EmisionesBarChart 
                 :excelData="emisionesData"
-                title=""
-              />
+              />  
             </div>
           </div>
           
@@ -236,7 +234,7 @@ import GaugeChart from '@/modules/object/component/GaugeChart.vue'
 import VerticalBarChart from '@/modules/charts/components/VerticalBarChart.vue'
 import { useStorageData } from '@/dataConection/useStorageData'
 import { getMapping, getSheetName, setActiveYear } from '@/dataConection/storageConfig'
-
+import EmisionesBarChart from '../../charts/components/EmisionesBarChart.vue'
 const props = defineProps({
   selectedEntity: {
     type: String,
