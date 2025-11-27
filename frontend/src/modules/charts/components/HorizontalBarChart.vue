@@ -23,21 +23,10 @@
           [variable.colorClass]: true 
         }]"
       >
-        {{ variable.label }}
+        <span class="filter-dot" :style="{ backgroundColor: getBarColor(variable) }"></span>
+        <span class="filter-label">{{ variable.label }}</span>
       </button>
     </div>
-    <!-- Leyenda con indicadores de color (opcional) -->
-    <div v-if="showLegend" class="chart-legend">
-      <div 
-        v-for="variable in internalVariables" 
-        :key="'legend-' + variable.key"
-        class="legend-item"
-      >
-        <span class="legend-dot":style="{ backgroundColor: getBarColor(variable) }"></span>
-        <span class="legend-label">{{ variable.label }}</span>
-      </div>
-    </div>
-
     <!-- Contenedor de barras horizontales -->
     <div 
       class="bars-container"
@@ -331,9 +320,9 @@ const getBarColor = (variable) => {
 .chart-title {
   margin-top: 4px;
   letter-spacing: -0.2px;
-  font-size: 6px;
+  font-size: 16px;
   text-align:center;
-  font-weight: 200;
+  font-weight: 400;
   color: #535353;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 }
@@ -342,32 +331,36 @@ const getBarColor = (variable) => {
 .variable-filters {
   display: flex;
   flex-direction: row;
-  height: 12px;
-  padding: 2px 0;
-  border-radius: 24px;
-  flex-wrap: nowrap;
+  min-height: 24px;
+  height: auto;
+  padding: 4px 8px;
+  border-radius: 12%;
+  flex-wrap: wrap;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); 
-  gap: 2px;
+  align-items: center;
+
+  gap: 4px;
   margin-bottom: 1px;
   flex-shrink: 0;
-  background-color: white;
+
 }
 
 .filter-btn {
-  flex: 0 1 auto;
+  flex: 0 0 auto;
   border: none;
-  padding: 0px 4px;
+  padding: 4px 10px;
   border-radius: 24px;
   cursor: pointer;
-  font-size: 4.9px;
+  font-size: 11px;
   font-weight: 200;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   background: white;
   transition: all 0.5s ease;
-  height: 100%;
+  height: 24px;
+  display: flex;
+  align-items: center;
   justify-content: center;
-  align-content: center;
+  gap: 5px;
 }
 
 .filter-btn:hover {
@@ -379,25 +372,17 @@ const getBarColor = (variable) => {
   color: white;
 }
 
-/* Leyenda */
-.chart-legend {
-  display: flex;
-  flex-direction: row;
-  gap: 1px;
-  flex-wrap: nowrap;
-  justify-content: center;
-  flex-wrap: wrap;
-  justify-content: center;
+/* ✅ Dot en los filtros */
+.filter-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
 }
 
-.legend-item {
-  flex: 0 1 auto;
-  display: flex;
-  align-items: center;
-  font-size: 4px;
-  gap: 3px;
-  color: #4b5563;
-  padding: 2px;
+.filter-label {
+  white-space: nowrap;
 }
 
 .legend-dot {

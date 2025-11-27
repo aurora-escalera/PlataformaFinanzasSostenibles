@@ -1,11 +1,5 @@
 <template>
-  <div 
-    class="linear-chart-container"
-    :style="{
-      minWidth: props.minWidth ? `${props.minWidth}px` : undefined,
-      minHeight: props.minHeight ? `${props.minHeight}px` : undefined
-    }"
-  >
+  <div class="linear-chart-container">
     <!-- Header con título y controles -->
     <div class="chart-header">
       <div class="header-content">
@@ -56,10 +50,10 @@
           <line
             v-for="i in gridLines"
             :key="`grid-${i}`"
-            :x1="padding.left"
-            :y1="padding.top + (i - 1) * gridSpacing"
-            :x2="dimensions.width - padding.right"
-            :y2="padding.top + (i - 1) * gridSpacing"
+            :x1="chartPadding.left"
+            :y1="chartPadding.top + (i - 1) * gridSpacing"
+            :x2="dimensions.width - chartPadding.right"
+            :y2="chartPadding.top + (i - 1) * gridSpacing"
             class="grid-line"
           />
         </g>
@@ -69,8 +63,8 @@
           <text
             v-for="i in gridLines"
             :key="`y-label-${i}`"
-            :x="padding.left - 10"
-            :y="padding.top + (i - 1) * gridSpacing + 4"
+            :x="chartPadding.left - 10"
+            :y="chartPadding.top + (i - 1) * gridSpacing + 4"
             class="y-axis-label"
             text-anchor="end"
           >
@@ -121,7 +115,7 @@
               }"
             />
 
-            <!-- Puntos animados que se mueven (prioridad durante animación) -->
+            <!-- Puntos animados que se mueven -->
             <g class="animated-data-points">
               <circle
                 v-if="hoverState.visible && animatingPoints[`${variable}-x`] !== undefined"
@@ -137,7 +131,7 @@
               />
             </g>
 
-            <!-- Puntos de datos permanentes (siempre visibles) -->
+            <!-- Puntos de datos permanentes -->
             <g class="permanent-data-points">
               <circle
                 v-for="(point, i) in getVariableData(variable)"
@@ -150,7 +144,7 @@
               />
             </g>
 
-            <!-- Puntos de datos con hover (solo cuando NO hay animación de movimiento) -->
+            <!-- Puntos de datos con hover -->
             <g class="data-points">
               <circle
                 v-for="(point, i) in getVariableData(variable)"
@@ -198,7 +192,7 @@
         </div>
       </transition>
 
-      <!-- Tooltip Y (a la izquierda) -->
+      <!-- Tooltip Y -->
       <transition name="tooltip-fade">
         <div 
           v-if="hoverState.visible && hoverState.yValue !== null" 
@@ -209,7 +203,7 @@
         </div>
       </transition>
 
-      <!-- Tooltip X (en el eje inferior) -->
+      <!-- Tooltip X -->
       <transition name="tooltip-x-fade">
         <div 
           v-if="hoverState.visible" 
@@ -221,7 +215,7 @@
       </transition>
     </div>
 
-    <!-- Eje X externo (fuera del SVG) -->
+    <!-- Eje X externo -->
     <div v-if="hasData" class="x-axis-container">
       <div 
         v-for="(label, i) in props.xLabels"
@@ -270,22 +264,22 @@ const props = defineProps({
     type: Function,
     default: null
   },
-  // ✅ NUEVAS PROPS PARA CONTROLAR TAMAÑO
-  minWidth: {
-    type: Number,
-    default: null
-  },
-  minHeight: {
-    type: Number,
-    default: null
-  },
-  defaultWidth: {
+  width: {
     type: Number,
     default: 800
   },
-  defaultHeight: {
+  height: {
     type: Number,
     default: 400
+  },
+  padding: {
+    type: Object,
+    default: () => ({
+      top: 30,
+      right: 40,
+      bottom: 90,
+      left: 60
+    })
   }
 })
 
@@ -293,7 +287,7 @@ const emit = defineEmits(['variable-toggle'])
 
 // Estado
 const chartWrapper = ref(null)
-const dimensions = ref({ width: 600, height: 300 })
+const dimensions = ref({ width: props.width, height: props.height })
 
 // Estado del hover
 const hoverState = ref({
@@ -309,16 +303,16 @@ const hoverState = ref({
 // Estado para la animación de los puntos
 const animatingPoints = ref({})
 
-// Configuración de padding - Optimizado para espaciado equilibrado
-const padding = { top: 30, right: 40, bottom: 90, left: 60 }
+// Configuración de padding - Ahora usa props
+const chartPadding = computed(() => props.padding)
 
-// Paleta de colores (igual que StackedArea)
+// Paleta de colores
 const colorPalette = [
   '#0F3759',
   '#6B8FA3'
 ]
 
-// Variables disponibles y visibles (inicialmente TODAS inactivas)
+// Variables disponibles y visibles
 const availableVariables = computed(() => Object.keys(props.data))
 const visibleVariables = ref([])
 
@@ -326,46 +320,51 @@ const visibleVariables = ref([])
 const animatedData = ref({})
 const animatingVariables = ref(new Set())
 
-// Inicializar variables TODAS inactivas, luego activar automáticamente las primeras dos
+// ✅ NUEVO: Watch para actualizar dimensiones cuando cambien los datos
 watch(() => props.data, (newData) => {
   const vars = Object.keys(newData)
   
-  // Inicializar datos animados en valores reales (para que estén listos)
   vars.forEach(variable => {
     if (!animatedData.value[variable]) {
       animatedData.value[variable] = [...(newData[variable] || [])]
     }
   })
 
-  // ✅ NUEVO: Activar automáticamente las primeras dos variables en secuencia
   if (visibleVariables.value.length === 0 && vars.length > 0) {
-    // Activar la primera variable inmediatamente
     if (vars[0]) {
       setTimeout(() => {
         toggleVariable(vars[0])
       }, 100)
     }
     
-    // Activar la segunda variable con delay
     if (vars[1]) {
       setTimeout(() => {
         toggleVariable(vars[1])
-      }, 900) // 900ms después para que se vea la animación de la primera
+      }, 900)
     }
   }
   
-  // ✅ FIX: Recalcular dimensiones cuando lleguen los datos
-  // Esto asegura que use el tamaño correcto del contenedor
+  // ✅ AGREGADO: Actualizar dimensiones cuando cambien los datos
   nextTick(() => {
-    setTimeout(() => {
-      handleResize()
-    }, 100) // Pequeño delay para asegurar que el DOM esté completamente renderizado
+    updateDimensions()
   })
-}, { deep: true }) // ❌ REMOVIDO: immediate: true
+}, { deep: true })
+
+// ✅ NUEVO: Watch para actualizar dimensiones cuando cambien las variables disponibles
+watch(availableVariables, () => {
+  nextTick(() => {
+    updateDimensions()
+  })
+})
+
+// ✅ Watch para actualizar dimensiones cuando cambien width o height
+watch([() => props.width, () => props.height], () => {
+  updateDimensions()
+})
 
 // Dimensiones del gráfico
-const chartHeight = computed(() => dimensions.value.height - padding.top - padding.bottom)
-const chartWidth = computed(() => dimensions.value.width - padding.left - padding.right)
+const chartHeight = computed(() => dimensions.value.height - chartPadding.value.top - chartPadding.value.bottom)
+const chartWidth = computed(() => dimensions.value.width - chartPadding.value.left - chartPadding.value.right)
 const gridSpacing = computed(() => chartHeight.value / (props.gridLines - 1))
 
 // Calcular todos los valores visibles
@@ -379,19 +378,17 @@ const allVisibleValues = computed(() => {
   return values.length > 0 ? values : [0]
 })
 
-// ⭐ CAMBIO PRINCIPAL: Máximo y mínimo ajustados para usar 80-85% del espacio
+// Máximo y mínimo ajustados
 const maxValue = computed(() => {
   if (allVisibleValues.value.length === 0) return 100
   const max = Math.max(...allVisibleValues.value)
   const min = Math.min(...allVisibleValues.value)
   
-  // Si todos los valores son iguales, agregar un margen del 20%
   if (max === min) {
     return max > 0 ? max * 1.2 : max + 10
   }
   
   const range = max - min
-  // Agregar 20% del rango arriba para que el punto más alto esté al 83% del espacio (100/120 = 83%)
   return max + (range * 0.20)
 })
 
@@ -400,13 +397,11 @@ const minValue = computed(() => {
   const max = Math.max(...allVisibleValues.value)
   const min = Math.min(...allVisibleValues.value)
   
-  // Si todos los valores son iguales, agregar un margen del 20%
   if (max === min) {
     return min > 0 ? min * 0.8 : min - 10
   }
   
   const range = max - min
-  // Agregar 20% del rango abajo para espaciado inferior
   return min - (range * 0.20)
 })
 
@@ -433,15 +428,9 @@ const getVariableColor = (variable) => {
   return colorPalette[index % colorPalette.length]
 }
 
-// Obtener ID único para la variable (para gradientes)
-const getVariableId = (variable) => {
-  return variable.replace(/\s+/g, '-').toLowerCase()
-}
-
 // Obtener color más oscuro para puntos animados
 const getDarkerColor = (variable) => {
   const color = getVariableColor(variable)
-  // Convertir hex a rgb y oscurecer
   const hex = color.replace('#', '')
   const r = Math.max(0, parseInt(hex.substr(0, 2), 16) - 30)
   const g = Math.max(0, parseInt(hex.substr(2, 2), 16) - 30)
@@ -449,65 +438,35 @@ const getDarkerColor = (variable) => {
   return `rgb(${r}, ${g}, ${b})`
 }
 
-// Calcular posición X para cada punto
+// Calcular posición X usando todo el ancho disponible
 const getXPosition = (index) => {
   const dataLength = props.xLabels.length
-  if (dataLength <= 1) return padding.left
+  if (dataLength <= 1) return chartPadding.value.left + chartWidth.value / 2
   
-  // ✅ Usar chartWidth completo (100%), distribuyendo uniformemente los puntos
-  const step = chartWidth.value / (dataLength - 1)
-  const position = padding.left + index * step
-  
-  // Debug temporal
-  if (index === 0 || index === dataLength - 1) {
-    console.log(`🔍 Punto ${index}: position=${position.toFixed(0)}, chartWidth=${chartWidth.value.toFixed(0)}, dimensions.width=${dimensions.value.width.toFixed(0)}, step=${step.toFixed(0)}`)
-  }
+  const availableWidth = dimensions.value.width - chartPadding.value.left - chartPadding.value.right
+  const step = availableWidth / (dataLength - 1)
+  const position = chartPadding.value.left + index * step
   
   return position
-}
-
-// Calcular posición X en porcentaje para las etiquetas externas (relativo al contenedor padre, no al SVG)
-const getXPositionPercentage = (index) => {
-  const dataLength = props.xLabels.length
-  if (dataLength <= 1) {
-    // Si solo hay un dato, centrar al 50%
-    return 50
-  }
-  
-  // El x-axis-container tiene el mismo ancho que el contenedor padre (no el SVG)
-  // Necesitamos calcular la posición del punto como porcentaje del contenedor padre
-  
-  // Posición del punto en píxeles dentro del SVG
-  const step = chartWidth.value / (dataLength - 1)
-  const pointXInSVG = padding.left + index * step
-  
-  // Convertir a porcentaje del ancho TOTAL del contenedor (que incluye el padding del contenedor)
-  // El SVG ocupa todo el ancho disponible dentro del linear-chart-container
-  const percentage = (pointXInSVG / dimensions.value.width) * 100
-  
-  return percentage
 }
 
 // Calcular posición Y para un valor
 const getY = (value) => {
   if (value === null || value === undefined || isNaN(value)) {
-    return dimensions.value.height - padding.bottom
+    return dimensions.value.height - chartPadding.value.bottom
   }
   
   const range = maxValue.value - minValue.value
   if (range === 0) {
-    // Si no hay rango, centrar verticalmente
-    return padding.top + chartHeight.value / 2
+    return chartPadding.value.top + chartHeight.value / 2
   }
   
   const normalizedValue = value - minValue.value
   const percentage = normalizedValue / range
   
-  // Calcular Y desde arriba: padding.top es 0%, padding.top + chartHeight es 100%
-  const y = padding.top + chartHeight.value * (1 - percentage)
+  const y = chartPadding.value.top + chartHeight.value * (1 - percentage)
   
-  // Limitar al rango válido para evitar que salga del área
-  return Math.max(padding.top, Math.min(dimensions.value.height - padding.bottom, y))
+  return Math.max(chartPadding.value.top, Math.min(dimensions.value.height - chartPadding.value.bottom, y))
 }
 
 // Calcular posición Y usando datos animados
@@ -523,7 +482,7 @@ const getYAxisValue = (index) => {
   return maxValue.value - (step * index)
 }
 
-// Formatear valor del eje Y (solo millones, sin billions)
+// Formatear valor del eje Y
 const formatYAxisValue = (value) => {
   if (Math.abs(value) >= 1000000) {
     return `$${(value / 1000000).toFixed(1)}M` 
@@ -533,13 +492,12 @@ const formatYAxisValue = (value) => {
   return `$${Math.round(value)}`
 }
 
-// Formatear valor para tooltip (solo millones, sin billions)
+// Formatear valor para tooltip
 const formatValue = (value) => {
   if (value === null || value === undefined) return 'N/A'
   if (props.valueFormatter) {
     return props.valueFormatter(value)
   }
-  // Solo millones, miles y unidades (sin billions)
   if (Math.abs(value) >= 1000000) {
     return `$${(value / 1000000).toFixed(1)}M`
   } else if (Math.abs(value) >= 1000) {
@@ -548,7 +506,7 @@ const formatValue = (value) => {
   return `$${value.toFixed(0)}`
 }
 
-// Generar path para una línea (usando datos animados)
+// Generar path para una línea
 const getLinePath = (variable) => {
   const data = animatedData.value[variable]
   if (!data || data.length === 0) return ''
@@ -565,18 +523,16 @@ const toggleVariable = (variable) => {
   const index = visibleVariables.value.indexOf(variable)
   
   if (index > -1) {
-    // ====== ANIMACIÓN DE SALIDA ======
     animatingVariables.value.add(variable)
     
     const data = props.data[variable]
     if (data) {
       const startValues = [...animatedData.value[variable]]
       const range = maxValue.value - minValue.value
-      const endValue = minValue.value - (range * 0.5) // Caer al mismo nivel que empiezan
+      const endValue = minValue.value - (range * 0.5)
       
-      const pointsDuration = 500 // Duración de caída de puntos
-      const lineDelay = 400 // Delay antes de que empiece a desaparecer la línea
-      const totalDuration = pointsDuration + 300 // Tiempo total incluyendo línea
+      const pointsDuration = 500
+      const totalDuration = pointsDuration + 300
       
       const startTime = Date.now()
       
@@ -584,24 +540,20 @@ const toggleVariable = (variable) => {
         const elapsed = Date.now() - startTime
         const progress = Math.min(elapsed / totalDuration, 1)
         
-        // Fase 1: Caída de puntos (primeros 500ms)
         if (elapsed < pointsDuration) {
           const pointProgress = elapsed / pointsDuration
           const easeProgress = 1 - Math.pow(1 - pointProgress, 3)
           
-          // Animar puntos cayendo
           animatedData.value[variable] = startValues.map(val => 
             val - (val - endValue) * easeProgress
           )
         } else {
-          // Mantener puntos abajo mientras la línea desaparece
           animatedData.value[variable] = new Array(data.length).fill(endValue)
         }
         
         if (progress < 1) {
           requestAnimationFrame(animate)
         } else {
-          // Al terminar toda la animación, remover la variable
           visibleVariables.value.splice(visibleVariables.value.indexOf(variable), 1)
           animatingVariables.value.delete(variable)
         }
@@ -610,17 +562,14 @@ const toggleVariable = (variable) => {
       animate()
     }
   } else {
-    // ====== ANIMACIÓN DE ENTRADA ======
     visibleVariables.value.push(variable)
     animatingVariables.value.add(variable)
     
     const data = props.data[variable]
     if (data) {
-      // Calcular un valor inicial muy abajo (más abajo que el mínimo visible)
       const range = maxValue.value - minValue.value
-      const startValue = minValue.value - (range * 0.5) // ⭐ Empieza 50% más abajo del rango
+      const startValue = minValue.value - (range * 0.5)
       
-      // Iniciar desde mucho más abajo
       animatedData.value[variable] = new Array(data.length).fill(startValue)
       
       const duration = 800
@@ -629,10 +578,8 @@ const toggleVariable = (variable) => {
       const animate = () => {
         const elapsed = Date.now() - startTime
         const progress = Math.min(elapsed / duration, 1)
-        // Easing cúbico para efecto de "rebote suave"
         const easeProgress = 1 - Math.pow(1 - progress, 3)
         
-        // Animar desde muy abajo hacia el valor real
         animatedData.value[variable] = data.map((val, i) => {
           const start = startValue
           const end = val
@@ -642,7 +589,6 @@ const toggleVariable = (variable) => {
         if (progress < 1) {
           requestAnimationFrame(animate)
         } else {
-          // Asegurar valores finales exactos
           animatedData.value[variable] = [...data]
           animatingVariables.value.delete(variable)
         }
@@ -666,7 +612,7 @@ const tooltipFixedStyle = computed(() => {
 // Estilo del tooltip Y
 const tooltipYStyle = computed(() => {
   return {
-    left: `${padding.left - 15}px`,
+    left: `${chartPadding.value.left - 15}px`,
     top: `${hoverState.value.yPosition}px`
   }
 })
@@ -675,7 +621,7 @@ const tooltipYStyle = computed(() => {
 const tooltipXStyle = computed(() => {
   return {
     left: `${hoverState.value.x}px`,
-    top: `${dimensions.value.height - padding.bottom + 10}px`,
+    top: `${dimensions.value.height - chartPadding.value.bottom + 10}px`,
     transform: 'translateX(-50%)'
   }
 })
@@ -690,29 +636,47 @@ const getAnimatedPointY = (variable) => {
   return animatingPoints.value[`${variable}-y`] || 0
 }
 
-// Manejar movimiento del mouse
+// ✅ CORREGIDO v5: Activar el punto MUCHO ANTES (30% del camino, no 50%)
 const handleMouseMove = (event) => {
   const svg = event.currentTarget
   const rect = svg.getBoundingClientRect()
   const x = event.clientX - rect.left
   
-  // Encontrar el índice más cercano
+  const dataLength = props.xLabels.length
   let closestIndex = 0
-  let minDistance = Infinity
   
-  props.xLabels.forEach((_, i) => {
-    const pointX = getXPosition(i)
-    const distance = Math.abs(x - pointX)
-    if (distance < minDistance) {
-      minDistance = distance
-      closestIndex = i
+  if (dataLength === 1) {
+    closestIndex = 0
+  } else {
+    // Calcular puntos de transición al 30% del camino (no al 50%)
+    // Esto hace que el punto se active MUCHO ANTES
+    const transitionPoints = []
+    for (let i = 0; i < dataLength - 1; i++) {
+      const currentX = getXPosition(i)
+      const nextX = getXPosition(i + 1)
+      const distance = nextX - currentX
+      // Punto de transición al 30% del camino hacia el siguiente punto
+      transitionPoints.push(currentX + distance * 0.05)
     }
-  })
+    
+    // Determinar en qué rango está el cursor
+    if (x < transitionPoints[0]) {
+      closestIndex = 0
+    } else if (x >= transitionPoints[transitionPoints.length - 1]) {
+      closestIndex = dataLength - 1
+    } else {
+      for (let i = 0; i < transitionPoints.length - 1; i++) {
+        if (x >= transitionPoints[i] && x < transitionPoints[i + 1]) {
+          closestIndex = i + 1
+          break
+        }
+      }
+    }
+  }
   
   const previousIndex = hoverState.value.index
   const pointX = getXPosition(closestIndex)
   
-  // Calcular el valor Y del punto más alto en este índice (usando datos animados)
   let highestY = null
   let highestYPosition = 0
   
@@ -737,36 +701,40 @@ const handleMouseMove = (event) => {
     previousIndex: previousIndex
   }
   
-  // Animar el movimiento de los puntos si cambió el índice
   if (previousIndex !== closestIndex && previousIndex !== -1) {
-    visibleVariables.value.forEach(variable => {
-      const startX = getXPosition(previousIndex)
-      const endX = getXPosition(closestIndex)
-      const startY = getAnimatedY(variable, previousIndex)
-      const endY = getAnimatedY(variable, closestIndex)
-      
-      const duration = 200
-      const startTime = Date.now()
-      
-      const animate = () => {
-        const elapsed = Date.now() - startTime
-        const progress = Math.min(elapsed / duration, 1)
-        const easeProgress = 1 - Math.pow(1 - progress, 3)
-        
-        animatingPoints.value[`${variable}-x`] = startX + (endX - startX) * easeProgress
-        animatingPoints.value[`${variable}-y`] = startY + (endY - startY) * easeProgress
-        
-        if (progress < 1) {
-          requestAnimationFrame(animate)
-        } else {
-          delete animatingPoints.value[`${variable}-x`]
-          delete animatingPoints.value[`${variable}-y`]
-        }
-      }
-      
-      animate()
-    })
+    animatePointTransition(previousIndex, closestIndex)
   }
+}
+
+// Función auxiliar para animar la transición de puntos
+const animatePointTransition = (fromIndex, toIndex) => {
+  visibleVariables.value.forEach(variable => {
+    const startX = getXPosition(fromIndex)
+    const endX = getXPosition(toIndex)
+    const startY = getAnimatedY(variable, fromIndex)
+    const endY = getAnimatedY(variable, toIndex)
+    
+    const duration = 200
+    const startTime = Date.now()
+    
+    const animate = () => {
+      const elapsed = Date.now() - startTime
+      const progress = Math.min(elapsed / duration, 1)
+      const easeProgress = 1 - Math.pow(1 - progress, 3)
+      
+      animatingPoints.value[`${variable}-x`] = startX + (endX - startX) * easeProgress
+      animatingPoints.value[`${variable}-y`] = startY + (endY - startY) * easeProgress
+      
+      if (progress < 1) {
+        requestAnimationFrame(animate)
+      } else {
+        delete animatingPoints.value[`${variable}-x`]
+        delete animatingPoints.value[`${variable}-y`]
+      }
+    }
+    
+    animate()
+  })
 }
 
 const hideTooltip = () => {
@@ -782,84 +750,22 @@ const hideTooltip = () => {
   animatingPoints.value = {}
 }
 
-const handleResize = () => {
-  console.log('⚡⚡⚡ handleResize llamado - INICIO')
-  if (chartWrapper.value) {
-    let parentWidth = chartWrapper.value.offsetWidth
-    let parentHeight = chartWrapper.value.offsetHeight
-    
-    console.log('⚡ parentWidth:', parentWidth, 'parentHeight:', parentHeight)
-    
-    // ✅ Si parentHeight es muy pequeño, usar el contenedor padre
-    if (parentHeight < 200 && chartWrapper.value.parentElement) {
-      const grandParent = chartWrapper.value.parentElement
-      parentHeight = grandParent.offsetHeight - 120 // Restar espacio para header/filters
-      console.log('⚡ Usando grandParent height:', parentHeight)
-    }
-    
-    // Aplicar dimensiones mínimas si están definidas
-    if (props.minWidth && parentWidth < props.minWidth) {
-      parentWidth = props.minWidth
-      console.log('⚡ Aplicando minWidth:', parentWidth)
-    }
-    if (props.minHeight && parentHeight < props.minHeight) {
-      parentHeight = props.minHeight
-      console.log('⚡ Aplicando minHeight:', parentHeight)
-    }
-    
-    // Asegurar altura mínima razonable
-    if (parentHeight < 250) {
-      parentHeight = 300 // Altura mínima por defecto
-      console.log('⚡ Aplicando altura mínima:', parentHeight)
-    }
-    
-    const oldWidth = dimensions.value.width
-    const oldHeight = dimensions.value.height
-    
-    // ✅ FIX: Solo usar defaultWidth/Height si parentWidth/Height es realmente 0
-    // Esto evita que se use un ancho fijo cuando el contenedor tiene tamaño
-    dimensions.value = {
-      width: parentWidth > 0 ? parentWidth : props.defaultWidth,
-      height: parentHeight > 0 ? parentHeight : props.defaultHeight
-    }
-    
-    console.log('⚡ dimensions ANTES:', { width: oldWidth, height: oldHeight })
-    console.log('⚡ dimensions DESPUÉS:', dimensions.value)
-    console.log('⚡⚡⚡ handleResize - FIN')
-  } else {
-    console.log('⚡ chartWrapper.value es null')
+// ✅ Función para actualizar dimensiones - Usa directamente las props
+const updateDimensions = () => {
+  dimensions.value = {
+    width: props.width,
+    height: props.height
   }
 }
 
 // Lifecycle
 onMounted(async () => {
-  // ✅ Esperar a que el DOM esté completamente renderizado
   await nextTick()
-  
-  // Configurar ResizeObserver PRIMERO (es más confiable que los timeouts)
-  if (chartWrapper.value) {
-    const resizeObserver = new ResizeObserver(() => {
-      handleResize()
-    })
-    resizeObserver.observe(chartWrapper.value)
-    
-    onUnmounted(() => {
-      resizeObserver.disconnect()
-      window.removeEventListener('resize', handleResize)
-    })
-  }
-  
-  // ✅ Llamar handleResize con delays más largos para asegurar que el layout esté aplicado
-  setTimeout(() => handleResize(), 100)  // 100ms
-  setTimeout(() => handleResize(), 300)  // 300ms
-  setTimeout(() => handleResize(), 600)  // 600ms
-  setTimeout(() => handleResize(), 1000) // 1s (como último recurso)
-  
-  window.addEventListener('resize', handleResize)
+  updateDimensions()
 })
 
 onUnmounted(() => {
-  window.removeEventListener('resize', handleResize)
+  // Cleanup si es necesario
 })
 </script>
 
@@ -869,15 +775,15 @@ onUnmounted(() => {
   height: 100%;
   background: white;
   border-radius: 12px;
-  padding: 16px;
+  padding: 20px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
   overflow: visible;
-  max-width: 100%; /* ✅ Asegurar que no se salga */
 }
 
+/* Header sin padding extra (usa el del contenedor) */
 .chart-header {
   display: flex;
   justify-content: space-between;
@@ -908,7 +814,7 @@ onUnmounted(() => {
   text-align: center;
 }
 
-/* Filtros de variables */
+/* Filtros sin margen extra (usa el del contenedor) */
 .variable-filters {
   background: #f5f5f5;
   border-radius: 20px;
@@ -916,7 +822,7 @@ onUnmounted(() => {
   margin-bottom: 12px;
   display: flex;
   justify-content: center; 
-  width: 100%; 
+  width: 100%;
   gap: 4px;
   flex-wrap: wrap;
 }
@@ -943,12 +849,6 @@ onUnmounted(() => {
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
-}
-
-.filter-btn.active {
-  border-color: transparent;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  font-weight: 200;
 }
 
 .filter-btn.filter-active {
@@ -982,24 +882,21 @@ onUnmounted(() => {
   font-size: 14px;
 }
 
+/* ✅ SIN padding - El SVG usa todo el ancho */
 .chart-wrapper {
   position: relative;
   width: 100%;
-  max-width: 100%; /* ✅ Asegurar que no se salga */
   flex: 1;
   min-height: 0;
   display: flex;
   align-items: stretch;
-  /* justify-content: center; */ /* ❌ REMOVIDO: Esto centraba el SVG y no dejaba usar todo el ancho */
   overflow: visible;
-  box-sizing: border-box; /* ✅ Incluir padding/border en el ancho */
+  box-sizing: border-box;
 }
 
 .line-chart {
   width: 100%;
   height: 100%;
-  max-width: 100%;
-  max-height: 100%;
   display: block;
 }
 
@@ -1008,10 +905,9 @@ onUnmounted(() => {
   stroke-width: 1;
 }
 
-/* Estilos para las etiquetas del eje Y */
 .y-axis-label {
-  font-size: 9px;
-  font-weight: 200;
+  font-size: 14px;
+  font-weight: 300;
   fill: #6b7280;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   user-select: none;
@@ -1022,21 +918,7 @@ onUnmounted(() => {
   pointer-events: none;
 }
 
-.interaction-rect {
-  cursor: pointer;
-}
-
-.filters-wrapper {
-  background: #f5f5f5;
-  border-radius: 20px;
-  padding: 6px;
-  margin-bottom: 12px;
-  display: flex;
-  justify-content: center;
-  width: 100%;
-}
-
-/* Eje X externo */
+/* ✅ SIN padding lateral - Las etiquetas deben alinearse con el SVG */
 .x-axis-container {
   position: relative;
   width: 100%;
@@ -1046,26 +928,26 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   overflow: visible;
+  box-sizing: border-box;
 }
 
 .x-axis-label {
   position: absolute;
   transform: translateX(-50%);
-  font-size: 9px;
-  font-weight: 200;
+  font-size: 12px;
+  font-weight: 100;
   color: #6b7280;
   white-space: nowrap;
   user-select: none;
 }
 
-/* Animaciones de líneas */
+/* Animaciones */
 .line-path {
   stroke-dasharray: 3000;
   stroke-dashoffset: 3000;
   animation: drawLine 1.5s ease-out forwards;
 }
 
-/* Animación de salida para líneas */
 .line-path.line-exit {
   animation: fadeLine 300ms ease-out forwards;
   stroke-dasharray: none;
@@ -1109,7 +991,7 @@ onUnmounted(() => {
   }
 }
 
-/* Tooltip fijo */
+/* Tooltips */
 .tooltip-fixed {
   position: absolute;
   background: #1f2937;
@@ -1179,7 +1061,6 @@ onUnmounted(() => {
   letter-spacing: -0.5px;
 }
 
-/* Tooltip Y (a la izquierda) */
 .tooltip-y {
   position: absolute;
   background: #F0F0F2;
@@ -1194,11 +1075,10 @@ onUnmounted(() => {
   font-weight: 200;
   transform: translate(-100%, -50%);
   white-space: nowrap;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   letter-spacing: -0.3px;
 }
 
-/* Tooltip X (en el eje inferior) */
 .tooltip-x {
   position: absolute;
   background: #F0F0F2;
@@ -1216,7 +1096,6 @@ onUnmounted(() => {
   letter-spacing: -0.3px;
 }
 
-/* Flecha del tooltip X (apunta hacia arriba) */
 .tooltip-x::after {
   content: '';
   position: absolute;
@@ -1231,7 +1110,6 @@ onUnmounted(() => {
   filter: blur(0.3px);
 }
 
-/* Borde de la flecha */
 .tooltip-x::before {
   content: '';
   position: absolute;
@@ -1260,7 +1138,6 @@ onUnmounted(() => {
   transform: translateX(-50%) translateY(-5px);
 }
 
-/* Transición específica para tooltip X */
 .tooltip-x-fade-enter-active,
 .tooltip-x-fade-leave-active {
   transition: all 0.2s ease;

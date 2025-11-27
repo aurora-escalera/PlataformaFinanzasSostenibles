@@ -8,6 +8,14 @@
               title="Análisis histórico de los Ingresos Sostenibles (IS)"
               :data="chartDataLinear"
               :xLabels="years"
+              :width="900"
+              :height="400"
+              :padding="{
+                top: 30,
+                right: 0,
+                bottom: 120,
+                left: 80
+              }"
            />
         </div>
         <div class="IIC-anual-linear-chart">
@@ -42,6 +50,14 @@
             title="Análisis histórico de los Intensivos en Carbono y Presupuestos Sostenibles (PS-PIC)"
             :data="chartDataLinearPSPIC"
             :xLabels="years"
+            :width="1900"
+            :height="400"
+            :padding="{
+              top: 30,
+              right: 0,
+              bottom: 120,
+              left: 100
+            }"
           />
         </div>
       </div>
@@ -207,7 +223,7 @@ onMounted(async () => {
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   gap: 10px;
-  overflow: auto;
+  overflow: visible;
   box-sizing: border-box;
 }
 
@@ -223,7 +239,7 @@ onMounted(async () => {
 .row-1, .row-2, .row-3, .row-4 {
   display: flex;
   flex-direction: row;
-  height: 25%;
+  height: 24.5%;
   gap: 10px;
 }
 
@@ -234,7 +250,7 @@ onMounted(async () => {
 .IS-anual-bar-chart,
 .PIC-anual-bar-chart,
 .PS-anual-bar-chart {
-  width: 50%;
+  width: 100%;
   height: 100%;
   border-radius: 8px;
   overflow: visible;

@@ -223,19 +223,16 @@
       </transition>
     </Teleport>
 
-    <!-- Eje X externo (fuera del SVG) -->
-    <div v-if="hasData" class="x-axis-labels-container">
-      <div class="x-axis-spacer"></div>
-      <div class="x-axis-labels">
-        <div 
-          v-for="(label, i) in props.xLabels"
-          :key="`x-label-external-${i}`"
-          class="x-axis-label"
-        >
-          {{ label }}
-        </div>
+    <!-- ✅ CORREGIDO: Eje X con posicionamiento absoluto (igual que LinearChart) -->
+    <div v-if="hasData" class="x-axis-container">
+      <div 
+        v-for="(label, i) in props.xLabels"
+        :key="`x-label-external-${i}`"
+        class="x-axis-label"
+        :style="{ left: `${getXPosition(i)}px` }"
+      >
+        {{ label }}
       </div>
-      <div class="x-axis-spacer-right"></div>
     </div>
   </div>
 </template>
@@ -493,16 +490,6 @@ const getXPosition = (index) => {
   return padding.left + index * step
 }
 
-// Posición X en porcentaje para etiquetas externas
-const getXPositionPercentage = (index) => {
-  const dataLength = props.xLabels.length
-  if (dataLength <= 1) return 50
-  
-  const step = (dimensions.value.width - padding.left - padding.right) / (dataLength - 1)
-  const pointXInSVG = padding.left + index * step
-  return (pointXInSVG / dimensions.value.width) * 100
-}
-
 // Posición Y para un valor
 const getYPosition = (value) => {
   const chartHeight = dimensions.value.height - padding.top - padding.bottom
@@ -632,17 +619,41 @@ const getLinePath = (variable, variableIndex) => {
   return generateSmoothPath(points)
 }
 
-// Manejo del mouse
+// ✅ CORREGIDO: Manejo del mouse con transición al 30%
 const handleMouseMove = (event) => {
   const svg = event.currentTarget
   const rect = svg.getBoundingClientRect()
   const mouseX = event.clientX - rect.left
   
-  const chartWidth = dimensions.value.width - padding.left - padding.right
-  const step = chartWidth / (props.xLabels.length - 1)
+  const dataLength = props.xLabels.length
+  let closestIndex = 0
   
-  let closestIndex = Math.round((mouseX - padding.left) / step)
-  closestIndex = Math.max(0, Math.min(closestIndex, props.xLabels.length - 1))
+  if (dataLength === 1) {
+    closestIndex = 0
+  } else {
+    // Calcular puntos de transición al 30% del camino
+    const transitionPoints = []
+    for (let i = 0; i < dataLength - 1; i++) {
+      const currentX = getXPosition(i)
+      const nextX = getXPosition(i + 1)
+      const distance = nextX - currentX
+      transitionPoints.push(currentX + distance * 0.05)
+    }
+    
+    // Determinar en qué rango está el cursor
+    if (mouseX < transitionPoints[0]) {
+      closestIndex = 0
+    } else if (mouseX >= transitionPoints[transitionPoints.length - 1]) {
+      closestIndex = dataLength - 1
+    } else {
+      for (let i = 0; i < transitionPoints.length - 1; i++) {
+        if (mouseX >= transitionPoints[i] && mouseX < transitionPoints[i + 1]) {
+          closestIndex = i + 1
+          break
+        }
+      }
+    }
+  }
   
   const x = getXPosition(closestIndex)
   
@@ -767,7 +778,6 @@ const formatValue = (value) => {
   return `$${value.toFixed(2)}`
 }
 
-// Resize observer - EXACTAMENTE COMO LinearChart
 // Resize observer - SIMPLIFICADO
 const updateDimensions = () => {
   if (chartWrapper.value && chartWrapper.value.parentElement) {
@@ -783,10 +793,9 @@ let resizeObserver = null
 
 onMounted(async () => {
   await nextTick()
-  await nextTick() // Double nextTick para asegurar que el DOM esté completamente renderizado
+  await nextTick()
   updateDimensions()
   
-  // Agregar ResizeObserver
   if (chartWrapper.value) {
     resizeObserver = new ResizeObserver(() => {
       requestAnimationFrame(() => {
@@ -854,7 +863,7 @@ onUnmounted(() => {
   text-align: center;
 }
 
-/* Filtros de variables - ESTILO IDÉNTICO A LinearChart */
+/* Filtros de variables */
 .variable-filters {
   background: #f5f5f5;
   border-radius: 20px;
@@ -946,7 +955,6 @@ onUnmounted(() => {
   stroke-width: 1;
 }
 
-/* Estilos para las etiquetas del eje Y */
 .y-axis-label {
   font-size: 9px;
   font-weight: 200;
@@ -964,38 +972,24 @@ onUnmounted(() => {
   cursor: pointer;
 }
 
-/* Eje X externo */
-.x-axis-labels-container {
+/* ✅ CORREGIDO: Eje X con posicionamiento absoluto (igual que LinearChart) */
+.x-axis-container {
+  position: relative;
   width: 100%;
-  display: flex;
   height: 30px;
+  margin-top: 8px;
   flex-shrink: 0;
-  overflow: hidden;
-}
-
-.x-axis-spacer {
-  width: 60px;
-  flex-shrink: 0;
-}
-
-.x-axis-spacer-right {
-  width: 40px;
-  flex-shrink: 0;
-}
-
-.x-axis-labels {
-  flex: 1;
   display: flex;
-  overflow: hidden;
+  align-items: center;
+  overflow: visible;
+  box-sizing: border-box;
 }
 
 .x-axis-label {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 9px;
-  font-weight: 200;
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: 12px;
+  font-weight: 100;
   color: #6b7280;
   white-space: nowrap;
   user-select: none;
@@ -1111,7 +1105,6 @@ onUnmounted(() => {
   letter-spacing: -0.5px;
 }
 
-/* Tooltip Y (a la izquierda) */
 .tooltip-y {
   position: fixed;
   background: #F0F0F2;
@@ -1130,7 +1123,6 @@ onUnmounted(() => {
   letter-spacing: -0.3px;
 }
 
-/* Tooltip X (en el eje inferior) */
 .tooltip-x {
   position: fixed;
   background: #F0F0F2;
@@ -1148,7 +1140,6 @@ onUnmounted(() => {
   letter-spacing: -0.3px;
 }
 
-/* Flecha del tooltip X (apunta hacia arriba) */
 .tooltip-x::after {
   content: '';
   position: absolute;
@@ -1163,7 +1154,6 @@ onUnmounted(() => {
   filter: blur(0.3px);
 }
 
-/* Borde de la flecha */
 .tooltip-x::before {
   content: '';
   position: absolute;
@@ -1192,7 +1182,6 @@ onUnmounted(() => {
   transform: translateX(-50%) translateY(-5px);
 }
 
-/* Transición específica para tooltip X */
 .tooltip-x-fade-enter-active,
 .tooltip-x-fade-leave-active {
   transition: all 0.2s ease;

@@ -23,23 +23,9 @@
           [variable.colorClass]: true 
         }]"
       >
-        {{ variable.label }}
+        <span class="filter-dot" :style="{ backgroundColor: getBarColor(variable) }"></span>
+        <span class="filter-label">{{ variable.label }}</span>
       </button>
-    </div>
-
-    <!-- Leyenda con indicadores de color (opcional) -->
-    <div v-if="showLegend" class="chart-legend">
-      <div 
-        v-for="variable in internalVariables" 
-        :key="'legend-' + variable.key"
-        class="legend-item"
-      >
-        <span 
-          class="legend-dot" 
-          :style="{ backgroundColor: getBarColor(variable) }"
-        ></span>
-        <span class="legend-label">{{ variable.label }}</span>
-      </div>
     </div>
 
     <!-- Contenedor de barras verticales -->
@@ -69,7 +55,7 @@
             class="bar-vertical"
             :class="variable.colorClass"
             :style="{ 
-              height: getBarHeight(variable.value) + '%',
+              height: getAnimatedHeight(variable) + '%',
               background: getBarColor(variable)
             }"
           >
@@ -146,10 +132,6 @@ const props = defineProps({
   showLabels: {
     type: Boolean,
     default: true
-  }, 
-  autoSelectCount: {
-    type: Number,
-    default: 2
   },
   animationDelay: {
     type: Number,
@@ -170,9 +152,11 @@ const tooltip = ref({
   color: ''
 })
 
+// Copia interna de las variables para manejar el estado
 const internalVariables = ref([])
+const animatedHeights = ref({})
 
-// ✅ Inicializar variables con TODAS inactivas
+// ✅ Inicializar variables con TODAS inactivas y alturas en 0
 const initializeVariables = () => {
   internalVariables.value = props.variables.map(v => ({
     key: v.key,
@@ -180,25 +164,47 @@ const initializeVariables = () => {
     value: v.value || 0,
     colorClass: v.colorClass || 'default',
     color: v.color || null,
-    active: false // ✅ Todas inactivas al inicio
+    active: false
   }))
+  
+  // ✅ Inicializar todas las alturas en 0
+  animatedHeights.value = {}
+  props.variables.forEach(v => {
+    animatedHeights.value[v.key] = 0
+  })
 }
 
-// ✅ Función para activar barras con animación
+// ✅ Función para activar las primeras 4 barras con animación de relleno
 const activateBarsWithAnimation = async () => {
   await new Promise(resolve => setTimeout(resolve, props.animationDelay))
-  const count = Math.min(props.autoSelectCount, internalVariables.value.length)
+  
+  // ✅ Activar solo las primeras 4 barras
+  const count = Math.min(4, internalVariables.value.length)
+  
   for (let i = 0; i < count; i++) {
-    await new Promise(resolve => setTimeout(resolve, 300))
     internalVariables.value[i].active = true
+    
+    // ✅ Animar la altura desde 0 hasta el valor real
+    await new Promise(resolve => setTimeout(resolve, 50))
+    const targetHeight = getBarHeight(internalVariables.value[i].value)
+    animatedHeights.value[internalVariables.value[i].key] = targetHeight
+    
+    await new Promise(resolve => setTimeout(resolve, 200))
   }
-} 
+}
 
+// Observar cambios en props.variables
 watch(() => props.variables, () => {
   initializeVariables()
   activateBarsWithAnimation()
 }, { immediate: true, deep: true })
 
+// ✅ Activar animación al montar
+onMounted(() => {
+  activateBarsWithAnimation()
+})
+
+// Computed: Variables activas
 const activeVariables = computed(() => {
   return internalVariables.value.filter(v => v.active)
 })
@@ -210,6 +216,7 @@ const dynamicBarWidth = computed(() => {
   return `${100 / count}%`
 })
 
+// Computed: Valor máximo para calcular porcentajes
 const maxValue = computed(() => {
   const values = activeVariables.value.map(v => v.value)
   return Math.max(...values, 1)
@@ -223,10 +230,20 @@ const tooltipStyle = computed(() => {
   }
 })
 
+// Métodos
 const toggleVariable = (key) => {
   const variable = internalVariables.value.find(v => v.key === key)
   if (variable) {
     variable.active = !variable.active
+    
+    // ✅ Animar el cambio de altura
+    if (variable.active) {
+      setTimeout(() => {
+        animatedHeights.value[key] = getBarHeight(variable.value)
+      }, 50)
+    } else {
+      animatedHeights.value[key] = 0
+    }
   }
 }
 
@@ -260,11 +277,18 @@ const getBarHeight = (value) => {
   return Math.min(percentage, 100)
 }
 
+// ✅ Nueva función para obtener la altura animada
+const getAnimatedHeight = (variable) => {
+  return animatedHeights.value[variable.key] || 0
+}
+
 const getBarColor = (variable) => {
+  // Si hay color personalizado, usarlo
   if (variable.color) {
     return variable.color
   }
 
+  // Colores sólidos por defecto
   const solidColors = {
     gray: '#9ca3af',
     red: '#DC143C',
@@ -311,7 +335,7 @@ const formatValue = (value) => {
 .chart-title {
   margin: 0;
   letter-spacing: -0.5px;
-  font-size: 7px;
+  font-size: 16px;
   text-align: center;
   font-weight: 400;
   color: #484d56;
@@ -322,29 +346,34 @@ const formatValue = (value) => {
 .variable-filters {
   display: flex;
   flex-direction: row;
-  height: 12px;
-  padding: 2px 0;
-  border-radius: 24px;
-  flex-wrap: nowrap;
+  min-height: 24px;
+  height: auto;
+  padding: 4px 8px;
+  border-radius: 12%;
+  flex-wrap: wrap;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); 
-  gap: 2px;
-  margin-bottom: 5px;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 1px;
   flex-shrink: 0;
 }
 
 .filter-btn {
-  flex: 0 1 auto;
+  flex: 0 0 auto;
   border: none;
-  padding: 1px 5px;
+  padding: 4px 10px;
   border-radius: 24px;
   cursor: pointer;
-  font-size: 5px;
-  font-weight: 100;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 11px;
+  font-weight: 200;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   background: white;
-  transition: all 0.3s ease;
-  white-space: nowrap;
+  transition: all 0.5s ease;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
 }
 
 .filter-btn:hover {
@@ -356,23 +385,17 @@ const formatValue = (value) => {
   color: white;
 }
 
-/* Leyenda */
-.chart-legend {
-  display: flex;
-  flex-direction: row;
-  gap: 5px;
-  flex-wrap: wrap;
-  justify-content: center;
-  margin-bottom: 8px;
+/* ✅ Dot en los filtros */
+.filter-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
   flex-shrink: 0;
+  transition: all 0.3s ease;
 }
 
-.legend-item {
-  display: flex;
-  align-items: center;
-  font-size: 6px;
-  gap: 3px;
-  color: #4b5563;
+.filter-label {
+  white-space: nowrap;
 }
 
 .legend-dot {
@@ -430,6 +453,8 @@ const formatValue = (value) => {
 
 .bar-column.is-hovered {
   opacity: 1;
+  transform: scale(1.02);
+  z-index: 10;
 }
 
 .bar-column.is-dimmed {
@@ -459,7 +484,7 @@ const formatValue = (value) => {
 
 .bar-vertical {
   width: 100%;
-  transition: height 1.2s cubic-bezier(0.1, 0, 0.2, 1); 
+  transition: height 1.2s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 8px 8px 0 0;
   box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
   position: relative;

@@ -1,5 +1,7 @@
 <!-- src/modules/maps/components/RetractableFilterBar.vue -->
-<!-- ✅ MODIFICACIÓN MÍNIMA: Solo se agregó carga dinámica de años y actualización del año activo -->
+<!-- ✅ MODIFICADO: Agregada opción "------------" en Entidad y Variable -->
+<!-- ✅ ACTUALIZADO: Mantener barra expandida cuando isLocked es true -->
+<!-- ✅ CORREGIDO: Usa computed para combinar props.availableYears y composable -->
 <template>
   <div 
     class="filter-bar-container" 
@@ -11,7 +13,9 @@
       class="filter-bar" 
       :class="{ 
         'expanded': isSlideUp || activeDropdown,
-        'has-entity-selected': selectedEntity
+        'has-entity-selected': selectedEntity,
+        'locked-expanded': props.isLocked,
+        'animating-down': isAnimatingDown
       }"
       @mouseenter="handleMouseEnter"
       @mouseleave="handleMouseLeave"
@@ -26,7 +30,7 @@
               class="dropdown-button"
               :class="{ 'active': activeDropdown === 'entidad', 'has-selection': selectedEntity }"
             >
-              <span class="dropdown-text">{{ selectedEntity || 'Todas' }}</span>
+              <span class="dropdown-text">{{ getEntityLabel() }}</span>
               <span class="dropdown-arrow">▼</span>
             </button>
             
@@ -43,10 +47,18 @@
                 class="dropdown-options" 
                 @wheel.prevent="handleDropdownScroll"
               >
+                <!-- ✅ NUEVO: Opción en blanco (default) -->
+                <div 
+                  @click="selectEntity('')"
+                  class="dropdown-option"
+                  :class="{ 'selected': selectedEntity === '' }"
+                >
+                  <span class="blank-option">-</span>
+                </div>
                 <div 
                   @click="selectEntity(null)"
                   class="dropdown-option"
-                  :class="{ 'selected': !selectedEntity }"
+                  :class="{ 'selected': selectedEntity === null }"
                 >
                   <span>Todas las entidades</span>
                 </div>
@@ -55,7 +67,7 @@
                   :key="entity.name"
                   @click="selectEntity(entity.name)"
                   class="dropdown-option"
-                  :class="{ 'selected': selectedEntity === entity.name }"
+                  :class="{ 'selected': selectedEntity === entity.name && selectedEntity !== '' && selectedEntity !== null }"
                 >
                   <span>{{ entity.name }}</span>
                 </div>
@@ -64,7 +76,7 @@
           </div>
         </div>
 
-        <!-- Filtro Año - ✅ MODIFICADO: Carga dinámica de años -->
+        <!-- Filtro Año -->
         <div class="filter-group">
           <label class="filter-label">Año</label>
           <div class="filter-dropdown">
@@ -92,9 +104,9 @@
                   <span>Todos los años</span>
                 </div>
                 
-                <!-- ✅ Años dinámicos desde Google Sheets -->
+                <!-- ✅ CORREGIDO: Usa computed years que combina ambas fuentes -->
                 <div 
-                  v-for="year in availableYears" 
+                  v-for="year in years" 
                   :key="year"
                   @click="selectYear(year)"
                   class="dropdown-option"
@@ -123,13 +135,20 @@
             <!-- Dropdown de variables -->
             <div v-if="activeDropdown === 'variable'" class="dropdown-menu variable-menu">
               <div class="dropdown-options">
+                <!-- ✅ NUEVO: Opción en blanco (default) -->
+                <div 
+                  @click="selectVariable('')"
+                  class="dropdown-option"
+                  :class="{ 'selected': selectedVariable === '' }"
+                >
+                  <span class="blank-option">-</span>
+                </div>
+                
                 <!-- Todas -->
                 <div 
                   @click="selectVariable(null)"
                   class="dropdown-option"
-                  :class="{ 
-                    'selected': !selectedVariable
-                  }"
+                  :class="{ 'selected': selectedVariable === null }"
                 >
                   <span>Todas</span>
                 </div>
@@ -138,9 +157,7 @@
                 <div 
                   @click="selectVariable(variables.PS)"
                   class="dropdown-option"
-                  :class="{ 
-                    'selected': selectedVariable?.key === 'PS'
-                  }"
+                  :class="{ 'selected': selectedVariable?.key === 'PS' }"
                 >
                   <span>Presupuestos Sostenibles (PS)</span>
                 </div>
@@ -149,9 +166,7 @@
                 <div 
                   @click="selectVariable(variables.IIC)"
                   class="dropdown-option"
-                  :class="{ 
-                    'selected': selectedVariable?.key === 'IIC'
-                  }"
+                  :class="{ 'selected': selectedVariable?.key === 'IIC' }"
                 >
                   <span>Ingresos Intensivos en Carbono (IIC)</span>
                 </div>
@@ -160,9 +175,7 @@
                 <div 
                   @click="selectVariable(variables.PIC)"
                   class="dropdown-option"
-                  :class="{ 
-                    'selected': selectedVariable?.key === 'PIC'
-                  }"
+                  :class="{ 'selected': selectedVariable?.key === 'PIC' }"
                 >
                   <span>Presupuestos Intensivos en Carbono (PIC)</span>
                 </div>
@@ -171,9 +184,7 @@
                 <div 
                   @click="selectVariable(variables.IS)"
                   class="dropdown-option"
-                  :class="{ 
-                    'selected': selectedVariable?.key === 'IS'
-                  }"
+                  :class="{ 'selected': selectedVariable?.key === 'IS' }"
                 >
                   <span>Ingresos Sostenibles (IS)</span>
                 </div>
@@ -188,7 +199,6 @@
 
 <script setup>
 import { ref, computed, onMounted, watch, onBeforeUnmount } from 'vue'
-// ✅ NUEVO: Importar composable de años y función setActiveYear
 import { useYearFilter } from '@/composables/useYearFilter'
 import { setActiveYear } from '@/dataConection/storageConfig'
 
@@ -205,6 +215,14 @@ const props = defineProps({
   selectedState: {
     type: String,
     default: null
+  },
+  isLocked: {
+    type: Boolean,
+    default: false
+  },
+  availableYears: {
+    type: Array,
+    default: () => []
   }
 })
 
@@ -216,15 +234,28 @@ const emit = defineEmits([
   'filters-change'
 ])
 
-// ✅ NUEVO: Usar composable de año
+// ✅ MANTENER: Composable completo para funcionalidad de carga
 const {
   selectedYear,
-  availableYears,
+  availableYears: composableYears,  // ← Renombrado para evitar conflicto
   loadingYears,
   fetchAvailableYears,
   setSelectedYear: setYear,
   activeYear
 } = useYearFilter()
+
+// ✅ NUEVO: Computed que da prioridad a props.availableYears, sino usa composableYears
+const years = computed(() => {
+  // Si props tiene años (viene de HomePage), usarlos
+  if (props.availableYears && props.availableYears.length > 0) {
+    console.log('📅 Usando años de props.availableYears:', props.availableYears)
+    return props.availableYears
+  }
+  
+  // Sino, usar los del composable (carga inicial)
+  console.log('📅 Usando años de composable:', composableYears.value)
+  return composableYears.value
+})
 
 // Estados reactivos
 const isSlideUp = ref(false)
@@ -232,10 +263,11 @@ const activeDropdown = ref(null)
 const entitySearch = ref('')
 const slideTimeout = ref(null)
 const filterBarRef = ref(null)
+const isAnimatingDown = ref(false)
 
 // Filtros seleccionados
-const selectedEntity = ref(null)
-const selectedVariable = ref(null)
+const selectedEntity = ref('')
+const selectedVariable = ref('')
 
 // Definición de las 4 variables
 const variables = {
@@ -283,13 +315,18 @@ const filteredEntities = computed(() => {
   )
 })
 
-// Función para obtener el label de la variable seleccionada
+const getEntityLabel = () => {
+  if (selectedEntity.value === '') return '-'
+  if (!selectedEntity.value || selectedEntity.value === null) return 'Todas las entidades'
+  return selectedEntity.value
+}
+
 const getVariableLabel = () => {
-  if (!selectedVariable.value) return 'Todas'
+  if (selectedVariable.value === '') return '-'
+  if (!selectedVariable.value || selectedVariable.value === null) return 'Todas las variables'
   return selectedVariable.value.key
 }
 
-// Función para manejar el scroll en el dropdown
 const handleDropdownScroll = (event) => {
   const container = event.currentTarget
   const { scrollTop, scrollHeight, clientHeight } = container
@@ -305,7 +342,6 @@ const handleDropdownScroll = (event) => {
   event.stopPropagation()
 }
 
-// Métodos para manejo de deslizamiento
 const handleMouseEnter = () => {
   if (slideTimeout.value) {
     clearTimeout(slideTimeout.value)
@@ -315,6 +351,11 @@ const handleMouseEnter = () => {
 }
 
 const handleMouseLeave = () => {
+  if (props.isLocked) {
+    console.log('🔒 Barra bloqueada, no se contrae al salir del mouse')
+    return
+  }
+  
   if (!activeDropdown.value && !selectedEntity.value) {
     slideTimeout.value = setTimeout(() => {
       isSlideUp.value = false
@@ -338,6 +379,11 @@ const toggleDropdown = (dropdownName) => {
 const closeAllDropdowns = () => {
   console.log('🚪 Cerrando todos los dropdowns')
   activeDropdown.value = null
+  
+  if (props.isLocked) {
+    console.log('🔒 Barra bloqueada, permanece expandida')
+    return
+  }
   
   slideTimeout.value = setTimeout(() => {
     isSlideUp.value = false
@@ -364,13 +410,12 @@ const selectEntity = (entityName) => {
   closeAllDropdowns()
 }
 
-// ✅ MODIFICADO: selectYear ahora actualiza el año activo globalmente
 const selectYear = (year) => {
   console.log('=== FILTRO: Año seleccionado ===', year)
   setYear(year)
   
-  // ✅ Actualizar el año activo en storageConfig
-  const yearToUse = year || availableYears.value[0] || '2024'
+  // Actualizar el año activo en storageConfig
+  const yearToUse = year || years.value[0] || '2024'
   setActiveYear(yearToUse)
   console.log('📅 Año activo establecido:', yearToUse)
   
@@ -397,25 +442,72 @@ const emitFiltersChange = () => {
   emit('filters-change', filters)
 }
 
-// Watch para sincronizar estado seleccionado desde el mapa
+watch(() => props.isLocked, (newLocked, oldLocked) => {
+  console.log('🔒 isLocked cambió de', oldLocked, 'a', newLocked)
+  
+  if (newLocked) {
+    isSlideUp.value = true
+    isAnimatingDown.value = false
+    if (slideTimeout.value) {
+      clearTimeout(slideTimeout.value)
+      slideTimeout.value = null
+    }
+  } else if (oldLocked === true && newLocked === false) {
+    console.log('📉 Iniciando animación de bajada...')
+    isAnimatingDown.value = true
+    
+    setTimeout(() => {
+      isAnimatingDown.value = false
+      if (!selectedEntity.value && !activeDropdown.value) {
+        isSlideUp.value = false
+      }
+      console.log('✅ Animación de bajada completada')
+    }, 600)
+  }
+})
+
 watch(() => props.selectedState, (newState) => {
   console.log('🔄 Sincronizando filtro con mapa. Estado:', newState)
-  selectedEntity.value = newState
+  if (newState !== null && newState !== undefined) {
+    selectedEntity.value = newState
+  } else if (newState === null && selectedEntity.value !== '') {
+    selectedEntity.value = newState
+  }
+})
+
+// ✅ Watch de debug para ver qué años se usan
+watch(years, (newYears) => {
+  console.log('🔄 [RetractableFilterBar] Computed years cambió a:', newYears)
 }, { immediate: true })
 
-// ✅ MODIFICADO: onMounted ahora carga años dinámicamente
+watch(() => props.availableYears, (newYears, oldYears) => {
+  console.log('🔄 [RetractableFilterBar] props.availableYears cambió')
+  console.log('  - Anterior:', oldYears)
+  console.log('  - Nuevo:', newYears)
+}, { deep: true })
+
 onMounted(async () => {
   console.log('✅ RetractableFilterBar montado')
   console.log('✅ Entidades recibidas:', props.entities.length)
+  console.log('✅ Años en props:', props.availableYears)
   
-  // ✅ NUEVO: Cargar años disponibles desde Google Sheets
-  console.log('📅 Cargando años disponibles...')
+  // Cargar años disponibles desde Google Sheets (para carga inicial)
+  console.log('📅 Cargando años desde composable...')
   await fetchAvailableYears()
-  console.log('📅 Años cargados:', availableYears.value)
+  console.log('📅 Años del composable cargados:', composableYears.value)
   
-  // ✅ NUEVO: Establecer el año activo inicial
-  setActiveYear(activeYear.value)
-  console.log('📅 Año activo inicial:', activeYear.value)
+  // Establecer el primer año como default
+  if (years.value.length > 0) {
+    const firstYear = years.value[0]
+    setYear(firstYear)
+    setActiveYear(firstYear)
+    console.log('📅 Año por defecto establecido:', firstYear)
+    
+    emit('year-change', firstYear)
+  } else {
+    setActiveYear(activeYear.value)
+    console.log('📅 Año activo inicial (fallback):', activeYear.value)
+  }
   
   emitFiltersChange()
   
@@ -433,7 +525,6 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-/* ✅ Estilos SIN CAMBIOS - Todo igual al original */
 .filter-bar-container {
   position: relative;
   left: 19.6px;
@@ -467,6 +558,30 @@ onBeforeUnmount(() => {
   transform: translateY(-20px);
   cursor: default;
   z-index: 1;
+}
+
+.filter-bar.locked-expanded {
+  transform: translateY(-20px) !important;
+  cursor: default;
+  z-index: 1;
+  box-shadow: 0 6px 24px rgba(44, 82, 130, 0.4);
+}
+
+.filter-bar.animating-down {
+  animation: slideDown 0.6s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
+  cursor: default;
+  z-index: 1;
+}
+
+@keyframes slideDown {
+  0% {
+    transform: translateY(-20px);
+    box-shadow: 0 6px 24px rgba(44, 82, 130, 0.4);
+  }
+  100% {
+    transform: translateY(calc(100% - 65px));
+    box-shadow: 0 4px 20px rgba(44, 82, 130, 0.3);
+  }
 }
 
 .filter-content {
@@ -682,6 +797,14 @@ onBeforeUnmount(() => {
 
 .dropdown-option:last-child {
   border-bottom: none;
+}
+
+.blank-option {
+  color: #cbd5e0;
+  font-size: 14px;
+  text-align: center;
+  width: 100%;
+  display: block;
 }
 
 .year-note {
