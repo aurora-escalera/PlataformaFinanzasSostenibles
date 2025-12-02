@@ -1,11 +1,9 @@
 <!-- src/modules/charts/components/ChartsComponent.vue -->
-<!-- ✅ ACTUALIZADO: Usa año dinámico del filtro en TODOS los títulos -->
+<!-- ✅ ACTUALIZADO: Headers estilo dark en las donas -->
 <template>
   <div class="charts-wrapper" :class="{ 'single-card': showingSingleCard }">
 
-    <!-- ✅ NUEVO: Solo visible si no hay variable O si variable es PS o PIC -->
     <!-- CARD 1: INGRESOS -->
-    <!-- ✅ NUEVO: Solo visible si no hay variable O si variable es IS o IIC -->
     <div v-if="!selectedVariable || selectedVariable.key === 'IS' || selectedVariable.key === 'IIC'" class="chart-card">
       <div class="chart-card-header">
         <h4 class="card-title">{{ cardTitleIngresos }}</h4>
@@ -35,8 +33,14 @@
         <div v-if="!loading && !error" class="chart-col-donuts" :class="{ 'single-donut': showingSingleDonutIngresos }">
           <!-- ✅ Dona IS: Solo visible si no hay variable O si variable es IS -->
           <div v-if="!selectedVariable || selectedVariable.key === 'IS'" class="donut-item">
-            <div class="donut-header">
-              <h5 class="donut-title">{{ donutTitleIS }}</h5>
+            <!-- ✅ NUEVO: Header estilo dark -->
+            <div class="donut-header-dark">
+              <div class="donut-header-icon green">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+              </div>
+              <span class="donut-header-title">Sectores de Ingresos Sostenibles</span>
             </div>
             <DonutChart 
               v-if="sectoresIngresosSostenibles.length > 0"
@@ -52,8 +56,16 @@
           </div>
           <!-- ✅ Dona IIC: Solo visible si no hay variable O si variable es IIC -->
           <div v-if="!selectedVariable || selectedVariable.key === 'IIC'" class="donut-item">
-            <div class="donut-header">
-              <h5 class="donut-title">{{ donutTitleIIC }}</h5>
+            <!-- ✅ NUEVO: Header estilo dark -->
+            <div class="donut-header-dark">
+              <div class="donut-header-icon red">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                  <path d="M2 17l10 5 10-5"/>
+                  <path d="M2 12l10 5 10-5"/>
+                </svg>
+              </div>
+              <span class="donut-header-title">Sectores de Ingresos Int. en Carbono</span>
             </div>
             <DonutChart 
               v-if="sectoresIngresosCarbono.length > 0"
@@ -70,6 +82,7 @@
         </div>
       </div>
     </div>
+
     <!-- CARD 2: PRESUPUESTOS -->
     <div v-if="!selectedVariable || selectedVariable.key === 'PS' || selectedVariable.key === 'PIC'" class="chart-card">
       <div class="chart-card-header">
@@ -100,8 +113,14 @@
         <div v-if="!loading && !error" class="chart-col-donuts" :class="{ 'single-donut': showingSingleDonutPresupuestos }">
           <!-- ✅ Dona PS: Solo visible si no hay variable O si variable es PS -->
           <div v-if="!selectedVariable || selectedVariable.key === 'PS'" class="donut-item">
-            <div class="donut-header">
-              <h5 class="donut-title">{{ donutTitlePS }}</h5>
+            <!-- ✅ NUEVO: Header estilo dark -->
+            <div class="donut-header-dark">
+              <div class="donut-header-icon green">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+              </div>
+              <span class="donut-header-title">Sectores de Presupuestos Sostenibles</span>
             </div>
             <DonutChart 
               v-if="sectoresPresupuestosSostenibles.length > 0"
@@ -117,8 +136,16 @@
           </div>
           <!-- ✅ Dona PIC: Solo visible si no hay variable O si variable es PIC -->
           <div v-if="!selectedVariable || selectedVariable.key === 'PIC'" class="donut-item">
-            <div class="donut-header">
-              <h5 class="donut-title">{{ donutTitlePIC }}</h5>
+            <!-- ✅ NUEVO: Header estilo dark -->
+            <div class="donut-header-dark">
+              <div class="donut-header-icon red">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                  <path d="M2 17l10 5 10-5"/>
+                  <path d="M2 12l10 5 10-5"/>
+                </svg>
+              </div>
+              <span class="donut-header-title">Sectores de Presupuestos Int. en Carbono</span>
             </div>
             <DonutChart 
               v-if="sectoresPresupuestosCarbono.length > 0"
@@ -897,27 +924,6 @@ const ingresosTitleDynamic = computed(() => {
   return `Proporción del gasto asignado a Ingresos${yearSuffix}`
 })
 
-// ✅ NUEVO: Títulos dinámicos para las donas con año
-const donutTitlePS = computed(() => {
-  const yearSuffix = props.selectedYear ? ` (${props.selectedYear})` : ''
-  return `Análisis comparativo de los sectores que conforman Presupuestos Sostenibles (PS)${yearSuffix}`
-})
-
-const donutTitlePIC = computed(() => {
-  const yearSuffix = props.selectedYear ? ` (${props.selectedYear})` : ''
-  return `Análisis comparativo de los sectores que conforman Presupuestos Intensivos en Carbono (PIC)${yearSuffix}`
-})
-
-const donutTitleIS = computed(() => {
-  const yearSuffix = props.selectedYear ? ` (${props.selectedYear})` : ''
-  return `Análisis comparativo de los sectores que conforman Ingresos Sostenibles (IS)${yearSuffix}`
-})
-
-const donutTitleIIC = computed(() => {
-  const yearSuffix = props.selectedYear ? ` (${props.selectedYear})` : ''
-  return `Análisis comparativo de los sectores que conforman Ingresos Intensivos en Carbono (IIC)${yearSuffix}`
-})
-
 // ✅ NUEVO: Card titles con año y estado
 const cardTitlePresupuestos = computed(() => {
   if (!props.selectedState) return 'Selecciona un estado'
@@ -1065,11 +1071,10 @@ const variablesIngresosCarbono = [
   flex-direction: column;
   width: 100%;
   height: 100%;
-  background: #F8F9FA;
-
+  background: #163C5F;
   border-radius: 12px;
   padding: 12px;
-    border: 1px solid #ddd;
+  border: 1px solid #1a365d;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.182);
   box-sizing: border-box;
 }
@@ -1081,7 +1086,8 @@ const variablesIngresosCarbono = [
   width: 100%;
   padding: 10px;
   margin-bottom: 10px;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 3px solid rgba(255, 255, 255, 0.15);
+
 }
 
 .card-title {
@@ -1089,7 +1095,7 @@ const variablesIngresosCarbono = [
   text-align: left;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-weight: 100;
-  color: #535353;
+  color: white;
   font-size: 19px;
   margin: 0;
   flex-shrink: 0;
@@ -1112,48 +1118,104 @@ const variablesIngresosCarbono = [
   padding: 10px;
 }
 
-/* Container for donuts - Distribuido equitativamente 50-50 */
+/* Container for donuts - Estilo inner-card como SocialesView */
 .chart-col-donuts {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: row;
   gap: 15px;
-  padding: 10px;
-  background: white;
-  border: 1px solid #e5e7eb;
+  padding: 15px;
+  border: 1px solid #e2e8f0;
   border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: white;
 }
+
 
 /* ✅ NUEVO: Cuando solo hay una dona, centrarla y quitar el borde derecho */
 .chart-col-donuts.single-donut {
   justify-content: center;
-}
+    }
 
 .chart-col-donuts.single-donut .donut-item {
-  border-right: none !important;
   max-width: 100%;
 }
 
+/* ✅ MODIFICADO: Donut item con fondo azul oscuro */
 .donut-item {
   display: flex;
   flex-direction: column;
   align-items: stretch;
   justify-content: flex-start;
-  background: transparent;
-  border-radius: 0;
+  border-radius: 12px;
   min-height: 0;
   flex: 1;
-  padding: 20px;
+  padding: 15px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
 }
 
 .donut-item:first-child {
-  border-right: 1px solid #e5e7eb;
+  margin-right: 0;
 }
 
-/* ✅ NUEVO: Si solo hay una dona (última y única), no tiene borde */
+.donut-item:last-child {
+  margin-left: 0;
+}
+
+/* ✅ NUEVO: Si solo hay una dona (última y única) */
 .donut-item:first-child:last-child {
-  border-right: none;
+  max-width: 100%;
+}
+
+/* ============================================
+   ✅ MODIFICADO: Header estilo para donas (dentro del fondo azul)
+   ============================================ */
+.donut-header-dark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 25px;
+  margin: 0 auto 15px auto;
+  flex-shrink: 0;
+  width: fit-content;
+}
+
+.donut-header-icon {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.donut-header-icon.green {
+  background: linear-gradient(135deg, #7cb342 0%, #558b2f 100%);
+}
+
+.donut-header-icon.red {
+  background: linear-gradient(135deg, #ef5350 0%, #c62828 100%);
+}
+
+.donut-header-icon svg {
+  width: 12px;
+  height: 12px;
+}
+
+.donut-header-title {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: #1e3a5f;
+  line-height: 1.2;
+  letter-spacing: 0.3px;
 }
 
 .loading-container,
@@ -1187,27 +1249,6 @@ const variablesIngresosCarbono = [
   color: #DC143C;
 }
 
-.donut-header {
-  width: 100%;
-  margin-bottom: 10px;
-  flex-shrink: 0;
-  min-height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.donut-title {
-  font-size: 17px;
-  font-weight: 600;
-  color: #484d56;
-  text-align: center;
-  letter-spacing: -0.5px;
-  line-height: 1.3;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  margin: 0;
-}
-
 .no-data-message {
   display: flex;
   align-items: center;
@@ -1215,7 +1256,7 @@ const variablesIngresosCarbono = [
   width: 100%;
   height: 100%;
   min-height: 200px;
-  color: #999;
+  color: rgba(255, 255, 255, 0.6);
   font-size: 14px;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
@@ -1229,11 +1270,6 @@ const variablesIngresosCarbono = [
     flex-direction: row;
     flex: 1;
   }
-  
-  .donut-item:first-child {
-    border-right: 1px solid #e5e7eb;
-    border-bottom: none;
-  }
 }
 
 @media (max-width: 768px) {
@@ -1243,11 +1279,6 @@ const variablesIngresosCarbono = [
   
   .donut-item {
     min-height: 300px;
-  }
-  
-  .donut-item:first-child {
-    border-right: none;
-    border-bottom: 1px solid #e5e7eb;
   }
 }
 </style>
