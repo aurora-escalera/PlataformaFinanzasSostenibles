@@ -2,81 +2,130 @@
 <template>
   <div class="ifss-slider-container">
     <div class="historic-table">
+      <!-- ROW 1 -->
       <div class="row-1">
-        <div class="IS-anual-linear-chart">
+        <!-- IS Linear Chart Card - SIN símbolo $ y CON decimales -->
+        <div class="chart-card IS-anual-linear-chart">
+          <div class="chart-card-header">
+            <h4 class="card-title">Análisis histórico de los Ingresos Sostenibles (IS)</h4>
+          </div>
+          <div class="chart-card-body">
             <LinearChart
-              title="Análisis histórico de los Ingresos Sostenibles (IS)"
               :data="chartDataLinear"
               :xLabels="years"
               :width="900"
-              :height="400"
+              :height="340"
+              :showCurrencySymbol="false"
+              :decimalPlaces="1"
+              :hideHeader="true"
               :padding="{
-                top: 30,
+                top: 20,
                 right: 0,
-                bottom: 120,
+                bottom: 100,
                 left: 80
               }"
-           />
+            />
+          </div>
         </div>
-        <div class="IIC-anual-linear-chart">
+        
+        <!-- IIC Stacked Area Card -->
+        <div class="chart-card IIC-anual-linear-chart">
+          <div class="chart-card-header">
+            <h4 class="card-title">Análisis de IIC e Ingreso Total</h4>
+          </div>
+          <div class="chart-card-body">
             <StackedArea
-              title="Análisis de IIC e Ingreso Total"
               :data="chartDataStackedArea"
               :xLabels="years"
-           />
-        </div>
-      </div>
-      <div class="row-2">
-        <div class="IIC-anual-bar-chart">
-          <HistoricBarChart
-            title="Ingresos de Inversión en Contribución (IIC)"
-            :data="chartDataBar"
-            :showFilters="true"
-            :showLegend="true"
-          />
+            />
           </div>
-          <div class="IS-anual-bar-chart">
-          <HistoricBarChart
-            title="Ingresos Sostenibles (IS) por Año"
-            :data="chartDataBarIS"
-            :showFilters="true"
-            :showLegend="true"
-          />
         </div>
       </div>
+
+      <!-- ROW 2 -->
+      <div class="row-2">
+        <!-- IIC Bar Chart Card -->
+        <div class="chart-card IIC-anual-bar-chart">
+          <div class="chart-card-header">
+            <h4 class="card-title">Ingresos de Inversión en Contribución (IIC)</h4>
+          </div>
+          <div class="chart-card-body">
+            <HistoricBarChart
+              :data="chartDataBar"
+              :showFilters="true"
+              :showLegend="true"
+            />
+          </div>
+        </div>
+        
+        <!-- IS Bar Chart Card -->
+        <div class="chart-card IS-anual-bar-chart">
+          <div class="chart-card-header">
+            <h4 class="card-title">Ingresos Sostenibles (IS) por Año</h4>
+          </div>
+          <div class="chart-card-body">
+            <HistoricBarChart
+              :data="chartDataBarIS"
+              :showFilters="true"
+              :showLegend="true"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- ROW 3 -->
       <div class="row-3">
-        <div class="PS-PIC-anual-linear-chart">
-          <LinearChart
-            title="Análisis histórico de los Intensivos en Carbono y Presupuestos Sostenibles (PS-PIC)"
-            :data="chartDataLinearPSPIC"
-            :xLabels="years"
-            :width="1900"
-            :height="400"
-            :padding="{
-              top: 30,
-              right: 0,
-              bottom: 120,
-              left: 100
-            }"
-          />
+        <!-- PS-PIC Linear Chart Card (Full Width) - CON símbolo $ (default) -->
+        <div class="chart-card PS-PIC-anual-linear-chart">
+          <div class="chart-card-header">
+            <h4 class="card-title">Análisis histórico de los Intensivos en Carbono y Presupuestos Sostenibles (PS-PIC)</h4>
+          </div>
+          <div class="chart-card-body">
+            <LinearChart
+              :data="chartDataLinearPSPIC"
+              :xLabels="years"
+              :width="1900"
+              :height="340"
+              :hideHeader="true"
+              :padding="{
+                top: 20,
+                right: 0,
+                bottom: 100,
+                left: 100
+              }"
+            />
+          </div>
         </div>
       </div>
+
+      <!-- ROW 4 -->
       <div class="row-4">
-        <div class="PIC-anual-bar-chart">
+        <!-- PIC Bar Chart Card -->
+        <div class="chart-card PIC-anual-bar-chart">
+          <div class="chart-card-header">
+            <h4 class="card-title">Presupuestos Intensivos en Carbono (PIC)</h4>
+          </div>
+          <div class="chart-card-body">
             <HistoricBarChart
-            title="Presupuestos Intensivos en Carbono (PIC)"
-            :data="chartDataBarPIC"
-            :showFilters="true"
-            :showLegend="true"
-          />
+              :data="chartDataBarPIC"
+              :showFilters="true"
+              :showLegend="true"
+            />
+          </div>
         </div>
-        <div class="PS-anual-bar-chart">
+        
+        <!-- PS Bar Chart Card -->
+        <div class="chart-card PS-anual-bar-chart">
+          <div class="chart-card-header">
+            <h4 class="card-title">Presupuestos Sostenibles (PS)</h4>
+          </div>
+          <div class="chart-card-body">
             <HistoricBarChart
-            title="Presupuestos Sostenibles (PS)"
-            :data="chartDataBarPS"
-            :showFilters="true"
-            :showLegend="true"
-          />
+              :data="chartDataBarPS"
+              :showFilters="true"
+              :showLegend="true"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -104,6 +153,7 @@ const props = defineProps({
 
 // Composable de Google Sheets - Importar transformToLinearChartData
 const { fetchData, transformToBarChartData, transformToLinearChartData, transformToStackedAreaData } = useStorageData()
+
 // Datos para gráficas
 const chartDataBar = ref([])
 const chartDataBarIS = ref([])
@@ -164,7 +214,7 @@ const loadData = async () => {
     chartDataLinear.value = formattedData
     years.value = linearResult.labels
     
-    // ✅ NUEVO: Transformar datos para LinearChart PS-PIC
+    // Transformar datos para LinearChart PS-PIC
     const mappingPSPIC = storageConfig.mappings.pspicLinearChart
     console.log('🔍 mappingPSPIC:', mappingPSPIC)
     console.log('🔍 Valor de GT ($) en primera fila:', rawData[0]['GT ($)'])
@@ -186,7 +236,7 @@ const loadData = async () => {
     console.log('✅ Datos transformados para PIC BarChart:', chartDataBarPIC.value?.length || 0, 'años')
     console.log('✅ Datos transformados para PS BarChart:', chartDataBarPS.value?.length || 0, 'años')
     console.log('✅ Datos transformados para LinearChart IS:', chartDataLinear.value)
-    console.log('✅ Datos transformados para LinearChart PS-PIC:', chartDataLinearPSPIC.value) // ✅ NUEVO
+    console.log('✅ Datos transformados para LinearChart PS-PIC:', chartDataLinearPSPIC.value)
 
   } catch (err) {
     console.error('❌ Error cargando datos:', err)
@@ -243,26 +293,66 @@ onMounted(async () => {
   gap: 10px;
 }
 
-/* Gráficas que ocupan 50% del ancho */
+/* ===== ESTILOS DE CARD (igual que ChartsComponent) ===== */
+.chart-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background: #163C5F;
+  border-radius: 12px;
+  padding: 12px;
+  border: 1px solid #1a365d;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.182);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.chart-card-header {
+  display: flex;
+  width: 100%;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  border-bottom: 3px solid rgba(255, 255, 255, 0.15);
+  flex-shrink: 0;
+}
+
+.card-title {
+  padding: 4px 0 2px 0;
+  text-align: left;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 100;
+  color: white;
+  font-size: 17px;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.chart-card-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ===== TAMAÑOS ESPECÍFICOS DE CARDS ===== */
+
+/* Cards de 50% del ancho (row-1, row-2, row-4) */
 .IS-anual-linear-chart,
 .IIC-anual-linear-chart,
 .IIC-anual-bar-chart,
 .IS-anual-bar-chart,
 .PIC-anual-bar-chart,
 .PS-anual-bar-chart {
-  width: 100%;
-  height: 100%;
-  border-radius: 8px;
-  overflow: visible;
-  border: 1px solid #ccc;
+  width: 50%;
 }
 
-/* Gráfica que ocupa 100% del ancho */
+/* Card de 100% del ancho (row-3) */
 .PS-PIC-anual-linear-chart {
   width: 100%;
-  height: 100%;
-  border-radius: 8px;
-  overflow: visible;
-  border: 1px solid #ccc;
 }
 </style>

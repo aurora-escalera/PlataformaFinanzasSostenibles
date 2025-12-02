@@ -89,39 +89,63 @@
         <!-- ✅ Solo mostrar cuando NO está expandido -->
         <div v-if="!isRetractableExpanded" class="charts-section">
           <div class="charts-container">
-            <!-- ✅ ACTUALIZADO: Mostrar LinearChart dinámico (IFS) cuando todos los filtros están en "Todas" -->
             <div class="ranking-chart-section" style="height: 100%; display: flex; flex-direction: column;">
               
+              <!-- ========== LINEAR CHART CON CARD ========== -->
               <!-- Loading State para LinearChart -->
-              <div v-if="showStackedArea && stackedAreaLoading" class="ranking-loading">
-                <div class="spinner-small"></div>
-                <p>Cargando evolución IFS...</p>
+              <div v-if="showStackedArea && stackedAreaLoading" class="chart-card linear-chart-card">
+                <div class="chart-card-header">
+                  <h4 class="card-title">Evolución IFS</h4>
+                </div>
+                <div class="chart-card-body">
+                  <div class="ranking-loading">
+                    <div class="spinner-small"></div>
+                    <p>Cargando evolución IFS...</p>
+                  </div>
+                </div>
               </div>
               
               <!-- Error State para LinearChart -->
-              <div v-else-if="showStackedArea && stackedAreaError" class="ranking-error">
-                <p>Error: {{ stackedAreaError }}</p>
-                <button @click="loadIFSSData" class="retry-btn-small">
-                  Reintentar
-                </button>
+              <div v-else-if="showStackedArea && stackedAreaError" class="chart-card linear-chart-card">
+                <div class="chart-card-header">
+                  <h4 class="card-title">Evolución IFS</h4>
+                </div>
+                <div class="chart-card-body">
+                  <div class="ranking-error">
+                    <p>Error: {{ stackedAreaError }}</p>
+                    <button @click="loadIFSSData" class="retry-btn-small">
+                      Reintentar
+                    </button>
+                  </div>
+                </div>
               </div>
               
-              <!-- ✅ ACTUALIZADO: Mostrar LinearChart de IFS con datos dinámicos -->
-              <LinearChart
-                v-else-if="showStackedArea && stackedAreaChartData && Object.keys(stackedAreaChartData).length > 0"
-                :title="stackedAreaTitle"
-                :data="stackedAreaChartData"
-                :xLabels="stackedAreaYears"
-                :width="980"
-                :height="500"
-                :padding="{
-                  top: 30,
-                  right: 70,
-                  bottom: 120,
-                  left: 60
-                }"
-              />
+              <!-- ✅ LinearChart de IFS con card wrapper -->
+              <div 
+                v-else-if="showStackedArea && stackedAreaChartData && Object.keys(stackedAreaChartData).length > 0" 
+                class="chart-card linear-chart-card"
+              >
+                <div class="chart-card-header">
+                  <h4 class="card-title">{{ stackedAreaTitle }}</h4>
+                </div>
+                <div class="chart-card-body">
+                  <LinearChart
+                    :data="stackedAreaChartData"
+                    :xLabels="stackedAreaYears"
+                    :showCurrencySymbol="false"
+                    :width="940"
+                    :height="440"
+                    :padding="{
+                      top: 20,
+                      right: 70,
+                      bottom: 100,
+                      left: 60
+                    }"
+                  />
+                </div>
+              </div>
               
+              <!-- ========== RANKING CHART ========== -->
               <!-- Loading State para Ranking -->
               <div v-else-if="rankingLoading" class="ranking-loading">
                 <div class="spinner-small"></div>
@@ -799,7 +823,6 @@ onMounted(async () => {
   height: 605px;
   border-radius: 8px;
   width: 980px;
-  border: 1px solid #ccc;
   transition: all 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
 }
 
@@ -893,7 +916,7 @@ onMounted(async () => {
 
 .ranking-panel.historical-view {
   width: 2000px;
-  height: 1840px;
+  height: 2040px;
   padding-bottom: 70px;
   transition: all 0.3s ease;
 }
@@ -973,6 +996,68 @@ h2 {
 .overlay-fade-enter-from,
 .overlay-fade-leave-to {
   opacity: 0;
+}
+
+/* ===== CARD STYLES PARA LINEAR CHART (igual que ChartsComponent) ===== */
+.chart-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background: #163C5F;
+  border-radius: 12px;
+  padding: 12px;
+  border: 1px solid #1a365d;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.182);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.chart-card-header {
+  display: flex;
+  width: 100%;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  border-bottom: 3px solid rgba(255, 255, 255, 0.15);
+  flex-shrink: 0;
+}
+
+.card-title {
+  padding: 4px 0 2px 0;
+  text-align: left;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 100;
+  color: white;
+  font-size: 18px;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.chart-card-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.linear-chart-card {
+  height: 100%;
+}
+
+/* Ajuste para loading/error dentro de la card */
+.chart-card .ranking-loading,
+.chart-card .ranking-error {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #666;
 }
 </style>
 

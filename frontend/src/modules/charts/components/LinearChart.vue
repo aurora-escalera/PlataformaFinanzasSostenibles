@@ -280,6 +280,26 @@ const props = defineProps({
       bottom: 90,
       left: 60
     })
+  },
+  // ✅ NUEVO: Controla si se muestra el símbolo de moneda ($)
+  showCurrencySymbol: {
+    type: Boolean,
+    default: true
+  },
+  // ✅ NUEVO: Número de decimales a mostrar (null = auto/redondear)
+  decimalPlaces: {
+    type: Number,
+    default: null
+  },
+  // ✅ NUEVO: Sufijo personalizado para los valores (ej: '%', 'pts', etc.)
+  valueSuffix: {
+    type: String,
+    default: ''
+  },
+  // ✅ NUEVO: Prefijo personalizado para los valores
+  valuePrefix: {
+    type: String,
+    default: ''
   }
 })
 
@@ -482,28 +502,86 @@ const getYAxisValue = (index) => {
   return maxValue.value - (step * index)
 }
 
-// Formatear valor del eje Y
+// ✅ MODIFICADO: Formatear valor del eje Y con nuevas props
 const formatYAxisValue = (value) => {
-  if (Math.abs(value) >= 1000000) {
-    return `$${(value / 1000000).toFixed(1)}M` 
-  } else if (Math.abs(value) >= 1000) {
-    return `$${(value / 1000).toFixed(1)}K`
-  }
-  return `$${Math.round(value)}`
-}
-
-// Formatear valor para tooltip
-const formatValue = (value) => {
-  if (value === null || value === undefined) return 'N/A'
+  // Si hay un valueFormatter personalizado, usarlo
   if (props.valueFormatter) {
     return props.valueFormatter(value)
   }
-  if (Math.abs(value) >= 1000000) {
-    return `$${(value / 1000000).toFixed(1)}M`
-  } else if (Math.abs(value) >= 1000) {
-    return `$${(value / 1000).toFixed(1)}K`
+  
+  const prefix = props.showCurrencySymbol ? '$' : props.valuePrefix
+  const suffix = props.valueSuffix
+  
+  // Si se especificaron decimales, usar ese formato
+  if (props.decimalPlaces !== null) {
+    return `${prefix}${value.toFixed(props.decimalPlaces)}${suffix}`
   }
-  return `$${value.toFixed(0)}`
+  
+  // Formato automático (comportamiento original con $)
+  if (props.showCurrencySymbol) {
+    if (Math.abs(value) >= 1000000) {
+      return `$${(value / 1000000).toFixed(1)}M` 
+    } else if (Math.abs(value) >= 1000) {
+      return `$${(value / 1000).toFixed(1)}K`
+    }
+    return `$${Math.round(value)}`
+  }
+  
+  // Formato sin símbolo de moneda
+  if (Math.abs(value) >= 1000000) {
+    return `${prefix}${(value / 1000000).toFixed(1)}M${suffix}` 
+  } else if (Math.abs(value) >= 1000) {
+    return `${prefix}${(value / 1000).toFixed(1)}K${suffix}`
+  }
+  
+  // Para valores pequeños, mostrar con precisión apropiada
+  if (Math.abs(value) < 10) {
+    return `${prefix}${value.toFixed(2)}${suffix}`
+  }
+  
+  return `${prefix}${Math.round(value)}${suffix}`
+}
+
+// ✅ MODIFICADO: Formatear valor para tooltip con nuevas props
+const formatValue = (value) => {
+  if (value === null || value === undefined) return 'N/A'
+  
+  // Si hay un valueFormatter personalizado, usarlo
+  if (props.valueFormatter) {
+    return props.valueFormatter(value)
+  }
+  
+  const prefix = props.showCurrencySymbol ? '$' : props.valuePrefix
+  const suffix = props.valueSuffix
+  
+  // Si se especificaron decimales, usar ese formato
+  if (props.decimalPlaces !== null) {
+    return `${prefix}${value.toFixed(props.decimalPlaces)}${suffix}`
+  }
+  
+  // Formato automático (comportamiento original con $)
+  if (props.showCurrencySymbol) {
+    if (Math.abs(value) >= 1000000) {
+      return `$${(value / 1000000).toFixed(1)}M`
+    } else if (Math.abs(value) >= 1000) {
+      return `$${(value / 1000).toFixed(1)}K`
+    }
+    return `$${value.toFixed(0)}`
+  }
+  
+  // Formato sin símbolo de moneda
+  if (Math.abs(value) >= 1000000) {
+    return `${prefix}${(value / 1000000).toFixed(1)}M${suffix}`
+  } else if (Math.abs(value) >= 1000) {
+    return `${prefix}${(value / 1000).toFixed(1)}K${suffix}`
+  }
+  
+  // Para valores pequeños, mostrar con precisión apropiada
+  if (Math.abs(value) < 10) {
+    return `${prefix}${value.toFixed(2)}${suffix}`
+  }
+  
+  return `${prefix}${value.toFixed(0)}${suffix}`
 }
 
 // Generar path para una línea
