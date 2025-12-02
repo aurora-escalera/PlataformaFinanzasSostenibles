@@ -1,19 +1,6 @@
 <template>
   <div class="donut-item-glass">
-    <!-- Badge superior con título dinámico -->
-    <div class="donut-badge-glass" :class="badgeColorClass">
-      <svg v-if="badgeColorClass === 'green'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-      </svg>
-      <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-        <path d="M2 17l10 5 10-5"/>
-        <path d="M2 12l10 5 10-5"/>
-      </svg>
-      <span class="badge-text">{{ displayTitle }}</span>
-    </div>
-    
-    <!-- Filtros -->
+    <!-- Filtros (se mantienen arriba) -->
     <div class="variable-filters-glass">
       <button 
         v-for="(sector, index) in processedSectors" 
@@ -27,47 +14,65 @@
       </button>
     </div>
     
-    <!-- Dona SVG -->
-    <div class="donut-svg-container">
-      <svg class="donut-svg" viewBox="0 0 200 200">
-        <!-- Anillo de fondo - CAMBIADO a gris claro -->
-        <circle cx="100" cy="100" r="72" fill="none" stroke="#e2e8f0" stroke-width="24"/>
+    <!-- ✅ NUEVO: Contenedor flex para dona + indicador lateral -->
+    <div class="donut-with-indicator">
+      <!-- Dona SVG -->
+      <div class="donut-svg-container">
+        <svg class="donut-svg" viewBox="0 0 200 200">
+          <!-- Anillo de fondo -->
+          <circle cx="100" cy="100" r="72" fill="none" stroke="#e2e8f0" stroke-width="24"/>
+          
+          <!-- Sectores -->
+          <path 
+            v-for="(sector, index) in computedSectorPaths" 
+            :key="index"
+            class="donut-ring"
+            :class="{ 
+              dimmed: !activeSectors[index] || (hoveredIndex !== null && hoveredIndex !== index),
+              highlighted: hoveredIndex === index 
+            }"
+            :d="sector.path"
+            fill="none"
+            :stroke="sector.color"
+            stroke-width="24"
+            @mouseenter="onSectorHover(index)"
+            @mouseleave="onSectorLeave"
+          />
+          
+          <!-- Porcentajes -->
+          <text 
+            v-for="(sector, index) in computedSectorPaths" 
+            :key="'pct-' + index"
+            class="sector-percent"
+            :class="{ dimmed: !activeSectors[index] || (hoveredIndex !== null && hoveredIndex !== index) }"
+            :x="sector.percentX"
+            :y="sector.percentY"
+            text-anchor="middle"
+            v-show="sector.displayPercent >= 5"
+          >
+            {{ sector.displayPercent }}%
+          </text>
+        </svg>
         
-        <!-- Sectores -->
-        <path 
-          v-for="(sector, index) in computedSectorPaths" 
-          :key="index"
-          class="donut-ring"
-          :class="{ 
-            dimmed: !activeSectors[index] || (hoveredIndex !== null && hoveredIndex !== index),
-            highlighted: hoveredIndex === index 
-          }"
-          :d="sector.path"
-          fill="none"
-          :stroke="sector.color"
-          stroke-width="24"
-          @mouseenter="onSectorHover(index)"
-          @mouseleave="onSectorLeave"
-        />
-        
-        <!-- Porcentajes -->
-        <text 
-          v-for="(sector, index) in computedSectorPaths" 
-          :key="'pct-' + index"
-          class="sector-percent"
-          :class="{ dimmed: !activeSectors[index] || (hoveredIndex !== null && hoveredIndex !== index) }"
-          :x="sector.percentX"
-          :y="sector.percentY"
-          text-anchor="middle"
-          v-show="sector.displayPercent >= 5"
-        >
-          {{ sector.displayPercent }}%
-        </text>
-      </svg>
+        <!-- Centro con valor -->
+        <div class="donut-center">
+          <div class="center-value" :class="badgeColorClass">{{ displayValue }}</div>
+        </div>
+      </div>
       
-      <!-- Centro con valor -->
-      <div class="donut-center">
-        <div class="center-value" :class="badgeColorClass">{{ displayValue }}</div>
+      <!-- ✅ NUEVO: Indicador lateral -->
+      <div class="lateral-indicator" :class="badgeColorClass">
+        <div class="indicator-icon">
+          <svg v-if="badgeColorClass === 'green'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+            <path d="M2 17l10 5 10-5"/>
+            <path d="M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <span class="indicator-text">{{ displayTitle }}</span>
       </div>
     </div>
     
@@ -91,7 +96,6 @@
 import { ref, computed, watch } from 'vue'
 
 const props = defineProps({
-  // Props existentes para compatibilidad con ChartsComponent
   data: {
     type: Array,
     default: () => []
@@ -115,7 +119,6 @@ const props = defineProps({
   sectors: {
     type: Array,
     default: () => []
-    // Cada sector viene de ChartsComponent: { key, label, value, color, colorClass }
   }
 })
 
@@ -136,7 +139,6 @@ const processedSectors = computed(() => {
   return props.sectors.map(sector => {
     let shortLabel = sector.label
     
-    // Acortar labels largos para que quepan en los filtros
     if (sector.label === 'Movilidad Sustentable') shortLabel = 'Movilidad'
     if (sector.label === 'Protección Ambiental') shortLabel = 'Protección'
     if (sector.label === 'Desastres Naturales') shortLabel = 'Desastres'
@@ -160,31 +162,26 @@ const totalAllSectors = computed(() => {
   return props.sectors.reduce((acc, sector) => acc + (sector.value || 0), 0)
 })
 
-// Título dinámico a mostrar en el badge
+// Título dinámico a mostrar en el indicador
 const displayTitle = computed(() => {
-  // Si hay hover, mostrar el sector bajo el cursor
   if (hoveredIndex.value !== null && processedSectors.value[hoveredIndex.value]) {
     return processedSectors.value[hoveredIndex.value].label
   }
   
-  // Obtener índices de sectores activos
   const activeIndices = activeSectors.value
     .map((active, i) => active ? i : -1)
     .filter(i => i !== -1)
   
-  // Si todos activos o ninguno, mostrar título por defecto
   if (activeIndices.length === props.sectors.length || activeIndices.length === 0) {
-    if (props.title === 'IS') return 'Sectores de Ingresos Sostenibles'
-    if (props.title === 'IIC') return 'Sectores de Ingresos Int. en Carbono'
-    if (props.title === 'PS') return 'Sectores de Presupuestos Sostenibles'
-    if (props.title === 'PIC') return 'Sectores de Presupuestos Int. en Carbono'
+    if (props.title === 'IS') return 'Ingresos Sostenibles'
+    if (props.title === 'IIC') return 'Ingresos Int. Carbono'
+    if (props.title === 'PS') return 'Presupuestos Sostenibles'
+    if (props.title === 'PIC') return 'Presupuestos Int. Carbono'
     return props.title
   } 
-  // Si solo uno activo, mostrar su nombre completo
   else if (activeIndices.length === 1) {
     return processedSectors.value[activeIndices[0]]?.label || ''
   } 
-  // Si varios activos, mostrar nombres cortos unidos por +
   else {
     return activeIndices.map(i => processedSectors.value[i]?.shortLabel || processedSectors.value[i]?.label).join(' + ')
   }
@@ -192,12 +189,10 @@ const displayTitle = computed(() => {
 
 // Valor dinámico a mostrar (suma de sectores activos)
 const displayValue = computed(() => {
-  // Si hay hover, mostrar el valor del sector
   if (hoveredIndex.value !== null && processedSectors.value[hoveredIndex.value]) {
     return formatValue(processedSectors.value[hoveredIndex.value].value)
   }
   
-  // Sumar valores de sectores activos
   const sum = activeSectors.value.reduce((acc, active, i) => {
     return active && props.sectors[i] ? acc + props.sectors[i].value : acc
   }, 0)
@@ -221,7 +216,7 @@ const computedSectorPaths = computed(() => {
   
   const total = totalAllSectors.value
   
-  let currentAngle = -90 // Empezar desde arriba (12 en punto)
+  let currentAngle = -90
   
   return props.sectors.map((sector, index) => {
     const percent = total > 0 ? (sector.value / total) * 100 : 0
@@ -229,7 +224,6 @@ const computedSectorPaths = computed(() => {
     const startAngle = currentAngle
     const endAngle = currentAngle + angleSpan
     
-    // Calcular puntos del arco
     const startRad = (startAngle * Math.PI) / 180
     const endRad = (endAngle * Math.PI) / 180
     
@@ -240,7 +234,6 @@ const computedSectorPaths = computed(() => {
     
     const largeArc = angleSpan > 180 ? 1 : 0
     
-    // Punto medio para el porcentaje (centrado en el arco)
     const midAngle = startAngle + angleSpan / 2
     const midRad = (midAngle * Math.PI) / 180
     const percentX = cx + r * Math.cos(midRad)
@@ -262,7 +255,6 @@ const computedSectorPaths = computed(() => {
 function toggleSector(index) {
   activeSectors.value[index] = !activeSectors.value[index]
   
-  // Si todos están desactivados, reactivar todos
   if (!activeSectors.value.some(Boolean)) {
     activeSectors.value = activeSectors.value.map(() => true)
   }
@@ -281,7 +273,6 @@ function onSectorLeave() {
 function formatValue(value) {
   if (!value || value === 0) return '$0'
   
-  // Los valores vienen en pesos, convertir a millones
   const millions = value / 1000000
   
   if (millions >= 1000) {
@@ -301,53 +292,12 @@ function formatValue(value) {
 .donut-item-glass {
   flex: 1;
   border-radius: 16px;
-  padding: 16px 12px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
   min-height: 0;
   background-color: transparent;
-}
-
-/* ✅ Badge superior - Adaptado para fondo blanco */
-.donut-badge-glass {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 600;
-  margin-bottom: 4px;
-  transition: all 0.3s ease;
-  max-width: 100%;
-}
-
-.donut-badge-glass .badge-text {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  transition: all 0.3s ease;
-}
-
-/* ✅ Badge verde - fondo verde claro, texto verde oscuro */
-.donut-badge-glass.green {
-  color: #166534;
-  background: #dcfce7;
-  border: 1px solid #bbf7d0;
-}
-
-/* ✅ Badge rojo - fondo rojo claro, texto rojo oscuro */
-.donut-badge-glass.red {
-  color: #991b1b;
-  background: #fee2e2;
-  border: 1px solid #fecaca;
-}
-
-.donut-badge-glass svg {
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
 }
 
 /* ✅ Filtros - Adaptados para fondo blanco */
@@ -384,7 +334,6 @@ function formatValue(value) {
   color: #1e3a5f;
 }
 
-/* ✅ Botón activo - fondo azul oscuro, texto blanco */
 .filter-btn-glass.active {
   background: #1e3a5f;
   color: white;
@@ -402,12 +351,22 @@ function formatValue(value) {
   flex-shrink: 0;
 }
 
+/* ✅ NUEVO: Contenedor dona + indicador lateral */
+.donut-with-indicator {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  margin-bottom: 12px;
+}
+
 /* SVG Donut */
 .donut-svg-container {
   position: relative;
-  width: 160px;
-  height: 160px;
-  margin-bottom: 12px;
+  width: 140px;
+  height: 140px;
   flex-shrink: 0;
 }
 
@@ -435,7 +394,7 @@ function formatValue(value) {
   stroke-width: 28;
 }
 
-/* ✅ Porcentajes dentro del anillo - azul oscuro */
+/* Porcentajes dentro del anillo */
 .sector-percent {
   font-size: 9px;
   font-weight: 600;
@@ -458,9 +417,8 @@ function formatValue(value) {
   pointer-events: none;
 }
 
-/* ✅ Valor central - colores adaptados */
 .center-value {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   color: #1e3a5f;
   transition: all 0.3s ease;
@@ -474,7 +432,58 @@ function formatValue(value) {
   color: #dc2626;
 }
 
-/* ✅ Stats inferiores - Adaptados para fondo blanco */
+/* ✅ NUEVO: Indicador lateral */
+.lateral-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 10px;
+  border-radius: 10px;
+  min-width: 80px;
+  max-width: 100px;
+  text-align: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.lateral-indicator.green {
+  background: linear-gradient(135deg, #166534 0%, #15803d 100%);
+  border: 1px solid #22c55e;
+}
+
+.lateral-indicator.red {
+  background: linear-gradient(135deg, #991b1b 0%, #dc2626 100%);
+  border: 1px solid #ef4444;
+}
+
+.indicator-icon {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 6px;
+  color: white;
+  opacity: 0.9;
+}
+
+.indicator-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.indicator-text {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 9px;
+  font-weight: 600;
+  color: white;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* ✅ Stats inferiores */
 .stats-row-glass {
   display: flex;
   gap: 6px;
@@ -508,7 +517,6 @@ function formatValue(value) {
   border-color: #cbd5e1;
 }
 
-/* ✅ Valor en stats - azul oscuro */
 .stat-value {
   font-size: 12px;
   font-weight: 700;
@@ -518,7 +526,6 @@ function formatValue(value) {
   text-overflow: ellipsis;
 }
 
-/* ✅ Label en stats - gris */
 .stat-label {
   font-size: 8px;
   color: #64748b;
@@ -534,8 +541,13 @@ function formatValue(value) {
 /* Responsive */
 @media (max-width: 768px) {
   .donut-svg-container {
-    width: 140px;
-    height: 140px;
+    width: 120px;
+    height: 120px;
+  }
+  
+  .lateral-indicator {
+    min-width: 70px;
+    padding: 10px 8px;
   }
   
   .filter-btn-glass {
@@ -544,7 +556,7 @@ function formatValue(value) {
   }
   
   .center-value {
-    font-size: 16px;
+    font-size: 14px;
   }
   
   .stat-value {

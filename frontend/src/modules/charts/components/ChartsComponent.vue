@@ -1151,8 +1151,9 @@ const variablesIngresosCarbono = [
   border-radius: 12px;
   min-height: 0;
   flex: 1;
-  padding: 15px;
+  padding: 0 0 15px 0; /* ✅ Solo padding abajo */
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  overflow: hidden; /* ✅ Para que el header respete el border-radius */
 }
 
 .donut-item:first-child {
@@ -1174,22 +1175,21 @@ const variablesIngresosCarbono = [
 .donut-header-dark {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 25px;
-  margin: 0 auto 15px auto;
+  gap: 8px;
+  padding: 10px 12px;
+  background: linear-gradient(135deg, #1e3a5f 0%, #153d5e 100%);
+  border-radius: 12px 12px 0 0; /* ✅ Solo esquinas superiores redondeadas */
+  margin: 0; /* ✅ Sin margin */
   flex-shrink: 0;
-  width: fit-content;
+  width: 100%;
 }
 
 .donut-header-icon {
-  width: 24px;
-  height: 24px;
-  min-width: 24px;
-  border-radius: 6px;
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.15);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1197,12 +1197,13 @@ const variablesIngresosCarbono = [
 }
 
 .donut-header-icon.green {
-  background: linear-gradient(135deg, #7cb342 0%, #558b2f 100%);
+    background: rgba(255, 255, 255, 0.15);
+  color: #86efac;
 }
 
 .donut-header-icon.red {
-  background: linear-gradient(135deg, #ef5350 0%, #c62828 100%);
-}
+    background: rgba(255, 255, 255, 0.15);
+  color: #fca5a5;}
 
 .donut-header-icon svg {
   width: 12px;
@@ -1211,11 +1212,11 @@ const variablesIngresosCarbono = [
 
 .donut-header-title {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
-  color: #1e3a5f;
+  color: white;
   line-height: 1.2;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.2px;
 }
 
 .loading-container,
