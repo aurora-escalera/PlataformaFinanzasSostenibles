@@ -135,6 +135,8 @@
                     :showCurrencySymbol="false"
                     :width="940"
                     :height="440"
+                    :hideHeader="true"
+                    :initialVisibleVariables="['IFS']"
                     :padding="{
                       top: 20,
                       right: 70,
@@ -910,7 +912,7 @@ onMounted(async () => {
 .ranking-panel {
   display: flex;
   flex-direction: column;
-  height: 1040px;
+  height: 2040px;
   width: 100%;
 }
 

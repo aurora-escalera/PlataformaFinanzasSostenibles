@@ -4,26 +4,21 @@
     <div class="historic-table">
       <!-- ROW 1 -->
       <div class="row-1">
-        <!-- IS Linear Chart Card - SIN símbolo $ y CON decimales -->
+        <!-- IS Stacked Area Chart Card - SIN símbolo $ y CON decimales -->
         <div class="chart-card IS-anual-linear-chart">
           <div class="chart-card-header">
             <h4 class="card-title">Análisis histórico de los Ingresos Sostenibles (IS)</h4>
           </div>
           <div class="chart-card-body">
-            <LinearChart
+            <StackedArea
               :data="chartDataLinear"
               :xLabels="years"
-              :width="900"
-              :height="340"
               :showCurrencySymbol="false"
               :decimalPlaces="1"
               :hideHeader="true"
-              :padding="{
-                top: 20,
-                right: 0,
-                bottom: 100,
-                left: 80
-              }"
+              :width="950"
+              :height="350"
+
             />
           </div>
         </div>
@@ -37,6 +32,9 @@
             <StackedArea
               :data="chartDataStackedArea"
               :xLabels="years"
+              :hideHeader="true"
+              :width="950"
+              :height="350"
             />
           </div>
         </div>
@@ -54,6 +52,7 @@
               :data="chartDataBar"
               :showFilters="true"
               :showLegend="true"
+              :hideHeader="true"
             />
           </div>
         </div>
@@ -68,6 +67,7 @@
               :data="chartDataBarIS"
               :showFilters="true"
               :showLegend="true"
+              :hideHeader="true"
             />
           </div>
         </div>
@@ -110,6 +110,7 @@
               :data="chartDataBarPIC"
               :showFilters="true"
               :showLegend="true"
+              :hideHeader="true"
             />
           </div>
         </div>
@@ -124,6 +125,7 @@
               :data="chartDataBarPS"
               :showFilters="true"
               :showLegend="true"
+              :hideHeader="true"
             />
           </div>
         </div>
@@ -268,11 +270,11 @@ onMounted(async () => {
   flex-direction: column;
   width: 100%;
   height: 100%;
-  padding: 15px;
+  padding: 10px;
   background: white;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  gap: 10px;
+  gap: 8px;
   overflow: visible;
   box-sizing: border-box;
 }
@@ -282,7 +284,7 @@ onMounted(async () => {
   flex-direction: column;
   width: 100%;
   height: 100%;
-  gap: 10px;
+  gap: 8px;
 }
 
 /* Todas las rows con mismo tamaño */
@@ -290,7 +292,7 @@ onMounted(async () => {
   display: flex;
   flex-direction: row;
   height: 24.5%;
-  gap: 10px;
+  gap: 8px;
 }
 
 /* ===== ESTILOS DE CARD (igual que ChartsComponent) ===== */
@@ -301,42 +303,48 @@ onMounted(async () => {
   height: 100%;
   background: #163C5F;
   border-radius: 12px;
-  padding: 12px;
+  padding: 8px;
   border: 1px solid #1a365d;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.182);
   box-sizing: border-box;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .chart-card-header {
   display: flex;
   width: 100%;
-  padding: 8px 10px;
-  margin-bottom: 8px;
-  border-bottom: 3px solid rgba(255, 255, 255, 0.15);
+  padding: 4px 8px;
+  margin-bottom: 6px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.15);
   flex-shrink: 0;
 }
 
 .card-title {
-  padding: 4px 0 2px 0;
+  padding: 2px 0;
   text-align: left;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-weight: 100;
   color: white;
-  font-size: 17px;
+  font-size: 14px;
   margin: 0;
-  line-height: 1.3;
+  line-height: 1.2;
 }
 
 .chart-card-body {
   flex: 1;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: stretch;
+  justify-content: stretch;
   background: white;
-  border-radius: 8px;
-  overflow: hidden;
+  border-radius: 6px;
+  overflow: visible;
   min-height: 0;
+}
+
+/* Asegurar que los componentes hijos ocupen todo el espacio */
+.chart-card-body > * {
+  width: 100%;
+  height: 100%;
 }
 
 /* ===== TAMAÑOS ESPECÍFICOS DE CARDS ===== */
