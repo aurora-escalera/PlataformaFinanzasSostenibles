@@ -1,9 +1,5 @@
 <!-- src/modules/maps/components/RetractableFilterBar.vue -->
-<!-- ✅ MODIFICADO: Agregada opción "------------" en Entidad y Variable -->
-<!-- ✅ ACTUALIZADO: Mantener barra expandida cuando isLocked es true -->
-<!-- ✅ CORREGIDO: Usa computed para combinar props.availableYears y composable -->
-<!-- ✅ NUEVO: Props initialEntity, initialYear, initialVariable para sincronizar filtros -->
-<!-- ✅ CORREGIDO: z-index ajustado para no interferir con tooltip del mapa -->
+<!-- ✅ MODIFICADO: Agregado buscador en los 3 filtros (Entidad, Año, Variable) -->
 <template>
   <div 
     class="filter-bar-container" 
@@ -43,20 +39,13 @@
                   v-model="entitySearch"
                   placeholder="Buscar entidad..."
                   class="search-input"
+                  @click.stop
                 >
               </div>
               <div 
                 class="dropdown-options" 
                 @wheel.prevent="handleDropdownScroll"
               >
-                <!-- ✅ NUEVO: Opción en blanco (default) -->
-                <div 
-                  @click="selectEntity('')"
-                  class="dropdown-option"
-                  :class="{ 'selected': selectedEntity === '' }"
-                >
-                  <span class="blank-option">-</span>
-                </div>
                 <div 
                   @click="selectEntity(null)"
                   class="dropdown-option"
@@ -69,7 +58,7 @@
                   :key="entity.name"
                   @click="selectEntity(entity.name)"
                   class="dropdown-option"
-                  :class="{ 'selected': selectedEntity === entity.name && selectedEntity !== '' && selectedEntity !== null }"
+                  :class="{ 'selected': selectedEntity === entity.name && selectedEntity !== null }"
                 >
                   <span>{{ entity.name }}</span>
                 </div>
@@ -96,9 +85,22 @@
             
             <!-- Dropdown de años -->
             <div v-if="activeDropdown === 'año'" class="dropdown-menu">
-              <div class="dropdown-options">
-                <!-- Opción "Todos los años" -->
+              <!-- ✅ NUEVO: Buscador de años -->
+              <div class="dropdown-search">
+                <input 
+                  v-model="yearSearch"
+                  placeholder="Buscar año..."
+                  class="search-input"
+                  @click.stop
+                >
+              </div>
+              <div 
+                class="dropdown-options"
+                @wheel.prevent="handleDropdownScroll"
+              >
+                <!-- Opción "Todos los años" (solo si no hay búsqueda) -->
                 <div 
+                  v-if="!yearSearch"
                   @click="selectYear(null)"
                   class="dropdown-option"
                   :class="{ 'selected': selectedYear === null }"
@@ -106,15 +108,20 @@
                   <span>Todos los años</span>
                 </div>
                 
-                <!-- ✅ CORREGIDO: Usa computed years que combina ambas fuentes -->
+                <!-- Años filtrados -->
                 <div 
-                  v-for="year in years" 
+                  v-for="year in filteredYears" 
                   :key="year"
                   @click="selectYear(year)"
                   class="dropdown-option"
                   :class="{ 'selected': selectedYear === year }"
                 >
                   <span>{{ year }}</span>
+                </div>
+                
+                <!-- Mensaje si no hay resultados -->
+                <div v-if="filteredYears.length === 0 && yearSearch" class="dropdown-no-results">
+                  No se encontraron años
                 </div>
               </div>
             </div>
@@ -136,59 +143,43 @@
             
             <!-- Dropdown de variables -->
             <div v-if="activeDropdown === 'variable'" class="dropdown-menu variable-menu">
-              <div class="dropdown-options">
-                <!-- ✅ NUEVO: Opción en blanco (default) -->
-                <div 
-                  @click="selectVariable('')"
-                  class="dropdown-option"
-                  :class="{ 'selected': selectedVariable === '' }"
+              <!-- ✅ NUEVO: Buscador de variables -->
+              <div class="dropdown-search">
+                <input 
+                  v-model="variableSearch"
+                  placeholder="Buscar variable..."
+                  class="search-input"
+                  @click.stop
                 >
-                  <span class="blank-option">-</span>
-                </div>
-                
-                <!-- Todas -->
+              </div>
+              <div 
+                class="dropdown-options"
+                @wheel.prevent="handleDropdownScroll"
+              >
+                <!-- Todas las variables (solo si no hay búsqueda) -->
                 <div 
+                  v-if="!variableSearch"
                   @click="selectVariable(null)"
                   class="dropdown-option"
                   :class="{ 'selected': selectedVariable === null }"
                 >
-                  <span>Todas</span>
+                  <span>Todas las variables</span>
                 </div>
                 
-                <!-- Presupuestos Sostenibles (PS) -->
+                <!-- Variables filtradas -->
                 <div 
-                  @click="selectVariable(variables.PS)"
+                  v-for="variable in filteredVariables" 
+                  :key="variable.key"
+                  @click="selectVariable(variable)"
                   class="dropdown-option"
-                  :class="{ 'selected': selectedVariable?.key === 'PS' }"
+                  :class="{ 'selected': selectedVariable?.key === variable.key }"
                 >
-                  <span>Presupuestos Sostenibles (PS)</span>
+                  <span>{{ variable.label }}</span>
                 </div>
                 
-                <!-- Ingresos Intensivos en Carbono (IIC) -->
-                <div 
-                  @click="selectVariable(variables.IIC)"
-                  class="dropdown-option"
-                  :class="{ 'selected': selectedVariable?.key === 'IIC' }"
-                >
-                  <span>Ingresos Intensivos en Carbono (IIC)</span>
-                </div>
-                
-                <!-- Presupuestos Intensivos en Carbono (PIC) -->
-                <div 
-                  @click="selectVariable(variables.PIC)"
-                  class="dropdown-option"
-                  :class="{ 'selected': selectedVariable?.key === 'PIC' }"
-                >
-                  <span>Presupuestos Intensivos en Carbono (PIC)</span>
-                </div>
-                
-                <!-- Ingresos Sostenibles (IS) -->
-                <div 
-                  @click="selectVariable(variables.IS)"
-                  class="dropdown-option"
-                  :class="{ 'selected': selectedVariable?.key === 'IS' }"
-                >
-                  <span>Ingresos Sostenibles (IS)</span>
+                <!-- Mensaje si no hay resultados -->
+                <div v-if="filteredVariables.length === 0 && variableSearch" class="dropdown-no-results">
+                  No se encontraron variables
                 </div>
               </div>
             </div>
@@ -226,7 +217,6 @@ const props = defineProps({
     type: Array,
     default: () => []
   },
-  // ✅ NUEVAS PROPS para sincronizar filtros desde HomePage
   initialEntity: {
     type: [String, null],
     default: ''
@@ -249,25 +239,20 @@ const emit = defineEmits([
   'filters-change'
 ])
 
-// ✅ MANTENER: Composable completo para funcionalidad de carga
 const {
   selectedYear,
-  availableYears: composableYears,  // ← Renombrado para evitar conflicto
+  availableYears: composableYears,
   loadingYears,
   fetchAvailableYears,
   setSelectedYear: setYear,
   activeYear
 } = useYearFilter()
 
-// ✅ NUEVO: Computed que da prioridad a props.availableYears, sino usa composableYears
 const years = computed(() => {
-  // Si props tiene años (viene de HomePage), usarlos
   if (props.availableYears && props.availableYears.length > 0) {
     console.log('📅 Usando años de props.availableYears:', props.availableYears)
     return props.availableYears
   }
-  
-  // Sino, usar los del composable (carga inicial)
   console.log('📅 Usando años de composable:', composableYears.value)
   return composableYears.value
 })
@@ -275,14 +260,18 @@ const years = computed(() => {
 // Estados reactivos
 const isSlideUp = ref(false)
 const activeDropdown = ref(null)
-const entitySearch = ref('')
 const slideTimeout = ref(null)
 const filterBarRef = ref(null)
 const isAnimatingDown = ref(false)
 
+// ✅ Estados de búsqueda para los 3 filtros
+const entitySearch = ref('')
+const yearSearch = ref('')
+const variableSearch = ref('')
+
 // Filtros seleccionados
-const selectedEntity = ref('')
-const selectedVariable = ref('')
+const selectedEntity = ref(null)
+const selectedVariable = ref(null)
 
 // Definición de las 4 variables
 const variables = {
@@ -320,7 +309,10 @@ const variables = {
   }
 }
 
-// Computed
+// ✅ Array de variables para facilitar el filtrado
+const variablesArray = computed(() => Object.values(variables))
+
+// ✅ Computed: Entidades filtradas
 const filteredEntities = computed(() => {
   if (!entitySearch.value) return props.entities
   
@@ -330,14 +322,34 @@ const filteredEntities = computed(() => {
   )
 })
 
+// ✅ NUEVO: Computed para años filtrados
+const filteredYears = computed(() => {
+  if (!yearSearch.value) return years.value
+  
+  const search = yearSearch.value.toLowerCase()
+  return years.value.filter(year => 
+    String(year).toLowerCase().includes(search)
+  )
+})
+
+// ✅ NUEVO: Computed para variables filtradas
+const filteredVariables = computed(() => {
+  if (!variableSearch.value) return variablesArray.value
+  
+  const search = variableSearch.value.toLowerCase()
+  return variablesArray.value.filter(variable => 
+    variable.label.toLowerCase().includes(search) ||
+    variable.key.toLowerCase().includes(search) ||
+    variable.description.toLowerCase().includes(search)
+  )
+})
+
 const getEntityLabel = () => {
-  if (selectedEntity.value === '') return '-'
   if (!selectedEntity.value || selectedEntity.value === null) return 'Todas las entidades'
   return selectedEntity.value
 }
 
 const getVariableLabel = () => {
-  if (selectedVariable.value === '') return '-'
   if (!selectedVariable.value || selectedVariable.value === null) return 'Todas las variables'
   return selectedVariable.value.key
 }
@@ -387,6 +399,13 @@ const toggleDropdown = (dropdownName) => {
     slideTimeout.value = null
   }
   
+  // ✅ Limpiar búsquedas al cambiar de dropdown
+  if (activeDropdown.value !== dropdownName) {
+    entitySearch.value = ''
+    yearSearch.value = ''
+    variableSearch.value = ''
+  }
+  
   activeDropdown.value = activeDropdown.value === dropdownName ? null : dropdownName
   console.log('📂 Dropdown activo:', activeDropdown.value)
 }
@@ -394,6 +413,11 @@ const toggleDropdown = (dropdownName) => {
 const closeAllDropdowns = () => {
   console.log('🚪 Cerrando todos los dropdowns')
   activeDropdown.value = null
+  
+  // ✅ Limpiar todas las búsquedas al cerrar
+  entitySearch.value = ''
+  yearSearch.value = ''
+  variableSearch.value = ''
   
   if (props.isLocked) {
     console.log('🔒 Barra bloqueada, permanece expandida')
@@ -429,13 +453,13 @@ const selectYear = (year) => {
   console.log('=== FILTRO: Año seleccionado ===', year)
   setYear(year)
   
-  // Actualizar el año activo en storageConfig
   const yearToUse = year || years.value[0] || '2024'
   setActiveYear(yearToUse)
   console.log('📅 Año activo establecido:', yearToUse)
   
   emit('year-change', year)
   emitFiltersChange()
+  yearSearch.value = ''
   closeAllDropdowns()
 }
 
@@ -444,6 +468,7 @@ const selectVariable = (variable) => {
   selectedVariable.value = variable
   emit('variable-change', variable)
   emitFiltersChange()
+  variableSearch.value = ''  // ✅ Limpiar búsqueda
   closeAllDropdowns()
 }
 
@@ -457,7 +482,7 @@ const emitFiltersChange = () => {
   emit('filters-change', filters)
 }
 
-// ✅ NUEVO: Watch para sincronizar initialEntity desde HomePage
+// Watches para sincronizar props
 watch(() => props.initialEntity, (newValue) => {
   console.log('🔄 [FilterBar] initialEntity cambió a:', newValue)
   if (newValue !== selectedEntity.value) {
@@ -466,7 +491,6 @@ watch(() => props.initialEntity, (newValue) => {
   }
 }, { immediate: true })
 
-// ✅ NUEVO: Watch para sincronizar initialYear desde HomePage
 watch(() => props.initialYear, (newValue) => {
   console.log('🔄 [FilterBar] initialYear cambió a:', newValue)
   if (newValue !== selectedYear.value) {
@@ -475,7 +499,6 @@ watch(() => props.initialYear, (newValue) => {
   }
 }, { immediate: true })
 
-// ✅ NUEVO: Watch para sincronizar initialVariable desde HomePage
 watch(() => props.initialVariable, (newValue) => {
   console.log('🔄 [FilterBar] initialVariable cambió a:', newValue)
   if (newValue !== selectedVariable.value) {
@@ -517,7 +540,6 @@ watch(() => props.selectedState, (newState) => {
   }
 })
 
-// ✅ Watch de debug para ver qué años se usan
 watch(years, (newYears) => {
   console.log('🔄 [RetractableFilterBar] Computed years cambió a:', newYears)
 }, { immediate: true })
@@ -536,7 +558,6 @@ onMounted(async () => {
   console.log('✅ initialYear:', props.initialYear)
   console.log('✅ initialVariable:', props.initialVariable)
   
-  // ✅ Sincronizar con props iniciales
   if (props.initialEntity !== undefined) {
     selectedEntity.value = props.initialEntity
   }
@@ -544,12 +565,10 @@ onMounted(async () => {
     selectedVariable.value = props.initialVariable
   }
   
-  // Cargar años disponibles desde Google Sheets (para carga inicial)
   console.log('📅 Cargando años desde composable...')
   await fetchAvailableYears()
   console.log('📅 Años del composable cargados:', composableYears.value)
   
-  // Establecer el primer año como default solo si no hay initialYear
   if (props.initialYear !== null && props.initialYear !== undefined) {
     setYear(props.initialYear)
     setActiveYear(props.initialYear)
@@ -590,7 +609,6 @@ onBeforeUnmount(() => {
   height: 110px;
   margin: 0;
   padding: 0;
-  /* ✅ CORREGIDO: z-index más bajo para no interferir con tooltip */
   z-index: 50;
 }
 
@@ -608,7 +626,6 @@ onBeforeUnmount(() => {
   width: 100%;
   cursor: pointer;
   transform: translateY(calc(100% - 65px));
-  /* ✅ CORREGIDO: z-index controlado */
   z-index: 50;
 }
 
@@ -763,7 +780,6 @@ onBeforeUnmount(() => {
   max-height: none;
   overflow: visible;
   animation: dropdownFadeIn 0.2s ease;
-  /* ✅ z-index alto solo para dropdowns */
   z-index: 1000;
 }
 
@@ -792,6 +808,7 @@ onBeforeUnmount(() => {
   font-size: 14px;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-weight: 200;
+  box-sizing: border-box;
 }
 
 .search-input:focus {
@@ -869,6 +886,15 @@ onBeforeUnmount(() => {
   display: block;
 }
 
+/* ✅ NUEVO: Mensaje cuando no hay resultados */
+.dropdown-no-results {
+  padding: 12px;
+  text-align: center;
+  color: #a0aec0;
+  font-size: 13px;
+  font-style: italic;
+}
+
 .year-note {
   font-size: 10px;
   color: #999;
@@ -914,6 +940,13 @@ onBeforeUnmount(() => {
   }
 }
 
+/* ✅ Variable menu más ancho para mostrar nombres completos */
+.variable-menu {
+  width: 280px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
 @media (max-width: 768px) {
   .filter-content {
     flex-direction: column;
@@ -935,6 +968,7 @@ onBeforeUnmount(() => {
   .variable-menu {
     width: 180%;
     left: -40%;
+    transform: none;
   }
   
   .tooltip-select-entity {
