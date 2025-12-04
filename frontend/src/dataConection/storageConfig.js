@@ -39,16 +39,6 @@ export const storageConfig = {
           chartsIngresos: '2024'  
         }
       },
-<<<<<<< HEAD
-      cuantitativosRegional: {
-        sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_CUANTITATIVOS,
-        files: {
-          chartsPresupuestosRegional: '2024', 
-          chartsIngresosRegional: '2024'  
-        }
-      },
-=======
->>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
       // Configuración modular para cada componente ambiental
       ambientales: {
         incendiosForestales: {
@@ -248,13 +238,7 @@ export const storageConfig = {
       PBRSED: '2024',
       presupuestoEstatal: '2024',
       financiamientos: '2024',
-<<<<<<< HEAD
-      programas: '2024',
-      chartsPresupuestosRegional: 'Hoja 1',
-      chartsIngresosRegional: 'Hoja 1'
-=======
       programas: '2024'
->>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
     }
   },
   
@@ -1038,156 +1022,6 @@ export const storageConfig = {
       ]
     },
     
-<<<<<<< HEAD
-  // CUANTITATIVOS REGIONAL
-    chartsPresupuestosRegional: {
-      stateColumn: 'Año',
-      variableColumns: [
-        {
-          key: 'presupuesto_total',
-          column: 'PT ($)',
-          label: 'Presupuesto Total',
-          colorClass: 'gray',
-          color: '#9ca3af',
-          order: 1
-        },
-        {
-          key: 'presupuesto_sostenible',
-          column: 'PS ($)',
-          label: 'Presupuesto Sostenible',
-          colorClass: 'green',
-          color: '#7cb342',
-          order: 2
-        },
-        {
-          key: 'presupuesto_carbono',
-          column: 'PIC ($)',
-          label: 'Presupuestos Intensivos en Carbono',
-          colorClass: 'red',
-          color: '#DC143C',
-          order: 3
-        }
-      ],
-      donutSectorsPS: [
-        {
-          key: 'ps_desastres',
-          column: 'PS_DN',
-          label: 'Desastres Naturales',
-          colorClass: 'dark-green',
-          color: '#558b2f'
-        },
-        {
-          key: 'ps_proteccion',
-          column: 'PS_PA',
-          label: 'Protección Ambiental',
-          colorClass: 'green',
-          color: '#7cb342'
-        }
-      ],
-      donutSectorsPIC: [
-        {
-          key: 'pic_combustible',
-          column: 'PIC_C',
-          label: 'Combustible',
-          colorClass: 'dark-red',
-          color: '#b71c1c'
-        },
-        {
-          key: 'pic_mineria',
-          column: 'PIC_M',
-          label: 'Minería',
-          colorClass: 'red',
-          color: '#DC143C'
-        },
-        {
-          key: 'pic_transporte',
-          column: 'PIC_T',
-          label: 'Transporte',
-          colorClass: 'light-red',
-          color: '#ef5350'
-        }
-      ]
-    },
-    
-    chartsIngresos: {
-      stateColumn: 'Entidad Federativa',
-      variableColumns: [
-        {
-          key: 'ingresos_total',
-          column: 'IT ($)',
-          label: 'Ingresos Total',
-          colorClass: 'gray',
-          color: '#9ca3af',
-          order: 1
-        },
-        {
-          key: 'ingresos_sostenibles',
-          column: 'IS ($)',
-          label: 'Ingresos Sostenibles',
-          colorClass: 'green',
-          color: '#7cb342',
-          order: 2
-        },
-        {
-          key: 'ingresos_carbono',
-          column: 'IIC ($)',
-          label: 'Ingresos Intensivos en Carbono',
-          colorClass: 'red',
-          color: '#DC143C',
-          order: 3
-        }
-      ],
-      donutSectorsIS: [
-        {
-          key: 'is_ambiental',
-          column: 'IS_A',
-          label: 'Ambiental',
-          colorClass: 'dark-green',
-          color: '#558b2f'
-        },
-        {
-          key: 'is_ecologico',
-          column: 'IS_E',
-          label: 'Ecológico',
-          colorClass: 'green',
-          color: '#7cb342'
-        },
-        {
-          key: 'is_movilidad',
-          column: 'IS_MS',
-          label: 'Movilidad Sustentable',
-          colorClass: 'light-green',
-          color: '#9ccc65'
-        }
-      ],
-      donutSectorsIIC: [
-        {
-          key: 'iic_hidrocarburos',
-          column: 'IIC_H',
-          label: 'Hidrocarburos',
-          colorClass: 'dark-red',
-          color: '#b71c1c'
-        },
-        {
-          key: 'iic_mineria',
-          column: 'IIC_M',
-          label: 'Minería',
-          colorClass: 'red',
-          color: '#DC143C'
-        },
-        {
-          key: 'iic_transporte',
-          column: 'IIC_T',
-          label: 'Transporte',
-          colorClass: 'light-red',
-          color: '#ef5350'
-        }
-      ]
-    },
-    //
-
-=======
->>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
     rankingCuantitativo: {
       stateColumn: 'Entidad Federativa',
       columnsByVariable: {
