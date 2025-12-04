@@ -278,7 +278,7 @@ import { useCharts } from '@/composables/useCharts'
 import { useRoute, useRouter } from 'vue-router'
 import BarChart from '@/modules/charts/components/BarChart.vue'
 import GaugeChart from '../../object//component/GaugeChart.vue'
-import BottleChart from '../../object/component/bottleChart.vue'
+import BottleChart from '../../object/component/BottleChart.vue'
 import AreaChart from '@/modules/charts/components/AreaChart.vue'
 import HorizontalBarChart from '@/modules/charts/components/HorizontalBarChart.vue'
 import ChartsComponent from '@/modules/charts/components/ChartsComponent.vue'
@@ -314,11 +314,11 @@ const props = defineProps({
   },
   geoDataUrl: {
     type: String,
-    default: '/mexicoStates.json'
+  default: () => `${import.meta.env.BASE_URL}mexicoStates.json`
   },
   dataUrl: {
     type: String,
-    default: '/sustainabilityData.json'
+  default: () => `${import.meta.env.BASE_URL}sustainabilityData.json`
   },
   legendTitle: {
     type: String,

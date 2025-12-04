@@ -12,15 +12,15 @@ const routes = [
   // Ruta por defecto (opcional)
   {
     path: '/',
-    redirect: '/finanzas/mapas'
+    redirect: '/finanzas/home'
   },
   // Tu ruta de mapas
   {
-    path: '/finanzas/mapas',
-    name: 'FinanzasMapas',
-    component: MapsPage,
+    path: '/finanzas/home',
+    name: 'HomePage',
+    component: HomePage,
     meta: {
-      title: 'Fderales - Finanzas Sostenibles'
+      title: 'Plataforma de Finanzas Sostenibles'
     }
   },
     // Tu ruta de cualitativos
@@ -57,14 +57,6 @@ const routes = [
     }
   },
   {
-    path: '/finanzas/home',
-    name: 'HomePage',
-    component: HomePage,
-    meta: {
-      title: 'Home- Finanzas Sostenibles'
-    }
-  },
-  {
     path: '/finanzas/testRanking',
     name: 'TestRanking',
     component: TestRanking,
@@ -76,7 +68,7 @@ const routes = [
 
 // Crear el router
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes
 })
 

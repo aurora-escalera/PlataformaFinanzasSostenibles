@@ -122,11 +122,11 @@ const props = defineProps({
   },
   geoDataUrl: {
     type: String,
-    default: '/mexicoStates.json'
+  default: () => `${import.meta.env.BASE_URL}mexicoStates.json`
   },
   dataUrl: {
     type: String,
-    default: '/sustainabilityData.json'
+    default: () => `${import.meta.env.BASE_URL}sustainabilityData.json`
   },
   legendTitle: {
     type: String,
