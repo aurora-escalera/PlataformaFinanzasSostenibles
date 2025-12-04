@@ -17,65 +17,95 @@
           [variable.colorClass]: true 
         }]"
       >
+        <span :class="['legend-dot', variable.colorClass]"></span>
         {{ variable.label }}
       </button>
     </div>
 
-    <!-- Leyenda con indicadores de color -->
-    <div class="chart-legend">
-      <div 
-        v-for="variable in variables" 
-        :key="'legend-' + variable.key"
-        class="legend-item"
-      >
-        <span :class="['legend-dot', variable.colorClass]"></span>
-        <span class="legend-label">{{ variable.label }}</span>
+    <!-- 3. ÁREA DEL GRÁFICO CON EJES -->
+    <div class="chart-area">
+      <!-- Eje Y con escala dinámica -->
+      <div class="y-axis">
+        <div 
+          v-for="tick in yAxisTicks" 
+          :key="tick.value"
+          class="y-tick"
+          :style="{ bottom: `${tick.position}%` }"
+        >
+          <span class="tick-label">{{ formatCurrency(tick.value) }}</span>
+        </div>
       </div>
-    </div>
 
-    <!-- Contenedor de barras verticales -->
-    <div class="bars-container" :class="`bars-count-${activeVariables.length}`">
-      <!-- Barra para cada variable activa -->
-      <div 
-        v-for="variable in activeVariables" 
-        :key="variable.key"
-        class="bar-column"
-      >
-        <!-- Valor numérico arriba de la barra -->
-        <div class="bar-value-top">{{ formatValue(variable.value) }}</div>
-        
-        <!-- Wrapper de la barra -->
-        <div class="bar-wrapper-vertical">
-          <div 
-            class="bar-vertical"
-            :class="variable.colorClass"
-            :style="{ height: getBarHeight(variable.value) + '%' }"
-          >
+      <!-- Grid lines de fondo -->
+      <div class="grid-lines">
+        <div
+          v-for="tick in yAxisTicks"
+          :key="tick.value"
+          class="grid-line"
+          :style="{ bottom: `${tick.position}%` }"
+        ></div>
+      </div>
+
+      <!-- Contenedor de barras verticales -->
+      <div class="bars-container" :class="`bars-count-${activeVariables.length}`" ref="barsContainerRef">
+        <!-- Barra para cada variable activa -->
+        <div 
+          v-for="variable in activeVariables" 
+          :key="variable.key"
+          class="bar-column"
+        >
+          <!-- Wrapper de la barra -->
+          <div class="bar-wrapper-vertical">
+            <div 
+              class="bar-vertical"
+              :class="variable.colorClass"
+              :style="{ height: getBarHeightPixels(variable.value) + 'px' }"
+              @mouseenter="(e) => { hoveredBar = variable; updateTooltipPosition(e) }"
+              @mousemove="updateTooltipPosition"
+              @mouseleave="hoveredBar = null"
+            >
+            </div>
           </div>
         </div>
-        
-        <!-- Label debajo de la barra -->
-        <div class="bar-label-bottom">
-          <span :class="['color-indicator', variable.colorClass]"></span>
+
+        <!-- Mensaje cuando no hay variables seleccionadas -->
+        <div v-if="activeVariables.length === 0" class="empty-state">
+          <p>Selecciona al menos una variable para visualizar</p>
         </div>
       </div>
+    </div>
 
-      <!-- Mensaje cuando no hay variables seleccionadas -->
-      <div v-if="activeVariables.length === 0" class="empty-state">
-        <p>Selecciona al menos una variable para visualizar</p>
+  </div>
+
+  <!-- Tooltip Global con position: fixed -->
+  <Teleport to="body">
+    <div 
+      v-if="hoveredBar"
+      class="tooltip-container"
+      :style="{
+        left: `${tooltipPosition.x}px`,
+        top: `${tooltipPosition.y}px`
+      }"
+    >
+      <div class="tooltip-content">
+        <div class="tooltip-item">
+          <span class="tooltip-color-indicator" :class="hoveredBar.colorClass"></span>
+          <span class="tooltip-variable-name">{{ hoveredBar.label }}:</span>
+          <span class="tooltip-variable-value">{{ formatCurrency(hoveredBar.value) }}</span>
+        </div>
       </div>
     </div>
-  </div>
+  </Teleport>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
 
 const props = defineProps({
   data: {
-    type: Object,
+    type: [Object, Array],
     required: true,
-    default: () => ({})
+    default: () => []
   },
   title: {
     type: String,
@@ -83,51 +113,147 @@ const props = defineProps({
   }
 })
 
-// Variables disponibles con sus configuraciones
+// Variables disponibles con sus configuraciones (valores por defecto para compatibilidad)
 const variables = ref([
   {
     key: 'presupuesto_total',
     label: 'Presupuesto Total',
     colorClass: 'gray',
-    value: 0,
-    active: true
-  },
-  {
-    key: 'presupuesto_carbono',
-    label: 'Presupuesto Intensivo en Carbono',
-    colorClass: 'red',
+    color: '#9ca3af',
     value: 0,
     active: false
   },
   {
     key: 'presupuesto_sostenible',
-    label: 'Presupuesto sostenible',
+    label: 'Presupuesto Sostenible',
     colorClass: 'green',
+    color: '#7cb342',
+    value: 0,
+    active: false
+  },
+  {
+    key: 'presupuesto_carbono',
+    label: 'Presupuesto Intensivo en Carbono',
+    colorClass: 'red',
+    color: '#DC143C',
     value: 0,
     active: false
   }
 ])
 
-// Inicializar valores desde props.data
-if (props.data.is_amount !== undefined) {
-  variables.value[1].value = props.data.is_amount
+const barsContainerRef = ref(null)
+const barsContainerHeight = ref(300) // Altura por defecto
+const hoveredBar = ref(null)
+const tooltipPosition = ref({ x: 0, y: 0 })
+
+// ✅ NUEVO: Función para inicializar variables desde datos
+const initializeVariablesFromData = () => {
+  console.log('🔄 initializeVariablesFromData llamado')
+  console.log('📦 props.data:', JSON.stringify(props.data, null, 2))
+  
+  // Formato 1: Objeto con variables directamente { variables: [...] }
+  if (props.data && props.data.variables && Array.isArray(props.data.variables)) {
+    console.log('📊 BarChart: Formato { variables: [...] }')
+    console.log('📝 Variables recibidas:', props.data.variables.map(v => ({ key: v.key, value: v.value })))
+    
+    // Reemplazar todas las variables con las que vienen en los datos
+    variables.value = props.data.variables.map(dataVar => ({
+      key: dataVar.key,
+      label: dataVar.label || dataVar.key,
+      colorClass: dataVar.colorClass || 'gray',
+      color: dataVar.color || '#9ca3af',
+      value: dataVar.value || 0,
+      active: false // Iniciar inactivas para animación secuencial
+    }))
+  }
+  // Formato 2: Array con años [{ year: '2020', variables: [...] }]
+  else if (Array.isArray(props.data) && props.data.length > 0) {
+    console.log('📊 BarChart: Formato array con años')
+    
+    const firstYearData = props.data[0]
+    
+    if (firstYearData.variables && Array.isArray(firstYearData.variables)) {
+      variables.value = firstYearData.variables.map(dataVar => ({
+        key: dataVar.key,
+        label: dataVar.label || dataVar.key,
+        colorClass: dataVar.colorClass || 'gray',
+        color: dataVar.color || '#9ca3af',
+        value: dataVar.value || 0,
+        active: false
+      }))
+    }
+  }
+  // Formato 3: Objeto antiguo { is_amount, iic_amount, ... }
+  else if (props.data && typeof props.data === 'object' && !Array.isArray(props.data) && !props.data.variables) {
+    console.log('📊 BarChart: Formato objeto antiguo')
+    
+    // Mantener variables por defecto para compatibilidad
+    if (props.data.is_amount !== undefined) {
+      variables.value[1].value = props.data.is_amount
+    }
+    if (props.data.iic_amount !== undefined) {
+      variables.value[2].value = props.data.iic_amount
+    }
+    variables.value[0].value = variables.value[1].value + variables.value[2].value
+  }
+  
+  console.log('✅ Variables inicializadas:', variables.value.map(v => ({ key: v.key, label: v.label, value: v.value })))
 }
-if (props.data.iic_amount !== undefined) {
-  variables.value[2].value = props.data.iic_amount
-}
-// Calcular presupuesto total como suma
-variables.value[0].value = variables.value[1].value + variables.value[2].value
+
+// Inicializar al montar
+initializeVariablesFromData()
+
+// Reinicializar cuando cambien los datos
+watch(() => props.data, () => {
+  initializeVariablesFromData()
+  // Activar animación secuencial solo si no se ha activado antes
+  if (!hasActivatedOnce.value) {
+    nextTick(() => {
+      activateVariablesSequentially()
+      hasActivatedOnce.value = true
+    })
+  } else {
+    // Si ya se activó antes, activar todas inmediatamente
+    nextTick(() => {
+      variables.value.forEach(v => v.active = true)
+    })
+  }
+}, { deep: true })
 
 // Computed: Variables activas
 const activeVariables = computed(() => {
   return variables.value.filter(v => v.active)
 })
 
-// Computed: Valor máximo para calcular porcentajes de altura
+// Computed: Valor máximo para calcular porcentajes de altura (ajustado al 80%)
 const maxValue = computed(() => {
   const values = activeVariables.value.map(v => v.value)
-  return Math.max(...values, 1)
+  const max = Math.max(...values, 1)
+  // Multiplicar por 1.25 para que la barra más alta ocupe 80% (100/80 = 1.25)
+  return max * 1.25
 })
+
+// Calcular ticks del eje Y
+const yAxisTicks = computed(() => {
+  const max = maxValue.value
+  const step = max / 4
+  return [
+    { value: 0, position: 0 },
+    { value: step, position: 25 },
+    { value: step * 2, position: 50 },
+    { value: step * 3, position: 75 },
+    { value: max, position: 100 }
+  ]
+})
+
+// Función para actualizar posición del tooltip
+const updateTooltipPosition = (event) => {
+  const rect = event.target.getBoundingClientRect()
+  tooltipPosition.value = {
+    x: rect.left + rect.width / 2,
+    y: rect.top - 10 // 10px arriba de la barra
+  }
+}
 
 // Métodos
 const toggleVariable = (key) => {
@@ -141,9 +267,24 @@ const isVariableActive = (key) => {
   return variables.value.find(v => v.key === key)?.active || false
 }
 
-const getBarHeight = (value) => {
+// Calcular altura de barra en píxeles
+const getBarHeightPixels = (value) => {
+  if (maxValue.value === 0) return 0
   const percentage = (value / maxValue.value) * 100
-  return Math.min(percentage, 100)
+  const heightInPixels = (barsContainerHeight.value * percentage) / 100
+  return heightInPixels
+}
+
+// Formatear moneda
+const formatCurrency = (value) => {
+  if (Math.abs(value) >= 1000000000) {
+    return `$${(value / 1000000000).toFixed(1)}B`
+  } else if (Math.abs(value) >= 1000000) {
+    return `$${(value / 1000000).toFixed(1)}M`
+  } else if (Math.abs(value) >= 1000) {
+    return `$${(value / 1000).toFixed(1)}K`
+  }
+  return `$${value.toFixed(0)}`
 }
 
 const formatValue = (value) => {
@@ -156,62 +297,141 @@ const formatValue = (value) => {
   }
   return value.toLocaleString()
 }
+
+// Función para activar variables secuencialmente
+const activateVariablesSequentially = () => {
+  // Delay inicial antes de empezar
+  setTimeout(() => {
+    // Activar cada variable con 600ms de separación
+    variables.value.forEach((variable, index) => {
+      setTimeout(() => {
+        variable.active = true
+      }, index * 600) // 600ms entre cada variable
+    })
+  }, 300) // 300ms de delay inicial
+}
+
+const hasActivatedOnce = ref(false)
+
+// Actualizar altura del contenedor de barras
+const updateBarsContainerHeight = () => {
+  if (barsContainerRef.value) {
+    const height = barsContainerRef.value.clientHeight - 20
+    if (height > 0) {
+      barsContainerHeight.value = height
+    }
+  }
+}
+
+// Observar cambios de tamaño
+onMounted(async () => {
+  await nextTick()
+  updateBarsContainerHeight()
+  
+  if (barsContainerRef.value) {
+    const resizeObserver = new ResizeObserver(() => {
+      updateBarsContainerHeight()
+    })
+    resizeObserver.observe(barsContainerRef.value)
+  }
+  
+  // Activar variables secuencialmente después de montar e inicializar
+  if (!hasActivatedOnce.value && variables.value.length > 0) {
+    await nextTick()
+    activateVariablesSequentially()
+    hasActivatedOnce.value = true
+  }
+})
+
+// Actualizar cuando cambien los datos
+watch(() => props.data, () => {
+  nextTick(() => {
+    updateBarsContainerHeight()
+  })
+}, { deep: true })
 </script>
 
 <style scoped>
 .vertical-bar-chart {
   display: flex;
   flex-direction: column;
-  width: 100%;
-  height: 127.5px;
-  align-items: center; 
   background: white;
   border-radius: 12px;
+  padding: 20px;
+  box-sizing: border-box;
+  height: 100%;
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  gap: 10px;
 }
 
 .chart-header {
   position: relative;
   margin-bottom: 5px;
   width: 100%;
+  flex-shrink: 0;
 }
 
 .chart-title {
   margin: 0;
   letter-spacing: -0.5px;
-  font-size: 7px;
-  text-align:center;
-  font-weight: 400;
+  font-size: 17px;
+  text-align: center;
+  font-weight: 600;
   color: #484d56;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 }
 
-/* Filtros  de bar chart 1 */
+/* Filtros de bar chart */
 .variable-filters {
-  background-color: red;
   display: flex;
   flex-direction: row;
-  gap: 1px;
-  border-radius: 24px;
+  height: 35px;
+  padding: 6px;
+  border-radius: 20px;
   flex-wrap: nowrap;
   justify-content: center;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); 
-  padding: 2px;
-  background: white;
-  
+  gap: 2px;
+  margin-bottom: 5px;
+  background: #f5f5f5;
+  flex-shrink: 0;
 }
 
 .filter-btn {
   flex: 0 1 auto;
   border: none;
-  padding: 2px 10px;
+  padding: 1px 12px;
   border-radius: 24px;
   cursor: pointer;
-  font-size: 5px;
-  font-weight: 100;
+  font-size: 14px;
+  font-weight: 500;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  background: white;
+  background: transparent;
+  color: #666;
   transition: all 0.3s ease;
-  white-space: normal;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.filter-btn.active {
+  animation: filterActivate 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes filterActivate {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .filter-btn:hover {
@@ -219,47 +439,26 @@ const formatValue = (value) => {
 }
 
 .filter-btn.active.gray {
-  background: #1e3a5f;
-  color: white;
+  background: white;
+  color: #2c3e50;
 }
 
 .filter-btn.active.red {
-  background: #1e3a5f;
-  color: white;
+  background: white;
+  color: #2c3e50;
 }
 
 .filter-btn.active.green {
-  background: #1e3a5f;
-  color: white;
+  background: white;
+  color: #2c3e50;
 }
 
-/* Leyendas de la grafica de barras */
-.chart-legend {
-  display: flex;
-  flex-direction: row;
-  gap: 1px;
-  flex-wrap: nowrap;
-  justify-content: center;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.legend-item {
-  flex: 0 1 auto;
-  display: flex;
-  align-items: center;
-  font-size: 5px;
-  gap: 3px;
-  color: #4b5563;
-  padding: 2px;
-}
-
+/* Legend dot dentro del botón */
 .legend-dot {
-  width: 5px;
-  height: 5px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   flex-shrink: 0;
-  
 }
 
 .legend-dot.gray {
@@ -274,6 +473,60 @@ const formatValue = (value) => {
   background: #7cb342;
 }
 
+/* ✅ ÁREA DEL GRÁFICO CON EJES */
+.chart-area {
+  margin-top: 10px;
+  flex: 1;
+  display: flex;
+  position: relative;
+  min-height: 0;
+  width: 100%;
+  max-width: 100%;
+  overflow: visible;
+}
+
+/* ✅ EJE Y */
+.y-axis {
+  width: 60px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.y-tick {
+  position: absolute;
+  right: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  transition: bottom 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tick-label {
+  font-size: 10px;
+  color: #666;
+  text-align: right;
+  width: 50px;
+  padding-right: 8px;
+}
+
+/* ✅ GRID LINES */
+.grid-lines {
+  position: absolute;
+  top: 0;
+  left: 60px;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.grid-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-color: #e0e0e0;
+}
 
 /* Contenedor de barras verticales */
 .bars-container {
@@ -283,8 +536,9 @@ const formatValue = (value) => {
   gap: 5px;
   flex: 1;
   width: 100%;
+  height: 100%;
   position: relative;
-
+  z-index: 2;
 }
 
 .bar-column {
@@ -294,7 +548,7 @@ const formatValue = (value) => {
   align-items: center;
   animation: slideUp 0.5s ease;
   transition: width 0.4s ease;
-
+  justify-content: flex-end;
 }
 
 .bar-wrapper-vertical {
@@ -304,6 +558,7 @@ const formatValue = (value) => {
   position: relative;
   display: flex;
   align-items: flex-end;
+  justify-content: center;
 }
 
 /* Ajuste dinámico del ancho según cantidad de barras */
@@ -333,16 +588,20 @@ const formatValue = (value) => {
   }
 }
 
-.bar-value-top {
-  font-size: 6px;
-  font-weight: 100px;
-}
-
 .bar-vertical {
   width: 100%;
   transition: height 0.8s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 12px 12px 0 0;
   position: relative;
+  min-height: 2px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+}
+
+.bar-vertical:hover {
+  opacity: 0.8;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .bar-vertical.gray {
@@ -357,38 +616,86 @@ const formatValue = (value) => {
   background: linear-gradient(to top, #65a30d 0%, #7cb342 100%);
 }
 
-.bar-label-bottom {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.color-indicator {
-  width: 80px;
-  height: 1px;
-  border-radius: 24px;
-}
-
-.color-indicator.gray {
-  background: #6b7280;
-}
-
-.color-indicator.red {
-  background: #DC143C;
-}
-
-.color-indicator.green {
-  background: #7cb342;
-}
 
 .empty-state {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
-  height: 400px;
+  height: 100%;
   color: #9ca3af;
+  font-size: 14px;
+}
+
+/* ✅ TOOLTIP */
+.tooltip-container {
+  position: fixed;
+  transform: translate(-50%, calc(-100% - 15px));
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  pointer-events: none;
+  z-index: 99999;
+  min-width: 150px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  transition: left 0.1s ease, top 0.1s ease;
+}
+
+.tooltip-container::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 8px solid transparent;
+  border-top-color: white;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.1));
+}
+
+.tooltip-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tooltip-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.tooltip-color-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.tooltip-color-indicator.gray {
+  background: #9ca3af;
+}
+
+.tooltip-color-indicator.red {
+  background: #DC143C;
+}
+
+.tooltip-color-indicator.green {
+  background: #7cb342;
+}
+
+.tooltip-variable-name {
+  color: #666;
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+.tooltip-variable-value {
+  color: #333;
+  font-weight: 600;
+  margin-left: auto;
   font-size: 14px;
 }
 
@@ -411,6 +718,7 @@ const formatValue = (value) => {
   
   .variable-filters {
     flex-direction: column;
+    height: auto;
   }
   
   .filter-btn {

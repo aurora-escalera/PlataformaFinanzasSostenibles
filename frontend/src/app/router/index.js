@@ -1,6 +1,12 @@
 // src/app/router/index.js
 import { createRouter, createWebHistory } from 'vue-router'
 import MapsPage from '@/pages/MapsPage.vue'
+import QualitativePanel from '../../pages/QualitativePanel.vue'
+import IndicatorView from '../../pages/IndicatorView.vue'
+import RankingView from '../../pages/RankingView.vue'
+import HistoricalView from '../../pages/HistoricalView.vue'
+import HomePage from '../../pages/HomePage.vue'
+import TestRanking from '../../pages/TestRanking.vue'
 
 const routes = [
   // Ruta por defecto (opcional)
@@ -14,7 +20,56 @@ const routes = [
     name: 'FinanzasMapas',
     component: MapsPage,
     meta: {
-      title: 'Mapas - Finanzas Sostenibles'
+      title: 'Fderales - Finanzas Sostenibles'
+    }
+  },
+    // Tu ruta de cualitativos
+  {
+    path: '/finanzas/cualitativos',
+    name: 'FinanzasCualitativos',
+    component: QualitativePanel,
+    meta: {
+      title: 'Cualitativos - Finanzas Sostenibles'
+    }
+  },
+    {
+    path: '/finanzas/cualitativos/item',
+    name: 'FinanzasCualitativosItem',
+    component: IndicatorView,
+    meta: {
+      title: 'Cualitativos - Finanzas Sostenibles'
+    }
+  },
+  {
+    path: '/finanzas/ranking',
+    name: 'RankingView',
+    component: RankingView,
+    meta: {
+      title: 'RankingView - Finanzas Sostenibles'
+    }
+  },
+  {
+    path: '/finanzas/historicos',
+    name: 'HistoricalView',
+    component: HistoricalView,
+    meta: {
+      title: 'HistoricalView - Finanzas Sostenibles'
+    }
+  },
+  {
+    path: '/finanzas/home',
+    name: 'HomePage',
+    component: HomePage,
+    meta: {
+      title: 'Home- Finanzas Sostenibles'
+    }
+  },
+  {
+    path: '/finanzas/testRanking',
+    name: 'TestRanking',
+    component: TestRanking,
+    meta: {
+      title: 'Home- Finanzas Sostenibles'
     }
   }
 ]

@@ -1,5 +1,8 @@
 <!-- src/modules/maps/components/HomePage.vue -->
+<<<<<<< HEAD
 <!-- ✅ MODIFICADO: Añadido manejo del espacio en blanco para el filtro de Año -->
+=======
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
 <template>
   <div class="filters-toggles-row">
     <!-- Columna izquierda: Filtros -->
@@ -11,9 +14,12 @@
         :selectedState="selectedState"
         :isLocked="isFilterBarLocked"
         :availableYears="availableYears"
+<<<<<<< HEAD
         :initialEntity="selectedEntity"
         :initialYear="selectedYear"
         :initialVariable="selectedVariable"
+=======
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
         @entity-change="handleEntityChange"
         @year-change="handleYearChange" 
         @variable-change="handleVariableChange"
@@ -57,7 +63,10 @@
             :getIFSSLabel="getIFSSLabel"
             :show-info-card="!isRetractableExpanded"
             :show-navigation="!isRetractableExpanded"
+<<<<<<< HEAD
             :active-view="activeView"
+=======
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
             @state-click="handleStateClickWithEmit"
             @state-hover="handleStateHover"
             @state-leave="handleStateLeave"
@@ -65,7 +74,11 @@
             @navigate-federal="handleDatosFederalesClick"
           />
           
+<<<<<<< HEAD
           <!-- ✅ Overlay sobre SOLO el mapa - Usa areAllFiltersOnTodas -->
+=======
+          <!-- ✅ Overlay sobre SOLO el mapa -->
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
           <transition name="overlay-fade">
             <div 
               v-if="showMapOverlay" 
@@ -94,6 +107,7 @@
         <!-- ✅ Solo mostrar cuando NO está expandido -->
         <div v-if="!isRetractableExpanded" class="charts-section">
           <div class="charts-container">
+<<<<<<< HEAD
             <div class="ranking-chart-section" style="height: 100%; display: flex; flex-direction: column;">
               
               <!-- ========== LINEAR CHART CON CARD - Usa areAllFiltersOnTodas ========== -->
@@ -153,6 +167,41 @@
               </div>
               
               <!-- ========== RANKING CHART ========== -->
+=======
+            <!-- ✅ ACTUALIZADO: Mostrar LinearChart dinámico (IFS) cuando todos los filtros están en "Todas" -->
+            <div class="ranking-chart-section" style="height: 100%; display: flex; flex-direction: column;">
+              
+              <!-- Loading State para LinearChart -->
+              <div v-if="showStackedArea && stackedAreaLoading" class="ranking-loading">
+                <div class="spinner-small"></div>
+                <p>Cargando evolución IFS...</p>
+              </div>
+              
+              <!-- Error State para LinearChart -->
+              <div v-else-if="showStackedArea && stackedAreaError" class="ranking-error">
+                <p>Error: {{ stackedAreaError }}</p>
+                <button @click="loadIFSSData" class="retry-btn-small">
+                  Reintentar
+                </button>
+              </div>
+              
+              <!-- ✅ ACTUALIZADO: Mostrar LinearChart de IFS con datos dinámicos -->
+              <LinearChart
+                v-else-if="showStackedArea && stackedAreaChartData && Object.keys(stackedAreaChartData).length > 0"
+                :title="stackedAreaTitle"
+                :data="stackedAreaChartData"
+                :xLabels="stackedAreaYears"
+                :width="980"
+                :height="500"
+                :padding="{
+                  top: 30,
+                  right: 70,
+                  bottom: 120,
+                  left: 60
+                }"
+              />
+              
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
               <!-- Loading State para Ranking -->
               <div v-else-if="rankingLoading" class="ranking-loading">
                 <div class="spinner-small"></div>
@@ -167,7 +216,11 @@
                 </button>
               </div>
               
+<<<<<<< HEAD
               <!-- ✅ HorizontalRankingChart - Solo cuando NO están todos en "Todas..." -->
+=======
+              <!-- ✅ HorizontalRankingChart - Solo cuando hay filtros específicos -->
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
               <HorizontalRankingChart
                 v-else-if="rankingData.length > 0"
                 :variables="rankingData"
@@ -193,10 +246,14 @@
       <div 
         v-if="showRankingPanel && !isRetractableExpanded" 
         class="ranking-panel"
+<<<<<<< HEAD
         :class="{ 
           'historical-view': showHistoricalCard,
           'variable-view': hasSpecificVariable && !showHistoricalCard
         }"
+=======
+        :class="{ 'historical-view': showHistoricalCard }"
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
       >
         <div class="header-ranking-panel">
           <div class="ranking-hamburger-menu">
@@ -205,7 +262,11 @@
         </div>
         
         <div class="body-ranking-panel">
+<<<<<<< HEAD
           <!-- ✅ Mostrar HistoricalCard cuando NO hay estado Y filtros están en "Todas..." -->
+=======
+          <!-- ✅ Mostrar HistoricalCard cuando NO hay estado Y filtros están en "Todas" -->
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
           <HistoricalCard
             v-if="showHistoricalCard"
             :statesData="statesDataForSlider"
@@ -328,6 +389,7 @@ const selectedEntity = ref('')
 const filterBarKey = ref(0)
 const { fetchData: fetchEntities, fetchSheetNames } = useStorageData()
 
+<<<<<<< HEAD
 // ✅ Estado para controlar qué vista está activa ('federal' o 'regional')
 const activeView = ref('federal')
 
@@ -338,6 +400,15 @@ const availableYears = ref([])
 const initialYears = ref([])
 
 // ✅ Guardar estado inicial de filtros
+=======
+// ✅ NUEVO: Array de años disponibles (dinámico)
+const availableYears = ref([])
+
+// ✅ NUEVO: Guardar años iniciales de cuantitativos
+const initialYears = ref([])
+
+// ✅ NUEVO: Guardar estado inicial de filtros
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
 const initialFilters = ref({
   entity: '',
   year: null,
@@ -357,6 +428,7 @@ const entitiesError = ref(null)
 // ✅ Estado para controlar la expansión del panel retráctil
 const isRetractableExpanded = ref(false)
 
+<<<<<<< HEAD
 // ============================================================================
 // ✅ LÓGICA CENTRALIZADA DE FILTROS
 // ============================================================================
@@ -496,15 +568,66 @@ const showHistoricalCard = computed(() => {
  * - No hay filtros en blanco
  * - Hay estado seleccionado O se debe mostrar HistoricalCard
  */
+=======
+const showStackedArea = computed(() => {
+  // ✅ No mostrar StackedArea cuando el panel cualitativo está expandido
+  if (isRetractableExpanded.value) {
+    return false
+  }
+  
+  const allFiltersDefault = selectedEntity.value === null && 
+                           selectedYear.value === null && 
+                           selectedVariable.value === null
+  
+  return allFiltersDefault
+})
+
+const showMapOverlay = computed(() => {
+  // ✅ No mostrar overlay cuando el panel cualitativo está expandido
+  if (isRetractableExpanded.value) {
+    return false
+  }
+  return showStackedArea.value
+})
+
+// ✅ MODIFICADO: No bloquear el filtro cuando el panel cualitativo está expandido
+const isFilterBarLocked = computed(() => {
+  // No bloquear el filtro cuando el panel cualitativo está expandido
+  if (isRetractableExpanded.value) {
+    return false
+  }
+  return showStackedArea.value
+})
+
+const shouldHidePanel = computed(() => {
+  const entityIsBlank = selectedEntity.value === ''
+  const variableIsBlank = selectedVariable.value === ''
+  return entityIsBlank && variableIsBlank
+})
+
+const showHistoricalCard = computed(() => {
+  if (shouldHidePanel.value) return false
+  
+  const allFiltersDefault = !selectedState.value && 
+                           selectedYear.value === null && 
+                           selectedVariable.value === null
+  
+  return allFiltersDefault
+})
+
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
 const showRankingPanel = computed(() => {
   if (shouldHidePanel.value) return false
   return selectedState.value || showHistoricalCard.value
 })
 
+<<<<<<< HEAD
 // ============================================================================
 // ✅ FUNCIONES DE CARGA DE DATOS
 // ============================================================================
 
+=======
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
 const loadEntitiesFromSheet = async () => {
   try {
     entitiesLoading.value = true
@@ -532,6 +655,7 @@ const loadEntitiesFromSheet = async () => {
   }
 }
 
+<<<<<<< HEAD
 const fetchAvailableYears = async () => {
   try {
     console.log('📅 [HomePage] Obteniendo años de sheet cuantitativos...')
@@ -568,10 +692,23 @@ const handleEntityChange = (entity) => {
   selectedEntity.value = entity
   
   if (entity === '') {
+=======
+// ✅ MODIFICADO: Siempre actualizar el mapa, incluso cuando el panel cualitativo está expandido
+const handleEntityChange = (entity) => {
+  console.log('📍 [HomePage] handleEntityChange llamado con:', entity)
+  console.log('📍 [HomePage] Panel cualitativo expandido:', isRetractableExpanded.value)
+  
+  selectedEntity.value = entity
+  console.log('📍 [HomePage] selectedEntity actualizado a:', selectedEntity.value)
+  
+  if (entity === '') {
+    // Resetear selección del mapa
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
     resetSelection()
     return
   }
   
+<<<<<<< HEAD
   if (entity === null) {
     // "Todas las entidades (IFS Regional)" seleccionado
     resetSelection()
@@ -607,17 +744,49 @@ const handleYearChange = async (year) => {
   
   // Si ahora todos están en "Todas...", cargar datos del LinearChart
   if (areAllFiltersOnTodas.value) {
+=======
+  if (entity) {
+    // ✅ Siempre actualizar el mapa con el estado seleccionado
+    handleStateClick(entity)
+    console.log('🗺️ [HomePage] Mapa actualizado con:', entity)
+  } else {
+    resetSelection()
+    // Solo cargar ranking si NO estamos en modo cualitativo
+    if (!isRetractableExpanded.value) {
+      if (selectedVariable.value && selectedVariable.value !== '') {
+        updateRankingByVariable(selectedVariable.value)
+      } else {
+        loadAllStatesRanking(null)
+      }
+    }
+  }
+}
+
+const handleYearChange = async (year) => {
+  selectedYear.value = year
+  
+  // ✅ Actualizar el año activo en storageConfig
+  if (year) {
+    setActiveYear(year)
+  }
+  
+  if (showStackedArea.value) {
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
     await loadIFSSData()
   }
 }
 
 const handleVariableChange = (variable) => {
+<<<<<<< HEAD
   console.log('📊 [HomePage] handleVariableChange llamado con:', variable)
   
+=======
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
   selectedVariable.value = variable
   
   if (variable === '') return
   
+<<<<<<< HEAD
   // Si no hay estado seleccionado y no estamos en "Todas...", actualizar ranking
   if (!selectedState.value && !areAllFiltersOnTodas.value) {
     if (variable === null) {
@@ -625,6 +794,10 @@ const handleVariableChange = (variable) => {
     } else {
       updateRankingByVariable(variable)
     }
+=======
+  if (!selectedState.value) {
+    updateRankingByVariable(variable)
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
   }
 }
 
@@ -632,6 +805,7 @@ const handleFiltersChange = (filters) => {
   console.log('🔧 Filtros aplicados:', filters)
 }
 
+<<<<<<< HEAD
 // ============================================================================
 // ✅ HANDLERS DE INTERACCIÓN CON EL MAPA
 // ============================================================================
@@ -640,20 +814,38 @@ const handleStateClickWithEmit = async (stateName) => {
   console.log('🗺️ [HomePage] Click en estado:', stateName)
   
   if (!stateName) {
+=======
+// ✅ MODIFICADO: Mejorar manejo de clicks en el mapa
+const handleStateClickWithEmit = async (stateName) => {
+  console.log('🗺️ [HomePage] Click en estado:', stateName)
+  console.log('🗺️ [HomePage] Panel cualitativo expandido:', isRetractableExpanded.value)
+  
+  if (!stateName) {
+    // Click fuera de estados - resetear
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
     resetSelection()
     selectedEntity.value = ''
     emit('region-selected', null)
     
+<<<<<<< HEAD
     if (!isRetractableExpanded.value) {
       if (selectedVariable.value && selectedVariable.value !== '' && selectedVariable.value !== null) {
         updateRankingByVariable(selectedVariable.value)
       } else if (!areAllFiltersOnTodas.value) {
+=======
+    // Solo cargar ranking si NO estamos en modo cualitativo
+    if (!isRetractableExpanded.value) {
+      if (selectedVariable.value && selectedVariable.value !== '') {
+        updateRankingByVariable(selectedVariable.value)
+      } else if (!selectedVariable.value) {
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
         loadAllStatesRanking(null)
       }
     }
     return
   }
   
+<<<<<<< HEAD
   handleStateClick(stateName)
   selectedEntity.value = stateName
   
@@ -661,6 +853,12 @@ const handleStateClickWithEmit = async (stateName) => {
   selectedVariable.value = null
   console.log('📊 [HomePage] Variable cambiada a "Todas las variables"')
   
+=======
+  // Click en un estado - actualizar tanto el mapa como el filtro
+  handleStateClick(stateName)
+  selectedEntity.value = stateName
+  
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
   await nextTick()
   
   if (selectedState.value === stateName) {
@@ -672,6 +870,7 @@ const handleStateClickWithEmit = async (stateName) => {
   }
 }
 
+<<<<<<< HEAD
 const handleIFSRegionalClick = async () => {
   console.log('🌎 [HomePage] Cambiando a vista IFS Regional')
   
@@ -718,6 +917,16 @@ const handleDatosFederalesClick = async () => {
   await nextTick()
   
   console.log('✅ Vista Datos Federales activada (DEFAULT)')
+=======
+const handleIFSRegionalClick = () => {
+  if (selectedState.value) {
+    resetSelection()
+  }
+}
+
+const handleDatosFederalesClick = () => {
+  console.log('Navegando a federales...')
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
 }
 
 const handleDatosCualitativosClick = () => {
@@ -725,16 +934,33 @@ const handleDatosCualitativosClick = () => {
   isRetractableExpanded.value = !isRetractableExpanded.value
 }
 
+<<<<<<< HEAD
+=======
+// ✅ NUEVA FUNCIÓN: Manejar carga de años desde sheet de ambientales
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
 const handleYearsLoaded = async (years) => {
   console.log('📅 [HomePage] Años recibidos de ambientales:', years)
   
   if (years && years.length > 0) {
+<<<<<<< HEAD
     availableYears.value = years
     
+=======
+    // Actualizar los años disponibles en el filtro
+    availableYears.value = years
+    
+    console.log('✅ [HomePage] availableYears actualizado:', availableYears.value)
+    
+    // Establecer el primer año como seleccionado
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
     const firstYear = years[0]
     selectedYear.value = firstYear
     setActiveYear(firstYear)
     
+<<<<<<< HEAD
+=======
+    // Forzar re-render del filtro
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
     filterBarKey.value++
     await nextTick()
     
@@ -742,6 +968,7 @@ const handleYearsLoaded = async (years) => {
   }
 }
 
+<<<<<<< HEAD
 const handlePanelClosed = async () => {
   console.log('🔄 [HomePage] Panel cualitativo cerrado, reseteando filtros a DEFAULT...')
   
@@ -753,11 +980,61 @@ const handlePanelClosed = async () => {
   availableYears.value = [...initialYears.value]
   
   // Establecer el primer año de cuantitativos (parte del DEFAULT)
+=======
+// ✅ NUEVA FUNCIÓN: Obtener años disponibles del sheet de cuantitativos
+const fetchAvailableYears = async () => {
+  try {
+    console.log('📅 [HomePage] Obteniendo años de sheet cuantitativos...')
+    
+    const sheetNames = await fetchSheetNames('datosCuantitativos')
+    
+    // Filtrar solo los que parecen años (números de 4 dígitos)
+    const years = sheetNames
+      .filter(name => /^\d{4}$/.test(name))
+      .sort((a, b) => b - a) // Ordenar descendente
+    
+    console.log('✅ [HomePage] Años de cuantitativos:', years)
+    
+    // Guardar como años iniciales
+    initialYears.value = [...years]
+    availableYears.value = [...years]
+    
+    // Establecer el primer año como seleccionado
+    if (years.length > 0) {
+      selectedYear.value = years[0]
+      setActiveYear(years[0])
+    }
+    
+    return years
+    
+  } catch (err) {
+    console.error('❌ [HomePage] Error obteniendo años:', err)
+    return []
+  }
+}
+
+// ✅ NUEVA FUNCIÓN: Resetear filtros al cerrar panel cualitativo
+const handlePanelClosed = async () => {
+  console.log('🔄 [HomePage] Panel cualitativo cerrado, reseteando filtros...')
+  
+  // Resetear filtros a estado inicial
+  selectedEntity.value = initialFilters.value.entity
+  selectedVariable.value = initialFilters.value.variable
+  
+  // ✅ Restaurar años iniciales de cuantitativos
+  availableYears.value = [...initialYears.value]
+  
+  // Establecer el primer año de cuantitativos
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
   if (initialYears.value.length > 0) {
     const firstYear = initialYears.value[0]
     selectedYear.value = firstYear
     setActiveYear(firstYear)
+<<<<<<< HEAD
     console.log('📅 Año restaurado a DEFAULT:', firstYear)
+=======
+    console.log('📅 Año restaurado:', firstYear)
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
   }
   
   // Forzar re-render del filtro
@@ -767,10 +1044,21 @@ const handlePanelClosed = async () => {
   // Resetear selección del mapa
   resetSelection()
   
+<<<<<<< HEAD
   // Activar vista "Datos Federales"
   activeView.value = 'federal'
   
   console.log('✅ Filtros reseteados a DEFAULT, vista: Datos Federales')
+=======
+  // Recargar ranking con filtros iniciales
+  if (selectedVariable.value && selectedVariable.value !== '') {
+    updateRankingByVariable(selectedVariable.value)
+  } else {
+    await loadAllStatesRanking(null)
+  }
+  
+  console.log('✅ Filtros reseteados a estado inicial')
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
 }
 
 const handleMapContainerClick = (event) => {
@@ -783,6 +1071,7 @@ const handleMapContainerClick = (event) => {
 }
 
 const handleOverlayClick = async () => {
+<<<<<<< HEAD
   console.log('🔲 [HomePage] Click en overlay, cambiando a DEFAULT...')
   
   // ✅ Cambiar a DEFAULT ('', primerAño, '') para salir de "Todas..."
@@ -817,6 +1106,20 @@ const useLargePanelSize = computed(() => {
 
 const getRankingTitle = computed(() => {
   const yearSuffix = selectedYear.value && selectedYear.value !== '' ? ` - ${selectedYear.value}` : ''
+=======
+  selectedEntity.value = ''
+  selectedVariable.value = ''
+  selectedYear.value = null
+  resetSelection()
+  emit('region-selected', null)
+  await loadAllStatesRanking(null)
+  filterBarKey.value++
+  await nextTick()
+}
+
+const getRankingTitle = computed(() => {
+  const yearSuffix = selectedYear.value ? ` - ${selectedYear.value}` : ''
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
   
   if (!selectedVariable.value || !selectedVariable.value.key) {
     return `Ranking IFSS por Estado${yearSuffix}`
@@ -832,6 +1135,7 @@ const getRankingTitle = computed(() => {
   return `Ranking ${variableLabels[selectedVariable.value.key] || 'IFSS'} por Estado${yearSuffix}`
 })
 
+<<<<<<< HEAD
 // ============================================================================
 // ✅ WATCHERS
 // ============================================================================
@@ -845,10 +1149,15 @@ watch(areAllFiltersOnTodas, async (newValue, oldValue) => {
     // Activar vista "IFS Regional" cuando los 3 filtros están en "Todas..."
     activeView.value = 'regional'
     console.log('🌎 [HomePage] Filtros en "Todas...", activando vista IFS Regional')
+=======
+watch(showStackedArea, async (newValue, oldValue) => {
+  if (newValue && !oldValue) {
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
     await loadIFSSData()
   }
 })
 
+<<<<<<< HEAD
 /**
  * Watch para activar vista federal cuando los filtros vuelven a default
  */
@@ -894,19 +1203,45 @@ watch(selectedYear, async (newYear, oldYear) => {
       if (selectedVariable.value !== '' && selectedVariable.value !== null) {
         await updateRankingByVariable(selectedVariable.value)
       } else if (selectedVariable.value === null) {
+=======
+watch(selectedVariable, (newVariable) => {
+  if (newVariable === '') return
+  
+  if (!selectedState.value) {
+    updateRankingByVariable(newVariable)
+  }
+})
+
+watch(selectedYear, async (newYear, oldYear) => {
+  if (newYear !== oldYear) {
+    await loadEntitiesFromSheet()
+    
+    if (selectedVariable.value !== '') {
+      if (selectedVariable.value) {
+        await updateRankingByVariable(selectedVariable.value)
+      } else {
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
         await loadAllStatesRanking(null)
       }
     }
   }
 })
 
+<<<<<<< HEAD
 /**
  * Watch para sincronizar selectedEntity cuando selectedState cambia desde el mapa
  */
+=======
+// ✅ MODIFICADO: Sincronizar selectedEntity cuando selectedState cambia desde el mapa
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
 watch(selectedState, (newState, oldState) => {
   console.log('👀 [HomePage] Watch selectedState:', { newState, oldState })
   
   if (newState && newState !== oldState) {
+<<<<<<< HEAD
+=======
+    // Sincronizar el filtro con el estado seleccionado en el mapa
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
     if (selectedEntity.value !== newState) {
       selectedEntity.value = newState
       console.log('🔄 [HomePage] selectedEntity sincronizado con mapa:', newState)
@@ -919,12 +1254,27 @@ watch(selectedState, (newState, oldState) => {
       data: stateData
     })
   } else if (!newState && oldState) {
+<<<<<<< HEAD
     // ✅ Cuando se deselecciona, volver a '' (espacio en blanco)
+=======
+    // Solo limpiar selectedEntity si no está en modo cualitativo
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
     if (!isRetractableExpanded.value) {
       selectedEntity.value = ''
     }
     
     emit('region-selected', null)
+<<<<<<< HEAD
+=======
+    
+    if (!isRetractableExpanded.value && selectedVariable.value !== '') {
+      if (selectedVariable.value) {
+        updateRankingByVariable(selectedVariable.value)
+      } else {
+        loadAllStatesRanking(null)
+      }
+    }
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
   }
 })
 
@@ -934,6 +1284,7 @@ watch(error, (newError) => {
   }
 })
 
+<<<<<<< HEAD
 // ============================================================================
 // ✅ INICIALIZACIÓN
 // ============================================================================
@@ -942,10 +1293,17 @@ onMounted(async () => {
   console.log('\n🚀 ===== INICIALIZANDO HomePage =====')
   
   // Cargar años disponibles
+=======
+onMounted(async () => {
+  console.log('\n🚀 ===== INICIALIZANDO HomePage =====')
+  
+  // ✅ Cargar años iniciales de cuantitativos
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
   await fetchAvailableYears()
   
   await loadEntitiesFromSheet()
   await initializeSlider()
+<<<<<<< HEAD
   
   // ✅ Establecer filtros iniciales en DEFAULT ('', primerAño, '')
   // Entidad y Variable en blanco "-", Año con el primer valor
@@ -977,6 +1335,21 @@ onMounted(async () => {
   console.log('   areAllFiltersDefault:', areAllFiltersDefault.value)
   console.log('   areAllFiltersOnTodas:', areAllFiltersOnTodas.value)
   console.log('\n')
+=======
+  await loadAllStatesRanking(null)
+  await loadIFSSData()
+  
+  // ✅ Guardar estado inicial de filtros
+  initialFilters.value = {
+    entity: selectedEntity.value,
+    year: selectedYear.value,
+    variable: selectedVariable.value
+  }
+  console.log('💾 Estado inicial de filtros guardado:', initialFilters.value)
+  console.log('💾 Años iniciales guardados:', initialYears.value)
+  
+  console.log('✅ HomePage inicializado\n')
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
 })
 </script>
 
@@ -1039,7 +1412,10 @@ onMounted(async () => {
   z-index: 2;
   position: relative;
   transition: gap 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
+<<<<<<< HEAD
   height: 100%;
+=======
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
 }
 
 .map-and-charts-wrapper.no-gap {
@@ -1051,6 +1427,10 @@ onMounted(async () => {
   height: 605px;
   border-radius: 8px;
   width: 980px;
+<<<<<<< HEAD
+=======
+  border: 1px solid #ccc;
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
   transition: all 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
 }
 
@@ -1138,13 +1518,19 @@ onMounted(async () => {
 .ranking-panel {
   display: flex;
   flex-direction: column;
+<<<<<<< HEAD
   width: 100%;
   height: 1040px;
   transition: height 0.3s ease;
+=======
+  height: 1040px;
+  width: 100%;
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
 }
 
 .ranking-panel.historical-view {
   width: 2000px;
+<<<<<<< HEAD
   height: 2040px;
   padding-bottom: 70px;
   transition: all 0.3s ease;
@@ -1153,6 +1539,9 @@ onMounted(async () => {
 .ranking-panel.variable-view {
   width: 2000px;
   height: 1350px; 
+=======
+  height: 1840px;
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
   padding-bottom: 70px;
   transition: all 0.3s ease;
 }
@@ -1233,6 +1622,7 @@ h2 {
 .overlay-fade-leave-to {
   opacity: 0;
 }
+<<<<<<< HEAD
 
 .chart-card {
   display: flex;
@@ -1293,6 +1683,8 @@ h2 {
   justify-content: center;
   color: #666;
 }
+=======
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
 </style>
 
 <style>

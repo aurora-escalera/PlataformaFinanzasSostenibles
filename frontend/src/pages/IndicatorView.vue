@@ -1,8 +1,8 @@
-<!-- src/pages/MapsPage.vue - FILTRO 3/4 DEL MAPA -->
+<!-- src/pages/QualitativePanel.vue - FILTRO 3/4 DEL MAPA -->
 <template>
   <div class="maps-page">
     <!-- Contenedor de filtros y toggles en dos columnas -->
-    <div class="filters-toggles-row">
+         <div class="filters-toggles-row">
       <!-- Columna izquierda: Filtros (600px = 3/4 de 800px) -->
       <div class="filters-column">
         <RetractableFilterBar 
@@ -20,18 +20,9 @@
         <DataToggleComponent />
       </div>
     </div>
-    
-    <!-- Componente del mapa -->
-    <div class="map-section">
-      <MapComponent 
-        :maps-composable="mapsComposable"
-        title="Índice de Finanzas Sostenibles Subnacionales (IFSS) - México 2023"
-        :geoDataUrl="geoDataUrl"
-        :dataUrl="dataUrl" 
-        legendTitle="Valor IFSS"
-        @region-selected="handleRegionSelect"
-        @map-error="handleMapError"
-      />
+    <div class="qualitativeIndicatorPanel">
+      <!-- Columna izquierda: Filtros (600px = 3/4 de 800px) -->
+      <IndicatorDetailView/>
     </div>
 
     <div v-if="error" class="error-panel">
@@ -46,14 +37,13 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import MapComponent from '@/modules/maps/components/MapComponent.vue'
 import RetractableFilterBar from '@/modules/maps/components/RetractableFilterBar.vue'
 import DataToggleComponent from '@modules/other/components/DataToggleComponent.vue'
 import { useFilters } from '@/composables/useFilters'
 import { useMaps } from '@/composables/useMaps'
+import IndicatorDetailView from '../modules/qualitativeIndicators/components/IndicatorDetailView.vue'
 
-const geoDataUrl = ref('/mexicoStates.json')
-const dataUrl = ref('/sustainabilityData.json')
+
 const showStats = ref(false)
 
 // Crear instancia compartida de useMaps
@@ -61,11 +51,9 @@ const mapsComposable = useMaps()
 
 const {
   selectedEntity,
-  selectedYear, 
-  selectedVariable,
+
   loading: filtersLoading,
   error: filtersError,
-  entitiesData,
   filteredData,
   filterStats,
   loadFilterData,
@@ -253,7 +241,7 @@ onMounted(async () => {
 }
 
 .charts-btn {
-
+  background: #2196F3;
   margin-left: 10px;
 }
 

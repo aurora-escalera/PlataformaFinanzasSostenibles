@@ -39,6 +39,7 @@ export const storageConfig = {
           chartsIngresos: '2024'  
         }
       },
+<<<<<<< HEAD
       cuantitativosRegional: {
         sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_CUANTITATIVOS,
         files: {
@@ -46,6 +47,8 @@ export const storageConfig = {
           chartsIngresosRegional: '2024'  
         }
       },
+=======
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
       // Configuración modular para cada componente ambiental
       ambientales: {
         incendiosForestales: {
@@ -245,9 +248,13 @@ export const storageConfig = {
       PBRSED: '2024',
       presupuestoEstatal: '2024',
       financiamientos: '2024',
+<<<<<<< HEAD
       programas: '2024',
       chartsPresupuestosRegional: 'Hoja 1',
       chartsIngresosRegional: 'Hoja 1'
+=======
+      programas: '2024'
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
     }
   },
   
@@ -1031,6 +1038,7 @@ export const storageConfig = {
       ]
     },
     
+<<<<<<< HEAD
   // CUANTITATIVOS REGIONAL
     chartsPresupuestosRegional: {
       stateColumn: 'Año',
@@ -1178,6 +1186,8 @@ export const storageConfig = {
     },
     //
 
+=======
+>>>>>>> ee6ad985fea93c4ed8fd5f731f09953fad8c53c6
     rankingCuantitativo: {
       stateColumn: 'Entidad Federativa',
       columnsByVariable: {
