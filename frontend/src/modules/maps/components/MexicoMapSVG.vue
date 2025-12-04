@@ -434,29 +434,44 @@ const tooltipStyle = computed(() => {
   z-index: 2;
 }
 
-/* CARD FLOTANTE */
+/* ✅ CARD FLOTANTE - GLASSMORPHISM */
 .map-info-card {
   position: absolute;
-  top: 100px;
+  top: 80px;
   right: 120px;
-  background: white;
-  border-radius: 15px;
-  padding: 12px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.38);
+  /* Efecto Glassmorphism */
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   z-index: 10;
-  width: 183.2px;
-  height: 203.2px;
+  width: 170px;
   transition: all 0.3s ease;
 }
 
 .map-info-card.state-selected {
-  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 8px 32px rgba(5, 55, 89, 0.15);
 }
 
 .card-content {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+}
+
+/* Título */
+.card-position-title {
+  font-size: 10px;
+  color: #64748b;
+  font-weight: 500;
+  text-align: center;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+  margin-bottom: 0;
 }
 
 /* FLEX 1: Dos columnas en una fila */
@@ -465,78 +480,65 @@ const tooltipStyle = computed(() => {
   flex-direction: row;
   gap: 10px;
   align-items: center;
-  padding: 0px 15px 2px 15px;
+  justify-content: center;
+  padding: 0;
 }
 
 .card-position-number {
-  font-size: 45px;
-  font-weight: 200;
+  font-size: 40px;
+  font-weight: 300;
   color: #D4A574;
   line-height: 1;
-  position: relative;
+}
+
+.card-ifss-info {
+  text-align: left;
 }
 
 .ifss-value-text {
   font-size: 12px;
-  color: #767d86;
-  font-weight: 300;
-  letter-spacing: 0.1ch;
+  color: #475569;
+  font-weight: 500;
   margin: 0;
 }
 
 .ifss-classification {
   font-size: 11px;
-  color: #ddb891;
   font-weight: 600;
-  letter-spacing: 0.15ch;
   margin: 0;
-  line-height: 1;
+  line-height: 1.2;
 }
 
-/* FLEX 2: Dos filas apiladas */
+/* FLEX 2: Botones de navegación */
 .card-bottom-stack {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding-left: 10px;
-  padding-top: 0px;
+  gap: 6px;
 }
 
 .card-label-pill {
-  background: #f3f4f6;
-  border-radius: 3px;
+  background: rgba(5, 55, 89, 0.05);
+  border: none;
+  border-radius: 8px;
   text-align: center;
   font-size: 10px;
-  color: #7a7f8f;
-  font-weight: 100;
-  height: 20px;
-  width: 130px;
-  letter-spacing: 0.06em;
-  padding-top: 3px;
+  color: #475569;
+  font-weight: 500;
+  height: 30px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.card-position-title {
-  font-size: 12px;
-  color: #6b7280;
-  letter-spacing: 0.2ch;
-  justify-content: center;
-  font-weight: 500;
-  text-align: center;
-  line-height: 1.5;
-  letter-spacing: 0.02em;
-  padding-bottom: 7px;
-  border-bottom: 1px solid #e5e7eb;
-}
-
 .card-label-pill:hover {
-  background: #e5e7eb;
-  border-color: #9ca3af;
+  background: rgba(5, 55, 89, 0.1);
 }
 
 .card-label-pill:active {
-  background: #d1d5db;
+  background: rgba(5, 55, 89, 0.15);
 }
 
 .card-label-pill.active {
