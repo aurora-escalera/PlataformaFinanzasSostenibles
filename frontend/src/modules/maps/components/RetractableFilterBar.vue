@@ -2,6 +2,7 @@
 <!-- ✅ MODIFICADO: Agregada opción "------------" en Entidad y Variable -->
 <!-- ✅ ACTUALIZADO: Mantener barra expandida cuando isLocked es true -->
 <!-- ✅ CORREGIDO: Usa computed para combinar props.availableYears y composable -->
+<!-- ✅ NUEVO: Props initialEntity, initialYear, initialVariable para sincronizar filtros -->
 <template>
   <div 
     class="filter-bar-container" 
@@ -223,6 +224,19 @@ const props = defineProps({
   availableYears: {
     type: Array,
     default: () => []
+  },
+  // ✅ NUEVAS PROPS para sincronizar filtros desde HomePage
+  initialEntity: {
+    type: [String, null],
+    default: ''
+  },
+  initialYear: {
+    type: [String, Number, null],
+    default: null
+  },
+  initialVariable: {
+    type: [Object, String, null],
+    default: ''
   }
 })
 
@@ -442,6 +456,33 @@ const emitFiltersChange = () => {
   emit('filters-change', filters)
 }
 
+// ✅ NUEVO: Watch para sincronizar initialEntity desde HomePage
+watch(() => props.initialEntity, (newValue) => {
+  console.log('🔄 [FilterBar] initialEntity cambió a:', newValue)
+  if (newValue !== selectedEntity.value) {
+    selectedEntity.value = newValue
+    console.log('✅ [FilterBar] selectedEntity sincronizado:', selectedEntity.value)
+  }
+}, { immediate: true })
+
+// ✅ NUEVO: Watch para sincronizar initialYear desde HomePage
+watch(() => props.initialYear, (newValue) => {
+  console.log('🔄 [FilterBar] initialYear cambió a:', newValue)
+  if (newValue !== selectedYear.value) {
+    setYear(newValue)
+    console.log('✅ [FilterBar] selectedYear sincronizado:', selectedYear.value)
+  }
+}, { immediate: true })
+
+// ✅ NUEVO: Watch para sincronizar initialVariable desde HomePage
+watch(() => props.initialVariable, (newValue) => {
+  console.log('🔄 [FilterBar] initialVariable cambió a:', newValue)
+  if (newValue !== selectedVariable.value) {
+    selectedVariable.value = newValue
+    console.log('✅ [FilterBar] selectedVariable sincronizado:', selectedVariable.value)
+  }
+}, { immediate: true })
+
 watch(() => props.isLocked, (newLocked, oldLocked) => {
   console.log('🔒 isLocked cambió de', oldLocked, 'a', newLocked)
   
@@ -490,14 +531,29 @@ onMounted(async () => {
   console.log('✅ RetractableFilterBar montado')
   console.log('✅ Entidades recibidas:', props.entities.length)
   console.log('✅ Años en props:', props.availableYears)
+  console.log('✅ initialEntity:', props.initialEntity)
+  console.log('✅ initialYear:', props.initialYear)
+  console.log('✅ initialVariable:', props.initialVariable)
+  
+  // ✅ Sincronizar con props iniciales
+  if (props.initialEntity !== undefined) {
+    selectedEntity.value = props.initialEntity
+  }
+  if (props.initialVariable !== undefined) {
+    selectedVariable.value = props.initialVariable
+  }
   
   // Cargar años disponibles desde Google Sheets (para carga inicial)
   console.log('📅 Cargando años desde composable...')
   await fetchAvailableYears()
   console.log('📅 Años del composable cargados:', composableYears.value)
   
-  // Establecer el primer año como default
-  if (years.value.length > 0) {
+  // Establecer el primer año como default solo si no hay initialYear
+  if (props.initialYear !== null && props.initialYear !== undefined) {
+    setYear(props.initialYear)
+    setActiveYear(props.initialYear)
+    console.log('📅 Usando año de props:', props.initialYear)
+  } else if (years.value.length > 0) {
     const firstYear = years.value[0]
     setYear(firstYear)
     setActiveYear(firstYear)

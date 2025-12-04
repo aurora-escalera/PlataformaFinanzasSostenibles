@@ -10,6 +10,9 @@
         :selectedState="selectedState"
         :isLocked="isFilterBarLocked"
         :availableYears="availableYears"
+        :initialEntity="selectedEntity"
+        :initialYear="selectedYear"
+        :initialVariable="selectedVariable"
         @entity-change="handleEntityChange"
         @year-change="handleYearChange" 
         @variable-change="handleVariableChange"
@@ -53,6 +56,7 @@
             :getIFSSLabel="getIFSSLabel"
             :show-info-card="!isRetractableExpanded"
             :show-navigation="!isRetractableExpanded"
+            :active-view="activeView"
             @state-click="handleStateClickWithEmit"
             @state-hover="handleStateHover"
             @state-leave="handleStateLeave"
@@ -185,6 +189,7 @@
 
       <!-- Panel de Charts Component - Abajo -->
       <!-- ✅ Solo mostrar cuando NO está expandido el panel retráctil -->
+      <!-- ✅ Height controlado por CSS: .ranking-panel (ChartsComponent) vs .historical-view (HistoricalCard) -->
       <div 
         v-if="showRankingPanel && !isRetractableExpanded" 
         class="ranking-panel"
@@ -319,6 +324,9 @@ const selectedYear = ref(null)
 const selectedEntity = ref('')
 const filterBarKey = ref(0)
 const { fetchData: fetchEntities, fetchSheetNames } = useStorageData()
+
+// ✅ NUEVO: Estado para controlar qué vista está activa ('federal' o 'regional')
+const activeView = ref('federal')
 
 // ✅ NUEVO: Array de años disponibles (dinámico)
 const availableYears = ref([])
@@ -519,14 +527,39 @@ const handleStateClickWithEmit = async (stateName) => {
   }
 }
 
-const handleIFSRegionalClick = () => {
+// ✅ MODIFICADO: Cambiar a vista regional y activar filtros "Todas..."
+const handleIFSRegionalClick = async () => {
+  console.log('🌎 [HomePage] Cambiando a vista IFS Regional')
+  
+  // Cambiar la vista activa
+  activeView.value = 'regional'
+  
+  // Resetear selección del mapa
   if (selectedState.value) {
     resetSelection()
   }
+  
+  // ✅ Establecer filtros a "Todas..." (null = Todas)
+  selectedEntity.value = null
+  selectedYear.value = null
+  selectedVariable.value = null
+  
+  await nextTick()
+  
+  // Cargar ranking con todos los datos
+  await loadAllStatesRanking(null)
+  
+  console.log('✅ [HomePage] Vista IFS Regional activada con filtros en "Todas..."')
 }
 
+// ✅ MODIFICADO: Cambiar a vista federal (default)
 const handleDatosFederalesClick = () => {
-  console.log('Navegando a federales...')
+  console.log('🏛️ [HomePage] Cambiando a vista Datos Federales')
+  
+  // Cambiar la vista activa
+  activeView.value = 'federal'
+  
+  console.log('✅ [HomePage] Vista Datos Federales activada')
 }
 
 const handleDatosCualitativosClick = () => {
@@ -668,6 +701,21 @@ watch(showStackedArea, async (newValue, oldValue) => {
   }
 })
 
+// ✅ NUEVO: Watch para detectar cuando los filtros vuelven a default y activar vista federal
+watch(
+  [selectedEntity, selectedYear, selectedVariable],
+  ([entity, year, variable]) => {
+    // Si todos los filtros están en default (vacíos), activar vista federal
+    const allFiltersDefault = entity === '' && year === null && variable === ''
+    
+    if (allFiltersDefault && activeView.value !== 'federal') {
+      console.log('🏛️ [HomePage] Filtros en default, activando vista Datos Federales')
+      activeView.value = 'federal'
+    }
+  },
+  { immediate: true }
+)
+
 watch(selectedVariable, (newVariable) => {
   if (newVariable === '') return
   
@@ -750,6 +798,10 @@ onMounted(async () => {
   }
   console.log('💾 Estado inicial de filtros guardado:', initialFilters.value)
   console.log('💾 Años iniciales guardados:', initialYears.value)
+  
+  // ✅ Vista por defecto es 'federal'
+  activeView.value = 'federal'
+  console.log('🏛️ Vista inicial: federal')
   
   console.log('✅ HomePage inicializado\n')
 })
@@ -909,13 +961,16 @@ onMounted(async () => {
   max-width: 850px;
 }
 
+/* ✅ ChartsComponent activo (hay estado seleccionado) */
 .ranking-panel {
   display: flex;
   flex-direction: column;
-  height: 2040px;
   width: 100%;
+  height: 1040px;
+  transition: height 0.3s ease;
 }
 
+/* ✅ HistoricalCard activo (NO hay estado seleccionado) */
 .ranking-panel.historical-view {
   width: 2000px;
   height: 2040px;

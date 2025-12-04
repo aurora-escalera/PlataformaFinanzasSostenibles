@@ -498,7 +498,9 @@ const formatYAxisValue = (value) => {
   }
   
   if (props.decimalPlaces !== null && props.showCurrencySymbol) {
-    if (Math.abs(value) >= 1000000) {
+    if (Math.abs(value) >= 1000000000) {
+      return `$${(value / 1000000000).toFixed(props.decimalPlaces)}B`
+    } else if (Math.abs(value) >= 1000000) {
       return `$${(value / 1000000).toFixed(props.decimalPlaces)}M`
     } else if (Math.abs(value) >= 1000) {
       return `$${(value / 1000).toFixed(props.decimalPlaces)}K`
@@ -507,7 +509,9 @@ const formatYAxisValue = (value) => {
   }
   
   if (props.showCurrencySymbol) {
-    if (value >= 1000000) {
+    if (Math.abs(value) >= 1000000000) {
+      return `$${(value / 1000000000).toFixed(1)}B`
+    } else if (value >= 1000000) {
       return `$${(value / 1000000).toFixed(1)}M`
     } else if (value >= 1000) {
       return `$${(value / 1000).toFixed(0)}K`
@@ -515,7 +519,9 @@ const formatYAxisValue = (value) => {
     return `$${value.toFixed(0)}`
   }
   
-  if (Math.abs(value) >= 1000000) {
+  if (Math.abs(value) >= 1000000000) {
+    return `${prefix}${(value / 1000000000).toFixed(1)}B${suffix}`
+  } else if (Math.abs(value) >= 1000000) {
     return `${prefix}${(value / 1000000).toFixed(1)}M${suffix}`
   } else if (Math.abs(value) >= 1000) {
     return `${prefix}${(value / 1000).toFixed(1)}K${suffix}`
@@ -970,7 +976,9 @@ const formatValue = (value) => {
   }
   
   if (props.decimalPlaces !== null && props.showCurrencySymbol) {
-    if (Math.abs(value) >= 1000000) {
+    if (Math.abs(value) >= 1000000000) {
+      return `$${(value / 1000000000).toFixed(props.decimalPlaces)}B`
+    } else if (Math.abs(value) >= 1000000) {
       return `$${(value / 1000000).toFixed(props.decimalPlaces)}M`
     } else if (Math.abs(value) >= 1000) {
       return `$${(value / 1000).toFixed(props.decimalPlaces)}K`
@@ -979,7 +987,9 @@ const formatValue = (value) => {
   }
   
   if (props.showCurrencySymbol) {
-    if (value >= 1000000) {
+    if (Math.abs(value) >= 1000000000) {
+      return `$${(value / 1000000000).toFixed(2)}B`
+    } else if (value >= 1000000) {
       return `$${(value / 1000000).toFixed(2)}M`
     } else if (value >= 1000) {
       return `$${(value / 1000).toFixed(2)}K`
@@ -987,7 +997,9 @@ const formatValue = (value) => {
     return `$${value.toFixed(2)}`
   }
   
-  if (Math.abs(value) >= 1000000) {
+  if (Math.abs(value) >= 1000000000) {
+    return `${prefix}${(value / 1000000000).toFixed(2)}B${suffix}`
+  } else if (Math.abs(value) >= 1000000) {
     return `${prefix}${(value / 1000000).toFixed(2)}M${suffix}`
   } else if (Math.abs(value) >= 1000) {
     return `${prefix}${(value / 1000).toFixed(2)}K${suffix}`
@@ -1227,7 +1239,7 @@ onUnmounted(() => {
 }
 
 .y-axis-label {
-  font-size: 9px;
+  font-size: 14px;
   font-weight: 300;
   fill: #6b7280;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;

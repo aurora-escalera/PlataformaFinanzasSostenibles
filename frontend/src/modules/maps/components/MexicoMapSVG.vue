@@ -42,13 +42,14 @@
         >
           <div 
             class="card-label-pill" 
-            :class="{ 'active': !selectedState }"
+            :class="{ 'active': activeView === 'regional' }"
             @click.stop="handleIFSRegionalClick"
           >
             IFS Regional
           </div>
           <div 
             class="card-label-pill"
+            :class="{ 'active': activeView === 'federal' }"
             @click.stop="handleDatosFederalesClick"
           >
             Datos federales
@@ -62,19 +63,19 @@
       <!-- Prioridad 1: Si hay estado seleccionado, mostrar su información -->
       <div v-if="selectedState" class="info-content">
         <div class="location-label">{{ selectedState }}</div>
-        <div class="value-display">IFSS: {{ getStateInfo(selectedState).value || 0 }}</div>
+        <div class="value-display">IFS: {{ getStateInfo(selectedState).value || 0 }}</div>
       </div>
       
       <!-- Prioridad 2: Si hay estado en hover (y no hay seleccionado), mostrar información del estado -->
       <div v-else-if="hoveredState" class="info-content">
         <div class="location-label">{{ hoveredState }}</div>
-        <div class="value-display">IFSS: {{ getStateInfo(hoveredState).value || 0 }}</div>
+        <div class="value-display">IFS: {{ getStateInfo(hoveredState).value || 0 }}</div>
       </div>
       
       <!-- Prioridad 3: Si no hay estado en hover ni seleccionado, mostrar información nacional -->
       <div v-else-if="nationalIFSS" class="info-content">
         <div class="location-label">México</div>
-        <div class="value-display">IFS: {{ nationalIFSS.value }}</div>
+        <div class="value-display">IFSS: {{ nationalIFSS.value }}</div>
       </div>
     </div>
 
@@ -212,6 +213,11 @@ const props = defineProps({
   showInfoCard: {
     type: Boolean,
     default: true
+  },
+  // Prop para controlar qué vista está activa ('federal' o 'regional')
+  activeView: {
+    type: String,
+    default: 'federal'
   }
 })
 
@@ -488,7 +494,7 @@ const tooltipStyle = computed(() => {
 }
 
 .card-label-pill.active {
-  background: #d1d5db;
+  background: #053759;
   color: white;
 }
 

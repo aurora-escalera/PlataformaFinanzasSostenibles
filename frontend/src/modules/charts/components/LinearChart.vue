@@ -506,7 +506,9 @@ const formatYAxisValue = (value) => {
   }
   
   if (props.showCurrencySymbol) {
-    if (Math.abs(value) >= 1000000) {
+    if (Math.abs(value) >= 1000000000) {
+      return `$${(value / 1000000000).toFixed(1)}B`
+    } else if (Math.abs(value) >= 1000000) {
       return `$${(value / 1000000).toFixed(1)}M` 
     } else if (Math.abs(value) >= 1000) {
       return `$${(value / 1000).toFixed(1)}K`
@@ -514,7 +516,9 @@ const formatYAxisValue = (value) => {
     return `$${Math.round(value)}`
   }
   
-  if (Math.abs(value) >= 1000000) {
+  if (Math.abs(value) >= 1000000000) {
+    return `${prefix}${(value / 1000000000).toFixed(1)}B${suffix}`
+  } else if (Math.abs(value) >= 1000000) {
     return `${prefix}${(value / 1000000).toFixed(1)}M${suffix}` 
   } else if (Math.abs(value) >= 1000) {
     return `${prefix}${(value / 1000).toFixed(1)}K${suffix}`
@@ -542,7 +546,9 @@ const formatValue = (value) => {
   }
   
   if (props.showCurrencySymbol) {
-    if (Math.abs(value) >= 1000000) {
+    if (Math.abs(value) >= 1000000000) {
+      return `$${(value / 1000000000).toFixed(1)}B`
+    } else if (Math.abs(value) >= 1000000) {
       return `$${(value / 1000000).toFixed(1)}M`
     } else if (Math.abs(value) >= 1000) {
       return `$${(value / 1000).toFixed(1)}K`
@@ -550,7 +556,9 @@ const formatValue = (value) => {
     return `$${value.toFixed(0)}`
   }
   
-  if (Math.abs(value) >= 1000000) {
+  if (Math.abs(value) >= 1000000000) {
+    return `${prefix}${(value / 1000000000).toFixed(1)}B${suffix}`
+  } else if (Math.abs(value) >= 1000000) {
     return `${prefix}${(value / 1000000).toFixed(1)}M${suffix}`
   } else if (Math.abs(value) >= 1000) {
     return `${prefix}${(value / 1000).toFixed(1)}K${suffix}`

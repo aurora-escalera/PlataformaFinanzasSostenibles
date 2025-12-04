@@ -476,12 +476,12 @@ const barWidth = computed(() => {
   
   // Caso especial: 2 barras activas
   if (activeCount === 2) {
-    return 70
+    return 55
   }
 
   // Caso especial: 3 barras activas
   if (activeCount === 3) {
-    return 55
+    return 38
   }
 
   // Para más de 3 barras, escalar proporcionalmente
@@ -512,9 +512,11 @@ const toggleFilter = (key) => {
   activeFilters.value[key] = !activeFilters.value[key]
 }
 
-// ✅ Formatear moneda (solo millones, sin billions)
+// ✅ Formatear moneda (billones, millones, miles)
 const formatCurrency = (value) => {
-  if (Math.abs(value) >= 1000000) {
+  if (Math.abs(value) >= 1000000000) {
+    return `$${(value / 1000000000).toFixed(1)}B`
+  } else if (Math.abs(value) >= 1000000) {
     return `$${(value / 1000000).toFixed(1)}M`
   } else if (Math.abs(value) >= 1000) {
     return `$${(value / 1000).toFixed(1)}K`
@@ -643,7 +645,7 @@ watch(() => props.data, () => {
 /* ✅ ÁREA DEL GRÁFICO */
 .chart-area {
   margin-top: 8px;
-  padding-top: 35px;
+  padding-top: 15px;
   flex: 1;
   display: flex;
   position: relative;
@@ -671,10 +673,11 @@ watch(() => props.data, () => {
 }
 
 .tick-label {
-  font-size: 10px;
+  font-size: 14px;
+  font-weight: 300;
   color: #666;
   text-align: right;
-  width: 50px;
+  width: 55px;
   padding-right: 8px;
 }
 
