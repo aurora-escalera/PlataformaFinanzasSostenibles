@@ -35,7 +35,7 @@ export const useFilters = () => {
     error.value = null
     
     try {
-      const response = await fetch('/sustainabilityData.json')
+      const response = await fetch(`${import.meta.env.BASE_URL}sustainabilityData.json`)
       if (!response.ok) throw new Error('Error al cargar datos de filtros')
       const data = await response.json()
       

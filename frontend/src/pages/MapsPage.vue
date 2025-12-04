@@ -52,8 +52,8 @@ import DataToggleComponent from '@modules/other/components/DataToggleComponent.v
 import { useFilters } from '@/composables/useFilters'
 import { useMaps } from '@/composables/useMaps'
 
-const geoDataUrl = ref('/mexicoStates.json')
-const dataUrl = ref('/sustainabilityData.json')
+const geoDataUrl = ref(`${import.meta.env.BASE_URL}mexicoStates.json`)
+const dataUrl = ref(`${import.meta.env.BASE_URL}sustainabilityData.json`)
 const showStats = ref(false)
 
 // Crear instancia compartida de useMaps

@@ -37,7 +37,7 @@ export const useMaps = () => {
   // Cargar datos GeoJSON
   const loadGeoData = async () => {
     try {
-      const response = await fetch('/mexicoStates.json')
+      const response = await fetch(`${import.meta.env.BASE_URL}mexicoStates.json`)
       if (!response.ok) throw new Error('Error al cargar datos geográficos')
       geoData.value = await response.json()
       console.log('GeoData cargado:', geoData.value)
@@ -50,7 +50,7 @@ export const useMaps = () => {
   // Cargar datos de sustentabilidad
   const loadSustainabilityData = async () => {
     try {
-      const response = await fetch('/sustainabilityData.json')
+      const response = await fetch(`${import.meta.env.BASE_URL}sustainabilityData.json`)
       if (!response.ok) throw new Error('Error al cargar datos de sustentabilidad')
       const data = await response.json()
       

@@ -14,9 +14,9 @@ export const useHeader = () => {
   const logoUrl = computed(() => {
     // Si hay error, usar un placeholder o logo alternativo
     if (logoError.value) {
-      return '/logo-placeholder.png'
+      return `${import.meta.env.BASE_URL}logo-placeholder.png`
     }
-    return '/logo-ofcm.png'
+    return `${import.meta.env.BASE_URL}logo-ofcm.png`
   })
 
   const logoAlt = ref('Observatorio de Financiamiento Climático en México')
