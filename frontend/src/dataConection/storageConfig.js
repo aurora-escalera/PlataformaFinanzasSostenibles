@@ -39,6 +39,13 @@ export const storageConfig = {
           chartsIngresos: '2024'  
         }
       },
+      cuantitativosRegional: {
+        sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_CUANTITATIVOS,
+        files: {
+          chartsPresupuestosRegional: '2024', 
+          chartsIngresosRegional: '2024'  
+        }
+      },
       // Configuración modular para cada componente ambiental
       ambientales: {
         incendiosForestales: {
@@ -238,7 +245,9 @@ export const storageConfig = {
       PBRSED: '2024',
       presupuestoEstatal: '2024',
       financiamientos: '2024',
-      programas: '2024'
+      programas: '2024',
+      chartsPresupuestosRegional: 'Hoja 1',
+      chartsIngresosRegional: 'Hoja 1'
     }
   },
   

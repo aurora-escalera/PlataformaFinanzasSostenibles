@@ -1,129 +1,136 @@
-<!-- src/modules/charts/components/DonutChart.vue -->
 <template>
-  <div class="donut-chart">
-    <!-- Filtros/Toggles para mostrar/ocultar segmentos -->
-    <div class="variable-filters" v-if="variables && variables.length > 0">
-      <button 
-        v-for="variable in variables" 
-        :key="variable.key"
-        @click="toggleVariable(variable.key)"
-        :disabled="isVariableDisabled(variable.key)"
-        :class="['filter-btn', { 
-          'active': isVariableActive(variable.key),
-          'disabled': isVariableDisabled(variable.key),
-          [variable.colorClass]: true 
-        }]"
-      >
-        <span :class="['legend-dot', variable.colorClass]"></span>
-        {{ variable.label }}
-      </button>
-    </div>
-
-    <!-- SVG de la gráfica de dona -->
-    <div class="chart-svg-container">
-      <svg 
-        :key="sectorsKey"
-        :width="size" 
-        :height="size" 
-        class="donut-svg"
-      >
-        <!-- Círculo de fondo (gris) -->
-        <circle
-          :cx="center"
-          :cy="center"
-          :r="radius"
-          fill="none"
-          :stroke="backgroundColor"
-          :stroke-width="strokeWidth"
+  <div class="donut-item-vertical">
+    <!-- Barra de distribución horizontal superior -->
+    <div class="distribution-bar-section">
+      <div class="distribution-header">
+        <span class="distribution-label">Distribución</span>
+        <span class="distribution-value" :class="badgeColorClass">{{ displayValue }}</span>
+      </div>
+      <div class="distribution-bar">
+        <div 
+          v-for="(sector, index) in computedSectorPaths" 
+          :key="'bar-' + index"
+          class="distribution-segment"
+          :class="{ 
+            dimmed: !activeSectors[index],
+            highlighted: hoveredIndex === index 
+          }"
+          :style="{ 
+            width: sector.displayPercent + '%', 
+            background: sector.color 
+          }"
+          @mouseenter="onSectorHover(index)"
+          @mouseleave="onSectorLeave"
+          @click="toggleSector(index)"
         />
+      </div>
+    </div>
+    
+    <!-- Área principal - Dona + Badge -->
+    <div class="donut-main-area">
+      <!-- Dona SVG -->
+      <div class="donut-svg-container">
+        <svg class="donut-svg" viewBox="0 0 200 200">
+          <!-- Anillo de fondo -->
+          <circle cx="100" cy="100" r="72" fill="none" stroke="#e2e8f0" stroke-width="25"/>
+          
+          <!-- Sectores -->
+          <path 
+            v-for="(sector, index) in computedSectorPaths" 
+            :key="index"
+            class="donut-ring"
+            :class="{ 
+              dimmed: !activeSectors[index] || (hoveredIndex !== null && hoveredIndex !== index),
+              highlighted: hoveredIndex === index 
+            }"
+            :d="sector.path"
+            fill="none"
+            :stroke="sector.color"
+            stroke-width="25"
+            @mouseenter="onSectorHover(index)"
+            @mouseleave="onSectorLeave"
+            @click="toggleSector(index)"
+          />
+          
+          <!-- Porcentajes en el anillo -->
+          <text 
+            v-for="(sector, index) in computedSectorPaths" 
+            :key="'pct-' + index"
+            class="sector-percent"
+            :class="{ dimmed: !activeSectors[index] || (hoveredIndex !== null && hoveredIndex !== index) }"
+            :x="sector.percentX"
+            :y="sector.percentY"
+            text-anchor="middle"
+            dominant-baseline="middle"
+            :transform="`rotate(${sector.textRotation}, ${sector.percentX}, ${sector.percentY})`"
+            v-show="sector.displayPercent >= 5"
+          >
+            {{ sector.displayPercent }}%
+          </text>
+        </svg>
         
-        <!-- Segmentos de la dona con animación -->
-        <g v-if="shouldShowProgress">
-          <template v-if="allSectorsWithState.length > 0">
-            <path
-              v-for="(sector, index) in allSectorsWithState"
-              :key="`sector-${sector.key}-${index}`"
-              :d="getSectorPath(sector, index, animatedProgress)"
-              fill="none"
-              :stroke="getSectorColor(sector)"
-              :stroke-width="hoveredSectorIndex === index ? strokeWidth + 5 : strokeWidth"
-              :class="['sector-path', { 
-                'sector-inactive': !sector.isActive,
-                'sector-hovered': hoveredSectorIndex === index,
-                'sector-dimmed': hoveredSectorIndex !== null && hoveredSectorIndex !== index
-              }]"
-              style="cursor: pointer;"
-              @mouseenter="handleSectorHover(sector, index, $event)"
-              @mousemove="updateTooltipPosition($event)"
-              @mouseleave="handleSectorLeave"
-            />
-            <!-- Bordes blancos entre sectores -->
-            <line
-              v-if="index < allSectorsWithState.length - 1"
-              :key="`divider-${sector.key}-${index}`"
-              :x1="getSectorDividerStart(sector, index, animatedProgress).x"
-              :y1="getSectorDividerStart(sector, index, animatedProgress).y"
-              :x2="getSectorDividerEnd(sector, index, animatedProgress).x"
-              :y2="getSectorDividerEnd(sector, index, animatedProgress).y"
-              stroke="white"
-              stroke-width="2"
-              pointer-events="none"
-            />
-          </template>
-        </g>
-
-        <!-- Porcentajes DENTRO del anillo (pequeños y delgados) -->
-        <g v-if="shouldShowProgress && animatedProgress >= 0.9">
-          <template v-if="allSectorsWithState.length > 0">
-            <text
-              v-for="(sector, index) in allSectorsWithState"
-              :key="`percent-${sector.key}-${index}`"
-              :x="getSectorLabelPosition(sector, index, 'inner').x"
-              :y="getSectorLabelPosition(sector, index, 'inner').y"
-              text-anchor="middle"
-              :class="['sector-percent', { 
-                'sector-percent-inactive': !sector.isActive,
-                'sector-percent-dimmed': hoveredSectorIndex !== null && hoveredSectorIndex !== index
-              }]"
-              pointer-events="none"
-            >
-              {{ getSectorPercentage(sector) }}
-            </text>
-          </template>
-        </g>
-        
-        <!-- Título de la variable o label del sector en hover -->
-        <text
-          :x="center"
-          :y="center - 15"
-          text-anchor="middle"
-          :class="['variable-title-text', { 'hovered': !!hoveredSector }]"
-        >
-          {{ centralTitle }}
-        </text>
-        
-        <!-- Total general o valor del sector en hover -->
-        <text
-          :x="center"
-          :y="center + 12"
-          text-anchor="middle"
-          :class="['total-value-text', { 'hovered': !!hoveredSector }]"
-        >
-          {{ centralValue }}
-        </text>
-      </svg>
+        <!-- Centro con valor -->
+        <div class="donut-center">
+          <div class="center-value" :class="badgeColorClass">{{ displayValue }}</div>
+        </div>
+      </div>
+      
+      <!-- Badge indicador -->
+      <div class="badge-indicator" :class="badgeColorClass">
+        <div class="badge-icon-circle" :class="badgeColorClass">
+          <svg v-if="badgeColorClass === 'green'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+            <path d="M2 17l10 5 10-5"/>
+            <path d="M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <span class="badge-text">{{ badgeTitle }}</span>
+      </div>
+    </div>
+    
+    <!-- Lista de datos inferior -->
+    <div class="data-list-section">
+      <div 
+        v-for="(sector, index) in processedSectors" 
+        :key="index"
+        class="data-list-item"
+        :class="{ 
+          active: activeSectors[index], 
+          dimmed: !activeSectors[index],
+          highlighted: hoveredIndex === index 
+        }"
+        @click="toggleSector(index)"
+        @mouseenter="onSectorHover(index)"
+        @mouseleave="onSectorLeave"
+      >
+        <div class="data-item-left">
+          <span 
+            class="data-color-dot" 
+            :style="{ background: sector.color, boxShadow: '0 2px 6px ' + sector.color + '40' }"
+          />
+          <span class="data-item-label">{{ sector.shortLabel || sector.label }}</span>
+        </div>
+        <div class="data-item-right">
+          <span class="data-item-value">{{ formatValue(sector.value) }}</span>
+          <span class="data-item-percent" :style="{ background: sector.color }">
+            {{ getPercentForSector(index) }}%
+          </span>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch } from 'vue'
 
-// Props
 const props = defineProps({
   data: {
     type: Array,
-    required: true
+    default: () => []
   },
   title: {
     type: String,
@@ -135,7 +142,7 @@ const props = defineProps({
   },
   size: {
     type: Number,
-    default: 280
+    default: 220
   },
   variables: {
     type: Array,
@@ -147,596 +154,538 @@ const props = defineProps({
   }
 })
 
-// Estado de toggle del usuario
-const userToggles = ref({})
+// Estado
+const activeSectors = ref([])
+const hoveredIndex = ref(null)
 
-// Estado del tooltip
-const hoveredSector = ref(null)
-const hoveredSectorIndex = ref(null)
-const tooltipPosition = ref({ x: 0, y: 0 })
-
-// ✅ NUEVO: Estado de animación
-const animatedProgress = ref(0)
-const isAnimating = ref(false)
-
-// Key para forzar re-render del SVG cuando cambien los sectores
-const sectorsKey = computed(() => {
-  if (!props.sectors || props.sectors.length === 0) return 'empty'
-  return props.sectors.map(s => `${s.key}-${s.value || 0}`).join('_')
+// Determinar color del badge basado en el título (IS, IIC, PS, PIC)
+const badgeColorClass = computed(() => {
+  if (props.title === 'IS' || props.title === 'PS') {
+    return 'green'
+  }
+  return 'red'
 })
 
-// Variables internas como computed
-const internalVariables = computed(() => {
-  if (!props.variables || props.variables.length === 0) {
-    return []
-  }
-  
-  return props.variables.map(v => {
-    const sector = props.sectors?.find(s => s.key === v.key)
-    const hasData = sector && 
-                    sector.value !== null && 
-                    sector.value !== undefined && 
-                    !isNaN(sector.value) &&
-                    sector.value > 0
-    
-    const userToggle = userToggles.value[v.key]
-    const shouldBeActive = hasData && (userToggle !== undefined ? userToggle : true)
-    
-    return {
-      ...v,
-      active: shouldBeActive,
-      disabled: !hasData
-    }
-  })
+// Título del badge
+const badgeTitle = computed(() => {
+  if (props.title === 'IS') return 'Ingresos\nSostenibles'
+  if (props.title === 'IIC') return 'Ingresos\nInt. Carbono'
+  if (props.title === 'PS') return 'Presupuestos\nSostenibles'
+  if (props.title === 'PIC') return 'Presupuestos\nInt. Carbono'
+  return props.title
 })
 
-// Calcular sectores con estado activo/inactivo
-const allSectorsWithState = computed(() => {
-  if (!props.sectors || props.sectors.length === 0) {
-    return []
-  }
-  
+// Procesar sectores con shortLabels para los filtros
+const processedSectors = computed(() => {
   return props.sectors.map(sector => {
-    const hasData = sector.value !== null && 
-                    sector.value !== undefined && 
-                    !isNaN(sector.value) &&
-                    sector.value > 0
+    let shortLabel = sector.label
     
-    const userToggle = userToggles.value[sector.key]
-    const isActive = hasData && (userToggle !== undefined ? userToggle : true)
+    if (sector.label === 'Movilidad Sustentable') shortLabel = 'Movilidad'
+    if (sector.label === 'Protección Ambiental') shortLabel = 'Protección'
+    if (sector.label === 'Desastres Naturales') shortLabel = 'Desastres'
     
     return {
       ...sector,
-      isActive: isActive,
-      hasData: hasData
+      shortLabel
     }
   })
 })
 
-// Calcular el valor total de TODOS los sectores
-const totalAllSectorsValue = computed(() => {
-  return allSectorsWithState.value.reduce((sum, sector) => sum + (sector.value || 0), 0)
-})
-
-// Determinar si mostrar el progreso
-const shouldShowProgress = computed(() => {
-  return allSectorsWithState.value.some(s => s.hasData)
-})
-
-// Texto central dinámico
-const centralTitle = computed(() => {
-  return hoveredSector.value ? hoveredSector.value.label : props.title
-})
-
-const centralValue = computed(() => {
-  return hoveredSector.value 
-    ? formatCurrency(hoveredSector.value.value) 
-    : formatTotalValue(totalAllSectorsValue.value)
-})
-
-// ✅ NUEVO: Función para formatear el valor total en el centro
-const formatTotalValue = (value) => {
-  if (value === null || value === undefined || value === 0) return '$0'
-  
-  if (Math.abs(value) >= 1000000000) {
-    return `$${(value / 1000000000).toFixed(1)}B`
-  } else if (Math.abs(value) >= 1000000) {
-    return `$${(value / 1000000).toFixed(1)}M`
-  } else if (Math.abs(value) >= 1000) {
-    return `$${(value / 1000).toFixed(1)}K`
-  }
-  return `$${value.toFixed(0)}`
-}
-
-// Función para formatear moneda
-const formatCurrency = (value) => {
-  if (value === null || value === undefined) return ''
-  
-  if (Math.abs(value) >= 1000000000) {
-    return `$${(value / 1000000000).toFixed(2)}B`
-  } else if (Math.abs(value) >= 1000000) {
-    return `$${(value / 1000000).toFixed(2)}M`
-  } else if (Math.abs(value) >= 1000) {
-    return `$${(value / 1000).toFixed(1)}K`
-  }
-  return `$${value.toFixed(0)}`
-}
-
-// Manejar hover con índice
-const handleSectorHover = (sector, index, event) => {
-  hoveredSector.value = sector
-  hoveredSectorIndex.value = index
-  updateTooltipPosition(event)
-}
-
-// Actualizar posición del tooltip
-const updateTooltipPosition = (event) => {
-  tooltipPosition.value = {
-    x: event.clientX,
-    y: event.clientY
-  }
-}
-
-// Limpiar hover
-const handleSectorLeave = () => {
-  hoveredSector.value = null
-  hoveredSectorIndex.value = null
-}
-
-// Configuración de colores
-const primaryColor = computed(() => {
-  if (props.data.length > 0 && props.data[0].color) {
-    return props.data[0].color
-  }
-  return '#009d14'
-})
-
-const backgroundColor = computed(() => {
-  if (props.data.length > 1 && props.data[1].color) {
-    return props.data[1].color
-  }
-  return '#E8E8E8'
-})
-
-// Calculados para el SVG
-const center = computed(() => props.size / 2)
-const strokeWidth = computed(() => 35)
-const radius = computed(() => (props.size / 2) - (strokeWidth.value / 2))
-
-// Obtener color del sector
-const getSectorColor = (sector) => {
-  if (!sector.hasData) {
-    return '#E8E8E8'
-  }
-  return sector.isActive ? sector.color : '#D0D0D0'
-}
-
-// ✅ MODIFICADO: getSectorPath ahora acepta animatedProgress
-const getSectorPath = (sector, index, progress = 1) => {
-  const r = radius.value
-  const cx = center.value
-  const cy = center.value
-  
-  let startAngle = -90
-  
-  // Calcular ángulo inicial basado en sectores anteriores
-  for (let i = 0; i < index; i++) {
-    const prevSector = allSectorsWithState.value[i]
-    const prevPercentage = totalAllSectorsValue.value > 0 
-      ? (prevSector.value / totalAllSectorsValue.value) 
-      : 0
-    startAngle += prevPercentage * 360 * progress
-  }
-  
-  const sectorPercentage = totalAllSectorsValue.value > 0 
-    ? (sector.value / totalAllSectorsValue.value) 
-    : 0
-  const sectorAngle = sectorPercentage * 360 * progress
-  
-  // Caso especial para sectores de 360°
-  if (sectorAngle >= 359.99) {
-    const topY = cy - r
-    const bottomY = cy + r
-    return `M ${cx} ${topY} A ${r} ${r} 0 0 1 ${cx} ${bottomY} A ${r} ${r} 0 0 1 ${cx} ${topY}`
-  }
-  
-  const endAngle = startAngle + sectorAngle
-  
-  const startRad = (startAngle * Math.PI) / 180
-  const endRad = (endAngle * Math.PI) / 180
-  
-  const x1 = cx + r * Math.cos(startRad)
-  const y1 = cy + r * Math.sin(startRad)
-  const x2 = cx + r * Math.cos(endRad)
-  const y2 = cy + r * Math.sin(endRad)
-  
-  const largeArcFlag = sectorAngle > 180 ? 1 : 0
-  
-  return `M ${x1} ${y1} A ${r} ${r} 0 ${largeArcFlag} 1 ${x2} ${y2}`
-}
-
-// ✅ NUEVO: Función para obtener el punto de inicio del divisor
-const getSectorDividerStart = (sector, index, progress = 1) => {
-  const r = radius.value
-  const cx = center.value
-  const cy = center.value
-  const outerRadius = r + (strokeWidth.value / 2)
-  const innerRadius = r - (strokeWidth.value / 2)
-  
-  let angle = -90
-  
-  for (let i = 0; i <= index; i++) {
-    const currentSector = allSectorsWithState.value[i]
-    const percentage = totalAllSectorsValue.value > 0 
-      ? (currentSector.value / totalAllSectorsValue.value) 
-      : 0
-    angle += percentage * 360 * progress
-  }
-  
-  const rad = (angle * Math.PI) / 180
-  
-  return {
-    x: cx + innerRadius * Math.cos(rad),
-    y: cy + innerRadius * Math.sin(rad)
-  }
-}
-
-// ✅ NUEVO: Función para obtener el punto final del divisor
-const getSectorDividerEnd = (sector, index, progress = 1) => {
-  const r = radius.value
-  const cx = center.value
-  const cy = center.value
-  const outerRadius = r + (strokeWidth.value / 2)
-  
-  let angle = -90
-  
-  for (let i = 0; i <= index; i++) {
-    const currentSector = allSectorsWithState.value[i]
-    const percentage = totalAllSectorsValue.value > 0 
-      ? (currentSector.value / totalAllSectorsValue.value) 
-      : 0
-    angle += percentage * 360 * progress
-  }
-  
-  const rad = (angle * Math.PI) / 180
-  
-  return {
-    x: cx + outerRadius * Math.cos(rad),
-    y: cy + outerRadius * Math.sin(rad)
-  }
-}
-
-// Función para calcular el porcentaje de un sector
-const getSectorPercentage = (sector) => {
-  if (totalAllSectorsValue.value === 0) return ''
-  const percentage = (sector.value / totalAllSectorsValue.value) * 100
-  
-  if (percentage < 3) return '' // Ocultar si es muy pequeño
-  
-  return `${percentage.toFixed(1)}%`
-}
-
-// ✅ MODIFICADO: Función para calcular la posición del label (inner o outer)
-const getSectorLabelPosition = (sector, index, type = 'inner') => {
-  const r = radius.value
-  const cx = center.value
-  const cy = center.value
-  
-  let startAngle = -90
-  
-  for (let i = 0; i < index; i++) {
-    const prevSector = allSectorsWithState.value[i]
-    const prevPercentage = totalAllSectorsValue.value > 0 
-      ? (prevSector.value / totalAllSectorsValue.value) 
-      : 0
-    startAngle += prevPercentage * 360
-  }
-  
-  const sectorPercentage = totalAllSectorsValue.value > 0 
-    ? (sector.value / totalAllSectorsValue.value) 
-    : 0
-  const sectorAngle = sectorPercentage * 360
-  
-  const midAngle = startAngle + (sectorAngle / 2)
-  const midRad = (midAngle * Math.PI) / 180
-  
-  // ✅ Determinar radio según tipo
-  const labelRadius = type === 'inner' 
-    ? r  // Dentro del anillo
-    : r + strokeWidth.value + 25  // Fuera del donut
-  
-  return {
-    x: cx + labelRadius * Math.cos(midRad),
-    y: cy + labelRadius * Math.sin(midRad) + (type === 'inner' ? 4 : 5)
-  }
-}
-
-// Métodos
-const toggleVariable = (key) => {
-  const variable = internalVariables.value.find(v => v.key === key)
-  if (variable && !variable.disabled) {
-    const currentState = userToggles.value[key] !== undefined ? userToggles.value[key] : true
-    userToggles.value[key] = !currentState
-  }
-}
-
-const isVariableActive = (key) => {
-  return internalVariables.value.find(v => v.key === key)?.active || false
-}
-
-const isVariableDisabled = (key) => {
-  return internalVariables.value.find(v => v.key === key)?.disabled || false
-}
-
-// ✅ NUEVO: Función de animación
-const animateDonut = () => {
-  if (isAnimating.value) return
-  
-  isAnimating.value = true
-  animatedProgress.value = 0
-  
-  const duration = 1500 // 1.5 segundos
-  const startTime = Date.now()
-  
-  const animate = () => {
-    const elapsed = Date.now() - startTime
-    const progress = Math.min(elapsed / duration, 1)
-    
-    // Easing: ease-out cubic
-    animatedProgress.value = 1 - Math.pow(1 - progress, 3)
-    
-    if (progress < 1) {
-      requestAnimationFrame(animate)
-    } else {
-      isAnimating.value = false
-    }
-  }
-  
-  requestAnimationFrame(animate)
-}
-
-// Watch optimizado para detectar cambios en sectores
+// Inicializar sectores activos cuando cambian los props
 watch(() => props.sectors, (newSectors) => {
   if (newSectors && newSectors.length > 0) {
-    newSectors.forEach(sector => {
-      const hasData = sector.value > 0
-      if (!hasData && userToggles.value[sector.key] === true) {
-        delete userToggles.value[sector.key]
-      }
-    })
-    
-    // Animar cuando cambien los datos
-    animateDonut()
+    activeSectors.value = newSectors.map(() => true)
   }
-}, { deep: true })
+}, { immediate: true })
 
-// Animar al montar el componente
-onMounted(() => {
-  if (shouldShowProgress.value) {
-    setTimeout(() => {
-      animateDonut()
-    }, 100)
+// Calcular el total de todos los sectores
+const totalAllSectors = computed(() => {
+  return props.sectors.reduce((acc, sector) => acc + (sector.value || 0), 0)
+})
+
+// Obtener porcentaje para un sector específico
+function getPercentForSector(index) {
+  if (!props.sectors[index] || totalAllSectors.value === 0) return 0
+  const percent = (props.sectors[index].value / totalAllSectors.value) * 100
+  return Math.round(percent * 10) / 10
+}
+
+// Título dinámico a mostrar en el indicador
+const displayTitle = computed(() => {
+  if (hoveredIndex.value !== null && processedSectors.value[hoveredIndex.value]) {
+    return processedSectors.value[hoveredIndex.value].label
+  }
+  
+  const activeIndices = activeSectors.value
+    .map((active, i) => active ? i : -1)
+    .filter(i => i !== -1)
+  
+  if (activeIndices.length === props.sectors.length || activeIndices.length === 0) {
+    if (props.title === 'IS') return 'Ingresos Sostenibles'
+    if (props.title === 'IIC') return 'Ingresos Int. Carbono'
+    if (props.title === 'PS') return 'Presupuestos Sostenibles'
+    if (props.title === 'PIC') return 'Presupuestos Int. Carbono'
+    return props.title
+  } 
+  else if (activeIndices.length === 1) {
+    return processedSectors.value[activeIndices[0]]?.label || ''
+  } 
+  else {
+    return activeIndices.map(i => processedSectors.value[i]?.shortLabel || processedSectors.value[i]?.label).join(' + ')
   }
 })
+
+// Valor dinámico a mostrar (suma de sectores activos)
+const displayValue = computed(() => {
+  if (hoveredIndex.value !== null && processedSectors.value[hoveredIndex.value]) {
+    return formatValue(processedSectors.value[hoveredIndex.value].value)
+  }
+  
+  const sum = activeSectors.value.reduce((acc, active, i) => {
+    return active && props.sectors[i] ? acc + props.sectors[i].value : acc
+  }, 0)
+  
+  return formatValue(sum)
+})
+
+// Computed: hay filtros activos (no todos seleccionados)
+const hasActiveFilters = computed(() => {
+  const activeCount = activeSectors.value.filter(Boolean).length
+  return activeCount > 0 && activeCount < props.sectors.length
+})
+
+// Calcular paths SVG de los sectores con sus posiciones de porcentaje
+const computedSectorPaths = computed(() => {
+  if (!props.sectors || props.sectors.length === 0) return []
+  
+  const cx = 100
+  const cy = 100
+  const r = 72
+  
+  const total = totalAllSectors.value
+  
+  let currentAngle = -90
+  
+  return props.sectors.map((sector, index) => {
+    const percent = total > 0 ? (sector.value / total) * 100 : 0
+    const angleSpan = (percent / 100) * 360
+    const startAngle = currentAngle
+    const endAngle = currentAngle + angleSpan
+    
+    const startRad = (startAngle * Math.PI) / 180
+    const endRad = (endAngle * Math.PI) / 180
+    
+    const x1 = cx + r * Math.cos(startRad)
+    const y1 = cy + r * Math.sin(startRad)
+    const x2 = cx + r * Math.cos(endRad)
+    const y2 = cy + r * Math.sin(endRad)
+    
+    const largeArc = angleSpan > 180 ? 1 : 0
+    
+    const midAngle = startAngle + angleSpan / 2
+    const midRad = (midAngle * Math.PI) / 180
+    const percentX = cx + r * Math.cos(midRad)
+    const percentY = cy + r * Math.sin(midRad)
+    
+    const textRotation = midAngle + 90
+    
+    currentAngle = endAngle
+    
+    return {
+      ...sector,
+      path: angleSpan > 0 ? `M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2}` : '',
+      percentX,
+      percentY,
+      textRotation,
+      displayPercent: Math.round(percent * 10) / 10
+    }
+  })
+})
+
+// Métodos
+function toggleSector(index) {
+  activeSectors.value[index] = !activeSectors.value[index]
+  
+  if (!activeSectors.value.some(Boolean)) {
+    activeSectors.value = activeSectors.value.map(() => true)
+  }
+}
+
+function onSectorHover(index) {
+  if (activeSectors.value[index]) {
+    hoveredIndex.value = index
+  }
+}
+
+function onSectorLeave() {
+  hoveredIndex.value = null
+}
+
+function formatValue(value) {
+  if (!value || value === 0) return '$0'
+  
+  const millions = value / 1000000
+  
+  if (millions >= 1000) {
+    return '$' + (millions / 1000).toFixed(1) + 'B'
+  } else if (millions >= 1) {
+    return '$' + Math.round(millions) + 'M'
+  } else if (millions >= 0.1) {
+    return '$' + millions.toFixed(1) + 'M'
+  } else {
+    const thousands = value / 1000
+    return '$' + Math.round(thousands) + 'K'
+  }
+}
 </script>
 
 <style scoped>
-.donut-chart {
+/* ============================================
+   Container principal - Vertical Stack
+   TAMAÑOS AUMENTADOS para mayor altura
+   ============================================ */
+.donut-item-vertical {
+  flex: 1;
+  border-radius: 0 0 12px 12px;
+  padding: 14px; /* ✅ Aumentado de 12px */
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
   height: 100%;
-}
-
-.variable-filters {
-  display: flex;
-  flex-direction: row;
-  min-height: 35px;
-  padding: 6px;
-  border-radius: 20px;
-  flex-wrap: wrap;
-  justify-content: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); 
-  gap: 2px;
-  background: #f5f5f5;
-  flex-shrink: 0;
-  width: 100%;
-  margin-bottom: 5px;
-}
-
-.filter-btn {
-  flex: 0 1 auto;
-  border: none;
-  padding: 1px 12px;
-  border-radius: 24px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  background: transparent;
-  color: #666;
-  transition: all 0.3s ease;
-  white-space: nowrap;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.filter-btn:hover {
-  background: #e5e7eb;
-}
-
-.filter-btn.active {
-  background: white;
-  color: #2c3e50;
-}
-
-.filter-btn.disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-  background: transparent;
-}
-
-.filter-btn.disabled:hover {
-  background: transparent;
-}
-
-.filter-btn.disabled .legend-dot {
-  opacity: 0.5;
-}
-
-.legend-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.legend-dot.green {
-  background: #7cb342;
-}
-
-.legend-dot.light-green {
-  background: #9ccc65;
-}
-
-.legend-dot.dark-green {
-  background: #558b2f;
-}
-
-.legend-dot.red {
-  background: #DC143C;
-}
-
-.legend-dot.light-red {
-  background: #ef5350;
-}
-
-.legend-dot.dark-red {
-  background: #b71c1c;
-}
-
-.legend-dot.gray {
-  background: #9ca3af;
-}
-
-.chart-svg-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex: 1;
-  width: 100%;
   min-height: 0;
+  background-color: white;
+  gap: 12px; /* ✅ Aumentado de 10px */
 }
 
-.donut-svg {
-  overflow: visible;
+/* ============================================
+   Barra de distribución horizontal superior
+   ============================================ */
+.distribution-bar-section {
+  flex-shrink: 0;
 }
 
-.sector-path {
-  transition: stroke-width 0.3s ease, opacity 0.2s ease;
+.distribution-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px; /* ✅ Aumentado de 6px */
+}
+
+.distribution-label {
+  font-size: 11px; /* ✅ Aumentado de 10px */
+  color: #64748b;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.distribution-value {
+  font-size: 15px; /* ✅ Aumentado de 13px */
+  font-weight: 700;
+}
+
+.distribution-value.green {
+  color: #166534;
+}
+
+.distribution-value.red {
+  color: #dc2626;
+}
+
+.distribution-bar {
+  display: flex;
+  height: 14px; /* ✅ Aumentado de 12px */
+  border-radius: 7px;
+  overflow: hidden;
+  background: #e2e8f0;
+}
+
+.distribution-segment {
+  height: 100%;
+  transition: all 0.3s ease;
   cursor: pointer;
 }
 
-.sector-path.sector-hovered {
+.distribution-segment:hover {
   filter: brightness(1.1);
 }
 
-.sector-path.sector-inactive {
-  opacity: 0.5;
-  cursor: default;
+.distribution-segment.dimmed {
+  opacity: 0.2;
 }
 
-.sector-path.sector-dimmed {
-  opacity: 0.3;
-  transition: opacity 0.3s ease;
+.distribution-segment.highlighted {
+  filter: brightness(1.15);
 }
 
-/* Porcentajes DENTRO del anillo - pequeños y delgados */
+/* ============================================
+   Área principal - Dona + Badge
+   ============================================ */
+.donut-main-area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px; /* ✅ Aumentado de 20px */
+  min-height: 180px; /* ✅ Aumentado */
+  padding: 10px 0; /* ✅ Aumentado de 8px */
+}
+
+/* Dona SVG - TAMAÑO AUMENTADO */
+.donut-svg-container {
+  position: relative;
+  width: 170px; /* ✅ Aumentado de 140px */
+  height: 170px; /* ✅ Aumentado de 140px */
+  flex-shrink: 0;
+}
+
+.donut-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.donut-ring {
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.donut-ring:hover {
+  filter: brightness(1.1);
+}
+
+.donut-ring.dimmed {
+  opacity: 0.2;
+}
+
+.donut-ring.highlighted {
+  filter: brightness(1.15);
+  stroke-width: 28;
+}
+
+/* Porcentajes dentro del anillo */
 .sector-percent {
-  font-size: 10px;
-  font-weight: 300;
+  font-size: 11px; /* ✅ Aumentado de 10px */
+  font-weight: 600;
   fill: white;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  stroke: #1e3a5f;
+  stroke-width: 2px;
+  paint-order: stroke fill;
   pointer-events: none;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-  opacity: 0.95;
   transition: opacity 0.3s ease;
 }
 
-.sector-percent-inactive {
-  fill: #888;
-  opacity: 0.5;
+.sector-percent.dimmed {
+  opacity: 0.2;
 }
 
-.sector-percent-dimmed {
-  opacity: 0.3;
-}
-
-/* Título de la variable (IS, PS, PIC, IIC) */
-.variable-title-text {
-  font-size: 15px;
-  font-weight: 600;
-  fill: #666;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+/* Centro con valor - TAMAÑO AUMENTADO */
+.donut-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
   pointer-events: none;
-  letter-spacing: 0.5px;
-  transition: fill 0.3s ease, font-size 0.3s ease;
 }
 
-.variable-title-text.hovered {
-  fill: #2c3e50;
-  font-size: 16px;
-}
-
-/* Valor total en el centro */
-.total-value-text {
-  font-size: 22px;
+.center-value {
+  font-size: 22px; /* ✅ Aumentado de 18px */
   font-weight: 700;
-  fill: #2c3e50;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  pointer-events: none;
-  letter-spacing: -0.5px;
-  transition: fill 0.3s ease, font-size 0.3s ease;
+  transition: all 0.3s ease;
 }
 
-.total-value-text.hovered {
-  fill: #7cb342;
-  font-size: 24px;
+.center-value.green {
+  color: #166534;
 }
 
+.center-value.red {
+  color: #dc2626;
+}
+
+/* ============================================
+   Badge indicador - TAMAÑO AUMENTADO
+   ============================================ */
+.badge-indicator {
+  padding: 16px 14px; /* ✅ Aumentado de 14px 12px */
+  border-radius: 14px; /* ✅ Aumentado de 12px */
+  text-align: center;
+  flex-shrink: 0;
+  min-width: 80px; /* ✅ Añadido mínimo */
+}
+
+.badge-indicator.green {
+  background: #f0fdf4;
+  border: 2px solid #86efac;
+}
+
+.badge-indicator.red {
+  background: #fef2f2;
+  border: 2px solid #fca5a5;
+}
+
+.badge-icon-circle {
+  width: 38px; /* ✅ Aumentado de 32px */
+  height: 38px; /* ✅ Aumentado de 32px */
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 10px; /* ✅ Aumentado de 8px */
+}
+
+.badge-icon-circle.green {
+  background: linear-gradient(135deg, #166534 0%, #15803d 100%);
+  color: white;
+}
+
+.badge-icon-circle.red {
+  background: linear-gradient(135deg, #991b1b 0%, #dc2626 100%);
+  color: white;
+}
+
+.badge-icon-circle svg {
+  width: 20px; /* ✅ Aumentado de 16px */
+  height: 20px; /* ✅ Aumentado de 16px */
+}
+
+.badge-text {
+  font-size: 8px; /* ✅ Aumentado de 7px */
+  font-weight: 700;
+  text-transform: uppercase;
+  line-height: 1.3;
+  white-space: pre-line;
+}
+
+.badge-indicator.green .badge-text {
+  color: #166534;
+}
+
+.badge-indicator.red .badge-text {
+  color: #dc2626;
+}
+
+/* ============================================
+   Lista de datos inferior - TAMAÑO AUMENTADO
+   ============================================ */
+.data-list-section {
+  background: #f8fafc;
+  border-radius: 12px; /* ✅ Aumentado de 10px */
+  padding: 10px; /* ✅ Aumentado de 8px */
+  border: 1px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+.data-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px; /* ✅ Aumentado de 8px 10px */
+  border-radius: 8px; /* ✅ Aumentado de 6px */
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.data-list-item:not(:last-child) {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.data-list-item:hover,
+.data-list-item.highlighted {
+  background: white;
+}
+
+.data-list-item.dimmed {
+  opacity: 0.35;
+}
+
+.data-item-left {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* ✅ Aumentado de 8px */
+}
+
+.data-color-dot {
+  width: 14px; /* ✅ Aumentado de 12px */
+  height: 14px; /* ✅ Aumentado de 12px */
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.data-item-label {
+  font-size: 12px; /* ✅ Aumentado de 11px */
+  font-weight: 500;
+  color: #374151;
+}
+
+.data-item-right {
+  display: flex;
+  align-items: center;
+  gap: 14px; /* ✅ Aumentado de 12px */
+}
+
+.data-item-value {
+  font-size: 14px; /* ✅ Aumentado de 12px */
+  font-weight: 700;
+  color: #1e3a5f;
+}
+
+.data-item-percent {
+  font-size: 11px; /* ✅ Aumentado de 10px */
+  font-weight: 700;
+  color: white;
+  padding: 4px 10px; /* ✅ Aumentado de 3px 8px */
+  border-radius: 12px; /* ✅ Aumentado de 10px */
+  min-width: 48px; /* ✅ Aumentado de 42px */
+  text-align: center;
+}
+
+/* ============================================
+   Responsive
+   ============================================ */
 @media (max-width: 768px) {
-  .filter-btn {
-    font-size: 9px;
-    padding: 3px 8px;
-    gap: 4px;
+  .donut-svg-container {
+    width: 140px;
+    height: 140px;
   }
   
-  .legend-dot {
-    width: 10px;
-    height: 10px;
+  .donut-main-area {
+    gap: 16px;
   }
   
-  .sector-percent {
-    font-size: 9px;
+  .badge-indicator {
+    padding: 12px 10px;
   }
   
-  .variable-title-text {
-    font-size: 13px;
+  .badge-icon-circle {
+    width: 32px;
+    height: 32px;
   }
   
-  .variable-title-text.hovered {
-    font-size: 14px;
+  .badge-icon-circle svg {
+    width: 16px;
+    height: 16px;
   }
   
-  .total-value-text {
+  .badge-text {
+    font-size: 7px;
+  }
+  
+  .center-value {
     font-size: 18px;
   }
   
-  .total-value-text.hovered {
-    font-size: 20px;
+  .data-item-label {
+    font-size: 11px;
+  }
+  
+  .data-item-value {
+    font-size: 12px;
+  }
+  
+  .data-item-percent {
+    font-size: 10px;
+    padding: 3px 8px;
+    min-width: 42px;
   }
 }
 </style>

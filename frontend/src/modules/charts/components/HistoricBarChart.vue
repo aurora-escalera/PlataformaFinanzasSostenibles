@@ -2,7 +2,7 @@
 <template>
   <div class="bar-chart-container">
     <!-- 1. TÍTULO -->
-    <div class="chart-title-section">
+    <div v-if="!hideHeader" class="chart-title-section">
       <h3 class="chart-title">{{ title }}</h3>
     </div>
 
@@ -149,6 +149,11 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
+  // ✅ NUEVA PROP: Ocultar el header/título
+  hideHeader: {
+    type: Boolean,
+    default: false
+  },
   // ✅ NUEVA PROP: Array de keys de variables que queremos mostrar
   visibleVariableKeys: {
     type: Array,
@@ -175,6 +180,90 @@ const tooltipPosition = ref({ x: 0, y: 0 })
 const barsContainerRef = ref(null)
 const barsContainerHeight = ref(200) // Altura por defecto
 
+// ✅ Mapa de colores semánticos basados en el nombre/key de la variable
+const semanticColors = {
+  // Verdes - Sostenibles
+  'IS': '#7cb342',
+  'IS Total': '#7cb342',
+  'Ingresos Sostenibles': '#7cb342',
+  'PS': '#7cb342',
+  'Presupuestos Sostenibles': '#7cb342',
+  
+  // Rojos - Intensivos en Carbono (principal)
+  'IIC': '#DC143C',
+  'IIC Total': '#DC143C',
+  'PIC': '#DC143C',
+  'Presupuestos Intensivos en Carbono': '#DC143C',
+  'Ingresos Intensivos en Carbono': '#DC143C',
+  
+  // Variantes de rojo para IIC (como en DonutChart)
+  'IIC_H': '#8B0000',      // dark-red - Hidrocarburos
+  'IIC_M': '#DC143C',      // red - Minería
+  'IIC_T': '#FF6B6B',      // light-red - Transporte
+  
+  // Grises - Totales
+  'Financiamiento Total': '#9E9E9E',
+  'Gasto Total': '#9E9E9E',
+  'Ingreso Total': '#9E9E9E',
+  'GT ($)': '#9E9E9E',
+  'IT ($)': '#9E9E9E',
+  'PT ($)': '#9E9E9E',
+}
+
+// ✅ Función para obtener color semántico de una variable
+const getSemanticColor = (key, label, originalColor) => {
+  // Primero buscar por key exacta
+  if (semanticColors[key]) {
+    return semanticColors[key]
+  }
+  
+  // Luego buscar por label exacta
+  if (semanticColors[label]) {
+    return semanticColors[label]
+  }
+  
+  // Buscar coincidencias parciales por key
+  const lowerKey = (key || '').toLowerCase()
+  
+  // Patrones para verde (sostenible)
+  if (lowerKey === 'is' || lowerKey.includes('is_') || lowerKey.includes('sostenible') || lowerKey === 'ps') {
+    return '#7cb342'
+  }
+  
+  // Patrones para rojo (carbono) - variantes específicas
+  if (lowerKey === 'iic_h') return '#8B0000'      // dark-red
+  if (lowerKey === 'iic_m') return '#DC143C'      // red
+  if (lowerKey === 'iic_t') return '#FF6B6B'      // light-red
+  
+  // Patrones para rojo (carbono) - general
+  if (lowerKey === 'iic' || lowerKey.includes('iic') || lowerKey === 'pic' || lowerKey.includes('carbono')) {
+    return '#DC143C'
+  }
+  
+  // Patrones para gris (totales)
+  if (lowerKey.includes('total') || lowerKey.includes('gt') || lowerKey.includes('it') || lowerKey.includes('pt')) {
+    return '#9E9E9E'
+  }
+  
+  // Buscar coincidencias parciales por label
+  const lowerLabel = (label || '').toLowerCase()
+  
+  if (lowerLabel.includes('sostenible') || lowerLabel.includes(' is')) {
+    return '#7cb342'
+  }
+  
+  if (lowerLabel.includes('carbono') || lowerLabel.includes('iic') || lowerLabel.includes('pic')) {
+    return '#DC143C'
+  }
+  
+  if (lowerLabel.includes('total')) {
+    return '#9E9E9E'
+  }
+  
+  // Fallback al color original
+  return originalColor
+}
+
 // Función para actualizar posición del tooltip
 const updateTooltipPosition = (event) => {
   const rect = event.target.getBoundingClientRect()
@@ -196,18 +285,21 @@ const uniqueVariables = computed(() => {
           // Si hay configuración externa, usarla
           if (props.variablesConfig && props.variablesConfig[variable.key]) {
             const config = props.variablesConfig[variable.key]
+            const baseColor = config.color || variable.color
             variablesMap.set(variable.key, {
               key: variable.key,
               label: config.label || variable.label,
-              color: config.color || variable.color,
+              // ✅ Aplicar color semántico
+              color: getSemanticColor(variable.key, config.label || variable.label, baseColor),
               order: config.order || 0
             })
           } else {
-            // Usar configuración del dato
+            // Usar configuración del dato con color semántico
             variablesMap.set(variable.key, {
               key: variable.key,
               label: variable.label,
-              color: variable.color,
+              // ✅ Aplicar color semántico
+              color: getSemanticColor(variable.key, variable.label, variable.color),
               order: 0
             })
           }
@@ -246,30 +338,48 @@ const getFilteredVariables = (yearData) => {
       props.visibleVariableKeys.includes(v.key)
     )
     
-    // Aplicar configuración si existe
+    // Aplicar configuración y colores semánticos
     if (props.variablesConfig) {
-      return filtered.map(v => ({
-        ...v,
-        label: props.variablesConfig[v.key]?.label || v.label,
-        color: props.variablesConfig[v.key]?.color || v.color,
-        order: props.variablesConfig[v.key]?.order || 0
-      })).sort((a, b) => (a.order || 0) - (b.order || 0))
+      return filtered.map(v => {
+        const configLabel = props.variablesConfig[v.key]?.label || v.label
+        const configColor = props.variablesConfig[v.key]?.color || v.color
+        return {
+          ...v,
+          label: configLabel,
+          // ✅ Aplicar color semántico
+          color: getSemanticColor(v.key, configLabel, configColor),
+          order: props.variablesConfig[v.key]?.order || 0
+        }
+      }).sort((a, b) => (a.order || 0) - (b.order || 0))
     }
     
-    return filtered
-  }
-  
-  // Si no hay filtro, devolver todas aplicando configuración si existe
-  if (props.variablesConfig) {
-    return yearData.variables.map(v => ({
+    // Sin configuración externa, igual aplicar colores semánticos
+    return filtered.map(v => ({
       ...v,
-      label: props.variablesConfig[v.key]?.label || v.label,
-      color: props.variablesConfig[v.key]?.color || v.color,
-      order: props.variablesConfig[v.key]?.order || 0
-    })).sort((a, b) => (a.order || 0) - (b.order || 0))
+      color: getSemanticColor(v.key, v.label, v.color)
+    }))
   }
   
-  return yearData.variables
+  // Si no hay filtro, devolver todas aplicando configuración y colores semánticos
+  if (props.variablesConfig) {
+    return yearData.variables.map(v => {
+      const configLabel = props.variablesConfig[v.key]?.label || v.label
+      const configColor = props.variablesConfig[v.key]?.color || v.color
+      return {
+        ...v,
+        label: configLabel,
+        // ✅ Aplicar color semántico
+        color: getSemanticColor(v.key, configLabel, configColor),
+        order: props.variablesConfig[v.key]?.order || 0
+      }
+    }).sort((a, b) => (a.order || 0) - (b.order || 0))
+  }
+  
+  // Sin configuración, aplicar colores semánticos directamente
+  return yearData.variables.map(v => ({
+    ...v,
+    color: getSemanticColor(v.key, v.label, v.color)
+  }))
 }
 
 // ✅ MODIFICADO: Inicializar filtros con activación automática secuencial
@@ -352,53 +462,49 @@ const yAxisTicks = computed(() => {
   ]
 })
 
-// ✅ ANCHO DINÁMICO DE BARRAS - AJUSTADO AL ESPACIO DISPONIBLE
+// ✅ ANCHO DINÁMICO DE BARRAS - BARRAS MÁS GRUESAS
 const barWidth = computed(() => {
   const activeCount = Object.values(activeFilters.value).filter(v => v !== false).length  
   const totalYears = props.data?.length || 5
   
-  if (activeCount === 0) return 40
-  
-  // En lugar de anchos fijos, calcular basado en porcentaje del espacio
-  const totalBarsPerYear = activeCount
+  if (activeCount === 0) return 50
   
   // Caso especial: 1 sola barra activa
   if (activeCount === 1) {
-    return 80 // Reducido de 92
+    return 120
   }
   
   // Caso especial: 2 barras activas
   if (activeCount === 2) {
-    return 38 // Reducido de 42
+    return 55
   }
 
   // Caso especial: 3 barras activas
   if (activeCount === 3) {
-    return 25 // Reducido de 28
+    return 38
   }
 
   // Para más de 3 barras, escalar proporcionalmente
-  const baseWidth = 50
-  const minWidth = 20
-  const maxWidth = 80
+  const baseWidth = 70
+  const minWidth = 25
+  const maxWidth = 120
   
-  const calculatedWidth = baseWidth / Math.sqrt(activeCount * 0.8)
+  const calculatedWidth = baseWidth / Math.sqrt(activeCount * 0.6)
   
   return Math.max(minWidth, Math.min(maxWidth, calculatedWidth))
 })
 
-// Gap dinámico entre grupos de años
+// Gap dinámico entre grupos de años - REDUCIDO
 const yearGroupGap = computed(() => {
   const activeCount = Object.values(activeFilters.value).filter(v => v !== false).length
   const totalVariables = visibleVariables.value.length
   
-  // Si todas las variables están activas, usar gap grande
+  // Gap mínimo entre años
   if (activeCount === totalVariables && totalVariables > 0) {
-    return '10px' // Gap cuando todas están activas
+    return '2px'
   }
   
-  // Si solo algunas están activas, gap más pequeño
-  return '5px' // Gap reducido
+  return '1px'
 })
 
 // Toggle filtro
@@ -406,9 +512,11 @@ const toggleFilter = (key) => {
   activeFilters.value[key] = !activeFilters.value[key]
 }
 
-// ✅ Formatear moneda (solo millones, sin billions)
+// ✅ Formatear moneda (billones, millones, miles)
 const formatCurrency = (value) => {
-  if (Math.abs(value) >= 1000000) {
+  if (Math.abs(value) >= 1000000000) {
+    return `$${(value / 1000000000).toFixed(1)}B`
+  } else if (Math.abs(value) >= 1000000) {
     return `$${(value / 1000000).toFixed(1)}M`
   } else if (Math.abs(value) >= 1000) {
     return `$${(value / 1000).toFixed(1)}K`
@@ -536,7 +644,8 @@ watch(() => props.data, () => {
 
 /* ✅ ÁREA DEL GRÁFICO */
 .chart-area {
-  margin-top: 20px;
+  margin-top: 8px;
+  padding-top: 15px;
   flex: 1;
   display: flex;
   position: relative;
@@ -564,10 +673,11 @@ watch(() => props.data, () => {
 }
 
 .tick-label {
-  font-size: 10px;
+  font-size: 14px;
+  font-weight: 300;
   color: #666;
   text-align: right;
-  width: 50px;
+  width: 55px;
   padding-right: 8px;
 }
 
@@ -604,7 +714,7 @@ display: none;
 /* ✅ WRAPPER DE BARRAS - CRÍTICO */
 .bars-wrapper {
   display: flex;
-  gap: 2px;
+  gap: 1px;
   align-items: flex-end;
   justify-content: center;
   flex: 1;

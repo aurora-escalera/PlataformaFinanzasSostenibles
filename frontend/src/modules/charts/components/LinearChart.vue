@@ -1,7 +1,7 @@
 <template>
   <div class="linear-chart-container">
     <!-- Header con título y controles -->
-    <div class="chart-header">
+    <div v-if="!hideHeader" class="chart-header">
       <div class="header-content">
         <h3 class="chart-title">{{ title }}</h3>
         <p v-if="subtitle" class="chart-subtitle">{{ subtitle }}</p>
@@ -76,25 +76,13 @@
         <line
           v-if="hoverState.visible"
           :x1="hoverState.x"
-          :y1="0"
+          :y1="chartPadding.top"
           :x2="hoverState.x"
-          :y2="dimensions.height"
+          :y2="dimensions.height - chartPadding.bottom"
           class="hover-line"
           stroke="#9ca3af"
           stroke-width="0.5"
           stroke-dasharray="4 4"
-        />
-
-        <!-- Línea horizontal punteada del hover -->
-        <line
-          v-if="hoverState.visible && hoverState.yValue !== null"
-          :x1="0"
-          :y1="hoverState.yPosition"
-          :x2="dimensions.width"
-          :y2="hoverState.yPosition"
-          class="hover-line"
-          stroke="#9ca3af"
-          stroke-width="0.8"
         />
 
         <!-- Líneas -->
@@ -163,54 +151,27 @@
         </g>
       </svg>
 
-      <!-- Tooltip fijo en la parte superior -->
+      <!-- ✅ Tooltip fijo en la parte superior, alineado con el punto en X -->
       <transition name="tooltip-fade">
         <div 
-          v-if="hoverState.visible" 
-          class="tooltip-fixed"
-          :style="tooltipFixedStyle"
+          v-if="hoverState.visible"
+          class="tooltip-container"
+          :style="{ left: `${hoverState.x}px` }"
         >
-          <div class="tooltip-year">{{ hoverState.label }}</div>
-          <div class="tooltip-items">
+          <div class="tooltip-header">
+            <span class="tooltip-year-label">{{ hoverState.label }}</span>
+          </div>
+          <div class="tooltip-content">
             <div 
               v-for="variable in visibleVariables"
               :key="`tooltip-${variable}`"
               class="tooltip-item"
             >
-              <div class="tooltip-item-header">
-                <div 
-                  class="tooltip-dot" 
-                  :style="{ backgroundColor: getVariableColor(variable) }"
-                ></div>
-                <span class="tooltip-variable">{{ variable }}</span>
-              </div>
-              <div class="tooltip-value">
-                {{ formatValue(getVariableData(variable)[hoverState.index]) }}
-              </div>
+              <span class="tooltip-color-indicator" :style="{ backgroundColor: getVariableColor(variable) }"></span>
+              <span class="tooltip-variable-name">{{ variable }}:</span>
+              <span class="tooltip-variable-value">{{ formatValue(getVariableData(variable)[hoverState.index]) }}</span>
             </div>
           </div>
-        </div>
-      </transition>
-
-      <!-- Tooltip Y -->
-      <transition name="tooltip-fade">
-        <div 
-          v-if="hoverState.visible && hoverState.yValue !== null" 
-          class="tooltip-y"
-          :style="tooltipYStyle"
-        >
-          {{ formatValue(hoverState.yValue) }}
-        </div>
-      </transition>
-
-      <!-- Tooltip X -->
-      <transition name="tooltip-x-fade">
-        <div 
-          v-if="hoverState.visible" 
-          class="tooltip-x"
-          :style="tooltipXStyle"
-        >
-          {{ hoverState.label }}
         </div>
       </transition>
     </div>
@@ -243,10 +204,7 @@ const props = defineProps({
   },
   data: {
     type: Object,
-    default: () => ({
-      'IS Total': [45234.5, 52341.2, 58123.7, 61456.8, 67234.9],
-      'Financ. para desarrollo total': [23456.8, 48123.4, 52341.9, 54234.5, 55678.2]
-    })
+    default: () => ({})
   },
   xLabels: {
     type: Array,
@@ -280,49 +238,105 @@ const props = defineProps({
       bottom: 90,
       left: 60
     })
+  },
+  hideHeader: {
+    type: Boolean,
+    default: false
+  },
+  showCurrencySymbol: {
+    type: Boolean,
+    default: true
+  },
+  decimalPlaces: {
+    type: Number,
+    default: null
+  },
+  valueSuffix: {
+    type: String,
+    default: ''
+  },
+  valuePrefix: {
+    type: String,
+    default: ''
+  },
+  initialVisibleVariables: {
+    type: Array,
+    default: null
   }
 })
 
 const emit = defineEmits(['variable-toggle'])
 
-// Estado
 const chartWrapper = ref(null)
 const dimensions = ref({ width: props.width, height: props.height })
 
-// Estado del hover
 const hoverState = ref({
   visible: false,
   x: 0,
   index: -1,
   label: '',
-  yValue: null,
-  yPosition: 0,
   previousIndex: -1
 })
 
-// Estado para la animación de los puntos
 const animatingPoints = ref({})
 
-// Configuración de padding - Ahora usa props
 const chartPadding = computed(() => props.padding)
 
-// Paleta de colores
+// Paleta de colores por defecto (fallback)
 const colorPalette = [
-  '#0F3759',
-  '#6B8FA3'
+  '#7cb342',
+  '#9E9E9E',
+  '#DC143C',
+  '#8b5cf6',
+  '#f59e0b',
+  '#ec4899',
+  '#06b6d4',
+  '#ef4444',
 ]
 
-// Variables disponibles y visibles
+// Mapa de colores semánticos basados en el nombre de la variable
+const semanticColors = {
+  // Verdes - Sostenibles
+  'IS Total': '#7cb342',
+  'IS': '#7cb342',
+  'Ingresos Sostenibles': '#7cb342',
+  'PS': '#7cb342',
+  'Presupuestos Sostenibles': '#7cb342',
+  
+  // Rojos - Intensivos en Carbono
+  'IIC Total': '#DC143C',
+  'IIC': '#DC143C',
+  'Ingresos Intensivos en Carbono': '#DC143C',
+  'PIC': '#DC143C',
+  'Presupuestos Intensivos en Carbono': '#DC143C',
+  
+  // Variantes de rojo para IIC
+  'IIC_H': '#8B0000',
+  'IIC_M': '#DC143C',
+  'IIC_C': '#FF6B6B',
+  
+  // Grises - Totales
+  'Financiamiento Total': '#9E9E9E',
+  'Gasto Total': '#9E9E9E',
+  'Ingreso Total': '#9E9E9E',
+  'GT ($)': '#9E9E9E',
+  'IT ($)': '#9E9E9E',
+  'PT ($)': '#9E9E9E',
+  
+  // Para HomePage
+  'IFS': '#9E9E9E',
+  ' IFS': '#9E9E9E',
+}
+
 const availableVariables = computed(() => Object.keys(props.data))
 const visibleVariables = ref([])
 
-// Estado de animación para cada variable
 const animatedData = ref({})
 const animatingVariables = ref(new Set())
 
-// ✅ NUEVO: Watch para actualizar dimensiones cuando cambien los datos
-watch(() => props.data, (newData) => {
+watch(() => props.data, (newData, oldData) => {
   const vars = Object.keys(newData)
+  const oldVars = oldData ? Object.keys(oldData) : []
   
   vars.forEach(variable => {
     if (!animatedData.value[variable]) {
@@ -330,44 +344,32 @@ watch(() => props.data, (newData) => {
     }
   })
 
-  if (visibleVariables.value.length === 0 && vars.length > 0) {
-    if (vars[0]) {
-      setTimeout(() => {
-        toggleVariable(vars[0])
-      }, 100)
-    }
-    
-    if (vars[1]) {
-      setTimeout(() => {
-        toggleVariable(vars[1])
-      }, 900)
-    }
+  const hadNoData = oldVars.length === 0
+  const hasDataNow = vars.length > 0
+  
+  if (hadNoData && hasDataNow && visibleVariables.value.length === 0) {
+    activateInitialVariables(vars)
   }
   
-  // ✅ AGREGADO: Actualizar dimensiones cuando cambien los datos
   nextTick(() => {
     updateDimensions()
   })
 }, { deep: true })
 
-// ✅ NUEVO: Watch para actualizar dimensiones cuando cambien las variables disponibles
 watch(availableVariables, () => {
   nextTick(() => {
     updateDimensions()
   })
 })
 
-// ✅ Watch para actualizar dimensiones cuando cambien width o height
 watch([() => props.width, () => props.height], () => {
   updateDimensions()
 })
 
-// Dimensiones del gráfico
 const chartHeight = computed(() => dimensions.value.height - chartPadding.value.top - chartPadding.value.bottom)
 const chartWidth = computed(() => dimensions.value.width - chartPadding.value.left - chartPadding.value.right)
 const gridSpacing = computed(() => chartHeight.value / (props.gridLines - 1))
 
-// Calcular todos los valores visibles
 const allVisibleValues = computed(() => {
   const values = []
   visibleVariables.value.forEach(variable => {
@@ -378,7 +380,6 @@ const allVisibleValues = computed(() => {
   return values.length > 0 ? values : [0]
 })
 
-// Máximo y mínimo ajustados
 const maxValue = computed(() => {
   if (allVisibleValues.value.length === 0) return 100
   const max = Math.max(...allVisibleValues.value)
@@ -405,30 +406,44 @@ const minValue = computed(() => {
   return min - (range * 0.20)
 })
 
-// Calcular la escala Y
 const yScale = computed(() => {
   const range = maxValue.value - minValue.value
   return range > 0 ? chartHeight.value / range : 1
 })
 
-// Verificar si hay datos
 const hasData = computed(() => {
   return visibleVariables.value.length > 0 && 
          visibleVariables.value.some(v => props.data[v] && props.data[v].length > 0)
 })
 
-// Obtener datos de una variable
 const getVariableData = (variable) => {
   return props.data[variable] || []
 }
 
-// Obtener color de una variable
+// ✅ Obtener color de variable - CON COLORES SEMÁNTICOS
 const getVariableColor = (variable) => {
+  if (semanticColors[variable]) {
+    return semanticColors[variable]
+  }
+  
+  const lowerVar = variable.toLowerCase()
+  
+  if (lowerVar.includes('sostenible') || lowerVar.includes(' is') || lowerVar === 'is' || lowerVar.includes('ps')) {
+    return '#7cb342'
+  }
+  
+  if (lowerVar.includes('carbono') || lowerVar.includes('iic') || lowerVar.includes('pic')) {
+    return '#DC143C'
+  }
+  
+  if (lowerVar.includes('total') || lowerVar.includes('gt') || lowerVar.includes('it') || lowerVar.includes('pt') || lowerVar.includes('ifs')) {
+    return '#9E9E9E'
+  }
+  
   const index = availableVariables.value.indexOf(variable)
   return colorPalette[index % colorPalette.length]
 }
 
-// Obtener color más oscuro para puntos animados
 const getDarkerColor = (variable) => {
   const color = getVariableColor(variable)
   const hex = color.replace('#', '')
@@ -438,7 +453,6 @@ const getDarkerColor = (variable) => {
   return `rgb(${r}, ${g}, ${b})`
 }
 
-// Calcular posición X usando todo el ancho disponible
 const getXPosition = (index) => {
   const dataLength = props.xLabels.length
   if (dataLength <= 1) return chartPadding.value.left + chartWidth.value / 2
@@ -450,7 +464,6 @@ const getXPosition = (index) => {
   return position
 }
 
-// Calcular posición Y para un valor
 const getY = (value) => {
   if (value === null || value === undefined || isNaN(value)) {
     return dimensions.value.height - chartPadding.value.bottom
@@ -469,44 +482,95 @@ const getY = (value) => {
   return Math.max(chartPadding.value.top, Math.min(dimensions.value.height - chartPadding.value.bottom, y))
 }
 
-// Calcular posición Y usando datos animados
 const getAnimatedY = (variable, index) => {
   const value = animatedData.value[variable]?.[index]
   return getY(value)
 }
 
-// Obtener valor del eje Y para una línea de grid
 const getYAxisValue = (index) => {
   const range = maxValue.value - minValue.value
   const step = range / (props.gridLines - 1)
   return maxValue.value - (step * index)
 }
 
-// Formatear valor del eje Y
 const formatYAxisValue = (value) => {
-  if (Math.abs(value) >= 1000000) {
-    return `$${(value / 1000000).toFixed(1)}M` 
-  } else if (Math.abs(value) >= 1000) {
-    return `$${(value / 1000).toFixed(1)}K`
-  }
-  return `$${Math.round(value)}`
-}
-
-// Formatear valor para tooltip
-const formatValue = (value) => {
-  if (value === null || value === undefined) return 'N/A'
   if (props.valueFormatter) {
     return props.valueFormatter(value)
   }
-  if (Math.abs(value) >= 1000000) {
-    return `$${(value / 1000000).toFixed(1)}M`
-  } else if (Math.abs(value) >= 1000) {
-    return `$${(value / 1000).toFixed(1)}K`
+  
+  const prefix = props.showCurrencySymbol ? '$' : props.valuePrefix
+  const suffix = props.valueSuffix
+  
+  if (props.decimalPlaces !== null) {
+    return `${prefix}${value.toFixed(props.decimalPlaces)}${suffix}`
   }
-  return `$${value.toFixed(0)}`
+  
+  if (props.showCurrencySymbol) {
+    if (Math.abs(value) >= 1000000000) {
+      return `$${(value / 1000000000).toFixed(1)}B`
+    } else if (Math.abs(value) >= 1000000) {
+      return `$${(value / 1000000).toFixed(1)}M` 
+    } else if (Math.abs(value) >= 1000) {
+      return `$${(value / 1000).toFixed(1)}K`
+    }
+    return `$${Math.round(value)}`
+  }
+  
+  if (Math.abs(value) >= 1000000000) {
+    return `${prefix}${(value / 1000000000).toFixed(1)}B${suffix}`
+  } else if (Math.abs(value) >= 1000000) {
+    return `${prefix}${(value / 1000000).toFixed(1)}M${suffix}` 
+  } else if (Math.abs(value) >= 1000) {
+    return `${prefix}${(value / 1000).toFixed(1)}K${suffix}`
+  }
+  
+  if (Math.abs(value) < 10) {
+    return `${prefix}${value.toFixed(2)}${suffix}`
+  }
+  
+  return `${prefix}${Math.round(value)}${suffix}`
 }
 
-// Generar path para una línea
+const formatValue = (value) => {
+  if (value === null || value === undefined) return 'N/A'
+  
+  if (props.valueFormatter) {
+    return props.valueFormatter(value)
+  }
+  
+  const prefix = props.showCurrencySymbol ? '$' : props.valuePrefix
+  const suffix = props.valueSuffix
+  
+  if (props.decimalPlaces !== null) {
+    return `${prefix}${value.toFixed(props.decimalPlaces)}${suffix}`
+  }
+  
+  if (props.showCurrencySymbol) {
+    if (Math.abs(value) >= 1000000000) {
+      return `$${(value / 1000000000).toFixed(1)}B`
+    } else if (Math.abs(value) >= 1000000) {
+      return `$${(value / 1000000).toFixed(1)}M`
+    } else if (Math.abs(value) >= 1000) {
+      return `$${(value / 1000).toFixed(1)}K`
+    }
+    return `$${value.toFixed(0)}`
+  }
+  
+  if (Math.abs(value) >= 1000000000) {
+    return `${prefix}${(value / 1000000000).toFixed(1)}B${suffix}`
+  } else if (Math.abs(value) >= 1000000) {
+    return `${prefix}${(value / 1000000).toFixed(1)}M${suffix}`
+  } else if (Math.abs(value) >= 1000) {
+    return `${prefix}${(value / 1000).toFixed(1)}K${suffix}`
+  }
+  
+  if (Math.abs(value) < 10) {
+    return `${prefix}${value.toFixed(2)}${suffix}`
+  }
+  
+  return `${prefix}${value.toFixed(0)}${suffix}`
+}
+
 const getLinePath = (variable) => {
   const data = animatedData.value[variable]
   if (!data || data.length === 0) return ''
@@ -518,7 +582,6 @@ const getLinePath = (variable) => {
   }).join(' ')
 }
 
-// Toggle variable visibility
 const toggleVariable = (variable) => {
   const index = visibleVariables.value.indexOf(variable)
   
@@ -601,42 +664,14 @@ const toggleVariable = (variable) => {
   emit('variable-toggle', variable, visibleVariables.value.includes(variable))
 }
 
-// Estilo del tooltip fijo
-const tooltipFixedStyle = computed(() => {
-  return {
-    left: `${hoverState.value.x}px`,
-    top: `5px`
-  }
-})
-
-// Estilo del tooltip Y
-const tooltipYStyle = computed(() => {
-  return {
-    left: `${chartPadding.value.left - 15}px`,
-    top: `${hoverState.value.yPosition}px`
-  }
-})
-
-// Estilo del tooltip X
-const tooltipXStyle = computed(() => {
-  return {
-    left: `${hoverState.value.x}px`,
-    top: `${dimensions.value.height - chartPadding.value.bottom + 10}px`,
-    transform: 'translateX(-50%)'
-  }
-})
-
-// Obtener posición X animada del punto
 const getAnimatedPointX = (variable) => {
   return animatingPoints.value[`${variable}-x`] || 0
 }
 
-// Obtener posición Y animada del punto
 const getAnimatedPointY = (variable) => {
   return animatingPoints.value[`${variable}-y`] || 0
 }
 
-// ✅ CORREGIDO v5: Activar el punto MUCHO ANTES (30% del camino, no 50%)
 const handleMouseMove = (event) => {
   const svg = event.currentTarget
   const rect = svg.getBoundingClientRect()
@@ -648,18 +683,14 @@ const handleMouseMove = (event) => {
   if (dataLength === 1) {
     closestIndex = 0
   } else {
-    // Calcular puntos de transición al 30% del camino (no al 50%)
-    // Esto hace que el punto se active MUCHO ANTES
     const transitionPoints = []
     for (let i = 0; i < dataLength - 1; i++) {
       const currentX = getXPosition(i)
       const nextX = getXPosition(i + 1)
       const distance = nextX - currentX
-      // Punto de transición al 30% del camino hacia el siguiente punto
       transitionPoints.push(currentX + distance * 0.05)
     }
     
-    // Determinar en qué rango está el cursor
     if (x < transitionPoints[0]) {
       closestIndex = 0
     } else if (x >= transitionPoints[transitionPoints.length - 1]) {
@@ -677,27 +708,11 @@ const handleMouseMove = (event) => {
   const previousIndex = hoverState.value.index
   const pointX = getXPosition(closestIndex)
   
-  let highestY = null
-  let highestYPosition = 0
-  
-  visibleVariables.value.forEach(variable => {
-    const value = animatedData.value[variable]?.[closestIndex]
-    if (value !== null && value !== undefined && !isNaN(value)) {
-      const y = getY(value)
-      if (highestY === null || value > highestY) {
-        highestY = value
-        highestYPosition = y
-      }
-    }
-  })
-  
   hoverState.value = {
     visible: true,
     x: pointX,
     index: closestIndex,
     label: props.xLabels[closestIndex],
-    yValue: highestY,
-    yPosition: highestYPosition,
     previousIndex: previousIndex
   }
   
@@ -706,7 +721,6 @@ const handleMouseMove = (event) => {
   }
 }
 
-// Función auxiliar para animar la transición de puntos
 const animatePointTransition = (fromIndex, toIndex) => {
   visibleVariables.value.forEach(variable => {
     const startX = getXPosition(fromIndex)
@@ -737,20 +751,50 @@ const animatePointTransition = (fromIndex, toIndex) => {
   })
 }
 
+const activateInitialVariables = (vars) => {
+  console.log('🎯 [LinearChart] Activando variables iniciales...')
+  console.log('  - initialVisibleVariables prop:', props.initialVisibleVariables)
+  console.log('  - Variables disponibles:', vars)
+  
+  if (props.initialVisibleVariables && props.initialVisibleVariables.length > 0) {
+    props.initialVisibleVariables.forEach((varName, index) => {
+      const matchedVar = vars.find(v => v === varName || v.trim() === varName.trim())
+      if (matchedVar) {
+        console.log(`  ✅ Activando "${matchedVar}" en ${100 + (index * 400)}ms`)
+        setTimeout(() => {
+          toggleVariable(matchedVar)
+        }, 100 + (index * 400))
+      } else {
+        console.log(`  ❌ Variable "${varName}" NO encontrada`)
+      }
+    })
+  } else {
+    console.log('  📌 Usando comportamiento por defecto (primeras 2 variables)')
+    if (vars[0]) {
+      setTimeout(() => {
+        toggleVariable(vars[0])
+      }, 100)
+    }
+    
+    if (vars[1]) {
+      setTimeout(() => {
+        toggleVariable(vars[1])
+      }, 900)
+    }
+  }
+}
+
 const hideTooltip = () => {
   hoverState.value = {
     visible: false,
     x: 0,
     index: -1,
     label: '',
-    yValue: null,
-    yPosition: 0,
     previousIndex: -1
   }
   animatingPoints.value = {}
 }
 
-// ✅ Función para actualizar dimensiones - Usa directamente las props
 const updateDimensions = () => {
   dimensions.value = {
     width: props.width,
@@ -758,14 +802,27 @@ const updateDimensions = () => {
   }
 }
 
-// Lifecycle
 onMounted(async () => {
   await nextTick()
   updateDimensions()
+  
+  setTimeout(() => {
+    const vars = Object.keys(props.data)
+    if (vars.length > 0 && visibleVariables.value.length === 0) {
+      console.log('🚀 [LinearChart] onMounted (después de delay) - Datos disponibles:', vars)
+      
+      vars.forEach(variable => {
+        if (!animatedData.value[variable]) {
+          animatedData.value[variable] = [...(props.data[variable] || [])]
+        }
+      })
+      
+      activateInitialVariables(vars)
+    }
+  }, 100)
 })
 
 onUnmounted(() => {
-  // Cleanup si es necesario
 })
 </script>
 
@@ -783,7 +840,6 @@ onUnmounted(() => {
   overflow: visible;
 }
 
-/* Header sin padding extra (usa el del contenedor) */
 .chart-header {
   display: flex;
   justify-content: space-between;
@@ -814,7 +870,6 @@ onUnmounted(() => {
   text-align: center;
 }
 
-/* Filtros sin margen extra (usa el del contenedor) */
 .variable-filters {
   background: #f5f5f5;
   border-radius: 20px;
@@ -863,6 +918,10 @@ onUnmounted(() => {
   opacity: 0.7;
 }
 
+.filter-btn:hover {
+  transform: scale(1.05);
+}
+
 .no-data {
   display: flex;
   flex-direction: column;
@@ -882,7 +941,6 @@ onUnmounted(() => {
   font-size: 14px;
 }
 
-/* ✅ SIN padding - El SVG usa todo el ancho */
 .chart-wrapper {
   position: relative;
   width: 100%;
@@ -918,7 +976,6 @@ onUnmounted(() => {
   pointer-events: none;
 }
 
-/* ✅ SIN padding lateral - Las etiquetas deben alinearse con el SVG */
 .x-axis-container {
   position: relative;
   width: 100%;
@@ -941,7 +998,6 @@ onUnmounted(() => {
   user-select: none;
 }
 
-/* Animaciones */
 .line-path {
   stroke-dasharray: 3000;
   stroke-dashoffset: 3000;
@@ -991,161 +1047,72 @@ onUnmounted(() => {
   }
 }
 
-/* Tooltips */
-.tooltip-fixed {
+.tooltip-container {
   position: absolute;
-  background: #1f2937;
-  color: white;
-  border-radius: 6px;
-  padding: 2px;
-  pointer-events: none;
-  z-index: 1000;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-  width: 90px;
-  min-height: 55px;
-  opacity: 95%;
+  top: -60px;
   transform: translateX(-50%);
-  white-space: normal;
-  text-align: center;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  pointer-events: none;
+  z-index: 100;
+  min-width: 150px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  transition: left 0.15s ease;
 }
 
-.tooltip-year {
-  font-size: 9px;
-  color: white;
-  margin-bottom: 2px;
-  padding-bottom: 2px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+.tooltip-header {
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #f0f0f0;
 }
 
-.tooltip-items {
+.tooltip-year-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #333;
+}
+
+.tooltip-content {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
 }
 
 .tooltip-item {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 8px;
+  font-size: 11px;
 }
 
-.tooltip-item-header {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-}
-
-.tooltip-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
+.tooltip-color-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
   flex-shrink: 0;
 }
 
-.tooltip-variable {
-  font-size: 8px;
-  font-weight: 100;
-  color: rgba(255, 255, 255, 0.8);
-  padding-left: 5px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  letter-spacing: -0.5px;
+.tooltip-variable-name {
+  color: #666;
+  flex-shrink: 0;
 }
 
-.tooltip-value {
-  font-size: 8px;
-  font-weight: 100;
-  color: white;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  letter-spacing: -0.5px;
+.tooltip-variable-value {
+  color: #333;
+  font-weight: 600;
+  margin-left: auto;
 }
 
-.tooltip-y {
-  position: absolute;
-  background: #F0F0F2;
-  border: 1px solid #C5CBCE;
-  color: black;
-  border-radius: 4px;
-  padding: 4px 8px;
-  pointer-events: none;
-  z-index: 1000;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  font-size: 9px;
-  font-weight: 200;
-  transform: translate(-100%, -50%);
-  white-space: nowrap;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  letter-spacing: -0.3px;
-}
-
-.tooltip-x {
-  position: absolute;
-  background: #F0F0F2;
-  border: 1px solid #C5CBCE;
-  color: black;
-  border-radius: 4px;
-  padding: 4px 10px;
-  pointer-events: none;
-  z-index: 1000;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  font-size: 9px;
-  font-weight: 200;
-  white-space: nowrap;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  letter-spacing: -0.3px;
-}
-
-.tooltip-x::after {
-  content: '';
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-style: solid;
-  border-width: 0 5px 5px 5px;
-  border-color: transparent transparent #F0F0F2 transparent;
-  filter: blur(0.3px);
-}
-
-.tooltip-x::before {
-  content: '';
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-style: solid;
-  border-width: 0 6px 6px 6px;
-  border-color: transparent transparent #C5CBCE transparent;
-  filter: blur(0.3px);
-  z-index: -1;
-  margin-bottom: -1px;
-}
-
-/* Transiciones */
 .tooltip-fade-enter-active,
 .tooltip-fade-leave-active {
-  transition: all 0.2s ease;
+  transition: opacity 0.2s ease;
 }
 
 .tooltip-fade-enter-from,
 .tooltip-fade-leave-to {
   opacity: 0;
-  transform: translateX(-50%) translateY(-5px);
-}
-
-.tooltip-x-fade-enter-active,
-.tooltip-x-fade-leave-active {
-  transition: all 0.2s ease;
-}
-
-.tooltip-x-fade-enter-from,
-.tooltip-x-fade-leave-to {
-  opacity: 0;
-  transform: translateX(-50%);
 }
 </style>
