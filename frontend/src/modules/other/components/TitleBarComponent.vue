@@ -8,20 +8,6 @@
       </div>
 
       <div class="action-buttons">
-        <button 
-          class="action-btn download-btn" 
-          @click="handleDownload"
-          title="Descargar datos"
-        >
-          <span class="btn-icon">💾</span>
-        </button>
-        <button 
-          class="action-btn help-btn" 
-          @click="handleHelp"
-          title="Ayuda"
-        >
-          <span class="btn-icon">?</span>
-        </button>
       </div>
     </div>
   </div>

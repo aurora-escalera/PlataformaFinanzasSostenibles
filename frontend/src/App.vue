@@ -1,9 +1,6 @@
 <!-- src/App.vue -->
 <template>
   <div id="app">
-    <!-- Header con logo y navegación -->
-    <HeaderComponent />
-    
     <!-- Barra de título con botones de acción -->
     <TitleBarComponent 
       title="Plataforma del Índice de Finanzas Sostenibles Subnacional (IFSS)"
