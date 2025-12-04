@@ -3,6 +3,7 @@
 <!-- ✅ ACTUALIZADO: Mantener barra expandida cuando isLocked es true -->
 <!-- ✅ CORREGIDO: Usa computed para combinar props.availableYears y composable -->
 <!-- ✅ NUEVO: Props initialEntity, initialYear, initialVariable para sincronizar filtros -->
+<!-- ✅ CORREGIDO: z-index ajustado para no interferir con tooltip del mapa -->
 <template>
   <div 
     class="filter-bar-container" 
@@ -589,7 +590,8 @@ onBeforeUnmount(() => {
   height: 110px;
   margin: 0;
   padding: 0;
-  z-index: 99;
+  /* ✅ CORREGIDO: z-index más bajo para no interferir con tooltip */
+  z-index: 50;
 }
 
 .filter-bar {
@@ -606,6 +608,8 @@ onBeforeUnmount(() => {
   width: 100%;
   cursor: pointer;
   transform: translateY(calc(100% - 65px));
+  /* ✅ CORREGIDO: z-index controlado */
+  z-index: 50;
 }
 
 .filter-bar:hover,
@@ -613,20 +617,20 @@ onBeforeUnmount(() => {
 .filter-bar.has-entity-selected {
   transform: translateY(-20px);
   cursor: default;
-  z-index: 1;
+  z-index: 51;
 }
 
 .filter-bar.locked-expanded {
   transform: translateY(-20px) !important;
   cursor: default;
-  z-index: 1;
+  z-index: 51;
   box-shadow: 0 6px 24px rgba(44, 82, 130, 0.4);
 }
 
 .filter-bar.animating-down {
   animation: slideDown 0.6s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
   cursor: default;
-  z-index: 1;
+  z-index: 51;
 }
 
 @keyframes slideDown {
@@ -759,6 +763,8 @@ onBeforeUnmount(() => {
   max-height: none;
   overflow: visible;
   animation: dropdownFadeIn 0.2s ease;
+  /* ✅ z-index alto solo para dropdowns */
+  z-index: 1000;
 }
 
 @keyframes dropdownFadeIn {

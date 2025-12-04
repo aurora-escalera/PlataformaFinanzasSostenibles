@@ -148,21 +148,43 @@
       </g>
     </svg>
 
-    <!-- Tooltip -->
-    <div 
-      v-if="hoveredState" 
-      class="tooltip"
-      :style="tooltipStyle"
-    >
-      <div class="tooltip-content">
-        <h4>{{ hoveredState }}</h4>
-        <div class="tooltip-data">
-          <p>IFSS: {{ getStateInfo(hoveredState).value || 0 }}</p>
-          <p>Clasificación: {{ getIFSSLabel(getStateInfo(hoveredState).value || 0).label }}</p>
-          <p>Año: {{ getStateInfo(hoveredState).year }}</p>
+    <!-- ✅ CORREGIDO: Tooltip usando Teleport para escapar del stacking context -->
+    <!-- ✅ DISEÑO 6: Compacto con Icono y color dinámico -->
+    <Teleport to="body">
+      <div 
+        v-if="hoveredState" 
+        class="mexico-map-tooltip"
+        :style="tooltipStyle"
+      >
+        <div 
+          class="tooltip-icon-circle"
+          :style="{ background: getTooltipIconGradient() }"
+        >
+          <svg viewBox="0 0 24 24">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+          </svg>
+        </div>
+        <div class="tooltip-info">
+          <div class="tooltip-state-name">{{ hoveredState }}</div>
+          <div 
+            class="tooltip-classification"
+            :style="{ color: getTooltipColor() }"
+          >
+            {{ getIFSSLabel(getStateInfo(hoveredState).value || 0).label }}
+          </div>
+          <div class="tooltip-stats">
+            <div class="tooltip-stat">
+              <div class="tooltip-stat-value">{{ getStateInfo(hoveredState).value || 0 }}</div>
+              <div class="tooltip-stat-label">IFSS</div>
+            </div>
+            <div class="tooltip-stat">
+              <div class="tooltip-stat-value">{{ getStateInfo(hoveredState).year || '-' }}</div>
+              <div class="tooltip-stat-label">Año</div>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </Teleport>
   </div>
 </template>
 
@@ -318,6 +340,31 @@ const getSelectedStateClassification = () => {
   return props.getIFSSLabel(value).label
 }
 
+// ✅ NUEVO: Funciones para el color dinámico del tooltip
+const getTooltipColor = () => {
+  if (!props.hoveredState) return '#718096'
+  const stateInfo = props.getStateInfo(props.hoveredState)
+  const value = stateInfo.value || 0
+  return props.getIFSSLabel(value).color || '#718096'
+}
+
+const getTooltipIconGradient = () => {
+  const color = getTooltipColor()
+  // Crear un gradiente basado en el color de clasificación
+  return `linear-gradient(135deg, ${color} 0%, ${adjustColor(color, -20)} 100%)`
+}
+
+// Función auxiliar para oscurecer/aclarar un color
+const adjustColor = (color, amount) => {
+  // Convertir hex a RGB
+  const hex = color.replace('#', '')
+  const r = Math.max(0, Math.min(255, parseInt(hex.substring(0, 2), 16) + amount))
+  const g = Math.max(0, Math.min(255, parseInt(hex.substring(2, 4), 16) + amount))
+  const b = Math.max(0, Math.min(255, parseInt(hex.substring(4, 6), 16) + amount))
+  
+  return `rgb(${r}, ${g}, ${b})`
+}
+
 // Handlers de eventos
 const handleMouseHover = (stateName, event) => {
   mousePosition.value = {
@@ -364,11 +411,10 @@ const tooltipStyle = computed(() => {
   return {
     position: 'fixed',
     left: `${mousePosition.value.x + 20}px`,
-    top: `${mousePosition.value.y - 150}px`,
+    top: `${mousePosition.value.y - 60}px`,
     pointerEvents: 'none',
-    zIndex: 1000,
-    transform: 'translate(0, 0)',
-    maxWidth: '250px'
+    zIndex: 99999,
+    transform: 'translate(0, 0)'
   }
 })
 </script>
@@ -689,30 +735,6 @@ const tooltipStyle = computed(() => {
 
 }
 
-.tooltip {
-  background: #f8f8f8;
-  color: rgb(12, 12, 12);
-  padding: 20px;
-  border-radius: 6px;
-  font-size: 12px;
-  max-width: 200px;
-  box-shadow: 0 8px 14px rgba(0, 0, 0, 0.3);
-}
-
-.tooltip h4 {
-  margin: 0 0 4px 0;
-  font-size: 14px;
-  color: #2f2e2e;
-}
-
-.tooltip-data p {
-  margin: 0px 0;
-  font-weight: normal;
-  color: #3a3a3a;
-  line-height: 1.2;
-  font-size: 12px;
-}
-
 @media (max-width: 1200px) {
   .map-wrapper {
     width: 100%;
@@ -733,5 +755,103 @@ const tooltipStyle = computed(() => {
     min-width: 150px;
     padding: 16px;
   }
+}
+</style>
+
+<!-- ✅ ESTILOS GLOBALES para el tooltip (necesario porque usa Teleport) -->
+<!-- ✅ DISEÑO 6: Compacto con Icono y color dinámico -->
+<style>
+.mexico-map-tooltip {
+  background: white;
+  color: #1a202c;
+  padding: 8px 10px;
+  border-radius: 8px;
+  min-width: 130px;
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.08),
+    0 4px 12px rgba(0, 0, 0, 0.1);
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  position: fixed;
+  pointer-events: none;
+  z-index: 99999;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  animation: tooltipFadeIn 0.15s ease-out;
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tooltip-icon-circle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  transition: background 0.3s ease;
+}
+
+.tooltip-icon-circle svg {
+  width: 14px;
+  height: 14px;
+  fill: white;
+}
+
+.tooltip-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.tooltip-state-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tooltip-classification {
+  font-size: 9px;
+  font-weight: 600;
+  margin-bottom: 5px;
+  transition: color 0.3s ease;
+}
+
+.tooltip-stats {
+  display: flex;
+  gap: 12px;
+}
+
+.tooltip-stat {
+  text-align: left;
+}
+
+.tooltip-stat-value {
+  font-size: 12px;
+  font-weight: 700;
+  color: #2d3748;
+  line-height: 1.2;
+}
+
+.tooltip-stat-label {
+  font-size: 7px;
+  color: #a0aec0;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-weight: 500;
 }
 </style>
