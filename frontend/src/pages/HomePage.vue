@@ -193,7 +193,10 @@
       <div 
         v-if="showRankingPanel && !isRetractableExpanded" 
         class="ranking-panel"
-        :class="{ 'historical-view': showHistoricalCard }"
+        :class="{ 
+          'historical-view': showHistoricalCard,
+          'variable-view': hasSpecificVariable && !showHistoricalCard
+        }"
       >
         <div class="header-ranking-panel">
           <div class="ranking-hamburger-menu">
@@ -667,6 +670,14 @@ const handleMapContainerClick = (event) => {
   }
 }
 
+const useLargePanelSize = computed(() => {
+  return !selectedState.value
+})
+
+const hasSpecificVariable = computed(() => {
+  return selectedVariable.value !== null && selectedVariable.value !== ''
+})
+
 const handleOverlayClick = async () => {
   selectedEntity.value = ''
   selectedVariable.value = ''
@@ -866,6 +877,7 @@ onMounted(async () => {
   z-index: 2;
   position: relative;
   transition: gap 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
+  height: 100%;
 }
 
 .map-and-charts-wrapper.no-gap {
@@ -974,6 +986,13 @@ onMounted(async () => {
 .ranking-panel.historical-view {
   width: 2000px;
   height: 2040px;
+  padding-bottom: 70px;
+  transition: all 0.3s ease;
+}
+
+.ranking-panel.variable-view {
+  width: 2000px;
+  height: 1350px; 
   padding-bottom: 70px;
   transition: all 0.3s ease;
 }
