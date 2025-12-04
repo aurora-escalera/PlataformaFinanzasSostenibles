@@ -1,5 +1,7 @@
 <!-- src/modules/maps/components/RetractableFilterBar.vue -->
 <!-- ✅ MODIFICADO: Agregado buscador en los 3 filtros (Entidad, Año, Variable) -->
+<!-- ✅ MODIFICADO: Añadido espacio en blanco para Año -->
+<!-- ✅ MODIFICADO: Cambiado 'Todas las entidades' por 'Todas las entidades (IFS Regional)' -->
 <template>
   <div 
     class="filter-bar-container" 
@@ -46,19 +48,28 @@
                 class="dropdown-options" 
                 @wheel.prevent="handleDropdownScroll"
               >
+                <!-- Opción en blanco (default) -->
+                <div 
+                  @click="selectEntity('')"
+                  class="dropdown-option"
+                  :class="{ 'selected': selectedEntity === '' }"
+                >
+                  <span class="blank-option">-</span>
+                </div>
+                <!-- ✅ MODIFICADO: Cambiado texto -->
                 <div 
                   @click="selectEntity(null)"
                   class="dropdown-option"
                   :class="{ 'selected': selectedEntity === null }"
                 >
-                  <span>Todas las entidades</span>
+                  <span>Todas las entidades (IFS Regional)</span>
                 </div>
                 <div 
                   v-for="entity in filteredEntities" 
                   :key="entity.name"
                   @click="selectEntity(entity.name)"
                   class="dropdown-option"
-                  :class="{ 'selected': selectedEntity === entity.name && selectedEntity !== null }"
+                  :class="{ 'selected': selectedEntity === entity.name && selectedEntity !== '' && selectedEntity !== null }"
                 >
                   <span>{{ entity.name }}</span>
                 </div>
@@ -74,18 +85,18 @@
             <button 
               @click="toggleDropdown('año')"
               class="dropdown-button"
-              :class="{ 'active': activeDropdown === 'año', 'has-selection': selectedYear !== null }"
+              :class="{ 'active': activeDropdown === 'año', 'has-selection': selectedYear !== null && selectedYear !== '' }"
               :disabled="loadingYears"
             >
               <span class="dropdown-text">
-                {{ loadingYears ? 'Cargando...' : (selectedYear || 'Todos los años') }}
+                {{ loadingYears ? 'Cargando...' : getYearLabel() }}
               </span>
               <span class="dropdown-arrow">▼</span>
             </button>
             
             <!-- Dropdown de años -->
             <div v-if="activeDropdown === 'año'" class="dropdown-menu">
-              <!-- ✅ NUEVO: Buscador de años -->
+              <!-- ✅ Buscador de años -->
               <div class="dropdown-search">
                 <input 
                   v-model="yearSearch"
@@ -98,6 +109,16 @@
                 class="dropdown-options"
                 @wheel.prevent="handleDropdownScroll"
               >
+                <!-- ✅ NUEVO: Opción en blanco (default) - solo si no hay búsqueda -->
+                <div 
+                  v-if="!yearSearch"
+                  @click="selectYear('')"
+                  class="dropdown-option"
+                  :class="{ 'selected': selectedYear === '' }"
+                >
+                  <span class="blank-option">-</span>
+                </div>
+                
                 <!-- Opción "Todos los años" (solo si no hay búsqueda) -->
                 <div 
                   v-if="!yearSearch"
@@ -114,7 +135,7 @@
                   :key="year"
                   @click="selectYear(year)"
                   class="dropdown-option"
-                  :class="{ 'selected': selectedYear === year }"
+                  :class="{ 'selected': selectedYear === year && selectedYear !== '' && selectedYear !== null }"
                 >
                   <span>{{ year }}</span>
                 </div>
@@ -135,7 +156,7 @@
             <button 
               @click="toggleDropdown('variable')"
               class="dropdown-button"
-              :class="{ 'active': activeDropdown === 'variable', 'has-selection': selectedVariable }"
+              :class="{ 'active': activeDropdown === 'variable', 'has-selection': selectedVariable !== null && selectedVariable !== '' }"
             >
               <span class="dropdown-text">{{ getVariableLabel() }}</span>
               <span class="dropdown-arrow">▼</span>
@@ -143,7 +164,7 @@
             
             <!-- Dropdown de variables -->
             <div v-if="activeDropdown === 'variable'" class="dropdown-menu variable-menu">
-              <!-- ✅ NUEVO: Buscador de variables -->
+              <!-- ✅ Buscador de variables -->
               <div class="dropdown-search">
                 <input 
                   v-model="variableSearch"
@@ -156,6 +177,16 @@
                 class="dropdown-options"
                 @wheel.prevent="handleDropdownScroll"
               >
+                <!-- Opción en blanco (solo si no hay búsqueda) -->
+                <div 
+                  v-if="!variableSearch"
+                  @click="selectVariable('')"
+                  class="dropdown-option"
+                  :class="{ 'selected': selectedVariable === '' }"
+                >
+                  <span class="blank-option">-</span>
+                </div>
+                
                 <!-- Todas las variables (solo si no hay búsqueda) -->
                 <div 
                   v-if="!variableSearch"
@@ -270,8 +301,8 @@ const yearSearch = ref('')
 const variableSearch = ref('')
 
 // Filtros seleccionados
-const selectedEntity = ref(null)
-const selectedVariable = ref(null)
+const selectedEntity = ref('')
+const selectedVariable = ref('')
 
 // Definición de las 4 variables
 const variables = {
@@ -322,7 +353,7 @@ const filteredEntities = computed(() => {
   )
 })
 
-// ✅ NUEVO: Computed para años filtrados
+// ✅ Computed para años filtrados
 const filteredYears = computed(() => {
   if (!yearSearch.value) return years.value
   
@@ -332,7 +363,7 @@ const filteredYears = computed(() => {
   )
 })
 
-// ✅ NUEVO: Computed para variables filtradas
+// ✅ Computed para variables filtradas
 const filteredVariables = computed(() => {
   if (!variableSearch.value) return variablesArray.value
   
@@ -345,11 +376,20 @@ const filteredVariables = computed(() => {
 })
 
 const getEntityLabel = () => {
-  if (!selectedEntity.value || selectedEntity.value === null) return 'Todas las entidades'
+  if (selectedEntity.value === '') return '-'
+  if (!selectedEntity.value || selectedEntity.value === null) return 'Todas las entidades (IFS Regional)'
   return selectedEntity.value
 }
 
+// ✅ NUEVO: Función para obtener el label del año
+const getYearLabel = () => {
+  if (selectedYear.value === '') return '-'
+  if (selectedYear.value === null) return 'Todos los años'
+  return selectedYear.value
+}
+
 const getVariableLabel = () => {
+  if (selectedVariable.value === '') return '-'
   if (!selectedVariable.value || selectedVariable.value === null) return 'Todas las variables'
   return selectedVariable.value.key
 }
@@ -453,9 +493,16 @@ const selectYear = (year) => {
   console.log('=== FILTRO: Año seleccionado ===', year)
   setYear(year)
   
-  const yearToUse = year || years.value[0] || '2024'
-  setActiveYear(yearToUse)
-  console.log('📅 Año activo establecido:', yearToUse)
+  // ✅ MODIFICADO: Solo establecer activeYear si no es string vacío
+  if (year !== '' && year !== null) {
+    setActiveYear(year)
+    console.log('📅 Año activo establecido:', year)
+  } else if (year === null) {
+    const yearToUse = years.value[0] || '2024'
+    setActiveYear(yearToUse)
+    console.log('📅 Año activo establecido (fallback):', yearToUse)
+  }
+  // Si year === '', no establecemos activeYear (se mantiene el anterior o ninguno)
   
   emit('year-change', year)
   emitFiltersChange()
@@ -468,7 +515,7 @@ const selectVariable = (variable) => {
   selectedVariable.value = variable
   emit('variable-change', variable)
   emitFiltersChange()
-  variableSearch.value = ''  // ✅ Limpiar búsqueda
+  variableSearch.value = ''
   closeAllDropdowns()
 }
 
@@ -571,7 +618,9 @@ onMounted(async () => {
   
   if (props.initialYear !== null && props.initialYear !== undefined) {
     setYear(props.initialYear)
-    setActiveYear(props.initialYear)
+    if (props.initialYear !== '') {
+      setActiveYear(props.initialYear)
+    }
     console.log('📅 Usando año de props:', props.initialYear)
   } else if (years.value.length > 0) {
     const firstYear = years.value[0]
@@ -886,7 +935,7 @@ onBeforeUnmount(() => {
   display: block;
 }
 
-/* ✅ NUEVO: Mensaje cuando no hay resultados */
+/* ✅ Mensaje cuando no hay resultados */
 .dropdown-no-results {
   padding: 12px;
   text-align: center;
