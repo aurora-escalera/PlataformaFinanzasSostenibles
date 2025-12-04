@@ -64,7 +64,7 @@
             @navigate-federal="handleDatosFederalesClick"
           />
           
-          <!-- ✅ Overlay sobre SOLO el mapa -->
+          <!-- ✅ Overlay sobre SOLO el mapa - Usa areAllFiltersOnTodas -->
           <transition name="overlay-fade">
             <div 
               v-if="showMapOverlay" 
@@ -95,7 +95,7 @@
           <div class="charts-container">
             <div class="ranking-chart-section" style="height: 100%; display: flex; flex-direction: column;">
               
-              <!-- ========== LINEAR CHART CON CARD ========== -->
+              <!-- ========== LINEAR CHART CON CARD - Usa areAllFiltersOnTodas ========== -->
               <!-- Loading State para LinearChart -->
               <div v-if="showStackedArea && stackedAreaLoading" class="chart-card linear-chart-card">
                 <div class="chart-card-header">
@@ -166,7 +166,7 @@
                 </button>
               </div>
               
-              <!-- ✅ HorizontalRankingChart - Solo cuando hay filtros específicos -->
+              <!-- ✅ HorizontalRankingChart - Solo cuando NO están todos en "Todas..." -->
               <HorizontalRankingChart
                 v-else-if="rankingData.length > 0"
                 :variables="rankingData"
@@ -189,7 +189,6 @@
 
       <!-- Panel de Charts Component - Abajo -->
       <!-- ✅ Solo mostrar cuando NO está expandido el panel retráctil -->
-      <!-- ✅ Height controlado por CSS: .ranking-panel (ChartsComponent) vs .historical-view (HistoricalCard) -->
       <div 
         v-if="showRankingPanel && !isRetractableExpanded" 
         class="ranking-panel"
@@ -205,7 +204,7 @@
         </div>
         
         <div class="body-ranking-panel">
-          <!-- ✅ Mostrar HistoricalCard cuando NO hay estado Y filtros están en "Todas" -->
+          <!-- ✅ Mostrar HistoricalCard cuando NO hay estado Y filtros están en "Todas..." -->
           <HistoricalCard
             v-if="showHistoricalCard"
             :statesData="statesDataForSlider"
@@ -328,16 +327,16 @@ const selectedEntity = ref('')
 const filterBarKey = ref(0)
 const { fetchData: fetchEntities, fetchSheetNames } = useStorageData()
 
-// ✅ NUEVO: Estado para controlar qué vista está activa ('federal' o 'regional')
+// ✅ Estado para controlar qué vista está activa ('federal' o 'regional')
 const activeView = ref('federal')
 
-// ✅ NUEVO: Array de años disponibles (dinámico)
+// ✅ Array de años disponibles (dinámico)
 const availableYears = ref([])
 
-// ✅ NUEVO: Guardar años iniciales de cuantitativos
+// ✅ Guardar años iniciales de cuantitativos
 const initialYears = ref([])
 
-// ✅ NUEVO: Guardar estado inicial de filtros
+// ✅ Guardar estado inicial de filtros
 const initialFilters = ref({
   entity: '',
   year: null,
@@ -357,56 +356,152 @@ const entitiesError = ref(null)
 // ✅ Estado para controlar la expansión del panel retráctil
 const isRetractableExpanded = ref(false)
 
+// ============================================================================
+// ✅ LÓGICA CENTRALIZADA DE FILTROS
+// ============================================================================
+
+/**
+ * Obtiene el primer año válido de la lista de años disponibles
+ */
+const defaultYear = computed(() => {
+  if (!availableYears.value || availableYears.value.length === 0) {
+    return null
+  }
+  return availableYears.value.find(year => 
+    year !== null && year !== undefined && year !== ''
+  ) || null
+})
+
+/**
+ * ✅ CONDICIÓN PRINCIPAL: Los 3 filtros en "Todas..." (null)
+ * 
+ * Cuando esto es TRUE, se muestra:
+ * - Overlay en el mapa
+ * - LinearChart (Análisis histórico del ranking de IFS)
+ * - HistoricalCard en el panel inferior
+ * - Filtro bloqueado
+ */
+const areAllFiltersOnTodas = computed(() => {
+  const entityIsTodas = selectedEntity.value === null
+  const yearIsTodos = selectedYear.value === null
+  const variableIsTodas = selectedVariable.value === null
+  
+  const result = entityIsTodas && yearIsTodos && variableIsTodas
+  
+  console.log('🎯 [areAllFiltersOnTodas]:', {
+    entity: selectedEntity.value, entityIsTodas,
+    year: selectedYear.value, yearIsTodos,
+    variable: selectedVariable.value, variableIsTodas,
+    result
+  })
+  
+  return result
+})
+
+/**
+ * ✅ CONDICIÓN DE DEFAULT INICIAL:
+ * - Entidad: null
+ * - Año: primer año válido de la lista
+ * - Variable: null
+ * 
+ * Se usa para detectar el estado inicial y activar vista 'federal'
+ */
+const areAllFiltersDefault = computed(() => {
+  const entityIsDefault = selectedEntity.value === null
+  const yearIsDefault = selectedYear.value === defaultYear.value
+  const variableIsDefault = selectedVariable.value === null
+  
+  const result = entityIsDefault && yearIsDefault && variableIsDefault
+  
+  console.log('🎯 [areAllFiltersDefault]:', {
+    entity: selectedEntity.value, entityIsDefault,
+    year: selectedYear.value, defaultYear: defaultYear.value, yearIsDefault,
+    variable: selectedVariable.value, variableIsDefault,
+    result
+  })
+  
+  return result
+})
+
+/**
+ * Detecta si algún filtro está en blanco "-" (string vacío)
+ */
+const hasBlankFilter = computed(() => {
+  return selectedEntity.value === '' || selectedVariable.value === ''
+})
+
+/**
+ * Detecta si hay una variable específica seleccionada
+ */
+const hasSpecificVariable = computed(() => {
+  return selectedVariable.value !== null && selectedVariable.value !== ''
+})
+
+// ============================================================================
+// ✅ COMPUTED QUE USAN areAllFiltersOnTodas
+// ============================================================================
+
+/**
+ * ✅ Mostrar StackedArea/LinearChart cuando los 3 filtros están en "Todas..."
+ */
 const showStackedArea = computed(() => {
-  // ✅ No mostrar StackedArea cuando el panel cualitativo está expandido
   if (isRetractableExpanded.value) {
     return false
   }
-  
-  const allFiltersDefault = selectedEntity.value === null && 
-                           selectedYear.value === null && 
-                           selectedVariable.value === null
-  
-  return allFiltersDefault
+  return areAllFiltersOnTodas.value
 })
 
+/**
+ * ✅ Mostrar overlay del mapa cuando los 3 filtros están en "Todas..."
+ */
 const showMapOverlay = computed(() => {
-  // ✅ No mostrar overlay cuando el panel cualitativo está expandido
   if (isRetractableExpanded.value) {
     return false
   }
-  return showStackedArea.value
+  return areAllFiltersOnTodas.value
 })
 
-// ✅ MODIFICADO: No bloquear el filtro cuando el panel cualitativo está expandido
+/**
+ * ✅ Bloquear barra de filtros cuando los 3 filtros están en "Todas..."
+ */
 const isFilterBarLocked = computed(() => {
-  // No bloquear el filtro cuando el panel cualitativo está expandido
   if (isRetractableExpanded.value) {
     return false
   }
-  return showStackedArea.value
+  return areAllFiltersOnTodas.value
 })
 
+/**
+ * Ocultar panel cuando hay filtros en blanco "-"
+ */
 const shouldHidePanel = computed(() => {
-  const entityIsBlank = selectedEntity.value === ''
-  const variableIsBlank = selectedVariable.value === ''
-  return entityIsBlank && variableIsBlank
+  return hasBlankFilter.value
 })
 
+/**
+ * ✅ Mostrar HistoricalCard cuando:
+ * - No hay filtros en blanco
+ * - No hay estado seleccionado en el mapa
+ * - Los 3 filtros están en "Todas..." (null)
+ */
 const showHistoricalCard = computed(() => {
   if (shouldHidePanel.value) return false
-  
-  const allFiltersDefault = !selectedState.value && 
-                           selectedYear.value === null && 
-                           selectedVariable.value === null
-  
-  return allFiltersDefault
+  return !selectedState.value && areAllFiltersOnTodas.value
 })
 
+/**
+ * Mostrar panel de ranking cuando:
+ * - No hay filtros en blanco
+ * - Hay estado seleccionado O se debe mostrar HistoricalCard
+ */
 const showRankingPanel = computed(() => {
   if (shouldHidePanel.value) return false
   return selectedState.value || showHistoricalCard.value
 })
+
+// ============================================================================
+// ✅ FUNCIONES DE CARGA DE DATOS
+// ============================================================================
 
 const loadEntitiesFromSheet = async () => {
   try {
@@ -435,57 +530,93 @@ const loadEntitiesFromSheet = async () => {
   }
 }
 
-// ✅ MODIFICADO: Siempre actualizar el mapa, incluso cuando el panel cualitativo está expandido
+const fetchAvailableYears = async () => {
+  try {
+    console.log('📅 [HomePage] Obteniendo años de sheet cuantitativos...')
+    
+    const sheetNames = await fetchSheetNames('datosCuantitativos')
+    
+    const years = sheetNames
+      .filter(name => /^\d{4}$/.test(name))
+      .sort((a, b) => b - a)
+    
+    console.log('✅ [HomePage] Años de cuantitativos:', years)
+    
+    initialYears.value = [...years]
+    availableYears.value = [...years]
+    
+    // ✅ NO establecer año aquí - dejar en null para que areAllFiltersOnTodas funcione
+    // El año se establecerá solo cuando el usuario lo seleccione o cuando se vaya a default
+    
+    return years
+    
+  } catch (err) {
+    console.error('❌ [HomePage] Error obteniendo años:', err)
+    return []
+  }
+}
+
+// ============================================================================
+// ✅ HANDLERS DE CAMBIOS DE FILTROS
+// ============================================================================
+
 const handleEntityChange = (entity) => {
   console.log('📍 [HomePage] handleEntityChange llamado con:', entity)
-  console.log('📍 [HomePage] Panel cualitativo expandido:', isRetractableExpanded.value)
   
   selectedEntity.value = entity
-  console.log('📍 [HomePage] selectedEntity actualizado a:', selectedEntity.value)
   
   if (entity === '') {
-    // Resetear selección del mapa
     resetSelection()
     return
   }
   
-  if (entity) {
-    // ✅ Siempre actualizar el mapa con el estado seleccionado
-    handleStateClick(entity)
-    console.log('🗺️ [HomePage] Mapa actualizado con:', entity)
-  } else {
+  if (entity === null) {
+    // "Todas las entidades" seleccionado
     resetSelection()
-    // Solo cargar ranking si NO estamos en modo cualitativo
-    if (!isRetractableExpanded.value) {
-      if (selectedVariable.value && selectedVariable.value !== '') {
+    if (!isRetractableExpanded.value && !areAllFiltersOnTodas.value) {
+      if (selectedVariable.value && selectedVariable.value !== '' && selectedVariable.value !== null) {
         updateRankingByVariable(selectedVariable.value)
-      } else {
+      } else if (selectedVariable.value === null && selectedYear.value !== null) {
         loadAllStatesRanking(null)
       }
     }
+    return
   }
+  
+  // Entidad específica seleccionada
+  handleStateClick(entity)
+  console.log('🗺️ [HomePage] Mapa actualizado con:', entity)
 }
 
 const handleYearChange = async (year) => {
+  console.log('📅 [HomePage] handleYearChange llamado con:', year)
+  
   selectedYear.value = year
   
-  // ✅ Actualizar el año activo en storageConfig
   if (year) {
     setActiveYear(year)
   }
   
-  if (showStackedArea.value) {
+  // Si ahora todos están en "Todas...", cargar datos del LinearChart
+  if (areAllFiltersOnTodas.value) {
     await loadIFSSData()
   }
 }
 
 const handleVariableChange = (variable) => {
+  console.log('📊 [HomePage] handleVariableChange llamado con:', variable)
+  
   selectedVariable.value = variable
   
   if (variable === '') return
   
-  if (!selectedState.value) {
-    updateRankingByVariable(variable)
+  // Si no hay estado seleccionado y no estamos en "Todas...", actualizar ranking
+  if (!selectedState.value && !areAllFiltersOnTodas.value) {
+    if (variable === null) {
+      loadAllStatesRanking(null)
+    } else {
+      updateRankingByVariable(variable)
+    }
   }
 }
 
@@ -493,29 +624,28 @@ const handleFiltersChange = (filters) => {
   console.log('🔧 Filtros aplicados:', filters)
 }
 
-// ✅ MODIFICADO: Mejorar manejo de clicks en el mapa
+// ============================================================================
+// ✅ HANDLERS DE INTERACCIÓN CON EL MAPA
+// ============================================================================
+
 const handleStateClickWithEmit = async (stateName) => {
   console.log('🗺️ [HomePage] Click en estado:', stateName)
-  console.log('🗺️ [HomePage] Panel cualitativo expandido:', isRetractableExpanded.value)
   
   if (!stateName) {
-    // Click fuera de estados - resetear
     resetSelection()
     selectedEntity.value = ''
     emit('region-selected', null)
     
-    // Solo cargar ranking si NO estamos en modo cualitativo
     if (!isRetractableExpanded.value) {
-      if (selectedVariable.value && selectedVariable.value !== '') {
+      if (selectedVariable.value && selectedVariable.value !== '' && selectedVariable.value !== null) {
         updateRankingByVariable(selectedVariable.value)
-      } else if (!selectedVariable.value) {
+      } else if (!areAllFiltersOnTodas.value) {
         loadAllStatesRanking(null)
       }
     }
     return
   }
   
-  // Click en un estado - actualizar tanto el mapa como el filtro
   handleStateClick(stateName)
   selectedEntity.value = stateName
   
@@ -530,14 +660,11 @@ const handleStateClickWithEmit = async (stateName) => {
   }
 }
 
-// ✅ MODIFICADO: Cambiar a vista regional y activar filtros "Todas..."
 const handleIFSRegionalClick = async () => {
   console.log('🌎 [HomePage] Cambiando a vista IFS Regional')
   
-  // Cambiar la vista activa
   activeView.value = 'regional'
   
-  // Resetear selección del mapa
   if (selectedState.value) {
     resetSelection()
   }
@@ -549,20 +676,38 @@ const handleIFSRegionalClick = async () => {
   
   await nextTick()
   
-  // Cargar ranking con todos los datos
-  await loadAllStatesRanking(null)
+  // Cargar datos del LinearChart
+  await loadIFSSData()
   
   console.log('✅ [HomePage] Vista IFS Regional activada con filtros en "Todas..."')
 }
 
-// ✅ MODIFICADO: Cambiar a vista federal (default)
-const handleDatosFederalesClick = () => {
-  console.log('🏛️ [HomePage] Cambiando a vista Datos Federales')
+const handleDatosFederalesClick = async () => {
+  console.log('🏛️ [HomePage] Cambiando a vista Datos Federales (DEFAULT)')
   
-  // Cambiar la vista activa
   activeView.value = 'federal'
   
-  console.log('✅ [HomePage] Vista Datos Federales activada')
+  // ✅ Cambiar filtros a DEFAULT (null, primerAño, null)
+  selectedEntity.value = null
+  selectedVariable.value = null
+  
+  if (availableYears.value.length > 0) {
+    const firstYear = availableYears.value[0]
+    selectedYear.value = firstYear
+    setActiveYear(firstYear)
+  }
+  
+  // Resetear mapa si hay estado seleccionado
+  if (selectedState.value) {
+    resetSelection()
+  }
+  
+  await loadAllStatesRanking(null)
+  
+  filterBarKey.value++
+  await nextTick()
+  
+  console.log('✅ Vista Datos Federales activada (DEFAULT)')
 }
 
 const handleDatosCualitativosClick = () => {
@@ -570,22 +715,16 @@ const handleDatosCualitativosClick = () => {
   isRetractableExpanded.value = !isRetractableExpanded.value
 }
 
-// ✅ NUEVA FUNCIÓN: Manejar carga de años desde sheet de ambientales
 const handleYearsLoaded = async (years) => {
   console.log('📅 [HomePage] Años recibidos de ambientales:', years)
   
   if (years && years.length > 0) {
-    // Actualizar los años disponibles en el filtro
     availableYears.value = years
     
-    console.log('✅ [HomePage] availableYears actualizado:', availableYears.value)
-    
-    // Establecer el primer año como seleccionado
     const firstYear = years[0]
     selectedYear.value = firstYear
     setActiveYear(firstYear)
     
-    // Forzar re-render del filtro
     filterBarKey.value++
     await nextTick()
     
@@ -593,55 +732,22 @@ const handleYearsLoaded = async (years) => {
   }
 }
 
-// ✅ NUEVA FUNCIÓN: Obtener años disponibles del sheet de cuantitativos
-const fetchAvailableYears = async () => {
-  try {
-    console.log('📅 [HomePage] Obteniendo años de sheet cuantitativos...')
-    
-    const sheetNames = await fetchSheetNames('datosCuantitativos')
-    
-    // Filtrar solo los que parecen años (números de 4 dígitos)
-    const years = sheetNames
-      .filter(name => /^\d{4}$/.test(name))
-      .sort((a, b) => b - a) // Ordenar descendente
-    
-    console.log('✅ [HomePage] Años de cuantitativos:', years)
-    
-    // Guardar como años iniciales
-    initialYears.value = [...years]
-    availableYears.value = [...years]
-    
-    // Establecer el primer año como seleccionado
-    if (years.length > 0) {
-      selectedYear.value = years[0]
-      setActiveYear(years[0])
-    }
-    
-    return years
-    
-  } catch (err) {
-    console.error('❌ [HomePage] Error obteniendo años:', err)
-    return []
-  }
-}
-
-// ✅ NUEVA FUNCIÓN: Resetear filtros al cerrar panel cualitativo
 const handlePanelClosed = async () => {
-  console.log('🔄 [HomePage] Panel cualitativo cerrado, reseteando filtros...')
+  console.log('🔄 [HomePage] Panel cualitativo cerrado, reseteando filtros a DEFAULT...')
   
-  // Resetear filtros a estado inicial
-  selectedEntity.value = initialFilters.value.entity
-  selectedVariable.value = initialFilters.value.variable
+  // ✅ Restaurar a DEFAULT (null, primerAño, null)
+  selectedEntity.value = null
+  selectedVariable.value = null
   
-  // ✅ Restaurar años iniciales de cuantitativos
+  // Restaurar años iniciales de cuantitativos
   availableYears.value = [...initialYears.value]
   
-  // Establecer el primer año de cuantitativos
+  // Establecer el primer año de cuantitativos (parte del DEFAULT)
   if (initialYears.value.length > 0) {
     const firstYear = initialYears.value[0]
     selectedYear.value = firstYear
     setActiveYear(firstYear)
-    console.log('📅 Año restaurado:', firstYear)
+    console.log('📅 Año restaurado a DEFAULT:', firstYear)
   }
   
   // Forzar re-render del filtro
@@ -651,14 +757,13 @@ const handlePanelClosed = async () => {
   // Resetear selección del mapa
   resetSelection()
   
-  // Recargar ranking con filtros iniciales
-  if (selectedVariable.value && selectedVariable.value !== '') {
-    updateRankingByVariable(selectedVariable.value)
-  } else {
-    await loadAllStatesRanking(null)
-  }
+  // Recargar ranking
+  await loadAllStatesRanking(null)
   
-  console.log('✅ Filtros reseteados a estado inicial')
+  // Activar vista "Datos Federales"
+  activeView.value = 'federal'
+  
+  console.log('✅ Filtros reseteados a DEFAULT, vista: Datos Federales')
 }
 
 const handleMapContainerClick = (event) => {
@@ -670,24 +775,40 @@ const handleMapContainerClick = (event) => {
   }
 }
 
+const handleOverlayClick = async () => {
+  console.log('🔲 [HomePage] Click en overlay, cambiando a DEFAULT...')
+  
+  // ✅ Cambiar a DEFAULT (null, primerAño, null) para salir de "Todas..."
+  selectedEntity.value = null
+  selectedVariable.value = null
+  
+  if (availableYears.value.length > 0) {
+    const firstYear = availableYears.value[0]
+    selectedYear.value = firstYear
+    setActiveYear(firstYear)
+  }
+  
+  resetSelection()
+  emit('region-selected', null)
+  
+  await loadAllStatesRanking(null)
+  
+  // Activar vista "Datos Federales"
+  activeView.value = 'federal'
+  
+  filterBarKey.value++
+  await nextTick()
+  
+  console.log('✅ Cambiado a DEFAULT, vista: Datos Federales')
+}
+
+// ============================================================================
+// ✅ COMPUTED ADICIONALES
+// ============================================================================
+
 const useLargePanelSize = computed(() => {
   return !selectedState.value
 })
-
-const hasSpecificVariable = computed(() => {
-  return selectedVariable.value !== null && selectedVariable.value !== ''
-})
-
-const handleOverlayClick = async () => {
-  selectedEntity.value = ''
-  selectedVariable.value = ''
-  selectedYear.value = null
-  resetSelection()
-  emit('region-selected', null)
-  await loadAllStatesRanking(null)
-  filterBarKey.value++
-  await nextTick()
-}
 
 const getRankingTitle = computed(() => {
   const yearSuffix = selectedYear.value ? ` - ${selectedYear.value}` : ''
@@ -706,20 +827,30 @@ const getRankingTitle = computed(() => {
   return `Ranking ${variableLabels[selectedVariable.value.key] || 'IFSS'} por Estado${yearSuffix}`
 })
 
-watch(showStackedArea, async (newValue, oldValue) => {
+// ============================================================================
+// ✅ WATCHERS
+// ============================================================================
+
+/**
+ * Watch para cargar datos del LinearChart y activar vista 'regional' cuando areAllFiltersOnTodas
+ */
+watch(areAllFiltersOnTodas, async (newValue, oldValue) => {
+  console.log('👀 [areAllFiltersOnTodas] cambió de', oldValue, 'a', newValue)
   if (newValue && !oldValue) {
+    // Activar vista "IFS Regional" cuando los 3 filtros están en "Todas..."
+    activeView.value = 'regional'
+    console.log('🌎 [HomePage] Filtros en "Todas...", activando vista IFS Regional')
     await loadIFSSData()
   }
 })
 
-// ✅ NUEVO: Watch para detectar cuando los filtros vuelven a default y activar vista federal
+/**
+ * Watch para activar vista federal cuando los filtros vuelven a default
+ */
 watch(
-  [selectedEntity, selectedYear, selectedVariable],
-  ([entity, year, variable]) => {
-    // Si todos los filtros están en default (vacíos), activar vista federal
-    const allFiltersDefault = entity === '' && year === null && variable === ''
-    
-    if (allFiltersDefault && activeView.value !== 'federal') {
+  areAllFiltersDefault,
+  (isDefault) => {
+    if (isDefault && activeView.value !== 'federal') {
       console.log('🏛️ [HomePage] Filtros en default, activando vista Datos Federales')
       activeView.value = 'federal'
     }
@@ -727,34 +858,47 @@ watch(
   { immediate: true }
 )
 
+/**
+ * Watch para actualizar ranking cuando cambia la variable (y no estamos en "Todas...")
+ */
 watch(selectedVariable, (newVariable) => {
   if (newVariable === '') return
+  if (areAllFiltersOnTodas.value) return // No actualizar ranking si estamos en "Todas..."
   
   if (!selectedState.value) {
-    updateRankingByVariable(newVariable)
+    if (newVariable === null) {
+      loadAllStatesRanking(null)
+    } else {
+      updateRankingByVariable(newVariable)
+    }
   }
 })
 
+/**
+ * Watch para recargar datos cuando cambia el año
+ */
 watch(selectedYear, async (newYear, oldYear) => {
   if (newYear !== oldYear) {
     await loadEntitiesFromSheet()
     
-    if (selectedVariable.value !== '') {
-      if (selectedVariable.value) {
+    // Solo actualizar ranking si NO estamos en "Todas..."
+    if (!areAllFiltersOnTodas.value) {
+      if (selectedVariable.value !== '' && selectedVariable.value !== null) {
         await updateRankingByVariable(selectedVariable.value)
-      } else {
+      } else if (selectedVariable.value === null) {
         await loadAllStatesRanking(null)
       }
     }
   }
 })
 
-// ✅ MODIFICADO: Sincronizar selectedEntity cuando selectedState cambia desde el mapa
+/**
+ * Watch para sincronizar selectedEntity cuando selectedState cambia desde el mapa
+ */
 watch(selectedState, (newState, oldState) => {
   console.log('👀 [HomePage] Watch selectedState:', { newState, oldState })
   
   if (newState && newState !== oldState) {
-    // Sincronizar el filtro con el estado seleccionado en el mapa
     if (selectedEntity.value !== newState) {
       selectedEntity.value = newState
       console.log('🔄 [HomePage] selectedEntity sincronizado con mapa:', newState)
@@ -767,15 +911,14 @@ watch(selectedState, (newState, oldState) => {
       data: stateData
     })
   } else if (!newState && oldState) {
-    // Solo limpiar selectedEntity si no está en modo cualitativo
     if (!isRetractableExpanded.value) {
       selectedEntity.value = ''
     }
     
     emit('region-selected', null)
     
-    if (!isRetractableExpanded.value && selectedVariable.value !== '') {
-      if (selectedVariable.value) {
+    if (!isRetractableExpanded.value && !areAllFiltersOnTodas.value) {
+      if (selectedVariable.value && selectedVariable.value !== '' && selectedVariable.value !== null) {
         updateRankingByVariable(selectedVariable.value)
       } else {
         loadAllStatesRanking(null)
@@ -790,31 +933,52 @@ watch(error, (newError) => {
   }
 })
 
+// ============================================================================
+// ✅ INICIALIZACIÓN
+// ============================================================================
+
 onMounted(async () => {
   console.log('\n🚀 ===== INICIALIZANDO HomePage =====')
   
-  // ✅ Cargar años iniciales de cuantitativos
+  // Cargar años disponibles
   await fetchAvailableYears()
   
   await loadEntitiesFromSheet()
   await initializeSlider()
-  await loadAllStatesRanking(null)
-  await loadIFSSData()
   
-  // ✅ Guardar estado inicial de filtros
-  initialFilters.value = {
-    entity: selectedEntity.value,
-    year: selectedYear.value,
-    variable: selectedVariable.value
+  // ✅ Establecer filtros iniciales en DEFAULT (null, primerAño, null)
+  // Esto activa la vista "Datos Federales"
+  selectedEntity.value = null
+  selectedVariable.value = null
+  
+  // Establecer el primer año válido (parte del DEFAULT)
+  if (availableYears.value.length > 0) {
+    const firstYear = availableYears.value[0]
+    selectedYear.value = firstYear
+    setActiveYear(firstYear)
+    console.log('📅 Año inicial establecido:', firstYear)
   }
-  console.log('💾 Estado inicial de filtros guardado:', initialFilters.value)
+  
+  // Cargar ranking inicial
+  await loadAllStatesRanking(null)
+  
+  // Guardar estado inicial de filtros (DEFAULT)
+  initialFilters.value = {
+    entity: null,
+    year: selectedYear.value,
+    variable: null
+  }
+  console.log('💾 Estado inicial de filtros (DEFAULT):', initialFilters.value)
   console.log('💾 Años iniciales guardados:', initialYears.value)
   
-  // ✅ Vista por defecto es 'federal'
+  // ✅ Vista por defecto es 'federal' (cuando está en DEFAULT)
   activeView.value = 'federal'
-  console.log('🏛️ Vista inicial: federal')
+  console.log('🏛️ Vista inicial: Datos Federales (DEFAULT)')
   
-  console.log('✅ HomePage inicializado\n')
+  console.log('✅ HomePage inicializado')
+  console.log('   areAllFiltersDefault:', areAllFiltersDefault.value)
+  console.log('   areAllFiltersOnTodas:', areAllFiltersOnTodas.value)
+  console.log('\n')
 })
 </script>
 
@@ -973,7 +1137,6 @@ onMounted(async () => {
   max-width: 850px;
 }
 
-/* ✅ ChartsComponent activo (hay estado seleccionado) */
 .ranking-panel {
   display: flex;
   flex-direction: column;
@@ -982,7 +1145,6 @@ onMounted(async () => {
   transition: height 0.3s ease;
 }
 
-/* ✅ HistoricalCard activo (NO hay estado seleccionado) */
 .ranking-panel.historical-view {
   width: 2000px;
   height: 2040px;
@@ -1074,7 +1236,6 @@ h2 {
   opacity: 0;
 }
 
-/* ===== CARD STYLES PARA LINEAR CHART (igual que ChartsComponent) ===== */
 .chart-card {
   display: flex;
   flex-direction: column;
@@ -1124,7 +1285,6 @@ h2 {
   height: 100%;
 }
 
-/* Ajuste para loading/error dentro de la card */
 .chart-card .ranking-loading,
 .chart-card .ranking-error {
   width: 100%;
