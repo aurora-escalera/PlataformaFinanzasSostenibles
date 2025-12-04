@@ -12,15 +12,15 @@ const routes = [
   // Ruta por defecto (opcional)
   {
     path: '/',
-    redirect: '/finanzas/mapas'
+    redirect: '/finanzas/home'
   },
   // Tu ruta de mapas
   {
-    path: '/finanzas/mapas',
-    name: 'FinanzasMapas',
-    component: MapsPage,
+    path: '/finanzas/home',
+    name: 'HomePage',
+    component: HomePage,
     meta: {
-      title: 'Fderales - Finanzas Sostenibles'
+      title: 'Plataforma de Finanzas Sostenibles'
     }
   },
     // Tu ruta de cualitativos
@@ -54,14 +54,6 @@ const routes = [
     component: HistoricalView,
     meta: {
       title: 'HistoricalView - Finanzas Sostenibles'
-    }
-  },
-  {
-    path: '/finanzas/home',
-    name: 'HomePage',
-    component: HomePage,
-    meta: {
-      title: 'Home- Finanzas Sostenibles'
     }
   },
   {
