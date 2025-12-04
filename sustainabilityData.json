@@ -1,0 +1,290 @@
+[
+  {
+    "region": "Aguascalientes",
+    "year": 2023,
+    "value": 0.8,
+    "is_amount": 73248000,
+    "is_percentage": 0.223,
+    "iic_amount": 728012000,
+    "iic_percentage": 2.214
+  },
+  {
+    "region": "Baja California",
+    "year": 2023,
+    "value": 0.7,
+    "is_amount": 282468922,
+    "is_percentage": 0.309,
+    "iic_amount": 4659787551,
+    "iic_percentage": 5.099
+  },
+  {
+    "region": "Baja California Sur",
+    "year": 2023,
+    "value": 1.7,
+    "is_amount": 49385078,
+    "is_percentage": 0.207,
+    "iic_amount": 824207106,
+    "iic_percentage": 3.449
+  },
+  {
+    "region": "Campeche",
+    "year": 2023,
+    "value": 1.5,
+    "is_amount": 2075251281,
+    "is_percentage": 8.052,
+    "iic_amount": 0,
+    "iic_percentage": 0
+  },
+  {
+    "region": "Chiapas",
+    "year": 2023,
+    "value": 1.7,
+    "is_amount": 4972438,
+    "is_percentage": 0.004,
+    "iic_amount": 1200442426,
+    "iic_percentage": 0.971
+  },
+  {
+    "region": "Chihuahua",
+    "year": 2023,
+    "value": 0.5,
+    "is_amount": 85287026,
+    "is_percentage": 0.085,
+    "iic_amount": 11143403606,
+    "iic_percentage": 11.083
+  },
+  {
+    "region": "Ciudad de México",
+    "year": 2023,
+    "value": 1.9,
+    "is_amount": 8813594618,
+    "is_percentage": 3.289,
+    "iic_amount": 13742502943,
+    "iic_percentage": 5.128
+  },
+  {
+    "region": "Coahuila",
+    "year": 2023,
+    "value": 1.6,
+    "is_amount": 300917460,
+    "is_percentage": 0.440,
+    "iic_amount": 1409831632,
+    "iic_percentage": 2.060
+  },
+  {
+    "region": "Colima",
+    "year": 2023,
+    "value": 0.7,
+    "is_amount": 38147707,
+    "is_percentage": 0.173,
+    "iic_amount": 1666847255,
+    "iic_percentage": 7.578
+  },
+  {
+    "region": "Durango",
+    "year": 2023,
+    "value": 1.7,
+    "is_amount": 379930881,
+    "is_percentage": 0.928,
+    "iic_amount": 2534569229,
+    "iic_percentage": 6.189
+  },
+  {
+    "region": "Estado de México",
+    "year": 2023,
+    "value": 2.0,
+    "is_amount": 3463403533,
+    "is_percentage": 0.916,
+    "iic_amount": 15115909766,
+    "iic_percentage": 4.000
+  },
+  {
+    "region": "Guanajuato",
+    "year": 2023,
+    "value": 1.6,
+    "is_amount": 57666879,
+    "is_percentage": 0.049,
+    "iic_amount": 3736882442,
+    "iic_percentage": 3.172
+  },
+  {
+    "region": "Guerrero",
+    "year": 2023,
+    "value": 2.1,
+    "is_amount": 932923,
+    "is_percentage": 0.001,
+    "iic_amount": 1071900681,
+    "iic_percentage": 1.324
+  },
+  {
+    "region": "Hidalgo",
+    "year": 2023,
+    "value": 1.9,
+    "is_amount": 333770559,
+    "is_percentage": 0.490,
+    "iic_amount": 0,
+    "iic_percentage": 0
+  },
+  {
+    "region": "Jalisco",
+    "year": 2023,
+    "value": 1.9,
+    "is_amount": 2398289600,
+    "is_percentage": 1.435,
+    "iic_amount": 10367868153,
+    "iic_percentage": 6.204
+  },
+  {
+    "region": "Michoacán",
+    "year": 2023,
+    "value": 1.6,
+    "is_amount": 283929527,
+    "is_percentage": 0.297,
+    "iic_amount": 4514747131,
+    "iic_percentage": 4.729
+  },
+  {
+    "region": "Morelos",
+    "year": 2023,
+    "value": 2.0,
+    "is_amount": 205032064,
+    "is_percentage": 0.575,
+    "iic_amount": 1700562883,
+    "iic_percentage": 4.771
+  },
+  {
+    "region": "Nayarit",
+    "year": 2023,
+    "value": 1.7,
+    "is_amount": 7003874,
+    "is_percentage": 0.024,
+    "iic_amount": 809887750,
+    "iic_percentage": 2.743
+  },
+  {
+    "region": "Nuevo León",
+    "year": 2023,
+    "value": 1.9,
+    "is_amount": 1750401394,
+    "is_percentage": 1.250,
+    "iic_amount": 3409485646,
+    "iic_percentage": 2.435
+  },
+  {
+    "region": "Oaxaca",
+    "year": 2023,
+    "value": 2.9,
+    "is_amount": 334788119,
+    "is_percentage": 0.336,
+    "iic_amount": 1662759826,
+    "iic_percentage": 1.669
+  },
+  {
+    "region": "Puebla",
+    "year": 2023,
+    "value": 1.8,
+    "is_amount": 158385218,
+    "is_percentage": 0.130,
+    "iic_amount": 4481033521,
+    "iic_percentage": 3.689
+  },
+  {
+    "region": "Querétaro",
+    "year": 2023,
+    "value": 2.0,
+    "is_amount": 370047852,
+    "is_percentage": 0.599,
+    "iic_amount": 1298271762,
+    "iic_percentage": 2.100
+  },
+  {
+    "region": "Quintana Roo",
+    "year": 2023,
+    "value": 2.0,
+    "is_amount": 243662229,
+    "is_percentage": 0.515,
+    "iic_amount": 1308293568,
+    "iic_percentage": 2.763
+  },
+  {
+    "region": "San Luis Potosí",
+    "year": 2023,
+    "value": 1.9,
+    "is_amount": 19620696,
+    "is_percentage": 0.031,
+    "iic_amount": 1300261436,
+    "iic_percentage": 2.051
+  },
+  {
+    "region": "Sinaloa",
+    "year": 2023,
+    "value": 1.1,
+    "is_amount": 28628220,
+    "is_percentage": 0.041,
+    "iic_amount": 5176465591,
+    "iic_percentage": 7.438
+  },
+  {
+    "region": "Sonora",
+    "year": 2023,
+    "value": 1.7,
+    "is_amount": 411258725,
+    "is_percentage": 0.497,
+    "iic_amount": 3333946051,
+    "iic_percentage": 4.033
+  },
+  {
+    "region": "Tabasco",
+    "year": 2023,
+    "value": 1.9,
+    "is_amount": 71992381,
+    "is_percentage": 0.111,
+    "iic_amount": 3701401719,
+    "iic_percentage": 5.729
+  },
+  {
+    "region": "Tamaulipas",
+    "year": 2023,
+    "value": 2.0,
+    "is_amount": 1602400920,
+    "is_percentage": 2.101,
+    "iic_amount": 5180381153,
+    "iic_percentage": 6.791
+  },
+  {
+    "region": "Tlaxcala",
+    "year": 2023,
+    "value": 2.2,
+    "is_amount": 84192966,
+    "is_percentage": 0.305,
+    "iic_amount": 677002356,
+    "iic_percentage": 2.449
+  },
+  {
+    "region": "Veracruz",
+    "year": 2023,
+    "value": 2.0,
+    "is_amount": 20271941,
+    "is_percentage": 0.012,
+    "iic_amount": 7054223840,
+    "iic_percentage": 4.324
+  },
+  {
+    "region": "Yucatán",
+    "year": 2023,
+    "value": 2.1,
+    "is_amount": 2248299383,
+    "is_percentage": 3.693,
+    "iic_amount": 1362068571,
+    "iic_percentage": 2.238
+  },
+  {
+    "region": "Zacatecas",
+    "year": 2023,
+    "value": 2.4,
+    "is_amount": 351660547,
+    "is_percentage": 0.909,
+    "iic_amount": 299651810,
+    "iic_percentage": 0.775
+  }
+]
