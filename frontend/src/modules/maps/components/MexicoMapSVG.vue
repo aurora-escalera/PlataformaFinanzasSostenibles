@@ -222,7 +222,6 @@ const props = defineProps({
     type: Boolean,
     default: true
   },
-  // ✅ CAMBIADO: default null para que ninguno esté seleccionado
   activeView: {
     type: String,
     default: null
@@ -233,7 +232,8 @@ const emit = defineEmits([
   'state-click',
   'state-hover',
   'state-leave',
-  'navigate-regional'
+  'navigate-regional',
+  'view-change'
 ])
 
 const mousePosition = ref({ x: 0, y: 0 })
@@ -364,10 +364,12 @@ const handleSvgClick = (event) => {
 }
 
 const handleIFSRegionalClick = () => {
+  emit('view-change', 'regional')
   emit('navigate-regional')
 }
 
 const handleDatosFederalesClick = () => {
+  emit('view-change', 'federal')
   window.open('https://plataformafinanzassostenibles.gflac.org/ranking', '_blank')
 }
 
@@ -375,8 +377,8 @@ const tooltipStyle = computed(() => {
   if (!props.hoveredState) return { display: 'none' }
   return {
     position: 'fixed',
-    left: `${mousePosition.value.x + 20}px`,
-    top: `${mousePosition.value.y - 60}px`,
+    left: `${mousePosition.value.x + 28}px`,
+    top: `${mousePosition.value.y - 75}px`,
     pointerEvents: 'none',
     zIndex: 99999,
     transform: 'translate(0, 0)'
@@ -475,7 +477,7 @@ const tooltipStyle = computed(() => {
   gap: 8px;
 }
 
-/* ✅ BOTONES MEJORADOS - Se ajustan al texto */
+/* BOTONES - Se ajustan al texto */
 .card-label-pill {
   background: rgba(5, 55, 89, 0.06);
   border: 1px solid rgba(5, 55, 89, 0.12);

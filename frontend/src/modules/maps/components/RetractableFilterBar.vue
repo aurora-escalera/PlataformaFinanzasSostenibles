@@ -41,10 +41,7 @@
                   @click.stop
                 >
               </div>
-              <div 
-                class="dropdown-options" 
-                @wheel.prevent="handleDropdownScroll"
-              >
+              <div class="dropdown-options">
                 <!-- Default: Todas las entidades (IFS Regional) -->
                 <div 
                   v-if="!entitySearch"
@@ -94,7 +91,7 @@
               <span class="dropdown-arrow">▼</span>
             </button>
             
-            <!-- Dropdown de años (SIN opción en blanco) -->
+            <!-- Dropdown de años -->
             <div v-if="activeDropdown === 'año'" class="dropdown-menu">
               <div class="dropdown-search">
                 <input 
@@ -104,10 +101,7 @@
                   @click.stop
                 >
               </div>
-              <div 
-                class="dropdown-options"
-                @wheel.prevent="handleDropdownScroll"
-              >
+              <div class="dropdown-options">
                 <!-- Default: Todos los años -->
                 <div 
                   v-if="!yearSearch"
@@ -151,7 +145,7 @@
               <span class="dropdown-arrow">▼</span>
             </button>
             
-            <!-- Dropdown de variables (SIN opción en blanco) -->
+            <!-- Dropdown de variables -->
             <div v-if="activeDropdown === 'variable'" class="dropdown-menu variable-menu">
               <div class="dropdown-search">
                 <input 
@@ -161,10 +155,7 @@
                   @click.stop
                 >
               </div>
-              <div 
-                class="dropdown-options"
-                @wheel.prevent="handleDropdownScroll"
-              >
+              <div class="dropdown-options">
                 <!-- Default: Todas las variables -->
                 <div 
                   v-if="!variableSearch"
@@ -367,21 +358,6 @@ const getYearLabel = () => {
 const getVariableLabel = () => {
   if (!selectedVariable.value || selectedVariable.value === null) return 'Todas las variables'
   return selectedVariable.value.key
-}
-
-const handleDropdownScroll = (event) => {
-  const container = event.currentTarget
-  const { scrollTop, scrollHeight, clientHeight } = container
-  const delta = event.deltaY
-  
-  const isAtTop = scrollTop === 0 && delta < 0
-  const isAtBottom = scrollTop + clientHeight >= scrollHeight && delta > 0
-  
-  if (!isAtTop && !isAtBottom) {
-    event.preventDefault()
-  }
-  
-  event.stopPropagation()
 }
 
 const handleMouseEnter = () => {
@@ -799,8 +775,7 @@ onBeforeUnmount(() => {
   border-radius: 8px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
   margin-top: 8px;
-  max-height: none;
-  overflow: visible;
+  overflow: hidden;
   animation: dropdownFadeIn 0.2s ease;
   z-index: 1000;
 }
@@ -839,10 +814,11 @@ onBeforeUnmount(() => {
 }
 
 .dropdown-options {
-  max-height: 180px;
+  max-height: 200px;
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .dropdown-options::-webkit-scrollbar {
