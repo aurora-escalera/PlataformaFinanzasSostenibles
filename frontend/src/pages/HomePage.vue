@@ -322,13 +322,13 @@ const {
 } = useStackedAreaData()
 
 const router = useRouter()
-const selectedVariable = ref('')
+const selectedVariable = ref(null)
 const selectedYear = ref(null)
-const selectedEntity = ref('')
+const selectedEntity = ref('')  // ✅ Default es '' que muestra "-"
 const filterBarKey = ref(0)
 const { fetchData: fetchEntities, fetchSheetNames } = useStorageData()
 
-// ✅ CAMBIO: Estado para controlar qué vista está activa - INICIAR EN NULL
+// Estado para controlar qué vista está activa - INICIAR EN NULL
 const activeView = ref(null)
 
 // Array de años disponibles (dinámico)
@@ -339,9 +339,9 @@ const initialYears = ref([])
 
 // Guardar estado inicial de filtros
 const initialFilters = ref({
-  entity: '',
+  entity: '',  // ✅ Default es ''
   year: null,
-  variable: ''
+  variable: null
 })
 
 watch(selectedEntity, (newVal, oldVal) => {
@@ -375,6 +375,9 @@ const defaultYear = computed(() => {
 
 /**
  * CONDICIÓN PRINCIPAL: Los 3 filtros en "Todas..." (null)
+ * Entidad = null (Todas las entidades)
+ * Año = null (Todos los años)
+ * Variable = null (Todas las variables)
  * 
  * Cuando esto es TRUE, se muestra:
  * - Overlay en el mapa
@@ -633,7 +636,7 @@ const handleStateClickWithEmit = async (stateName) => {
   }
 }
 
-// ✅ NUEVO: Handler para cambio de vista desde MexicoMapSVG
+// Handler para cambio de vista desde MexicoMapSVG
 const handleViewChange = (view) => {
   console.log('👁️ [HomePage] Vista cambiada a:', view)
   activeView.value = view
@@ -692,8 +695,8 @@ const handleYearsLoaded = async (years) => {
 const handlePanelClosed = async () => {
   console.log('🔄 [HomePage] Panel cualitativo cerrado, reseteando filtros a DEFAULT...')
   
-  // Restaurar a DEFAULT (null, primerAño, null)
-  selectedEntity.value = null
+  // ✅ Restaurar a DEFAULT ('', primerAño, null)
+  selectedEntity.value = ''
   selectedVariable.value = null
   
   // Restaurar años iniciales de cuantitativos
@@ -717,7 +720,7 @@ const handlePanelClosed = async () => {
   // Recargar ranking
   await loadAllStatesRanking(null)
   
-  // ✅ CAMBIO: No asignar activeView automáticamente, dejarlo como estaba o null
+  // No asignar activeView automáticamente
   activeView.value = null
   
   console.log('✅ Filtros reseteados a DEFAULT')
@@ -735,8 +738,8 @@ const handleMapContainerClick = (event) => {
 const handleOverlayClick = async () => {
   console.log('🔲 [HomePage] Click en overlay, cambiando a DEFAULT...')
   
-  // Cambiar a DEFAULT (null, primerAño, null) para salir de "Todas..."
-  selectedEntity.value = null
+  // ✅ Cambiar a DEFAULT ('', primerAño, null) para salir de "Todas..."
+  selectedEntity.value = ''
   selectedVariable.value = null
   
   if (availableYears.value.length > 0) {
@@ -750,7 +753,7 @@ const handleOverlayClick = async () => {
   
   await loadAllStatesRanking(null)
   
-  // ✅ CAMBIO: No asignar activeView automáticamente
+  // No asignar activeView automáticamente
   activeView.value = null
   
   filterBarKey.value++
@@ -887,8 +890,8 @@ onMounted(async () => {
   await loadEntitiesFromSheet()
   await initializeSlider()
   
-  // Establecer filtros iniciales en DEFAULT (null, primerAño, null)
-  selectedEntity.value = null
+  // ✅ Establecer filtros iniciales en DEFAULT ('', primerAño, null)
+  selectedEntity.value = ''
   selectedVariable.value = null
   
   // Establecer el primer año válido (parte del DEFAULT)
@@ -902,16 +905,16 @@ onMounted(async () => {
   // Cargar ranking inicial
   await loadAllStatesRanking(null)
   
-  // Guardar estado inicial de filtros (DEFAULT)
+  // ✅ Guardar estado inicial de filtros (DEFAULT)
   initialFilters.value = {
-    entity: null,
+    entity: '',
     year: selectedYear.value,
     variable: null
   }
   console.log('💾 Estado inicial de filtros (DEFAULT):', initialFilters.value)
   console.log('💾 Años iniciales guardados:', initialYears.value)
   
-  // ✅ CAMBIO: No asignar activeView - dejarlo en null (ningún botón activo)
+  // No asignar activeView - dejarlo en null (ningún botón activo)
   console.log('👁️ Vista inicial: ninguna activa (null)')
   
   console.log('✅ HomePage inicializado')

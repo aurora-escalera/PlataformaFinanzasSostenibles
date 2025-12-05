@@ -435,6 +435,14 @@ const selectEntity = (entityName) => {
   console.log('=== FILTRO: Entidad seleccionada ===', entityName)
   selectedEntity.value = entityName
   emit('entity-change', entityName)
+  
+  // ✅ Si selecciona "Todas las entidades (IFS Regional)", también setear año a "Todos los años"
+  if (entityName === null) {
+    console.log('🔄 Auto-seteando año a "Todos los años"')
+    setYear(null)
+    emit('year-change', null)
+  }
+  
   emitFiltersChange()
   entitySearch.value = ''
   closeAllDropdowns()
