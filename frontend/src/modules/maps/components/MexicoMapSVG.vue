@@ -486,7 +486,8 @@ const tooltipStyle = computed(() => {
   font-size: 10px;
   color: #475569;
   font-weight: 500;
-  padding: 10px 12px;
+  padding: 8px 12px;
+  min-height: 42px; 
   width: 100%;
   display: flex;
   align-items: center;
