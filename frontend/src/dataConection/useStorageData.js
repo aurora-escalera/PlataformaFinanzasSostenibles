@@ -1,5 +1,5 @@
 // src/dataConection/useStorageData.js
-// ✅ ACTUALIZADO con CACHÉ para evitar rate limiting de Google Sheets API
+// ✅ ACTUALIZADO con CACHÉ, RETRY, COLA y FAIL SILENCIOSO (sin errores visibles)
 import { getCurrentConfig, getSheetIdForFile, getSheetName } from './storageConfig'
 
 // ============================================
@@ -8,6 +8,79 @@ import { getCurrentConfig, getSheetIdForFile, getSheetName } from './storageConf
 const dataCache = new Map()
 const CACHE_DURATION = 5 * 60 * 1000 // 5 minutos en milisegundos
 const pendingRequests = new Map() // Para evitar llamadas duplicadas simultáneas
+
+// ============================================
+// ✅ SISTEMA DE COLA Y RATE LIMITING
+// ============================================
+const MAX_CONCURRENT_REQUESTS = 3 // Máximo de requests simultáneos
+const REQUEST_DELAY = 150 // ms entre requests
+let activeRequests = 0
+const requestQueue = []
+
+/**
+ * ✅ Procesar cola de requests
+ */
+const processQueue = async () => {
+  if (requestQueue.length === 0 || activeRequests >= MAX_CONCURRENT_REQUESTS) {
+    return
+  }
+  
+  const { resolve, reject, fn } = requestQueue.shift()
+  activeRequests++
+  
+  try {
+    const result = await fn()
+    resolve(result)
+  } catch (err) {
+    reject(err)
+  } finally {
+    activeRequests--
+    // Pequeño delay antes de procesar el siguiente
+    setTimeout(processQueue, REQUEST_DELAY)
+  }
+}
+
+/**
+ * ✅ Encolar una solicitud
+ */
+const enqueueRequest = (fn) => {
+  return new Promise((resolve, reject) => {
+    requestQueue.push({ resolve, reject, fn })
+    processQueue()
+  })
+}
+
+/**
+ * ✅ Retry con backoff exponencial - RETORNA NULL EN LUGAR DE LANZAR ERROR
+ */
+const fetchWithRetry = async (url, maxRetries = 3, baseDelay = 500) => {
+  let lastError
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const response = await fetch(url)
+      
+      // Si es error 429 (rate limit) o 400 temporal, esperar y reintentar
+      if (response.status === 429 || (response.status === 400 && attempt < maxRetries - 1)) {
+        const delay = baseDelay * Math.pow(2, attempt) // Backoff exponencial: 500, 1000, 2000ms
+        console.warn(`⚠️ [Retry] Intento ${attempt + 1}/${maxRetries} falló (${response.status}). Reintentando en ${delay}ms...`)
+        await new Promise(resolve => setTimeout(resolve, delay))
+        continue
+      }
+      
+      return response
+    } catch (err) {
+      lastError = err
+      const delay = baseDelay * Math.pow(2, attempt)
+      console.warn(`⚠️ [Retry] Intento ${attempt + 1}/${maxRetries} falló (${err.message}). Reintentando en ${delay}ms...`)
+      await new Promise(resolve => setTimeout(resolve, delay))
+    }
+  }
+  
+  // ✅ CAMBIO: En lugar de lanzar error, retornar null
+  console.warn(`⚠️ [fetchWithRetry] Máximo de reintentos alcanzado. Retornando null silenciosamente.`)
+  return null
+}
 
 /**
  * Generar clave única para el caché
@@ -46,9 +119,7 @@ export function useStorageData() {
   
   /**
    * ✅ Obtener los nombres de todas las hojas de un Google Sheet
-   * ✅ CON CACHÉ para evitar rate limiting
-   * @param {string} fileKey - La clave del archivo (ej: 'incendiosForestales')
-   * @returns {Promise<string[]>} - Array con los nombres de las hojas
+   * ✅ CON CACHÉ, RETRY y FAIL SILENCIOSO
    */
   const fetchSheetNames = async (fileKey) => {
     try {
@@ -56,7 +127,8 @@ export function useStorageData() {
       const apiKey = config.apiKey
       
       if (!apiKey || !sheetId) {
-        throw new Error('Falta configuración de API Key o Sheet ID')
+        console.warn('⚠️ [fetchSheetNames] Falta configuración de API Key o Sheet ID')
+        return []
       }
       
       // ✅ CACHÉ: Usar clave especial para nombres de hojas
@@ -77,19 +149,22 @@ export function useStorageData() {
       console.log(`📋 [useStorageData] Obteniendo nombres de hojas para: ${fileKey}`)
       console.log(`  - Sheet ID: ${sheetId}`)
       
-      const fetchPromise = (async () => {
-        // Usar la API de Google Sheets para obtener metadatos del spreadsheet
+      const fetchPromise = enqueueRequest(async () => {
         const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}?key=${apiKey}`
-        const response = await fetch(url)
+        const response = await fetchWithRetry(url)
+        
+        // ✅ CAMBIO: Si response es null, retornar array vacío
+        if (!response) {
+          console.warn(`⚠️ [fetchSheetNames] No se pudo obtener hojas para: ${fileKey}`)
+          return []
+        }
         
         if (!response.ok) {
-          const errorText = await response.text()
-          throw new Error(`Error HTTP ${response.status}: ${errorText}`)
+          console.warn(`⚠️ [fetchSheetNames] Error HTTP ${response.status} para: ${fileKey}`)
+          return []
         }
         
         const data = await response.json()
-        
-        // Extraer los nombres de las hojas
         const sheetNames = data.sheets.map(sheet => sheet.properties.title)
         
         console.log(`✅ [useStorageData] Hojas encontradas:`, sheetNames)
@@ -102,7 +177,7 @@ export function useStorageData() {
         console.log(`💾 [Cache SAVE] Nombres de hojas guardados: ${cacheKey}`)
         
         return sheetNames
-      })()
+      })
       
       pendingRequests.set(cacheKey, fetchPromise)
       
@@ -113,14 +188,15 @@ export function useStorageData() {
       }
       
     } catch (err) {
-      console.error('❌ [useStorageData] Error obteniendo nombres de hojas:', err)
-      throw err
+      // ✅ CAMBIO: No lanzar error, solo log y retornar array vacío
+      console.warn('⚠️ [fetchSheetNames] Error silencioso:', err.message)
+      return []
     }
   }
   
   /**
    * Obtener datos de una hoja específica de Google Sheets
-   * ✅ CON CACHÉ para evitar rate limiting
+   * ✅ CON CACHÉ, RETRY, COLA y FAIL SILENCIOSO (nunca lanza excepciones)
    */
   const fetchData = async (fileKey, sheetName = null) => {
     try {
@@ -129,7 +205,8 @@ export function useStorageData() {
       const apiKey = config.apiKey
       
       if (!apiKey || !sheetId) {
-        throw new Error('Falta configuración de API Key o Sheet ID')
+        console.warn('⚠️ [fetchData] Falta configuración de API Key o Sheet ID')
+        return []
       }
       
       // ✅ PASO 1: Verificar caché
@@ -161,13 +238,20 @@ export function useStorageData() {
       const range = `${formattedSheetName}!A:ZZ`
       const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(range)}?key=${apiKey}`
       
-      // ✅ PASO 3: Crear promesa y registrarla como pendiente
-      const fetchPromise = (async () => {
-        const response = await fetch(url)
+      // ✅ PASO 3: Encolar request con retry automático
+      const fetchPromise = enqueueRequest(async () => {
+        const response = await fetchWithRetry(url)
+        
+        // ✅ CAMBIO: Si response es null (max retries), retornar array vacío silenciosamente
+        if (!response) {
+          console.warn(`⚠️ [fetchData] Max retries alcanzado para: ${fileKey}. Retornando vacío.`)
+          return []
+        }
         
         if (!response.ok) {
-          const errorText = await response.text()
-          throw new Error(`Error HTTP ${response.status}: ${errorText}`)
+          // ✅ CAMBIO: No lanzar error, solo log y retornar vacío
+          console.warn(`⚠️ [fetchData] Error HTTP ${response.status} para: ${fileKey}. Retornando vacío.`)
+          return []
         }
         
         const data = await response.json()
@@ -198,7 +282,7 @@ export function useStorageData() {
         console.log(`💾 [Cache SAVE] Datos guardados en caché: ${cacheKey}`)
         
         return dataRows
-      })()
+      })
       
       // Registrar como solicitud pendiente
       pendingRequests.set(cacheKey, fetchPromise)
@@ -212,8 +296,9 @@ export function useStorageData() {
       }
       
     } catch (err) {
-      console.error('❌ [useStorageData] Error obteniendo datos:', err)
-      throw err
+      // ✅ CAMBIO: Nunca lanzar excepción, solo log y retornar array vacío
+      console.warn(`⚠️ [fetchData] Error silencioso para ${fileKey}:`, err.message)
+      return []
     }
   }
   
@@ -253,15 +338,11 @@ export function useStorageData() {
   }
   
   /**
-   * ✅ NUEVO: Transformar datos para gráfico de barras (HistoricBarChart)
-   * @param {Array} rawData - Datos crudos del sheet
-   * @param {Object} mapping - Configuración de mapping
-   * @returns {Array} - Datos formateados para HistoricBarChart
+   * ✅ Transformar datos para gráfico de barras (HistoricBarChart)
    */
   const transformToBarChartData = (rawData, mapping) => {
     try {
       console.log('📊 [transformToBarChartData] Transformando datos...')
-      console.log('  - Mapping:', mapping)
       
       if (!rawData || rawData.length === 0) {
         console.warn('⚠️ [transformToBarChartData] No hay datos para transformar')
@@ -293,8 +374,6 @@ export function useStorageData() {
         })
       })
       
-      // Convertir a array ordenado por año
-      // ✅ FIX: Usar 'variables' en lugar de 'segments' para compatibilidad con HistoricBarChart
       const result = Object.values(dataByYear)
         .sort((a, b) => parseInt(a.year) - parseInt(b.year))
         .map(yearData => {
@@ -307,13 +386,12 @@ export function useStorageData() {
           
           return {
             year: yearData.year,
-            variables,  // ✅ Cambiado de 'segments' a 'variables'
+            variables,
             total: variables.reduce((sum, v) => sum + v.value, 0)
           }
         })
       
       console.log(`✅ [transformToBarChartData] Datos transformados: ${result.length} años`)
-      console.log(`  - Primer año:`, result[0])
       return result
       
     } catch (err) {
@@ -323,15 +401,11 @@ export function useStorageData() {
   }
   
   /**
-   * ✅ NUEVO: Transformar datos para gráfico lineal (LinearChart)
-   * @param {Array} rawData - Datos crudos del sheet
-   * @param {Object} mapping - Configuración de mapping
-   * @returns {Object} - { data: [...], labels: [...] }
+   * ✅ Transformar datos para gráfico lineal (LinearChart)
    */
   const transformToLinearChartData = (rawData, mapping) => {
     try {
       console.log('📈 [transformToLinearChartData] Transformando datos...')
-      console.log('  - Mapping:', mapping)
       
       if (!rawData || rawData.length === 0) {
         console.warn('⚠️ [transformToLinearChartData] No hay datos para transformar')
@@ -341,21 +415,16 @@ export function useStorageData() {
       const yearColumn = mapping.yearColumn || 'Año'
       const variableColumns = mapping.variableColumns || []
       
-      // Obtener años únicos ordenados
       const years = [...new Set(rawData.map(row => row[yearColumn]))]
         .filter(year => year)
         .sort((a, b) => parseInt(a) - parseInt(b))
       
-      // Crear series de datos para cada variable
       const seriesData = variableColumns.map(variable => {
         const data = years.map(year => {
           const yearRows = rawData.filter(row => row[yearColumn] === year)
-          
-          // Sumar valores para ese año
           const total = yearRows.reduce((sum, row) => {
             return sum + parseNumericValue(row[variable.column])
           }, 0)
-          
           return total
         })
         
@@ -367,12 +436,8 @@ export function useStorageData() {
         }
       })
       
-      console.log(`✅ [transformToLinearChartData] Datos transformados: ${years.length} años, ${seriesData.length} series`)
-      
-      return {
-        data: seriesData,
-        labels: years
-      }
+      console.log(`✅ [transformToLinearChartData] Datos transformados: ${years.length} años`)
+      return { data: seriesData, labels: years }
       
     } catch (err) {
       console.error('❌ [transformToLinearChartData] Error:', err)
@@ -381,15 +446,11 @@ export function useStorageData() {
   }
   
   /**
-   * ✅ NUEVO: Transformar datos para gráfico de área apilada (StackedArea)
-   * @param {Array} rawData - Datos crudos del sheet
-   * @param {Object} mapping - Configuración de mapping
-   * @returns {Object} - { 'Variable 1': [...], 'Variable 2': [...] }
+   * ✅ Transformar datos para gráfico de área apilada (StackedArea)
    */
   const transformToStackedAreaData = (rawData, mapping) => {
     try {
       console.log('📊 [transformToStackedAreaData] Transformando datos...')
-      console.log('  - Mapping:', mapping)
       
       if (!rawData || rawData.length === 0) {
         console.warn('⚠️ [transformToStackedAreaData] No hay datos para transformar')
@@ -399,29 +460,23 @@ export function useStorageData() {
       const yearColumn = mapping.yearColumn || 'Año'
       const variableColumns = mapping.variableColumns || []
       
-      // Obtener años únicos ordenados
       const years = [...new Set(rawData.map(row => row[yearColumn]))]
         .filter(year => year)
         .sort((a, b) => parseInt(a) - parseInt(b))
       
-      // Crear objeto con datos por variable
       const result = {}
       
       variableColumns.forEach(variable => {
         result[variable.label] = years.map(year => {
           const yearRows = rawData.filter(row => row[yearColumn] === year)
-          
-          // Sumar valores para ese año
           const total = yearRows.reduce((sum, row) => {
             return sum + parseNumericValue(row[variable.column])
           }, 0)
-          
           return total
         })
       })
       
       console.log(`✅ [transformToStackedAreaData] Datos transformados:`, Object.keys(result))
-      
       return result
       
     } catch (err) {
@@ -436,8 +491,6 @@ export function useStorageData() {
   const transform = (rawData, mapping, chartType = 'horizontal', options = {}) => {
     try {
       console.log(`🔄 [useStorageData] Transformando datos para tipo: ${chartType}`)
-      console.log(`  - Mapping:`, mapping)
-      console.log(`  - Options:`, options)
       
       if (chartType === 'horizontal') {
         return transformForHorizontalChart(rawData, mapping, options)
@@ -455,12 +508,11 @@ export function useStorageData() {
         return transformToStackedAreaData(rawData, mapping)
       }
       
-      // Por defecto retornar datos sin transformar
       return rawData
       
     } catch (err) {
       console.error('❌ [useStorageData] Error transformando datos:', err)
-      throw err
+      return []
     }
   }
   
@@ -475,7 +527,6 @@ export function useStorageData() {
       return []
     }
     
-    // Buscar la fila de la entidad seleccionada
     const categoryColumn = mapping.categoryColumn || mapping.stateColumn
     const entityRow = rawData.find(row => row[categoryColumn] === selectedEntity)
     
@@ -486,7 +537,6 @@ export function useStorageData() {
     
     console.log(`✅ [useStorageData] Fila encontrada para ${selectedEntity}:`, entityRow)
     
-    // Transformar cada variable según el mapping
     const variables = mapping.variables || mapping.variableColumns
     
     return variables.map(variable => {
@@ -499,7 +549,7 @@ export function useStorageData() {
         value: numericValue,
         color: variable.color,
         colorClass: variable.colorClass || 'default',
-        active: true // Por defecto todas activas
+        active: true
       }
     })
   }
@@ -508,19 +558,19 @@ export function useStorageData() {
     fetchData,
     fetchSheetNames,
     transform,
-    // ✅ FUNCIONES DE TRANSFORMACIÓN
     transformToBarChartData,
     transformToLinearChartData,
     transformToStackedAreaData,
     parseNumericValue,
-    // ✅ FUNCIONES DE CACHÉ
     clearCache: () => {
       dataCache.clear()
       console.log('🗑️ [Cache] Caché limpiado completamente')
     },
     getCacheStats: () => ({
       size: dataCache.size,
-      keys: Array.from(dataCache.keys())
+      keys: Array.from(dataCache.keys()),
+      activeRequests,
+      queueLength: requestQueue.length
     })
   }
 }

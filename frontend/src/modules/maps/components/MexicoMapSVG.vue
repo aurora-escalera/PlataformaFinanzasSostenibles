@@ -24,7 +24,7 @@
           </div>
           <!-- Columna derecha: IFS y clasificación -->
           <div class="card-ifss-info">
-            <div class="ifss-value-text">IFSS: {{ getDisplayIFSS() }}</div>
+            <div class="ifss-value-text">{{ selectedState ? 'IFSS' : 'IFS' }}: {{ getDisplayIFSS() }}</div>
             <div 
               class="ifss-classification"
               :style="{ color: getCurrentClassificationColor() }"
@@ -35,7 +35,6 @@
         </div>
 
         <!-- FLEX 2: Dos filas (IFS Regional + Datos federales) -->
-        <!-- ✅ Solo mostrar si showNavigation es true -->
         <div 
           v-if="showNavigation"
           class="card-bottom-stack"
@@ -52,7 +51,7 @@
             :class="{ 'active': activeView === 'federal' }"
             @click.stop="handleDatosFederalesClick"
           >
-            Datos federales
+            Plataforma de Finanzas Sostenibles
           </div>
         </div>
       </div>
@@ -60,28 +59,22 @@
 
     <!-- Información de hover/estado seleccionado/nacional -->
     <div class="hover-info-box">
-      <!-- Prioridad 1: Si hay estado seleccionado, mostrar su información -->
       <div v-if="selectedState" class="info-content">
         <div class="location-label">{{ selectedState }}</div>
-        <div class="value-display">IFS: {{ getStateInfo(selectedState).value || 0 }}</div>
+        <div class="value-display">IFSS: {{ getStateInfo(selectedState).value || 0 }}</div>
       </div>
-      
-      <!-- Prioridad 2: Si hay estado en hover (y no hay seleccionado), mostrar información del estado -->
       <div v-else-if="hoveredState" class="info-content">
         <div class="location-label">{{ hoveredState }}</div>
-        <div class="value-display">IFS: {{ getStateInfo(hoveredState).value || 0 }}</div>
+        <div class="value-display">IFSS: {{ getStateInfo(hoveredState).value || 0 }}</div>
       </div>
-      
-      <!-- Prioridad 3: Si no hay estado en hover ni seleccionado, mostrar información nacional -->
       <div v-else-if="nationalIFSS" class="info-content">
         <div class="location-label">México</div>
-        <div class="value-display">IFSS: {{ nationalIFSS.value }}</div>
+        <div class="value-display">IFS: {{ nationalIFSS.value }}</div>
       </div>
     </div>
 
     <!-- Leyenda de colores IFSS -->
     <div class="color-legend">
-      <!-- Leyenda normal (cuando no hay estado seleccionado) -->
       <div v-if="!selectedState" class="legend-items-horizontal">
         <div class="legend-item-horizontal">
           <div class="legend-color-horizontal" style="background-color: #6ac952"></div>
@@ -112,8 +105,6 @@
           <span>Muy Bajo</span>
         </div>
       </div>
-      
-      <!-- Leyenda del estado seleccionado -->
       <div v-else class="legend-selected-state">
         <div 
           class="selected-state-bar"
@@ -148,8 +139,6 @@
       </g>
     </svg>
 
-    <!-- ✅ CORREGIDO: Tooltip usando Teleport para escapar del stacking context -->
-    <!-- ✅ DISEÑO 6: Compacto con Icono y color dinámico -->
     <Teleport to="body">
       <div 
         v-if="hoveredState" 
@@ -192,7 +181,6 @@
 import { ref, computed } from 'vue'
 import { geoPath, geoMercator } from 'd3-geo'
 
-// Props
 const props = defineProps({
   geoData: {
     type: Object,
@@ -226,36 +214,30 @@ const props = defineProps({
     type: Function,
     required: true
   },
-  // Prop para controlar la visibilidad del card-bottom-stack
   showNavigation: {
     type: Boolean,
     default: true
   },
-  // Prop para controlar la visibilidad de todo el map-info-card
   showInfoCard: {
     type: Boolean,
     default: true
   },
-  // Prop para controlar qué vista está activa ('federal' o 'regional')
   activeView: {
     type: String,
-    default: 'federal'
+    default: null
   }
 })
 
-// Emits
 const emit = defineEmits([
   'state-click',
   'state-hover',
   'state-leave',
   'navigate-regional',
-  'navigate-federal'
+  'view-change'
 ])
 
-// Estado local
 const mousePosition = ref({ x: 0, y: 0 })
 
-// Proyección del mapa
 const projection = computed(() => {
   return geoMercator()
     .scale(props.mapConfig.scale)
@@ -267,25 +249,20 @@ const pathGenerator = computed(() => {
   return geoPath().projection(projection.value)
 })
 
-// Funciones de visualización
 const getPathData = (feature) => {
   return pathGenerator.value(feature)
 }
 
-// Nueva función para obtener las clases CSS del estado
 const getStateClass = (stateName) => {
   const classes = ['state-path']
-  
   if (props.selectedState === stateName) {
     classes.push('state-selected')
   } else if (props.hoveredState === stateName) {
     classes.push('state-hovered')
   }
-  
   if (props.selectedState && props.selectedState !== stateName) {
     classes.push('state-dimmed')
   }
-  
   return classes.join(' ')
 }
 
@@ -301,7 +278,6 @@ const getStrokeWidth = (stateName) => {
   return 1
 }
 
-// Funciones para la card
 const getDisplayIFSS = () => {
   if (props.selectedState) {
     const stateInfo = props.getStateInfo(props.selectedState)
@@ -327,7 +303,6 @@ const getCurrentPosition = () => {
   return '15'
 }
 
-// Funciones para la leyenda del estado seleccionado
 const getSelectedStateColor = () => {
   if (!props.selectedState) return '#cccccc'
   return props.getStateColor(props.selectedState)
@@ -340,7 +315,6 @@ const getSelectedStateClassification = () => {
   return props.getIFSSLabel(value).label
 }
 
-// ✅ NUEVO: Funciones para el color dinámico del tooltip
 const getTooltipColor = () => {
   if (!props.hoveredState) return '#718096'
   const stateInfo = props.getStateInfo(props.hoveredState)
@@ -350,22 +324,17 @@ const getTooltipColor = () => {
 
 const getTooltipIconGradient = () => {
   const color = getTooltipColor()
-  // Crear un gradiente basado en el color de clasificación
   return `linear-gradient(135deg, ${color} 0%, ${adjustColor(color, -20)} 100%)`
 }
 
-// Función auxiliar para oscurecer/aclarar un color
 const adjustColor = (color, amount) => {
-  // Convertir hex a RGB
   const hex = color.replace('#', '')
   const r = Math.max(0, Math.min(255, parseInt(hex.substring(0, 2), 16) + amount))
   const g = Math.max(0, Math.min(255, parseInt(hex.substring(2, 4), 16) + amount))
   const b = Math.max(0, Math.min(255, parseInt(hex.substring(4, 6), 16) + amount))
-  
   return `rgb(${r}, ${g}, ${b})`
 }
 
-// Handlers de eventos
 const handleMouseHover = (stateName, event) => {
   mousePosition.value = {
     x: event.clientX,
@@ -383,35 +352,33 @@ const handleStateClick = (stateName) => {
 }
 
 const handleBackgroundClick = (event) => {
-  // Si el click es en el wrapper (no en SVG o estados)
   if (event.target.classList.contains('map-wrapper')) {
     emit('state-click', null)
   }
 }
 
 const handleSvgClick = (event) => {
-  // Si el click es directamente en el SVG (no en un path)
   if (event.target.tagName === 'svg' || event.target.tagName === 'g') {
     emit('state-click', null)
   }
 }
 
 const handleIFSRegionalClick = () => {
+  emit('view-change', 'regional')
   emit('navigate-regional')
 }
 
 const handleDatosFederalesClick = () => {
-  emit('navigate-federal')
+  emit('view-change', 'federal')
+  window.open('https://plataformafinanzassostenibles.gflac.org/ranking', '_blank')
 }
 
-// Estilo del tooltip
 const tooltipStyle = computed(() => {
   if (!props.hoveredState) return { display: 'none' }
-  
   return {
     position: 'fixed',
-    left: `${mousePosition.value.x + 20}px`,
-    top: `${mousePosition.value.y - 60}px`,
+    left: `${mousePosition.value.x + 28}px`,
+    top: `${mousePosition.value.y - 75}px`,
     pointerEvents: 'none',
     zIndex: 99999,
     transform: 'translate(0, 0)'
@@ -420,7 +387,6 @@ const tooltipStyle = computed(() => {
 </script>
 
 <style scoped>
-/* Mismo estilo que IS-anual-linear-chart en HistoricalCard */
 .map-wrapper {
   position: relative;
   width: 48%;
@@ -434,21 +400,19 @@ const tooltipStyle = computed(() => {
   z-index: 2;
 }
 
-/* ✅ CARD FLOTANTE - GLASSMORPHISM */
 .map-info-card {
   position: absolute;
   top: 80px;
   right: 120px;
-  /* Efecto Glassmorphism */
   background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.8);
-  border-radius: 16px;
-  padding: 14px;
+  border-radius: 18px;
+  padding: 18px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   z-index: 10;
-  width: 170px;
+  width: 200px;
   transition: all 0.3s ease;
 }
 
@@ -460,12 +424,11 @@ const tooltipStyle = computed(() => {
 .card-content {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
-/* Título */
 .card-position-title {
-  font-size: 10px;
+  font-size: 11px;
   color: #64748b;
   font-weight: 500;
   text-align: center;
@@ -474,18 +437,17 @@ const tooltipStyle = computed(() => {
   margin-bottom: 0;
 }
 
-/* FLEX 1: Dos columnas en una fila */
 .card-top-row {
   display: flex;
   flex-direction: row;
-  gap: 10px;
+  gap: 12px;
   align-items: center;
   justify-content: center;
   padding: 0;
 }
 
 .card-position-number {
-  font-size: 40px;
+  font-size: 48px;
   font-weight: 300;
   color: #D4A574;
   line-height: 1;
@@ -496,57 +458,70 @@ const tooltipStyle = computed(() => {
 }
 
 .ifss-value-text {
-  font-size: 12px;
+  font-size: 14px;
   color: #475569;
   font-weight: 500;
   margin: 0;
 }
 
 .ifss-classification {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   margin: 0;
   line-height: 1.2;
 }
 
-/* FLEX 2: Botones de navegación */
 .card-bottom-stack {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
+/* BOTONES - Se ajustan al texto */
 .card-label-pill {
-  background: rgba(5, 55, 89, 0.05);
-  border: none;
+  background: rgba(5, 55, 89, 0.06);
+  border: 1px solid rgba(5, 55, 89, 0.12);
   border-radius: 8px;
   text-align: center;
   font-size: 10px;
   color: #475569;
   font-weight: 500;
-  height: 30px;
+  padding: 10px 12px;
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
 }
 
 .card-label-pill:hover {
-  background: rgba(5, 55, 89, 0.1);
+  background: rgba(5, 55, 89, 0.12);
+  border-color: rgba(5, 55, 89, 0.2);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(5, 55, 89, 0.1);
 }
 
 .card-label-pill:active {
-  background: rgba(5, 55, 89, 0.15);
+  background: rgba(5, 55, 89, 0.18);
+  transform: translateY(0);
+  box-shadow: none;
 }
 
 .card-label-pill.active {
   background: #053759;
+  border-color: #053759;
   color: white;
+  box-shadow: 0 2px 8px rgba(5, 55, 89, 0.25);
 }
 
-/* Porcentaje dinamico */
+.card-label-pill.active:hover {
+  background: #064a75;
+  border-color: #064a75;
+}
+
 .hover-info-box {
   position: absolute;
   height: 70px;
@@ -560,7 +535,6 @@ const tooltipStyle = computed(() => {
   transition: all 0.3s ease;
 }
 
-/* Barra de colores */
 .color-legend {
   position: absolute;
   bottom: 60px;
@@ -688,7 +662,6 @@ const tooltipStyle = computed(() => {
   border-radius: 10px 0px 0px 10px;
 }
 
-/* Estilos base del path */
 .state-path {
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -699,42 +672,36 @@ const tooltipStyle = computed(() => {
   stroke-linecap: round;
 }
 
-/* Estado seleccionado - mantiene el estilo visual */
 .state-path.state-selected {
   opacity: 1;
   filter: saturate(1.8) contrast(1.3);
-  stroke-width: 0.5;  /* ✅ Borde delgado */
+  stroke-width: 0.5;
   filter: drop-shadow(0 0 6px rgba(10, 10, 10, 0.8));
   transform-origin: center;
 }
 
-/* Estado en hover (solo si no está seleccionado) */
 .state-path.state-hovered:not(.state-selected) {
   filter: brightness(1.3);
   opacity: 0.95;
   stroke-width: 2;
 }
 
-/* Estados atenuados cuando hay uno seleccionado */
 .state-path.state-dimmed {
   opacity: 0.5;
   filter: brightness(0.8);
 }
 
-/* Hover sobre estados atenuados */
 .state-path.state-dimmed:hover {
   opacity: 0.7;
   filter: brightness(1);
 }
 
-/* Asegurar que hover funcione sobre estado seleccionado */
 .state-path.state-selected:hover {
   opacity: 1;
   filter: saturate(1.8) contrast(1.3);
-  stroke-width: 0.4;  /* ✅ Borde muy delgado */
+  stroke-width: 0.4;
   filter: drop-shadow(0 0 6px rgba(10, 10, 10, 0.8));
   transform-origin: center;
-
 }
 
 @media (max-width: 1200px) {
@@ -754,14 +721,12 @@ const tooltipStyle = computed(() => {
   }
   
   .map-info-card {
-    min-width: 150px;
-    padding: 16px;
+    min-width: 180px;
+    padding: 18px;
   }
 }
 </style>
 
-<!-- ✅ ESTILOS GLOBALES para el tooltip (necesario porque usa Teleport) -->
-<!-- ✅ DISEÑO 6: Compacto con Icono y color dinámico -->
 <style>
 .mexico-map-tooltip {
   background: white;

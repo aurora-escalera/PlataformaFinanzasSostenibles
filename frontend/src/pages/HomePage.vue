@@ -62,9 +62,10 @@
             @state-leave="handleStateLeave"
             @navigate-regional="handleIFSRegionalClick"
             @navigate-federal="handleDatosFederalesClick"
+            @view-change="handleViewChange"
           />
           
-          <!-- ✅ Overlay sobre SOLO el mapa - Usa areAllFiltersOnTodas -->
+          <!-- Overlay sobre SOLO el mapa - Usa areAllFiltersOnTodas -->
           <transition name="overlay-fade">
             <div 
               v-if="showMapOverlay" 
@@ -79,7 +80,7 @@
             </div>
           </transition>
           
-        <!-- ✅ COMPONENTE: Panel Cualitativo - Escucha eventos de años y cierre -->
+        <!-- COMPONENTE: Panel Cualitativo - Escucha eventos de años y cierre -->
         <QualitativePanel
           :isExpanded="isRetractableExpanded"
           :selectedEntity="selectedEntity"
@@ -90,7 +91,7 @@
         />
 
         <!-- RANKING CHART SECTION - Al lado del mapa -->
-        <!-- ✅ Solo mostrar cuando NO está expandido -->
+        <!-- Solo mostrar cuando NO está expandido -->
         <div v-if="!isRetractableExpanded" class="charts-section">
           <div class="charts-container">
             <div class="ranking-chart-section" style="height: 100%; display: flex; flex-direction: column;">
@@ -124,7 +125,7 @@
                 </div>
               </div>
               
-              <!-- ✅ LinearChart de IFS con card wrapper -->
+              <!-- LinearChart de IFS con card wrapper -->
               <div 
                 v-else-if="showStackedArea && stackedAreaChartData && Object.keys(stackedAreaChartData).length > 0" 
                 class="chart-card linear-chart-card"
@@ -166,7 +167,7 @@
                 </button>
               </div>
               
-              <!-- ✅ HorizontalRankingChart - Solo cuando NO están todos en "Todas..." -->
+              <!-- HorizontalRankingChart - Solo cuando NO están todos en "Todas..." -->
               <HorizontalRankingChart
                 v-else-if="rankingData.length > 0"
                 :variables="rankingData"
@@ -188,7 +189,7 @@
       </div>
 
       <!-- Panel de Charts Component - Abajo -->
-      <!-- ✅ Solo mostrar cuando NO está expandido el panel retráctil -->
+      <!-- Solo mostrar cuando NO está expandido el panel retráctil -->
       <div 
         v-if="showRankingPanel && !isRetractableExpanded" 
         class="ranking-panel"
@@ -204,7 +205,7 @@
         </div>
         
         <div class="body-ranking-panel">
-          <!-- ✅ Mostrar HistoricalCard cuando NO hay estado Y filtros están en "Todas..." -->
+          <!-- Mostrar HistoricalCard cuando NO hay estado Y filtros están en "Todas..." -->
           <HistoricalCard
             v-if="showHistoricalCard"
             :statesData="statesDataForSlider"
@@ -213,7 +214,7 @@
             @filter-change="handleFilterChange"
           />
           
-          <!-- ✅ Mostrar ChartsComponent cuando hay un estado seleccionado -->
+          <!-- Mostrar ChartsComponent cuando hay un estado seleccionado -->
           <ChartsComponent 
             v-else
             :selectedState="selectedState"
@@ -327,16 +328,16 @@ const selectedEntity = ref('')
 const filterBarKey = ref(0)
 const { fetchData: fetchEntities, fetchSheetNames } = useStorageData()
 
-// ✅ Estado para controlar qué vista está activa ('federal' o 'regional')
-const activeView = ref('federal')
+// ✅ CAMBIO: Estado para controlar qué vista está activa - INICIAR EN NULL
+const activeView = ref(null)
 
-// ✅ Array de años disponibles (dinámico)
+// Array de años disponibles (dinámico)
 const availableYears = ref([])
 
-// ✅ Guardar años iniciales de cuantitativos
+// Guardar años iniciales de cuantitativos
 const initialYears = ref([])
 
-// ✅ Guardar estado inicial de filtros
+// Guardar estado inicial de filtros
 const initialFilters = ref({
   entity: '',
   year: null,
@@ -353,11 +354,11 @@ const entitiesData = ref([])
 const entitiesLoading = ref(false)
 const entitiesError = ref(null)
 
-// ✅ Estado para controlar la expansión del panel retráctil
+// Estado para controlar la expansión del panel retráctil
 const isRetractableExpanded = ref(false)
 
 // ============================================================================
-// ✅ LÓGICA CENTRALIZADA DE FILTROS
+// LÓGICA CENTRALIZADA DE FILTROS
 // ============================================================================
 
 /**
@@ -373,7 +374,7 @@ const defaultYear = computed(() => {
 })
 
 /**
- * ✅ CONDICIÓN PRINCIPAL: Los 3 filtros en "Todas..." (null)
+ * CONDICIÓN PRINCIPAL: Los 3 filtros en "Todas..." (null)
  * 
  * Cuando esto es TRUE, se muestra:
  * - Overlay en el mapa
@@ -399,31 +400,6 @@ const areAllFiltersOnTodas = computed(() => {
 })
 
 /**
- * ✅ CONDICIÓN DE DEFAULT INICIAL:
- * - Entidad: null
- * - Año: primer año válido de la lista
- * - Variable: null
- * 
- * Se usa para detectar el estado inicial y activar vista 'federal'
- */
-const areAllFiltersDefault = computed(() => {
-  const entityIsDefault = selectedEntity.value === null
-  const yearIsDefault = selectedYear.value === defaultYear.value
-  const variableIsDefault = selectedVariable.value === null
-  
-  const result = entityIsDefault && yearIsDefault && variableIsDefault
-  
-  console.log('🎯 [areAllFiltersDefault]:', {
-    entity: selectedEntity.value, entityIsDefault,
-    year: selectedYear.value, defaultYear: defaultYear.value, yearIsDefault,
-    variable: selectedVariable.value, variableIsDefault,
-    result
-  })
-  
-  return result
-})
-
-/**
  * Detecta si algún filtro está en blanco "-" (string vacío)
  */
 const hasBlankFilter = computed(() => {
@@ -438,11 +414,11 @@ const hasSpecificVariable = computed(() => {
 })
 
 // ============================================================================
-// ✅ COMPUTED QUE USAN areAllFiltersOnTodas
+// COMPUTED QUE USAN areAllFiltersOnTodas
 // ============================================================================
 
 /**
- * ✅ Mostrar StackedArea/LinearChart cuando los 3 filtros están en "Todas..."
+ * Mostrar StackedArea/LinearChart cuando los 3 filtros están en "Todas..."
  */
 const showStackedArea = computed(() => {
   if (isRetractableExpanded.value) {
@@ -452,7 +428,7 @@ const showStackedArea = computed(() => {
 })
 
 /**
- * ✅ Mostrar overlay del mapa cuando los 3 filtros están en "Todas..."
+ * Mostrar overlay del mapa cuando los 3 filtros están en "Todas..."
  */
 const showMapOverlay = computed(() => {
   if (isRetractableExpanded.value) {
@@ -462,7 +438,7 @@ const showMapOverlay = computed(() => {
 })
 
 /**
- * ✅ Bloquear barra de filtros cuando los 3 filtros están en "Todas..."
+ * Bloquear barra de filtros cuando los 3 filtros están en "Todas..."
  */
 const isFilterBarLocked = computed(() => {
   if (isRetractableExpanded.value) {
@@ -479,7 +455,7 @@ const shouldHidePanel = computed(() => {
 })
 
 /**
- * ✅ Mostrar HistoricalCard cuando:
+ * Mostrar HistoricalCard cuando:
  * - No hay filtros en blanco
  * - No hay estado seleccionado en el mapa
  * - Los 3 filtros están en "Todas..." (null)
@@ -500,7 +476,7 @@ const showRankingPanel = computed(() => {
 })
 
 // ============================================================================
-// ✅ FUNCIONES DE CARGA DE DATOS
+// FUNCIONES DE CARGA DE DATOS
 // ============================================================================
 
 const loadEntitiesFromSheet = async () => {
@@ -545,9 +521,6 @@ const fetchAvailableYears = async () => {
     initialYears.value = [...years]
     availableYears.value = [...years]
     
-    // ✅ NO establecer año aquí - dejar en null para que areAllFiltersOnTodas funcione
-    // El año se establecerá solo cuando el usuario lo seleccione o cuando se vaya a default
-    
     return years
     
   } catch (err) {
@@ -557,7 +530,7 @@ const fetchAvailableYears = async () => {
 }
 
 // ============================================================================
-// ✅ HANDLERS DE CAMBIOS DE FILTROS
+// HANDLERS DE CAMBIOS DE FILTROS
 // ============================================================================
 
 const handleEntityChange = (entity) => {
@@ -625,7 +598,7 @@ const handleFiltersChange = (filters) => {
 }
 
 // ============================================================================
-// ✅ HANDLERS DE INTERACCIÓN CON EL MAPA
+// HANDLERS DE INTERACCIÓN CON EL MAPA
 // ============================================================================
 
 const handleStateClickWithEmit = async (stateName) => {
@@ -660,6 +633,12 @@ const handleStateClickWithEmit = async (stateName) => {
   }
 }
 
+// ✅ NUEVO: Handler para cambio de vista desde MexicoMapSVG
+const handleViewChange = (view) => {
+  console.log('👁️ [HomePage] Vista cambiada a:', view)
+  activeView.value = view
+}
+
 const handleIFSRegionalClick = async () => {
   console.log('🌎 [HomePage] Cambiando a vista IFS Regional')
   
@@ -669,7 +648,7 @@ const handleIFSRegionalClick = async () => {
     resetSelection()
   }
   
-  // ✅ Establecer filtros a "Todas..." (null = Todas)
+  // Establecer filtros a "Todas..." (null = Todas)
   selectedEntity.value = null
   selectedYear.value = null
   selectedVariable.value = null
@@ -683,31 +662,9 @@ const handleIFSRegionalClick = async () => {
 }
 
 const handleDatosFederalesClick = async () => {
-  console.log('🏛️ [HomePage] Cambiando a vista Datos Federales (DEFAULT)')
-  
-  activeView.value = 'federal'
-  
-  // ✅ Cambiar filtros a DEFAULT (null, primerAño, null)
-  selectedEntity.value = null
-  selectedVariable.value = null
-  
-  if (availableYears.value.length > 0) {
-    const firstYear = availableYears.value[0]
-    selectedYear.value = firstYear
-    setActiveYear(firstYear)
-  }
-  
-  // Resetear mapa si hay estado seleccionado
-  if (selectedState.value) {
-    resetSelection()
-  }
-  
-  await loadAllStatesRanking(null)
-  
-  filterBarKey.value++
-  await nextTick()
-  
-  console.log('✅ Vista Datos Federales activada (DEFAULT)')
+  console.log('🏛️ [HomePage] Click en Plataforma de Finanzas Sostenibles')
+  // Solo abre la URL, no cambia activeView automáticamente
+  // El cambio de activeView se maneja en MexicoMapSVG via @view-change
 }
 
 const handleDatosCualitativosClick = () => {
@@ -735,7 +692,7 @@ const handleYearsLoaded = async (years) => {
 const handlePanelClosed = async () => {
   console.log('🔄 [HomePage] Panel cualitativo cerrado, reseteando filtros a DEFAULT...')
   
-  // ✅ Restaurar a DEFAULT (null, primerAño, null)
+  // Restaurar a DEFAULT (null, primerAño, null)
   selectedEntity.value = null
   selectedVariable.value = null
   
@@ -760,10 +717,10 @@ const handlePanelClosed = async () => {
   // Recargar ranking
   await loadAllStatesRanking(null)
   
-  // Activar vista "Datos Federales"
-  activeView.value = 'federal'
+  // ✅ CAMBIO: No asignar activeView automáticamente, dejarlo como estaba o null
+  activeView.value = null
   
-  console.log('✅ Filtros reseteados a DEFAULT, vista: Datos Federales')
+  console.log('✅ Filtros reseteados a DEFAULT')
 }
 
 const handleMapContainerClick = (event) => {
@@ -778,7 +735,7 @@ const handleMapContainerClick = (event) => {
 const handleOverlayClick = async () => {
   console.log('🔲 [HomePage] Click en overlay, cambiando a DEFAULT...')
   
-  // ✅ Cambiar a DEFAULT (null, primerAño, null) para salir de "Todas..."
+  // Cambiar a DEFAULT (null, primerAño, null) para salir de "Todas..."
   selectedEntity.value = null
   selectedVariable.value = null
   
@@ -793,17 +750,17 @@ const handleOverlayClick = async () => {
   
   await loadAllStatesRanking(null)
   
-  // Activar vista "Datos Federales"
-  activeView.value = 'federal'
+  // ✅ CAMBIO: No asignar activeView automáticamente
+  activeView.value = null
   
   filterBarKey.value++
   await nextTick()
   
-  console.log('✅ Cambiado a DEFAULT, vista: Datos Federales')
+  console.log('✅ Cambiado a DEFAULT')
 }
 
 // ============================================================================
-// ✅ COMPUTED ADICIONALES
+// COMPUTED ADICIONALES
 // ============================================================================
 
 const useLargePanelSize = computed(() => {
@@ -828,35 +785,19 @@ const getRankingTitle = computed(() => {
 })
 
 // ============================================================================
-// ✅ WATCHERS
+// WATCHERS
 // ============================================================================
 
 /**
- * Watch para cargar datos del LinearChart y activar vista 'regional' cuando areAllFiltersOnTodas
+ * Watch para cargar datos del LinearChart cuando areAllFiltersOnTodas
  */
 watch(areAllFiltersOnTodas, async (newValue, oldValue) => {
   console.log('👀 [areAllFiltersOnTodas] cambió de', oldValue, 'a', newValue)
   if (newValue && !oldValue) {
-    // Activar vista "IFS Regional" cuando los 3 filtros están en "Todas..."
-    activeView.value = 'regional'
-    console.log('🌎 [HomePage] Filtros en "Todas...", activando vista IFS Regional')
+    console.log('🌎 [HomePage] Filtros en "Todas...", cargando LinearChart')
     await loadIFSSData()
   }
 })
-
-/**
- * Watch para activar vista federal cuando los filtros vuelven a default
- */
-watch(
-  areAllFiltersDefault,
-  (isDefault) => {
-    if (isDefault && activeView.value !== 'federal') {
-      console.log('🏛️ [HomePage] Filtros en default, activando vista Datos Federales')
-      activeView.value = 'federal'
-    }
-  },
-  { immediate: true }
-)
 
 /**
  * Watch para actualizar ranking cuando cambia la variable (y no estamos en "Todas...")
@@ -934,7 +875,7 @@ watch(error, (newError) => {
 })
 
 // ============================================================================
-// ✅ INICIALIZACIÓN
+// INICIALIZACIÓN
 // ============================================================================
 
 onMounted(async () => {
@@ -946,8 +887,7 @@ onMounted(async () => {
   await loadEntitiesFromSheet()
   await initializeSlider()
   
-  // ✅ Establecer filtros iniciales en DEFAULT (null, primerAño, null)
-  // Esto activa la vista "Datos Federales"
+  // Establecer filtros iniciales en DEFAULT (null, primerAño, null)
   selectedEntity.value = null
   selectedVariable.value = null
   
@@ -971,12 +911,10 @@ onMounted(async () => {
   console.log('💾 Estado inicial de filtros (DEFAULT):', initialFilters.value)
   console.log('💾 Años iniciales guardados:', initialYears.value)
   
-  // ✅ Vista por defecto es 'federal' (cuando está en DEFAULT)
-  activeView.value = 'federal'
-  console.log('🏛️ Vista inicial: Datos Federales (DEFAULT)')
+  // ✅ CAMBIO: No asignar activeView - dejarlo en null (ningún botón activo)
+  console.log('👁️ Vista inicial: ninguna activa (null)')
   
   console.log('✅ HomePage inicializado')
-  console.log('   areAllFiltersDefault:', areAllFiltersDefault.value)
   console.log('   areAllFiltersOnTodas:', areAllFiltersOnTodas.value)
   console.log('\n')
 })

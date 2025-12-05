@@ -1,7 +1,4 @@
 <!-- src/modules/maps/components/RetractableFilterBar.vue -->
-<!-- ✅ MODIFICADO: Agregado buscador en los 3 filtros (Entidad, Año, Variable) -->
-<!-- ✅ MODIFICADO: Añadido espacio en blanco para Año -->
-<!-- ✅ MODIFICADO: Cambiado 'Todas las entidades' por 'Todas las entidades (IFS Regional)' -->
 <template>
   <div 
     class="filter-bar-container" 
@@ -44,26 +41,17 @@
                   @click.stop
                 >
               </div>
-              <div 
-                class="dropdown-options" 
-                @wheel.prevent="handleDropdownScroll"
-              >
-                <!-- Opción en blanco (default) -->
+              <div class="dropdown-options">
+                <!-- Default: Todas las entidades (IFS Regional) -->
                 <div 
-                  @click="selectEntity('')"
-                  class="dropdown-option"
-                  :class="{ 'selected': selectedEntity === '' }"
-                >
-                  <span class="blank-option">-</span>
-                </div>
-                <!-- ✅ MODIFICADO: Cambiado texto -->
-                <div 
+                  v-if="!entitySearch"
                   @click="selectEntity(null)"
                   class="dropdown-option"
                   :class="{ 'selected': selectedEntity === null }"
                 >
                   <span>Todas las entidades (IFS Regional)</span>
                 </div>
+                <!-- Entidades filtradas -->
                 <div 
                   v-for="entity in filteredEntities" 
                   :key="entity.name"
@@ -72,6 +60,15 @@
                   :class="{ 'selected': selectedEntity === entity.name && selectedEntity !== '' && selectedEntity !== null }"
                 >
                   <span>{{ entity.name }}</span>
+                </div>
+                <!-- Opción en blanco al FINAL (solo en Entidad) -->
+                <div 
+                  v-if="!entitySearch"
+                  @click="selectEntity('')"
+                  class="dropdown-option blank-option-row"
+                  :class="{ 'selected': selectedEntity === '' }"
+                >
+                  <span class="blank-option">-</span>
                 </div>
               </div>
             </div>
@@ -85,7 +82,7 @@
             <button 
               @click="toggleDropdown('año')"
               class="dropdown-button"
-              :class="{ 'active': activeDropdown === 'año', 'has-selection': selectedYear !== null && selectedYear !== '' }"
+              :class="{ 'active': activeDropdown === 'año', 'has-selection': selectedYear !== null }"
               :disabled="loadingYears"
             >
               <span class="dropdown-text">
@@ -96,7 +93,6 @@
             
             <!-- Dropdown de años -->
             <div v-if="activeDropdown === 'año'" class="dropdown-menu">
-              <!-- ✅ Buscador de años -->
               <div class="dropdown-search">
                 <input 
                   v-model="yearSearch"
@@ -105,21 +101,8 @@
                   @click.stop
                 >
               </div>
-              <div 
-                class="dropdown-options"
-                @wheel.prevent="handleDropdownScroll"
-              >
-                <!-- ✅ NUEVO: Opción en blanco (default) - solo si no hay búsqueda -->
-                <div 
-                  v-if="!yearSearch"
-                  @click="selectYear('')"
-                  class="dropdown-option"
-                  :class="{ 'selected': selectedYear === '' }"
-                >
-                  <span class="blank-option">-</span>
-                </div>
-                
-                <!-- Opción "Todos los años" (solo si no hay búsqueda) -->
+              <div class="dropdown-options">
+                <!-- Default: Todos los años -->
                 <div 
                   v-if="!yearSearch"
                   @click="selectYear(null)"
@@ -135,7 +118,7 @@
                   :key="year"
                   @click="selectYear(year)"
                   class="dropdown-option"
-                  :class="{ 'selected': selectedYear === year && selectedYear !== '' && selectedYear !== null }"
+                  :class="{ 'selected': selectedYear === year }"
                 >
                   <span>{{ year }}</span>
                 </div>
@@ -156,7 +139,7 @@
             <button 
               @click="toggleDropdown('variable')"
               class="dropdown-button"
-              :class="{ 'active': activeDropdown === 'variable', 'has-selection': selectedVariable !== null && selectedVariable !== '' }"
+              :class="{ 'active': activeDropdown === 'variable', 'has-selection': selectedVariable !== null }"
             >
               <span class="dropdown-text">{{ getVariableLabel() }}</span>
               <span class="dropdown-arrow">▼</span>
@@ -164,7 +147,6 @@
             
             <!-- Dropdown de variables -->
             <div v-if="activeDropdown === 'variable'" class="dropdown-menu variable-menu">
-              <!-- ✅ Buscador de variables -->
               <div class="dropdown-search">
                 <input 
                   v-model="variableSearch"
@@ -173,21 +155,8 @@
                   @click.stop
                 >
               </div>
-              <div 
-                class="dropdown-options"
-                @wheel.prevent="handleDropdownScroll"
-              >
-                <!-- Opción en blanco (solo si no hay búsqueda) -->
-                <div 
-                  v-if="!variableSearch"
-                  @click="selectVariable('')"
-                  class="dropdown-option"
-                  :class="{ 'selected': selectedVariable === '' }"
-                >
-                  <span class="blank-option">-</span>
-                </div>
-                
-                <!-- Todas las variables (solo si no hay búsqueda) -->
+              <div class="dropdown-options">
+                <!-- Default: Todas las variables -->
                 <div 
                   v-if="!variableSearch"
                   @click="selectVariable(null)"
@@ -258,7 +227,7 @@ const props = defineProps({
   },
   initialVariable: {
     type: [Object, String, null],
-    default: ''
+    default: null
   }
 })
 
@@ -295,14 +264,14 @@ const slideTimeout = ref(null)
 const filterBarRef = ref(null)
 const isAnimatingDown = ref(false)
 
-// ✅ Estados de búsqueda para los 3 filtros
+// Estados de búsqueda para los 3 filtros
 const entitySearch = ref('')
 const yearSearch = ref('')
 const variableSearch = ref('')
 
 // Filtros seleccionados
 const selectedEntity = ref('')
-const selectedVariable = ref('')
+const selectedVariable = ref(null)
 
 // Definición de las 4 variables
 const variables = {
@@ -340,10 +309,10 @@ const variables = {
   }
 }
 
-// ✅ Array de variables para facilitar el filtrado
+// Array de variables para facilitar el filtrado
 const variablesArray = computed(() => Object.values(variables))
 
-// ✅ Computed: Entidades filtradas
+// Computed: Entidades filtradas
 const filteredEntities = computed(() => {
   if (!entitySearch.value) return props.entities
   
@@ -353,7 +322,7 @@ const filteredEntities = computed(() => {
   )
 })
 
-// ✅ Computed para años filtrados
+// Computed para años filtrados
 const filteredYears = computed(() => {
   if (!yearSearch.value) return years.value
   
@@ -363,7 +332,7 @@ const filteredYears = computed(() => {
   )
 })
 
-// ✅ Computed para variables filtradas
+// Computed para variables filtradas
 const filteredVariables = computed(() => {
   if (!variableSearch.value) return variablesArray.value
   
@@ -381,32 +350,14 @@ const getEntityLabel = () => {
   return selectedEntity.value
 }
 
-// ✅ NUEVO: Función para obtener el label del año
 const getYearLabel = () => {
-  if (selectedYear.value === '') return '-'
   if (selectedYear.value === null) return 'Todos los años'
   return selectedYear.value
 }
 
 const getVariableLabel = () => {
-  if (selectedVariable.value === '') return '-'
   if (!selectedVariable.value || selectedVariable.value === null) return 'Todas las variables'
   return selectedVariable.value.key
-}
-
-const handleDropdownScroll = (event) => {
-  const container = event.currentTarget
-  const { scrollTop, scrollHeight, clientHeight } = container
-  const delta = event.deltaY
-  
-  const isAtTop = scrollTop === 0 && delta < 0
-  const isAtBottom = scrollTop + clientHeight >= scrollHeight && delta > 0
-  
-  if (!isAtTop && !isAtBottom) {
-    event.preventDefault()
-  }
-  
-  event.stopPropagation()
 }
 
 const handleMouseEnter = () => {
@@ -439,7 +390,7 @@ const toggleDropdown = (dropdownName) => {
     slideTimeout.value = null
   }
   
-  // ✅ Limpiar búsquedas al cambiar de dropdown
+  // Limpiar búsquedas al cambiar de dropdown
   if (activeDropdown.value !== dropdownName) {
     entitySearch.value = ''
     yearSearch.value = ''
@@ -454,7 +405,7 @@ const closeAllDropdowns = () => {
   console.log('🚪 Cerrando todos los dropdowns')
   activeDropdown.value = null
   
-  // ✅ Limpiar todas las búsquedas al cerrar
+  // Limpiar todas las búsquedas al cerrar
   entitySearch.value = ''
   yearSearch.value = ''
   variableSearch.value = ''
@@ -493,16 +444,14 @@ const selectYear = (year) => {
   console.log('=== FILTRO: Año seleccionado ===', year)
   setYear(year)
   
-  // ✅ MODIFICADO: Solo establecer activeYear si no es string vacío
-  if (year !== '' && year !== null) {
+  if (year !== null) {
     setActiveYear(year)
     console.log('📅 Año activo establecido:', year)
-  } else if (year === null) {
+  } else {
     const yearToUse = years.value[0] || '2024'
     setActiveYear(yearToUse)
     console.log('📅 Año activo establecido (fallback):', yearToUse)
   }
-  // Si year === '', no establecemos activeYear (se mantiene el anterior o ninguno)
   
   emit('year-change', year)
   emitFiltersChange()
@@ -826,8 +775,7 @@ onBeforeUnmount(() => {
   border-radius: 8px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
   margin-top: 8px;
-  max-height: none;
-  overflow: visible;
+  overflow: hidden;
   animation: dropdownFadeIn 0.2s ease;
   z-index: 1000;
 }
@@ -866,10 +814,11 @@ onBeforeUnmount(() => {
 }
 
 .dropdown-options {
-  max-height: 180px;
+  max-height: 200px;
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .dropdown-options::-webkit-scrollbar {
@@ -927,6 +876,7 @@ onBeforeUnmount(() => {
   border-bottom: none;
 }
 
+/* Estilo para la opción en blanco */
 .blank-option {
   color: #cbd5e0;
   font-size: 14px;
@@ -935,7 +885,15 @@ onBeforeUnmount(() => {
   display: block;
 }
 
-/* ✅ Mensaje cuando no hay resultados */
+/* Estilo para la fila de opción en blanco al final */
+.blank-option-row {
+  border-top: 1px solid #e2e8f0;
+  margin-top: 4px;
+  padding-top: 10px;
+  border-bottom: none;
+}
+
+/* Mensaje cuando no hay resultados */
 .dropdown-no-results {
   padding: 12px;
   text-align: center;
@@ -989,7 +947,7 @@ onBeforeUnmount(() => {
   }
 }
 
-/* ✅ Variable menu más ancho para mostrar nombres completos */
+/* Variable menu más ancho para mostrar nombres completos */
 .variable-menu {
   width: 280px;
   left: 50%;
