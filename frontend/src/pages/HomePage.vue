@@ -195,7 +195,8 @@
         class="ranking-panel"
         :class="{ 
           'historical-view': showHistoricalCard,
-          'variable-view': hasSpecificVariable && !showHistoricalCard
+          'regional-view': showRegionalCharts,
+          'variable-view': hasSpecificVariable && !showHistoricalCard && !showRegionalCharts
         }"
       >
         <div class="header-ranking-panel">
@@ -212,6 +213,13 @@
             :selectedStateValue="selectedStateIFSS"
             @range-change="handleRangeChange"
             @filter-change="handleFilterChange"
+          />
+          
+          <!-- ✅ NUEVO: Mostrar RegionalChartsComponent cuando Entidad=Todas y Año=específico -->
+          <RegionalChartsComponent 
+            v-else-if="showRegionalCharts"
+            :selectedYear="selectedYear"
+            :selectedVariable="selectedVariable"
           />
           
           <!-- Mostrar ChartsComponent cuando hay un estado seleccionado -->
@@ -235,6 +243,7 @@ import { useCharts } from '@/composables/useCharts'
 import { useRouter } from 'vue-router'
 import MexicoMapSVG from '../modules/maps/components/MexicoMapSVG.vue'
 import ChartsComponent from '../modules/charts/components/ChartsComponent.vue'
+import RegionalChartsComponent from '../modules/charts/components/RegionalChartsComponent.vue'  // ✅ NUEVO
 import RetractableFilterBar from '@/modules/maps/components/RetractableFilterBar.vue'
 import HorizontalRankingChart from '../modules/charts/components/HorizontalRankingChart.vue'
 import HistoricalCard from '../modules/object/component/HistoricalCard.vue'
@@ -469,13 +478,30 @@ const showHistoricalCard = computed(() => {
 })
 
 /**
+ * ✅ NUEVO: Mostrar RegionalChartsComponent cuando:
+ * - No hay filtros en blanco
+ * - No hay estado seleccionado en el mapa
+ * - Entidad es "Todas las entidades" (null)
+ * - Año es un año específico (no null)
+ * - NO estamos en areAllFiltersOnTodas (eso muestra HistoricalCard)
+ */
+const showRegionalCharts = computed(() => {
+  if (shouldHidePanel.value) return false
+  if (selectedState.value) return false  // Si hay estado, mostrar ChartsComponent
+  if (areAllFiltersOnTodas.value) return false  // Si todos en "Todas...", mostrar HistoricalCard
+  
+  // Mostrar cuando: Entidad = null (Todas) Y Año = específico
+  return selectedEntity.value === null && selectedYear.value !== null
+})
+
+/**
  * Mostrar panel de ranking cuando:
  * - No hay filtros en blanco
- * - Hay estado seleccionado O se debe mostrar HistoricalCard
+ * - Hay estado seleccionado O se debe mostrar HistoricalCard O se debe mostrar RegionalCharts
  */
 const showRankingPanel = computed(() => {
   if (shouldHidePanel.value) return false
-  return selectedState.value || showHistoricalCard.value
+  return selectedState.value || showHistoricalCard.value || showRegionalCharts.value
 })
 
 // ============================================================================
@@ -1089,6 +1115,14 @@ onMounted(async () => {
 .ranking-panel.historical-view {
   width: 2000px;
   height: 2040px;
+  padding-bottom: 70px;
+  transition: all 0.3s ease;
+}
+
+/* ✅ NUEVO: Estilo para vista regional */
+.ranking-panel.regional-view {
+  width: 2000px;
+  height: 1040px;
   padding-bottom: 70px;
   transition: all 0.3s ease;
 }
