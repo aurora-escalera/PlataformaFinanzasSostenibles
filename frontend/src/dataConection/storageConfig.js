@@ -1092,23 +1092,9 @@ export const storageConfig = {
       ],
       donutSectorsPICRegional: [
         {
-          key: 'pic_combustible_reg',
-          column: 'PIC_C',
-          label: 'Combustible',
-          colorClass: 'dark-red',
-          color: '#b71c1c'
-        },
-        {
-          key: 'pic_mineria_reg',
-          column: 'PIC_M',
-          label: 'Minería',
-          colorClass: 'red',
-          color: '#DC143C'
-        },
-        {
-          key: 'pic_transporte_reg',
-          column: 'PIC_T',
-          label: 'Transporte',
+          key: 'pic_hidrocarburos_reg',
+          column: 'PIC_H',
+          label: 'Hidrocarburos',
           colorClass: 'light-red',
           color: '#ef5350'
         }
@@ -1120,7 +1106,7 @@ export const storageConfig = {
       variableColumns: [
         {
           key: 'ingresos_total_reg',
-          column: 'IT ($)',
+          column: 'IT',
           label: 'Ingresos Total',
           colorClass: 'gray',
           color: '#9ca3af',
@@ -1182,9 +1168,9 @@ export const storageConfig = {
           color: '#DC143C'
         },
         {
-          key: 'iic_transporte_reg',
-          column: 'IIC_T',
-          label: 'Transporte',
+          key: 'iic_combustible_reg',
+          column: 'IIC_C',
+          label: 'Combustible',
           colorClass: 'light-red',
           color: '#ef5350'
         }

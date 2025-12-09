@@ -1,5 +1,5 @@
 <!-- src/modules/charts/components/RegionalChartsComponent.vue -->
-<!-- ✅ ACTUALIZADO: Filtrado por año para datos regionales -->
+<!-- ✅ CORREGIDO: Usa mappings chartsPresupuestosRegional y chartsIngresosRegional -->
 <template>
   <div class="charts-wrapper" :class="{ 'single-card': showingSingleCard }">
 
@@ -24,8 +24,8 @@
           <BarChart 
             :data="ingresosData"
             :title="ingresosTitleDynamic"
-            headerTitle="Análisis de Ingresos"
-            :selectedState="selectedState"
+            headerTitle="Análisis de Ingresos Regionales"
+            :selectedState="'Regional'"
             :selectedYear="selectedYear"
           />
         </div>
@@ -43,7 +43,7 @@
             </div>
             <DonutChart 
               v-if="sectoresIngresosSostenibles.length > 0"
-              :key="`is-${props.selectedYear}-${sectoresIngresosSostenibles.length}`"
+              :key="`is-regional-${props.selectedYear}-${sectoresIngresosSostenibles.length}`"
               :data="donutIngresosSostenibles"
               title="IS"
               :subtitle="subtitleIngresosSostenibles"
@@ -67,7 +67,7 @@
             </div>
             <DonutChart 
               v-if="sectoresIngresosCarbono.length > 0"
-              :key="`iic-${props.selectedYear}-${sectoresIngresosCarbono.length}`"
+              :key="`iic-regional-${props.selectedYear}-${sectoresIngresosCarbono.length}`"
               :data="donutIngresosCarbono"
               title="IIC"
               :subtitle="subtitleIngresosCarbono"
@@ -102,8 +102,8 @@
           <BarChart 
             :data="presupuestosData"
             :title="presupuestosTitleDynamic"
-            headerTitle="Análisis de Presupuestos"
-            :selectedState="selectedState"
+            headerTitle="Análisis de Presupuestos Regionales"
+            :selectedState="'Regional'"
             :selectedYear="selectedYear"
           />
         </div>
@@ -121,7 +121,7 @@
             </div>
             <DonutChart 
               v-if="sectoresPresupuestosSostenibles.length > 0"
-              :key="`ps-${props.selectedYear}-${sectoresPresupuestosSostenibles.length}`"
+              :key="`ps-regional-${props.selectedYear}-${sectoresPresupuestosSostenibles.length}`"
               :data="donutPresupuestosSostenibles"
               title="PS"
               :subtitle="subtitlePresupuestosSostenibles"
@@ -145,7 +145,7 @@
             </div>
             <DonutChart 
               v-if="sectoresPresupuestosCarbono.length > 0"
-              :key="`pic-${props.selectedYear}-${sectoresPresupuestosCarbono.length}`"
+              :key="`pic-regional-${props.selectedYear}-${sectoresPresupuestosCarbono.length}`"
               :data="donutPresupuestosCarbono"
               title="PIC"
               :subtitle="subtitlePresupuestosCarbono"
@@ -170,7 +170,6 @@ import BarChart from './BarChart.vue'
 import DonutChart from './DonutChart.vue'
 
 const props = defineProps({
-  selectedState: { type: String, default: null },
   selectedYear: { type: String, default: null },
   selectedVariable: { type: Object, default: null },
   ifssData: { type: Object, default: () => ({}) }
@@ -182,21 +181,33 @@ const showingSingleDonutIngresos = computed(() => props.selectedVariable && (pro
 
 const { fetchData, loading, error } = useStorageData()
 const dataLoaded = ref(false)
-const rawPresupuestosData = ref([])
-const rawIngresosData = ref([])
+const rawRegionalData = ref([])
+
+// ✅ CORREGIDO: Usar los mappings correctos
 const presupuestosMapping = getMapping('chartsPresupuestosRegional')
 const ingresosMapping = getMapping('chartsIngresosRegional')
 
 const loadChartData = async () => {
   try {
-    const presupuestosSheetName = getSheetName('chartsPresupuestosRegional')
-    const ingresosSheetName = getSheetName('chartsIngresosRegional')
+    console.log('📊 [Regional] Cargando datos regionales...')
     
-    rawPresupuestosData.value = await fetchData('chartsPresupuestosRegional', presupuestosSheetName)
-    rawIngresosData.value = await fetchData('chartsIngresosRegional', ingresosSheetName)
+    // Usar el fileKey correcto para datos regionales
+    const sheetName = getSheetName('chartsPresupuestosRegional')
+    console.log('📊 [Regional] Sheet name:', sheetName)
+    
+    // Fetch data - usa 'chartsPresupuestosRegional' que apunta a 'Hoja 1' del sheet principal
+    const data = await fetchData('chartsPresupuestosRegional', sheetName)
+    console.log('📊 [Regional] Datos cargados:', data?.length, 'filas')
+    
+    if (data && data.length > 0) {
+      console.log('📊 [Regional] Primera fila:', data[0])
+      console.log('📊 [Regional] Columnas disponibles:', Object.keys(data[0]))
+    }
+    
+    rawRegionalData.value = data || []
     dataLoaded.value = true
   } catch (err) {
-    console.error('Error cargando datos:', err)
+    console.error('❌ [Regional] Error cargando datos:', err)
   }
 }
 
@@ -204,157 +215,291 @@ onMounted(() => loadChartData())
 
 watch(() => props.selectedYear, async (newYear, oldYear) => {
   if (newYear !== oldYear) {
-    dataLoaded.value = false
-    await loadChartData()
+    console.log('📊 [Regional] Año cambió:', oldYear, '->', newYear)
   }
 })
 
-// ✅ CORREGIDO: Filtrar por año, no por estado
-const filteredPresupuestosData = computed(() => {
-  if (!dataLoaded.value || !props.selectedYear || !rawPresupuestosData.value.length) return []
-  return rawPresupuestosData.value.filter(row => 
-    String(row[presupuestosMapping.stateColumn]) === String(props.selectedYear)
-  )
+// ✅ Filtrar por año usando la columna 'Año'
+const filteredData = computed(() => {
+  if (!dataLoaded.value || !rawRegionalData.value.length) {
+    console.log('📊 [Regional] No hay datos cargados')
+    return []
+  }
+  
+  const yearColumn = 'Año'
+  console.log('📊 [Regional] Año seleccionado:', props.selectedYear)
+  
+  if (!props.selectedYear) {
+    console.log('📊 [Regional] Sin año seleccionado, usando todos los datos')
+    return rawRegionalData.value
+  }
+  
+  const filtered = rawRegionalData.value.filter(row => {
+    const rowYear = String(row[yearColumn]).trim()
+    const selectedYear = String(props.selectedYear).trim()
+    return rowYear === selectedYear
+  })
+  
+  console.log('📊 [Regional] Datos filtrados:', filtered.length, 'filas')
+  if (filtered.length > 0) {
+    console.log('📊 [Regional] Fila filtrada:', filtered[0])
+  }
+  
+  return filtered
 })
 
-// ✅ CORREGIDO: Filtrar por año, no por estado
-const filteredIngresosData = computed(() => {
-  if (!dataLoaded.value || !props.selectedYear || !rawIngresosData.value.length) return []
-  return rawIngresosData.value.filter(row => 
-    String(row[ingresosMapping.stateColumn]) === String(props.selectedYear)
-  )
-})
+// Alias para compatibilidad
+const filteredPresupuestosData = computed(() => filteredData.value)
+const filteredIngresosData = computed(() => filteredData.value)
 
-const transformSingleRowToBarChart = (row, mapping) => {
-  if (!row) return { variables: [] }
-  const variables = mapping.variableColumns.map(varConfig => {
-    let cleanValue = row[varConfig.column]
-    if (typeof cleanValue === 'string') {
-      cleanValue = cleanValue.replace(/^["']+|["']+$/g, '').trim()
-      if (cleanValue === '' || cleanValue === '""') cleanValue = '0'
-      else cleanValue = cleanValue.replace(/\./g, '')
+// ✅ Función para limpiar valores numéricos (maneja formato europeo con puntos como separador de miles)
+const getCleanValue = (row, column) => {
+  if (!row || !column) {
+    return 0
+  }
+  
+  const raw = row[column]
+  
+  if (raw === null || raw === undefined) {
+    console.log(`⚠️ [Regional] Columna '${column}' no existe. Disponibles:`, Object.keys(row))
+    return 0
+  }
+  
+  if (typeof raw === 'number') return raw
+  
+  if (typeof raw === 'string') {
+    // Limpiar comillas y espacios
+    let cleanValue = raw.replace(/^["']+|["']+$/g, '').trim()
+    if (cleanValue === '' || cleanValue === '""') return 0
+    
+    // Formato europeo: puntos como separador de miles (10.375.908 -> 10375908)
+    cleanValue = cleanValue.replace(/\./g, '')
+    
+    // Si hay coma decimal, convertirla a punto
+    cleanValue = cleanValue.replace(',', '.')
+    
+    const parsed = parseFloat(cleanValue) || 0
+    return parsed
+  }
+  
+  return parseFloat(raw) || 0
+}
+
+// ✅ Calcular datos para donas usando sectores del mapping
+const calculateDonutData = (row, sectorsConfig, totalValue) => {
+  if (!row || !sectorsConfig || !totalValue) {
+    return { mainPercentage: 0, sectors: [] }
+  }
+  
+  let sectorsTotal = 0
+  const sectors = sectorsConfig.map(sectorConfig => {
+    const value = getCleanValue(row, sectorConfig.column)
+    sectorsTotal += value
+    console.log(`📊 [Regional] Sector '${sectorConfig.label}' (${sectorConfig.column}):`, value)
+    return { 
+      key: sectorConfig.key, 
+      label: sectorConfig.label, 
+      value, 
+      color: sectorConfig.color, 
+      colorClass: sectorConfig.colorClass 
     }
+  })
+  
+  const percentage = totalValue > 0 ? Math.round((sectorsTotal / totalValue) * 100) : 0
+  console.log('📊 [Regional] Total sectores:', sectorsTotal, '/ Total:', totalValue, '=', percentage + '%')
+  
+  return { mainPercentage: percentage, sectors }
+}
+
+// ✅ Transformar datos para BarChart
+const transformSingleRowToBarChart = (row, mapping) => {
+  if (!row || !mapping?.variableColumns) return { variables: [] }
+  
+  const variables = mapping.variableColumns.map(varConfig => {
+    const value = getCleanValue(row, varConfig.column)
     return {
       key: varConfig.key, 
       label: varConfig.label, 
-      value: parseFloat(cleanValue) || 0,
+      value,
       color: varConfig.color, 
       colorClass: varConfig.colorClass, 
       order: varConfig.order || 0
     }
   })
+  
   variables.sort((a, b) => a.order - b.order)
   return { variables }
 }
 
+// ✅ Datos para BarChart de presupuestos
 const presupuestosData = computed(() => {
   if (!filteredPresupuestosData.value.length) return { variables: [] }
   const result = transformSingleRowToBarChart(filteredPresupuestosData.value[0], presupuestosMapping)
+  
   if (props.selectedVariable && result.variables.length >= 3) {
-    if (props.selectedVariable.key === 'PS') result.variables = [result.variables[0], result.variables[1]].filter(v => v)
-    else if (props.selectedVariable.key === 'PIC') result.variables = [result.variables[0], result.variables[2]].filter(v => v)
+    if (props.selectedVariable.key === 'PS') {
+      result.variables = [result.variables[0], result.variables[1]].filter(v => v)
+    } else if (props.selectedVariable.key === 'PIC') {
+      result.variables = [result.variables[0], result.variables[2]].filter(v => v)
+    }
   }
   return result
 })
 
+// ✅ Datos para BarChart de ingresos
 const ingresosData = computed(() => {
   if (!filteredIngresosData.value.length) return { variables: [] }
   const result = transformSingleRowToBarChart(filteredIngresosData.value[0], ingresosMapping)
+  
   if (props.selectedVariable && result.variables.length >= 3) {
-    if (props.selectedVariable.key === 'IS') result.variables = [result.variables[0], result.variables[1]].filter(v => v)
-    else if (props.selectedVariable.key === 'IIC') result.variables = [result.variables[0], result.variables[2]].filter(v => v)
+    if (props.selectedVariable.key === 'IS') {
+      result.variables = [result.variables[0], result.variables[1]].filter(v => v)
+    } else if (props.selectedVariable.key === 'IIC') {
+      result.variables = [result.variables[0], result.variables[2]].filter(v => v)
+    }
   }
   return result
 })
 
-const calculateDonutData = (row, sectorsConfig, totalValue) => {
-  if (!row || !sectorsConfig || !totalValue) return { mainPercentage: 0, sectors: [] }
-  let sectorsTotal = 0
-  const sectors = sectorsConfig.map(sectorConfig => {
-    let cleanValue = row[sectorConfig.column]
-    if (cleanValue === null || cleanValue === undefined) cleanValue = '0'
-    else if (typeof cleanValue === 'string') {
-      cleanValue = cleanValue.replace(/^["']+|["']+$/g, '').trim()
-      if (cleanValue === '') cleanValue = '0'
-      else cleanValue = cleanValue.replace(/\./g, '')
-    }
-    const value = parseFloat(cleanValue) || 0
-    sectorsTotal += value
-    return { key: sectorConfig.key, label: sectorConfig.label, value, color: sectorConfig.color, colorClass: sectorConfig.colorClass }
-  })
-  return { mainPercentage: totalValue > 0 ? Math.round((sectorsTotal / totalValue) * 100) : 0, sectors }
-}
-
-const getCleanTotal = (row, column) => {
-  const raw = row[column] || '0'
-  if (typeof raw === 'string') return parseFloat(raw.replace(/^["']+|["']+$/g, '').trim().replace(/\./g, '')) || 0
-  return parseFloat(raw) || 0
-}
+// ✅ PRESUPUESTOS SOSTENIBLES - columna PT del mapping
+const presupuestoTotalColumn = computed(() => {
+  const ptConfig = presupuestosMapping?.variableColumns?.find(v => 
+    v.key === 'presupuesto_total_reg' || v.column === 'PT' || v.column === 'PT ($)'
+  )
+  return ptConfig?.column || 'PT'
+})
 
 const donutPresupuestosSostenibles = computed(() => {
-  if (!filteredPresupuestosData.value.length) return [{ label: 'PS', value: 0, color: '#7cb342' }, { label: 'Resto', value: 100, color: '#E8E8E8' }]
+  if (!filteredPresupuestosData.value.length) {
+    return [{ label: 'PS', value: 0, color: '#7cb342' }, { label: 'Resto', value: 100, color: '#E8E8E8' }]
+  }
+  
   const row = filteredPresupuestosData.value[0]
-  const total = getCleanTotal(row, 'PT ($)')
-  const data = calculateDonutData(row, presupuestosMapping.donutSectorsPSRegional || [], total)
-  return [{ label: 'PS', value: data.mainPercentage, color: '#7cb342' }, { label: 'Resto', value: 100 - data.mainPercentage, color: '#E8E8E8' }]
+  const totalColumn = presupuestoTotalColumn.value
+  const total = getCleanValue(row, totalColumn)
+  
+  console.log('📊 [Regional] donutPS - Total column:', totalColumn, 'Total:', total)
+  
+  // ✅ USAR donutSectorsPSRegional del mapping
+  const sectorsConfig = presupuestosMapping?.donutSectorsPSRegional || []
+  console.log('📊 [Regional] Sectores PS config:', sectorsConfig.map(s => s.column))
+  
+  const data = calculateDonutData(row, sectorsConfig, total)
+  
+  return [
+    { label: 'PS', value: data.mainPercentage, color: '#7cb342' }, 
+    { label: 'Resto', value: 100 - data.mainPercentage, color: '#E8E8E8' }
+  ]
 })
 
 const sectoresPresupuestosSostenibles = computed(() => {
   if (!filteredPresupuestosData.value.length) return []
   const row = filteredPresupuestosData.value[0]
-  return calculateDonutData(row, presupuestosMapping.donutSectorsPSRegional || [], getCleanTotal(row, 'PT ($)')).sectors
+  const total = getCleanValue(row, presupuestoTotalColumn.value)
+  const sectorsConfig = presupuestosMapping?.donutSectorsPSRegional || []
+  return calculateDonutData(row, sectorsConfig, total).sectors
 })
 
 const subtitlePresupuestosSostenibles = computed(() => `${donutPresupuestosSostenibles.value[0].value}%`)
 
+// ✅ PRESUPUESTOS INTENSIVOS EN CARBONO
 const donutPresupuestosCarbono = computed(() => {
-  if (!filteredPresupuestosData.value.length) return [{ label: 'PIC', value: 0, color: '#DC143C' }, { label: 'Resto', value: 100, color: '#E8E8E8' }]
+  if (!filteredPresupuestosData.value.length) {
+    return [{ label: 'PIC', value: 0, color: '#DC143C' }, { label: 'Resto', value: 100, color: '#E8E8E8' }]
+  }
+  
   const row = filteredPresupuestosData.value[0]
-  const total = getCleanTotal(row, 'PT ($)')
-  const data = calculateDonutData(row, presupuestosMapping.donutSectorsPICRegional || [], total)
-  return [{ label: 'PIC', value: data.mainPercentage, color: '#DC143C' }, { label: 'Resto', value: 100 - data.mainPercentage, color: '#E8E8E8' }]
+  const total = getCleanValue(row, presupuestoTotalColumn.value)
+  
+  console.log('📊 [Regional] donutPIC - Total:', total)
+  
+  // ✅ USAR donutSectorsPICRegional del mapping
+  const sectorsConfig = presupuestosMapping?.donutSectorsPICRegional || []
+  console.log('📊 [Regional] Sectores PIC config:', sectorsConfig.map(s => s.column))
+  
+  const data = calculateDonutData(row, sectorsConfig, total)
+  
+  return [
+    { label: 'PIC', value: data.mainPercentage, color: '#DC143C' }, 
+    { label: 'Resto', value: 100 - data.mainPercentage, color: '#E8E8E8' }
+  ]
 })
 
 const sectoresPresupuestosCarbono = computed(() => {
   if (!filteredPresupuestosData.value.length) return []
   const row = filteredPresupuestosData.value[0]
-  return calculateDonutData(row, presupuestosMapping.donutSectorsPICRegional || [], getCleanTotal(row, 'PT ($)')).sectors
+  const total = getCleanValue(row, presupuestoTotalColumn.value)
+  const sectorsConfig = presupuestosMapping?.donutSectorsPICRegional || []
+  return calculateDonutData(row, sectorsConfig, total).sectors
 })
 
 const subtitlePresupuestosCarbono = computed(() => `${donutPresupuestosCarbono.value[0].value}%`)
 
+// ✅ INGRESOS - columna IT del mapping
+const ingresoTotalColumn = computed(() => {
+  const itConfig = ingresosMapping?.variableColumns?.find(v => 
+    v.key === 'ingresos_total_reg' || v.column === 'IT' || v.column === 'IT ($)'
+  )
+  return itConfig?.column || 'IT ($)'
+})
+
 const donutIngresosSostenibles = computed(() => {
-  if (!filteredIngresosData.value.length) return [{ label: 'IS', value: 0, color: '#7cb342' }, { label: 'Resto', value: 100, color: '#E8E8E8' }]
+  if (!filteredIngresosData.value.length) {
+    return [{ label: 'IS', value: 0, color: '#7cb342' }, { label: 'Resto', value: 100, color: '#E8E8E8' }]
+  }
+  
   const row = filteredIngresosData.value[0]
-  const total = getCleanTotal(row, 'IT ($)')
-  const data = calculateDonutData(row, ingresosMapping.donutSectorsISRegional || [], total)
-  return [{ label: 'IS', value: data.mainPercentage, color: '#7cb342' }, { label: 'Resto', value: 100 - data.mainPercentage, color: '#E8E8E8' }]
+  const total = getCleanValue(row, ingresoTotalColumn.value)
+  
+  // ✅ USAR donutSectorsISRegional del mapping
+  const sectorsConfig = ingresosMapping?.donutSectorsISRegional || []
+  const data = calculateDonutData(row, sectorsConfig, total)
+  
+  return [
+    { label: 'IS', value: data.mainPercentage, color: '#7cb342' }, 
+    { label: 'Resto', value: 100 - data.mainPercentage, color: '#E8E8E8' }
+  ]
 })
 
 const sectoresIngresosSostenibles = computed(() => {
   if (!filteredIngresosData.value.length) return []
   const row = filteredIngresosData.value[0]
-  return calculateDonutData(row, ingresosMapping.donutSectorsISRegional || [], getCleanTotal(row, 'IT ($)')).sectors
+  const total = getCleanValue(row, ingresoTotalColumn.value)
+  const sectorsConfig = ingresosMapping?.donutSectorsISRegional || []
+  return calculateDonutData(row, sectorsConfig, total).sectors
 })
 
 const subtitleIngresosSostenibles = computed(() => `${donutIngresosSostenibles.value[0].value}%`)
 
 const donutIngresosCarbono = computed(() => {
-  if (!filteredIngresosData.value.length) return [{ label: 'IIC', value: 0, color: '#DC143C' }, { label: 'Resto', value: 100, color: '#E8E8E8' }]
+  if (!filteredIngresosData.value.length) {
+    return [{ label: 'IIC', value: 0, color: '#DC143C' }, { label: 'Resto', value: 100, color: '#E8E8E8' }]
+  }
+  
   const row = filteredIngresosData.value[0]
-  const total = getCleanTotal(row, 'IT ($)')
-  const data = calculateDonutData(row, ingresosMapping.donutSectorsIICRegional || [], total)
-  return [{ label: 'IIC', value: data.mainPercentage, color: '#DC143C' }, { label: 'Resto', value: 100 - data.mainPercentage, color: '#E8E8E8' }]
+  const total = getCleanValue(row, ingresoTotalColumn.value)
+  
+  // ✅ USAR donutSectorsIICRegional del mapping
+  const sectorsConfig = ingresosMapping?.donutSectorsIICRegional || []
+  const data = calculateDonutData(row, sectorsConfig, total)
+  
+  return [
+    { label: 'IIC', value: data.mainPercentage, color: '#DC143C' }, 
+    { label: 'Resto', value: 100 - data.mainPercentage, color: '#E8E8E8' }
+  ]
 })
 
 const sectoresIngresosCarbono = computed(() => {
   if (!filteredIngresosData.value.length) return []
   const row = filteredIngresosData.value[0]
-  return calculateDonutData(row, ingresosMapping.donutSectorsIICRegional || [], getCleanTotal(row, 'IT ($)')).sectors
+  const total = getCleanValue(row, ingresoTotalColumn.value)
+  const sectorsConfig = ingresosMapping?.donutSectorsIICRegional || []
+  return calculateDonutData(row, sectorsConfig, total).sectors
 })
 
 const subtitleIngresosCarbono = computed(() => `${donutIngresosCarbono.value[0].value}%`)
 
+// ✅ Títulos dinámicos
 const presupuestosTitleDynamic = computed(() => {
   const yearSuffix = props.selectedYear ? ` en ${props.selectedYear}` : ''
   if (props.selectedVariable?.key === 'PS') return `Presupuestos Sostenibles (PS) con respecto al Presupuesto Total (PT)${yearSuffix}`
@@ -369,41 +514,54 @@ const ingresosTitleDynamic = computed(() => {
   return `Proporción del gasto asignado a Ingresos${yearSuffix}`
 })
 
-// ✅ CORREGIDO: Títulos para datos regionales (por año)
 const cardTitlePresupuestos = computed(() => {
-  if (!props.selectedYear) return 'Selecciona un año'
-  return `Presupuestos Regionales - ${props.selectedYear}`
+  return `Presupuestos - Regional${props.selectedYear ? ` - ${props.selectedYear}` : ''}`
 })
 
 const cardTitleIngresos = computed(() => {
-  if (!props.selectedYear) return 'Selecciona un año'
-  return `Ingresos Regionales - ${props.selectedYear}`
+  return `Ingresos - Regional${props.selectedYear ? ` - ${props.selectedYear}` : ''}`
 })
 
-const variablesPresupuestosSostenibles = [
-  { key: 'ps_cambio_climatico_reg', label: 'Cambio climático', colorClass: 'dark-green', active: true },
-  { key: 'ps_energia_renovable_reg', label: 'Energía Renovable', colorClass: 'dark-green', active: true },
-  { key: 'ps_eficiencia_energetica_reg', label: 'Eficiencia Energética', colorClass: 'dark-green', active: true },
-  { key: 'ps_desastres_reg', label: 'Desastres Naturales', colorClass: 'dark-green', active: true },
-]
+// ✅ Variables para leyenda de donas - dinámicas desde el mapping
+const variablesPresupuestosSostenibles = computed(() => {
+  const sectors = presupuestosMapping?.donutSectorsPSRegional || []
+  return sectors.map(s => ({
+    key: s.key,
+    label: s.label,
+    colorClass: s.colorClass,
+    active: true
+  }))
+})
 
-const variablesPresupuestosCarbono = [
-  { key: 'pic_combustible_reg', label: 'Combustible', colorClass: 'dark-red', active: true },
-  { key: 'pic_mineria_reg', label: 'Minería', colorClass: 'red', active: true },
-  { key: 'pic_transporte_reg', label: 'Transporte', colorClass: 'light-red', active: true }
-]
+const variablesPresupuestosCarbono = computed(() => {
+  const sectors = presupuestosMapping?.donutSectorsPICRegional || []
+  return sectors.map(s => ({
+    key: s.key,
+    label: s.label,
+    colorClass: s.colorClass,
+    active: true
+  }))
+})
 
-const variablesIngresosSostenibles = [
-  { key: 'is_ambiental_reg', label: 'Ambiental', colorClass: 'dark-green', active: true },
-  { key: 'is_ecologico_reg', label: 'Ecológico', colorClass: 'green', active: true },
-  { key: 'is_movilidad_reg', label: 'Movilidad Sustentable', colorClass: 'light-green', active: true }
-]
+const variablesIngresosSostenibles = computed(() => {
+  const sectors = ingresosMapping?.donutSectorsISRegional || []
+  return sectors.map(s => ({
+    key: s.key,
+    label: s.label,
+    colorClass: s.colorClass,
+    active: true
+  }))
+})
 
-const variablesIngresosCarbono = [
-  { key: 'iic_hidrocarburos_reg', label: 'Hidrocarburos', colorClass: 'dark-red', active: true },
-  { key: 'iic_mineria_reg', label: 'Minería', colorClass: 'red', active: true },
-  { key: 'iic_transporte_reg', label: 'Transporte', colorClass: 'light-red', active: true }
-]
+const variablesIngresosCarbono = computed(() => {
+  const sectors = ingresosMapping?.donutSectorsIICRegional || []
+  return sectors.map(s => ({
+    key: s.key,
+    label: s.label,
+    colorClass: s.colorClass,
+    active: true
+  }))
+})
 </script>
 
 <style scoped>
