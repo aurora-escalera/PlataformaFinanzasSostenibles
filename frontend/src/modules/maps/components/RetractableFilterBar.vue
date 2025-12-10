@@ -163,7 +163,7 @@
                   class="dropdown-option"
                   :class="{ 'selected': selectedVariable === null }"
                 >
-                  <span>Todas las variables</span>
+                  <span>IFSS</span>
                 </div>
                 
                 <!-- Variables filtradas -->
@@ -356,7 +356,7 @@ const getYearLabel = () => {
 }
 
 const getVariableLabel = () => {
-  if (!selectedVariable.value || selectedVariable.value === null) return 'Todas las variables'
+  if (!selectedVariable.value || selectedVariable.value === null) return 'IFSS'
   return selectedVariable.value.key
 }
 
@@ -433,12 +433,25 @@ const handleClickOutside = (event) => {
 
 const selectEntity = (entityName) => {
   console.log('=== FILTRO: Entidad seleccionada ===', entityName)
+  
+  const previousEntity = selectedEntity.value
   selectedEntity.value = entityName
   emit('entity-change', entityName)
+  if (previousEntity === null && entityName !== null && entityName !== '') {
+    if (selectedYear.value === null && years.value.length > 0) {
+      const firstYear = years.value[0]
+      console.log('🔄 Auto-seteando año al primero disponible:', firstYear)
+      setYear(firstYear)
+      setActiveYear(firstYear)
+      emit('year-change', firstYear)
+    }
+  }
+  
   emitFiltersChange()
   entitySearch.value = ''
   closeAllDropdowns()
 }
+
 const selectYear = (year) => {
   console.log('=== FILTRO: Año seleccionado ===', year)
   setYear(year)
