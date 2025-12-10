@@ -880,11 +880,10 @@ watch(selectedState, (newState, oldState) => {
       name: newState,
       data: stateData
     })
-  } else if (!newState && oldState) {
-    if (!isRetractableExpanded.value) {
+} else if (!newState && oldState) {
+    if (!isRetractableExpanded.value && selectedEntity.value !== null) {
       selectedEntity.value = ''
     }
-    
     emit('region-selected', null)
     
     if (!isRetractableExpanded.value && !areAllFiltersOnTodas.value) {

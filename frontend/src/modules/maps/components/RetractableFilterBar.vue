@@ -49,7 +49,7 @@
                   class="dropdown-option"
                   :class="{ 'selected': selectedEntity === null }"
                 >
-                  <span>Todas las entidades (IFS Regional)</span>
+                  <span>Datos Regionales</span>
                 </div>
                 <!-- Entidades filtradas -->
                 <div 
@@ -346,7 +346,7 @@ const filteredVariables = computed(() => {
 
 const getEntityLabel = () => {
   if (selectedEntity.value === '') return '-'
-  if (!selectedEntity.value || selectedEntity.value === null) return 'Todas las entidades (IFS Regional)'
+  if (!selectedEntity.value || selectedEntity.value === null) return 'Datos regionales'
   return selectedEntity.value
 }
 
@@ -435,19 +435,10 @@ const selectEntity = (entityName) => {
   console.log('=== FILTRO: Entidad seleccionada ===', entityName)
   selectedEntity.value = entityName
   emit('entity-change', entityName)
-  
-  // ✅ Si selecciona "Todas las entidades (IFS Regional)", también setear año a "Todos los años"
-  if (entityName === null) {
-    console.log('🔄 Auto-seteando año a "Todos los años"')
-    setYear(null)
-    emit('year-change', null)
-  }
-  
   emitFiltersChange()
   entitySearch.value = ''
   closeAllDropdowns()
 }
-
 const selectYear = (year) => {
   console.log('=== FILTRO: Año seleccionado ===', year)
   setYear(year)

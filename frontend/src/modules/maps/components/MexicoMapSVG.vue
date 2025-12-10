@@ -44,7 +44,7 @@
             :class="{ 'active': activeView === 'regional' }"
             @click.stop="handleIFSRegionalClick"
           >
-            IFS Regional
+            Datos Regionales
           </div>
           <div 
             class="card-label-pill"
