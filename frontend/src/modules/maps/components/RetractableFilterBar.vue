@@ -103,14 +103,14 @@
               </div>
               <div class="dropdown-options">
                 <!-- Default: Todos los años -->
-                <div 
-                  v-if="!yearSearch"
-                  @click="selectYear(null)"
-                  class="dropdown-option"
-                  :class="{ 'selected': selectedYear === null }"
-                >
-                  <span>Todos los años</span>
-                </div>
+              <div 
+                v-if="!yearSearch && selectedEntity !== ''"
+                @click="selectYear(null)"
+                class="dropdown-option"
+                :class="{ 'selected': selectedYear === null }"
+              >
+                <span>Todos los años</span>
+              </div>
                 
                 <!-- Años filtrados -->
                 <div 

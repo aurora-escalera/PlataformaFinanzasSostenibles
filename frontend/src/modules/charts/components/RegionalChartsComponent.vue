@@ -1,5 +1,6 @@
 <!-- src/modules/charts/components/RegionalChartsComponent.vue -->
 <!-- ✅ CORREGIDO: Usa mappings chartsPresupuestosRegional y chartsIngresosRegional -->
+<!-- ✅ FIX: getCleanValue ahora detecta automáticamente formato americano (comas) vs europeo (puntos) -->
 <template>
   <div class="charts-wrapper" :class="{ 'single-card': showingSingleCard }">
 
@@ -166,6 +167,7 @@
 import { computed, ref, watch, onMounted } from 'vue'
 import { useStorageData } from '@/dataConection/useStorageData'
 import { getMapping, getSheetName } from '@/dataConection/storageConfig'
+import { getCleanValue } from '@/composables/parseNumber'  
 import BarChart from './BarChart.vue'
 import DonutChart from './DonutChart.vue'
 
@@ -251,39 +253,6 @@ const filteredData = computed(() => {
 // Alias para compatibilidad
 const filteredPresupuestosData = computed(() => filteredData.value)
 const filteredIngresosData = computed(() => filteredData.value)
-
-// ✅ Función para limpiar valores numéricos (maneja formato europeo con puntos como separador de miles)
-const getCleanValue = (row, column) => {
-  if (!row || !column) {
-    return 0
-  }
-  
-  const raw = row[column]
-  
-  if (raw === null || raw === undefined) {
-    console.log(`⚠️ [Regional] Columna '${column}' no existe. Disponibles:`, Object.keys(row))
-    return 0
-  }
-  
-  if (typeof raw === 'number') return raw
-  
-  if (typeof raw === 'string') {
-    // Limpiar comillas y espacios
-    let cleanValue = raw.replace(/^["']+|["']+$/g, '').trim()
-    if (cleanValue === '' || cleanValue === '""') return 0
-    
-    // Formato europeo: puntos como separador de miles (10.375.908 -> 10375908)
-    cleanValue = cleanValue.replace(/\./g, '')
-    
-    // Si hay coma decimal, convertirla a punto
-    cleanValue = cleanValue.replace(',', '.')
-    
-    const parsed = parseFloat(cleanValue) || 0
-    return parsed
-  }
-  
-  return parseFloat(raw) || 0
-}
 
 // ✅ Calcular datos para donas usando sectores del mapping
 const calculateDonutData = (row, sectorsConfig, totalValue) => {
@@ -581,8 +550,7 @@ const variablesIngresosCarbono = computed(() => {
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: 100%;
-  background: #163C5F;
+  background: white;
   border-radius: 12px;
   padding: 12px;
   border: 1px solid #1a365d;
@@ -594,16 +562,16 @@ const variablesIngresosCarbono = computed(() => {
   display: flex;
   width: 100%;
   padding: 10px;
+  border-bottom: 1px solid #163C5F;
   margin-bottom: 10px;
-  border-bottom: 3px solid rgba(255, 255, 255, 0.15);
 }
 
 .card-title {
-  padding: 4px 0 2px 0;
+  padding: 4px 0px 0px 0;
   text-align: left;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-weight: 100;
-  color: white;
+  font-weight: 200;
+  color: #163C5F;
   font-size: 19px;
   margin: 0;
 }
@@ -623,10 +591,8 @@ const variablesIngresosCarbono = computed(() => {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  padding: 15px;
-  border: 1px solid #e2e8f0;
+  padding: 5px;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   background: white;
 }
 
@@ -636,10 +602,8 @@ const variablesIngresosCarbono = computed(() => {
   display: flex;
   flex-direction: row;
   gap: 15px;
-  padding: 15px;
-  border: 1px solid #e2e8f0;
+  padding: 5px;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   background: white;
 }
 

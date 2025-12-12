@@ -1260,7 +1260,7 @@ export const storageConfig = {
       variableColumns: [
         {
           key: 'IS',
-          column: 'IS($)', 
+          column: 'IS ($)', 
           label: 'IS',
           color: '#0F3759',
           order: 1
@@ -1299,7 +1299,7 @@ export const storageConfig = {
       variableColumns: [
         {
           key: 'IS_Total',
-          column: 'IS($)',
+          column: 'IS ($)',
           label: 'IS Total'
         },
         {
