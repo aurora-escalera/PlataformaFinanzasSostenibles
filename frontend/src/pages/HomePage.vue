@@ -65,16 +65,17 @@
             @view-change="handleViewChange"
           />
           
-          <!-- Overlay sobre SOLO el mapa - Usa areAllFiltersOnTodas -->
+          <!-- Overlay sobre SOLO el mapa - Usa areAllFiltersOnTodas o showRegionalCharts -->
           <transition name="overlay-fade">
             <div 
               v-if="showMapOverlay" 
               class="map-overlay-filter"
+              :class="{ 'regional-overlay': showRegionalCharts && !areAllFiltersOnTodas }"
               @click.stop="handleOverlayClick"
             >
               <div class="overlay-message">
                 <h2 class="overlay-text">
-                  Haz click en cualquier entidad del mapa para regresar a los resultados subnacionales
+                  {{ overlayMessage }}
                 </h2>
               </div>
             </div>
@@ -438,13 +439,26 @@ const showStackedArea = computed(() => {
 })
 
 /**
- * Mostrar overlay del mapa cuando los 3 filtros están en "Todas..."
+ * Mostrar overlay del mapa cuando los 3 filtros están en "Todas..." O cuando se muestran los charts regionales
  */
 const showMapOverlay = computed(() => {
   if (isRetractableExpanded.value) {
     return false
   }
-  return areAllFiltersOnTodas.value
+  return areAllFiltersOnTodas.value || showRegionalCharts.value
+})
+
+/**
+ * Mensaje dinámico del overlay según el contexto
+ */
+const overlayMessage = computed(() => {
+  if (areAllFiltersOnTodas.value) {
+    return 'Haz click en cualquier entidad del mapa para regresar a los resultados subnacionales'
+  }
+  if (showRegionalCharts.value) {
+    return 'Te encuentras en la vista de resultados federales. Haz clic en cualquier sección del área azul encima del mapa para regresar a los datos subnacionales.'
+  }
+  return ''
 })
 
 /**
@@ -762,7 +776,7 @@ const handleMapContainerClick = (event) => {
 const handleOverlayClick = async () => {
   console.log('🔲 [HomePage] Click en overlay, cambiando a DEFAULT...')
   
-  // ✅ Cambiar a DEFAULT ('', primerAño, null) para salir de "Todas..."
+  // ✅ Cambiar a DEFAULT ('', primerAño, null) para salir de "Todas..." o vista regional
   selectedEntity.value = ''
   selectedVariable.value = null
   
@@ -1119,9 +1133,9 @@ onMounted(async () => {
 /* ✅ Estilo para vista regional con espacio inferior */
 .ranking-panel.regional-view {
   width: 2000px;
-  height: auto;
-  padding-bottom: 10px;
-  margin-bottom: 8px;
+  height: 1050px;
+  padding-bottom: 15px;
+  margin-bottom: 10px;
   transition: all 0.3s ease;
 }
 
@@ -1167,6 +1181,20 @@ onMounted(async () => {
 
 .map-overlay-filter:hover {
   background: rgba(160, 160, 160, 0.94);
+}
+
+/* Estilo diferente para overlay regional */
+.map-overlay-filter.regional-overlay {
+  background: rgba(22, 60, 95, 0.85);
+  cursor: pointer;
+}
+
+.map-overlay-filter.regional-overlay:hover {
+  background: rgba(22, 60, 95, 0.88);
+}
+
+.map-overlay-filter.regional-overlay .overlay-text {
+  color: white;
 }
 
 .overlay-message {
