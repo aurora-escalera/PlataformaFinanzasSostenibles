@@ -1,6 +1,7 @@
 <!-- src/modules/charts/components/RegionalChartsComponent.vue -->
 <!-- ✅ CORREGIDO: Usa mappings chartsPresupuestosRegional y chartsIngresosRegional -->
 <!-- ✅ FIX: getCleanValue ahora detecta automáticamente formato americano (comas) vs europeo (puntos) -->
+<!-- ✅ FIX: chart-col-bar ahora ocupa la misma altura que las donuts -->
 <template>
   <div class="charts-wrapper" :class="{ 'single-card': showingSingleCard }">
 
@@ -556,6 +557,7 @@ const variablesIngresosCarbono = computed(() => {
   border: 1px solid #1a365d;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.182);
   box-sizing: border-box;
+  min-height: 480px;
 }
 
 .chart-card-header {
@@ -564,6 +566,7 @@ const variablesIngresosCarbono = computed(() => {
   padding: 10px;
   border-bottom: 1px solid #163C5F;
   margin-bottom: 10px;
+  flex-shrink: 0;
 }
 
 .card-title {
@@ -581,19 +584,20 @@ const variablesIngresosCarbono = computed(() => {
   flex-direction: row;
   gap: 15px;
   width: 100%;
-  height: 100%;
   flex: 1;
+  min-height: 400px;
 }
 
+/* ✅ FIX: chart-col-bar ocupa la misma altura que las donuts */
 .chart-col-bar {
   flex: 1;
-  height: 100%;
   min-width: 0;
   display: flex;
   flex-direction: column;
   padding: 5px;
   border-radius: 12px;
   background: white;
+  min-height: 400px;
 }
 
 .chart-col-donuts {
@@ -605,6 +609,7 @@ const variablesIngresosCarbono = computed(() => {
   padding: 5px;
   border-radius: 12px;
   background: white;
+  min-height: 400px;
 }
 
 .chart-col-donuts.single-donut { justify-content: center; }
@@ -703,10 +708,12 @@ const variablesIngresosCarbono = computed(() => {
 @media (max-width: 1200px) {
   .chart-card-body { flex-direction: column; }
   .chart-col-donuts { flex-direction: row; flex: 1; }
+  .chart-col-bar { min-height: 350px; }
 }
 
 @media (max-width: 768px) {
   .chart-col-donuts { flex-direction: column; }
   .donut-item { min-height: 300px; }
+  .chart-col-bar { min-height: 300px; }
 }
 </style>

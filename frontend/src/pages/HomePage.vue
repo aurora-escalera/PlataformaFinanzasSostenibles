@@ -200,9 +200,6 @@
         }"
       >
         <div class="header-ranking-panel">
-          <div class="ranking-hamburger-menu">
-            <img src="/public/icons/hamburger.png" alt="hamburger-menu" class="hamburger-icon">
-          </div>
         </div>
         
         <div class="body-ranking-panel">
@@ -220,6 +217,7 @@
             v-else-if="showRegionalCharts"
             :selectedYear="selectedYear"
             :selectedVariable="selectedVariable"
+            class="regional-charts-spacing"
           />
           
           <!-- Mostrar ChartsComponent cuando hay un estado seleccionado -->
@@ -953,7 +951,7 @@ onMounted(async () => {
   width: 95%;
   max-width: 2000px;
   margin: 0 auto;
-  padding: 0;
+  padding: 0 0 8px 0;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
@@ -1118,11 +1116,12 @@ onMounted(async () => {
   transition: all 0.3s ease;
 }
 
-/* ✅ NUEVO: Estilo para vista regional */
+/* ✅ Estilo para vista regional con espacio inferior */
 .ranking-panel.regional-view {
   width: 2000px;
-  height: 1040px;
-  padding-bottom: 70px;
+  height: auto;
+  padding-bottom: 10px;
+  margin-bottom: 8px;
   transition: all 0.3s ease;
 }
 
@@ -1134,34 +1133,19 @@ onMounted(async () => {
 }
 
 .header-ranking-panel {
-  display: flex;
-  flex-direction: row; 
-  height: 1%;
-  width: 100%;
-  padding: 0px;
-  margin-bottom: 0px;
-}
-
-h2 {
-  padding: 4px 0 2px 0;
-  text-align: center;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-weight: 200;
-  color: #535353;
-  font-size: 20px;
-  margin: 0;  
-  flex-shrink: 0;
-  justify-content: space-between; 
-  margin-right: auto; 
-}
-
-.ranking-hamburger-menu {
-  margin-left: auto;
+  display: none;
 }
 
 .body-ranking-panel {
   height: 100%;
   width: 100%;
+  padding-bottom: 5px;
+}
+
+/* ✅ Espacio después de RegionalChartsComponent */
+.regional-charts-spacing {
+  margin-bottom: 10px;
+  padding-bottom: 5px;
 }
 
 .map-overlay-filter {
