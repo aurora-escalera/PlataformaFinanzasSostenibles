@@ -1130,12 +1130,11 @@ onMounted(async () => {
   transition: all 0.3s ease;
 }
 
-/* ✅ Estilo para vista regional con espacio inferior */
 .ranking-panel.regional-view {
   width: 2000px;
-  height: 1050px;
+  height: 1150px;
   padding-bottom: 15px;
-  margin-bottom: 10px;
+  margin-bottom: 150px;
   transition: all 0.3s ease;
 }
 

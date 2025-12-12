@@ -557,7 +557,7 @@ const variablesIngresosCarbono = computed(() => {
   border: 1px solid #1a365d;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.182);
   box-sizing: border-box;
-  min-height: 480px;
+  min-height: 625px;
 }
 
 .chart-card-header {
@@ -585,7 +585,7 @@ const variablesIngresosCarbono = computed(() => {
   gap: 15px;
   width: 100%;
   flex: 1;
-  min-height: 400px;
+  min-height: 440px;
 }
 
 /* ✅ FIX: chart-col-bar ocupa la misma altura que las donuts */
@@ -597,7 +597,7 @@ const variablesIngresosCarbono = computed(() => {
   padding: 5px;
   border-radius: 12px;
   background: white;
-  min-height: 400px;
+  min-height: 440px;
 }
 
 .chart-col-donuts {
@@ -609,7 +609,7 @@ const variablesIngresosCarbono = computed(() => {
   padding: 5px;
   border-radius: 12px;
   background: white;
-  min-height: 400px;
+  min-height: 440px;
 }
 
 .chart-col-donuts.single-donut { justify-content: center; }
