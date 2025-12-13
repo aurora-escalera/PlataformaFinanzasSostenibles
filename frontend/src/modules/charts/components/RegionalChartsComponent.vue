@@ -2,6 +2,7 @@
 <!-- ✅ CORREGIDO: Usa mappings chartsPresupuestosRegional y chartsIngresosRegional -->
 <!-- ✅ NUEVO: Diseño "sin datos" cuando todos los sectores son 0 -->
 <!-- ✅ NUEVO: currency="USD" para BarCharts -->
+<!-- ✅ NUEVO: Posición y porcentaje en BarCharts -->
 <template>
   <div class="charts-wrapper" :class="{ 'single-card': showingSingleCard }">
 
@@ -265,6 +266,33 @@ const rawRegionalData = ref([])
 const presupuestosMapping = getMapping('chartsPresupuestosRegional')
 const ingresosMapping = getMapping('chartsIngresosRegional')
 
+// ✅ NUEVO: Mapping para obtener posiciones y porcentajes
+const cardIFSMapping = getMapping('cardIFSRegional')
+
+// ============================================================================
+// MAPEO DE COLUMNAS PARA POSICIÓN Y PORCENTAJE
+// ============================================================================
+
+// Mapeo de columnas de posición por tipo de variable
+const positionColumnMap = {
+  'presupuesto_total_reg': null, // PT no tiene posición
+  'presupuesto_sostenible_reg': 'POS_PS',
+  'presupuesto_carbono_reg': 'POS_PIC',
+  'ingresos_total_reg': null, // IT no tiene posición
+  'ingresos_sostenibles_reg': 'POS_IS',
+  'ingresos_carbono_reg': 'POS_IIC'
+}
+
+// Mapeo de columnas de porcentaje por tipo de variable
+const percentageColumnMap = {
+  'presupuesto_total_reg': null, // PT es 100%
+  'presupuesto_sostenible_reg': 'PS (%)',
+  'presupuesto_carbono_reg': 'PIC (%)',
+  'ingresos_total_reg': null, // IT es 100%
+  'ingresos_sostenibles_reg': 'IS (%)',
+  'ingresos_carbono_reg': 'IIC (%)'
+}
+
 const extractAvailableYears = (data) => {
   if (!data || data.length === 0) return []
   
@@ -354,18 +382,30 @@ const calculateDonutData = (row, sectorsConfig, totalValue) => {
   return { mainPercentage: percentage, sectors, totalSectorsValue: sectorsTotal }
 }
 
-const transformSingleRowToBarChart = (row, mapping) => {
+// ✅ ACTUALIZADO: Función para transformar datos con posición y porcentaje
+const transformSingleRowToBarChart = (row, mapping, isPresupuestos = true) => {
   if (!row || !mapping?.variableColumns) return { variables: [] }
   
   const variables = mapping.variableColumns.map(varConfig => {
     const value = getCleanValue(row, varConfig.column)
+    
+    // ✅ NUEVO: Obtener posición de la columna correspondiente
+    const positionColumn = positionColumnMap[varConfig.key]
+    const position = positionColumn ? getCleanValue(row, positionColumn) : null
+    
+    // ✅ NUEVO: Obtener porcentaje de la columna correspondiente
+    const percentageColumn = percentageColumnMap[varConfig.key]
+    const percentage = percentageColumn ? getCleanValue(row, percentageColumn) : null
+    
     return {
       key: varConfig.key, 
       label: varConfig.label, 
       value,
       color: varConfig.color, 
       colorClass: varConfig.colorClass, 
-      order: varConfig.order || 0
+      order: varConfig.order || 0,
+      position: position || null,
+      percentage: percentage || null
     }
   })
   
@@ -373,10 +413,10 @@ const transformSingleRowToBarChart = (row, mapping) => {
   return { variables }
 }
 
-// ✅ Datos para BarChart
+// ✅ Datos para BarChart - PRESUPUESTOS
 const presupuestosData = computed(() => {
   if (!filteredPresupuestosData.value.length) return { variables: [] }
-  const result = transformSingleRowToBarChart(filteredPresupuestosData.value[0], presupuestosMapping)
+  const result = transformSingleRowToBarChart(filteredPresupuestosData.value[0], presupuestosMapping, true)
   
   if (props.selectedVariable && result.variables.length >= 3) {
     if (props.selectedVariable.key === 'PS') {
@@ -388,9 +428,10 @@ const presupuestosData = computed(() => {
   return result
 })
 
+// ✅ Datos para BarChart - INGRESOS
 const ingresosData = computed(() => {
   if (!filteredIngresosData.value.length) return { variables: [] }
-  const result = transformSingleRowToBarChart(filteredIngresosData.value[0], ingresosMapping)
+  const result = transformSingleRowToBarChart(filteredIngresosData.value[0], ingresosMapping, false)
   
   if (props.selectedVariable && result.variables.length >= 3) {
     if (props.selectedVariable.key === 'IS') {

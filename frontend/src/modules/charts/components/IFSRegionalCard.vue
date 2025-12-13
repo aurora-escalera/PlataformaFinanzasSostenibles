@@ -579,7 +579,7 @@ onMounted(() => {
 }
 
 .gauge-value {
-  font-size: 42px;
+  font-size: 30px;
   font-weight: 700;
   color: #1e3a5f;
   line-height: 1;
@@ -647,7 +647,7 @@ onMounted(() => {
 }
 
 .position-value {
-  font-size: 48px;
+  font-size: 28px;
   font-weight: 700;
   line-height: 1;
 }
