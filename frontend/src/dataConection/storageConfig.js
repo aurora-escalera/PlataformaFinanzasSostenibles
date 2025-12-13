@@ -1001,7 +1001,7 @@ export const storageConfig = {
         {
           key: 'ingresos_total',
           column: 'IT ($)',
-          label: 'Ingresos Total',
+          label: 'Ingreso Total',
           colorClass: 'gray',
           color: '#9ca3af',
           order: 1
@@ -1067,7 +1067,14 @@ export const storageConfig = {
           label: 'Transporte',
           colorClass: 'light-red',
           color: '#ef5350'
-        }
+        },
+        {
+          key: 'iic_mns',
+          column: 'IIC_MNS',
+          label: 'Movilidad No Sustentable',
+          colorClass: 'light-red',
+          color: '#ef5350'
+        },
       ]
     },
     
@@ -1147,7 +1154,7 @@ export const storageConfig = {
         {
           key: 'ingresos_total_reg',
           column: 'IT ($)',
-          label: 'Ingresos Total',
+          label: 'Ingreso Total',
           colorClass: 'gray',
           color: '#9ca3af',
           order: 1

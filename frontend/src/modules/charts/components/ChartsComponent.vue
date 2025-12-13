@@ -38,7 +38,7 @@
                   <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                 </svg>
               </div>
-              <span class="donut-header-title">Sectores de Ingresos Sostenibles</span>
+              <span class="donut-header-title">Componentes de Ingresos Sostenibles</span>
             </div>
             <DonutChart 
               v-if="sectoresIngresosSostenibles.length > 0"
@@ -62,7 +62,7 @@
                   <path d="M2 12l10 5 10-5"/>
                 </svg>
               </div>
-              <span class="donut-header-title">Sectores de Ingresos Int. en Carbono</span>
+              <span class="donut-header-title">Componentes de Ingresos Intensivos en Carbono</span>
             </div>
             <DonutChart 
               v-if="sectoresIngresosCarbono.length > 0"
@@ -114,7 +114,7 @@
                   <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                 </svg>
               </div>
-              <span class="donut-header-title">Sectores de Presupuestos Sostenibles</span>
+              <span class="donut-header-title">Componentes de Presupuestos Sostenibles</span>
             </div>
             <DonutChart 
               v-if="sectoresPresupuestosSostenibles.length > 0"
@@ -138,7 +138,7 @@
                   <path d="M2 12l10 5 10-5"/>
                 </svg>
               </div>
-              <span class="donut-header-title">Sectores de Presupuestos Int. en Carbono</span>
+              <span class="donut-header-title">Componentes de Presupuestos Intensivos en Carbono</span>
             </div>
             <DonutChart 
               v-if="sectoresPresupuestosCarbono.length > 0"
@@ -450,7 +450,7 @@ const variablesIngresosCarbono = computed(() => {
   flex-direction: column;
   width: 100%;
   height: 100%;
-  background: #163C5F;
+  background: white;
   border-radius: 12px;
   padding: 12px;
   border: 1px solid #1a365d;
@@ -463,7 +463,7 @@ const variablesIngresosCarbono = computed(() => {
   width: 100%;
   padding: 10px;
   margin-bottom: 10px;
-  border-bottom: 3px solid rgba(255, 255, 255, 0.15);
+  border-bottom: 1px solid #163C5F;
 }
 
 .card-title {
@@ -471,7 +471,7 @@ const variablesIngresosCarbono = computed(() => {
   text-align: left;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-weight: 100;
-  color: white;
+  color: #163C5F;
   font-size: 19px;
   margin: 0;
 }
@@ -492,9 +492,7 @@ const variablesIngresosCarbono = computed(() => {
   display: flex;
   flex-direction: column;
   padding: 15px;
-  border: 1px solid #e2e8f0;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   background: white;
 }
 
@@ -505,9 +503,7 @@ const variablesIngresosCarbono = computed(() => {
   flex-direction: row;
   gap: 15px;
   padding: 15px;
-  border: 1px solid #e2e8f0;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   background: white;
 }
 

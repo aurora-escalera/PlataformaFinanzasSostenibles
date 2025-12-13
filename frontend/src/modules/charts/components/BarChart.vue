@@ -4,6 +4,8 @@
 <!-- ✅ FIX: Área del gráfico más centrada con espacio blanco -->
 <!-- ✅ NUEVO: Leyenda USD debajo de las KPI cards -->
 <!-- ✅ NUEVO: Posición y porcentaje en KPI cards -->
+<!-- ✅ FIX: Porcentaje en barras con 2 decimales -->
+<!-- ✅ FIX: Tooltip más compacto -->
 <template>
   <div class="vertical-bar-chart">
 
@@ -47,12 +49,12 @@
         
         <!-- ✅ Porcentaje debajo del valor -->
         <div v-if="variable.percentage !== undefined && variable.percentage !== null" class="kpi-percentage" :class="variable.colorClass">
-          {{ formatPercentage(variable.percentage) }}% del total
+          {{ formatPercentage(variable.percentage) }}% 
         </div>
         
         <!-- ✅ Posición -->
         <div v-if="variable.position !== undefined && variable.position !== null" class="kpi-position" :class="variable.colorClass">
-          Posición: #{{ variable.position }}
+          Posición: No. {{ variable.position }}
         </div>
         
         <div class="kpi-label">{{ variable.shortLabel || variable.label }}</div>
@@ -245,13 +247,14 @@ const getShortLabel = (label) => {
 
 const generateRandomChange = () => parseFloat((Math.random() * 20 - 5).toFixed(1))
 
+// ✅ FIX: Porcentaje con 2 decimales
 const getPercentageOfTotal = (value) => {
   const totalVar = variables.value[0]
-  if (!totalVar || totalVar.value === 0) return 0
-  return Math.round((value / totalVar.value) * 100)
+  if (!totalVar || totalVar.value === 0) return '0.00'
+  return ((value / totalVar.value) * 100).toFixed(2)
 }
 
-// ✅ NUEVO: Formatear porcentaje con 2 decimales
+// ✅ Formatear porcentaje con 2 decimales
 const formatPercentage = (value) => {
   if (value === null || value === undefined) return '0.00'
   return parseFloat(value).toFixed(2)
@@ -437,8 +440,8 @@ watch(() => props.data, () => { nextTick(() => updateBarsContainerHeight()) }, {
 
 /* ✅ Dot en esquina superior derecha */
 .kpi-dot { 
-  width: 8px; 
-  height: 8px; 
+  width: 12px; 
+  height: 12px; 
   border-radius: 2px; 
   position: absolute;
   top: 10px;
@@ -458,7 +461,7 @@ watch(() => props.data, () => { nextTick(() => updateBarsContainerHeight()) }, {
 
 /* ✅ Porcentaje debajo del valor */
 .kpi-percentage {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
   margin-top: 2px;
 }
@@ -469,9 +472,9 @@ watch(() => props.data, () => { nextTick(() => updateBarsContainerHeight()) }, {
 
 /* ✅ Posición */
 .kpi-position {
-  font-size: 12px;
-  font-weight: 600;
-  margin-top: 1px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-top: 2px;
 }
 
 .kpi-position.gray { color: #6b7280; }
@@ -480,7 +483,7 @@ watch(() => props.data, () => { nextTick(() => updateBarsContainerHeight()) }, {
 
 /* ✅ Label de la variable */
 .kpi-label {
-  font-size: 10px;
+  font-size: 12px;
   color: #64748b;
   font-weight: 500;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -655,18 +658,18 @@ watch(() => props.data, () => { nextTick(() => updateBarsContainerHeight()) }, {
   font-size: 14px;
 }
 
-/* Tooltip */
+/* ✅ Tooltip - Compacto */
 .tooltip-container {
   position: fixed;
-  transform: translate(-50%, calc(-100% - 15px));
+  transform: translate(-50%, calc(-100% - 10px));
   background: white;
   border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  padding: 10px 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  padding: 6px 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   pointer-events: none;
   z-index: 99999;
-  min-width: 150px;
+  min-width: 120px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
@@ -676,20 +679,20 @@ watch(() => props.data, () => { nextTick(() => updateBarsContainerHeight()) }, {
   top: 100%;
   left: 50%;
   transform: translateX(-50%);
-  border: 8px solid transparent;
+  border: 5px solid transparent;
   border-top-color: white;
 }
 
-.tooltip-content { display: flex; flex-direction: column; gap: 6px; }
-.tooltip-item { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.tooltip-content { display: flex; flex-direction: column; gap: 3px; }
+.tooltip-item { display: flex; align-items: center; gap: 5px; font-size: 10px; }
 
-.tooltip-color-indicator { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+.tooltip-color-indicator { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
 .tooltip-color-indicator.gray { background: #9ca3af; }
 .tooltip-color-indicator.red { background: #DC143C; }
 .tooltip-color-indicator.green { background: #7cb342; }
 
-.tooltip-variable-name { color: #666; font-size: 14px; }
-.tooltip-variable-value { color: #333; font-weight: 600; margin-left: auto; font-size: 14px; }
+.tooltip-variable-name { color: #666; font-size: 10px; }
+.tooltip-variable-value { color: #333; font-weight: 600; margin-left: auto; font-size: 10px; }
 
 @media (max-width: 768px) {
   .kpi-cards-row { grid-template-columns: 1fr; gap: 6px; }
