@@ -1,6 +1,7 @@
 <!-- src/modules/charts/components/RegionalChartsComponent.vue -->
 <!-- ✅ CORREGIDO: Usa mappings chartsPresupuestosRegional y chartsIngresosRegional -->
 <!-- ✅ NUEVO: Diseño "sin datos" cuando todos los sectores son 0 -->
+<!-- ✅ NUEVO: currency="USD" para BarCharts -->
 <template>
   <div class="charts-wrapper" :class="{ 'single-card': showingSingleCard }">
 
@@ -28,6 +29,7 @@
             headerTitle="Análisis de Ingresos Regionales"
             :selectedState="'Regional'"
             :selectedYear="selectedYear"
+            currency="USD"
           />
         </div>
         
@@ -68,6 +70,7 @@
               :size="220"
               :variables="variablesIngresosSostenibles"
               :sectors="sectoresIngresosSostenibles"
+              currency="USD"
             />
             <div v-else class="no-data-message">Sin datos disponibles</div>
           </div>
@@ -109,6 +112,7 @@
               :size="220"
               :variables="variablesIngresosCarbono"
               :sectors="sectoresIngresosCarbono"
+              currency="USD"
             />
             <div v-else class="no-data-message">Sin datos disponibles</div>
           </div>
@@ -140,6 +144,7 @@
             headerTitle="Análisis de Presupuestos Regionales"
             :selectedState="'Regional'"
             :selectedYear="selectedYear"
+            currency="USD"
           />
         </div>
         
@@ -180,6 +185,7 @@
               :size="220"
               :variables="variablesPresupuestosSostenibles"
               :sectors="sectoresPresupuestosSostenibles"
+              currency="USD"
             />
             <div v-else class="no-data-message">Sin datos disponibles</div>
           </div>
@@ -221,6 +227,7 @@
               :size="220"
               :variables="variablesPresupuestosCarbono"
               :sectors="sectoresPresupuestosCarbono"
+              currency="USD"
             />
             <div v-else class="no-data-message">Sin datos disponibles</div>
           </div>

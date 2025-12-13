@@ -2,6 +2,7 @@
 <!-- ✅ ACTUALIZADO: Header Dark + KPI Cards + Barras originales con porcentaje -->
 <!-- ✅ FIX: formatCurrency con 2 decimales y espacio antes de M/B/K -->
 <!-- ✅ FIX: Área del gráfico más centrada con espacio blanco -->
+<!-- ✅ NUEVO: Leyenda USD debajo de las KPI cards -->
 <template>
   <div class="vertical-bar-chart">
 
@@ -59,6 +60,9 @@
         <div class="kpi-label">{{ variable.shortLabel || variable.label }}</div>
       </div>
     </div>
+    
+    <!-- ✅ Leyenda de moneda dinámica -->
+    <div class="currency-legend">{{ currencyLegend }}</div>
 
     <!-- ÁREA DEL GRÁFICO CON EJES -->
     <div class="chart-area">
@@ -171,6 +175,10 @@ const props = defineProps({
   selectedYear: {
     type: String,
     default: ''
+  },
+  currency: {
+    type: String,
+    default: 'MXN' // 'USD' para Regional, 'MXN' para Estados
   }
 })
 
@@ -282,6 +290,14 @@ const toggleVariable = (key) => {
 
 const isVariableActive = (key) => variables.value.find(v => v.key === key)?.active || false
 
+// ✅ Leyenda de moneda dinámica
+const currencyLegend = computed(() => {
+  if (props.currency === 'USD') {
+    return '* Cifras en dólares estadounidenses (USD)'
+  }
+  return '* Cifras en pesos mexicanos (MXN)'
+})
+
 const getBarHeightPixels = (value) => {
   if (maxValue.value === 0) return 0
   return (barsContainerHeight.value * (value / maxValue.value) * 100) / 100
@@ -389,7 +405,7 @@ watch(() => props.data, () => { nextTick(() => updateBarsContainerHeight()) }, {
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   flex-shrink: 0;
-  padding: 15px 15px 10px 15px;
+  padding: 15px 15px 0 15px;
 }
 
 .kpi-card {
@@ -437,6 +453,15 @@ watch(() => props.data, () => { nextTick(() => updateBarsContainerHeight()) }, {
   font-size: 10px;
   color: #64748b;
   font-weight: 500;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* ✅ Leyenda USD */
+.currency-legend {
+  font-size: 12px;
+  font-style: italic;
+  color: #94a3b8;
+  padding: 4px 15px 0 15px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
@@ -649,5 +674,6 @@ watch(() => props.data, () => { nextTick(() => updateBarsContainerHeight()) }, {
   .bars-container.bars-count-2 .bar-column,
   .bars-container.bars-count-3 .bar-column { width: 100%; max-width: none; }
   .bar-value-label { font-size: 10px; }
+  .currency-legend { font-size: 8px; }
 }
 </style>

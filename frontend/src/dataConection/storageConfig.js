@@ -1133,25 +1133,11 @@ export const storageConfig = {
       ],
       donutSectorsISRegional: [
         {
-          key: 'is_ambiental_reg',
-          column: 'IS_A',
-          label: 'Ambiental',
+          key: 'is_ftdcc_reg',
+          column: 'IS_FTDCC',
+          label: 'Financiamiento dedicado al cambio climático',
           colorClass: 'dark-green',
           color: '#558b2f'
-        },
-        {
-          key: 'is_ecologico_reg',
-          column: 'IS_E',
-          label: 'Ecológico',
-          colorClass: 'green',
-          color: '#7cb342'
-        },
-        {
-          key: 'is_movilidad_reg',
-          column: 'IS_MS',
-          label: 'Movilidad Sustentable',
-          colorClass: 'light-green',
-          color: '#9ccc65'
         }
       ],
       donutSectorsIICRegional: [
@@ -1244,7 +1230,23 @@ export const storageConfig = {
           colorClass: 'green',
           color: '#7cb342',
           order: 2
-        }
+        },
+        {
+      key: 'ps_val_reg',
+      column: 'PS ($)',
+      label: 'PS Regional',
+      colorClass: 'green',
+      color: '#7cb342',
+      order: 9
+    },
+    {
+      key: 'ps_pos_reg',
+      column: 'POS_PS',
+      label: 'Posicion PS Regional',
+      colorClass: 'green',
+      color: '#7cb342',
+      order: 10
+    }
       ]
     },
 
