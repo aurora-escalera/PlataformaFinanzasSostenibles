@@ -49,7 +49,7 @@
                   class="dropdown-option"
                   :class="{ 'selected': selectedEntity === null }"
                 >
-                  <span>Todas las entidades (IFS Regional)</span>
+                  <span>Datos Regionales</span>
                 </div>
                 <!-- Entidades filtradas -->
                 <div 
@@ -103,14 +103,14 @@
               </div>
               <div class="dropdown-options">
                 <!-- Default: Todos los años -->
-                <div 
-                  v-if="!yearSearch"
-                  @click="selectYear(null)"
-                  class="dropdown-option"
-                  :class="{ 'selected': selectedYear === null }"
-                >
-                  <span>Todos los años</span>
-                </div>
+              <div 
+                v-if="!yearSearch && selectedEntity !== ''"
+                @click="selectYear(null)"
+                class="dropdown-option"
+                :class="{ 'selected': selectedYear === null }"
+              >
+                <span>Todos los años</span>
+              </div>
                 
                 <!-- Años filtrados -->
                 <div 
@@ -163,7 +163,7 @@
                   class="dropdown-option"
                   :class="{ 'selected': selectedVariable === null }"
                 >
-                  <span>Todas las variables</span>
+                  <span>IFSS</span>
                 </div>
                 
                 <!-- Variables filtradas -->
@@ -346,7 +346,7 @@ const filteredVariables = computed(() => {
 
 const getEntityLabel = () => {
   if (selectedEntity.value === '') return '-'
-  if (!selectedEntity.value || selectedEntity.value === null) return 'Todas las entidades (IFS Regional)'
+  if (!selectedEntity.value || selectedEntity.value === null) return 'Datos regionales'
   return selectedEntity.value
 }
 
@@ -356,7 +356,7 @@ const getYearLabel = () => {
 }
 
 const getVariableLabel = () => {
-  if (!selectedVariable.value || selectedVariable.value === null) return 'Todas las variables'
+  if (!selectedVariable.value || selectedVariable.value === null) return 'IFSS'
   return selectedVariable.value.key
 }
 
@@ -433,14 +433,18 @@ const handleClickOutside = (event) => {
 
 const selectEntity = (entityName) => {
   console.log('=== FILTRO: Entidad seleccionada ===', entityName)
+  
+  const previousEntity = selectedEntity.value
   selectedEntity.value = entityName
   emit('entity-change', entityName)
-  
-  // ✅ Si selecciona "Todas las entidades (IFS Regional)", también setear año a "Todos los años"
-  if (entityName === null) {
-    console.log('🔄 Auto-seteando año a "Todos los años"')
-    setYear(null)
-    emit('year-change', null)
+  if (previousEntity === null && entityName !== null && entityName !== '') {
+    if (selectedYear.value === null && years.value.length > 0) {
+      const firstYear = years.value[0]
+      console.log('🔄 Auto-seteando año al primero disponible:', firstYear)
+      setYear(firstYear)
+      setActiveYear(firstYear)
+      emit('year-change', firstYear)
+    }
   }
   
   emitFiltersChange()

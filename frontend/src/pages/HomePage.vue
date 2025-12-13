@@ -65,16 +65,17 @@
             @view-change="handleViewChange"
           />
           
-          <!-- Overlay sobre SOLO el mapa - Usa areAllFiltersOnTodas -->
+          <!-- Overlay sobre SOLO el mapa - Usa areAllFiltersOnTodas o showRegionalCharts -->
           <transition name="overlay-fade">
             <div 
               v-if="showMapOverlay" 
               class="map-overlay-filter"
+              :class="{ 'regional-overlay': showRegionalCharts && !areAllFiltersOnTodas }"
               @click.stop="handleOverlayClick"
             >
               <div class="overlay-message">
                 <h2 class="overlay-text">
-                  Haz click en cualquier entidad del mapa para regresar a los resultados subnacionales
+                  {{ overlayMessage }}
                 </h2>
               </div>
             </div>
@@ -152,6 +153,13 @@
                 </div>
               </div>
               
+              <!-- ========== IFS REGIONAL CARD - Cuando showRegionalCharts ========== -->
+              <IFSRegionalCard 
+                v-else-if="showRegionalCharts"
+                :selectedYear="selectedYear"
+                :selectedVariable="selectedVariable"
+              />
+              
               <!-- ========== RANKING CHART ========== -->
               <!-- Loading State para Ranking -->
               <div v-else-if="rankingLoading" class="ranking-loading">
@@ -195,13 +203,11 @@
         class="ranking-panel"
         :class="{ 
           'historical-view': showHistoricalCard,
-          'variable-view': hasSpecificVariable && !showHistoricalCard
+          'regional-view': showRegionalCharts,
+          'variable-view': hasSpecificVariable && !showHistoricalCard && !showRegionalCharts
         }"
       >
         <div class="header-ranking-panel">
-          <div class="ranking-hamburger-menu">
-            <img src="/public/icons/hamburger.png" alt="hamburger-menu" class="hamburger-icon">
-          </div>
         </div>
         
         <div class="body-ranking-panel">
@@ -212,6 +218,15 @@
             :selectedStateValue="selectedStateIFSS"
             @range-change="handleRangeChange"
             @filter-change="handleFilterChange"
+          />
+          
+          <!-- ✅ RegionalChartsComponent - Ahora escucha @years-loaded -->
+          <RegionalChartsComponent 
+            v-else-if="showRegionalCharts"
+            :selectedYear="selectedYear"
+            :selectedVariable="selectedVariable"
+            class="regional-charts-spacing"
+            @years-loaded="handleRegionalYearsLoaded"
           />
           
           <!-- Mostrar ChartsComponent cuando hay un estado seleccionado -->
@@ -235,6 +250,8 @@ import { useCharts } from '@/composables/useCharts'
 import { useRouter } from 'vue-router'
 import MexicoMapSVG from '../modules/maps/components/MexicoMapSVG.vue'
 import ChartsComponent from '../modules/charts/components/ChartsComponent.vue'
+import RegionalChartsComponent from '../modules/charts/components/RegionalChartsComponent.vue'
+import IFSRegionalCard from '../modules/charts/components/IFSRegionalCard.vue'
 import RetractableFilterBar from '@/modules/maps/components/RetractableFilterBar.vue'
 import HorizontalRankingChart from '../modules/charts/components/HorizontalRankingChart.vue'
 import HistoricalCard from '../modules/object/component/HistoricalCard.vue'
@@ -337,6 +354,9 @@ const availableYears = ref([])
 // Guardar años iniciales de cuantitativos
 const initialYears = ref([])
 
+// ✅ NUEVO: Guardar años regionales cuando se cargan
+const regionalYears = ref([])
+
 // Guardar estado inicial de filtros
 const initialFilters = ref({
   entity: '',  // ✅ Default es ''
@@ -431,13 +451,26 @@ const showStackedArea = computed(() => {
 })
 
 /**
- * Mostrar overlay del mapa cuando los 3 filtros están en "Todas..."
+ * Mostrar overlay del mapa cuando los 3 filtros están en "Todas..." O cuando se muestran los charts regionales
  */
 const showMapOverlay = computed(() => {
   if (isRetractableExpanded.value) {
     return false
   }
-  return areAllFiltersOnTodas.value
+  return areAllFiltersOnTodas.value || showRegionalCharts.value
+})
+
+/**
+ * Mensaje dinámico del overlay según el contexto
+ */
+const overlayMessage = computed(() => {
+  if (areAllFiltersOnTodas.value) {
+    return 'Haz click en cualquier entidad del mapa para regresar a los resultados subnacionales'
+  }
+  if (showRegionalCharts.value) {
+    return 'Te encuentras en la vista de resultados federales. Haz clic en cualquier sección del área azul encima del mapa para regresar a los datos subnacionales.'
+  }
+  return ''
 })
 
 /**
@@ -469,13 +502,30 @@ const showHistoricalCard = computed(() => {
 })
 
 /**
+ * ✅ Mostrar RegionalChartsComponent cuando:
+ * - No hay filtros en blanco
+ * - No hay estado seleccionado en el mapa
+ * - Entidad es "Todas las entidades" (null)
+ * - Año es un año específico (no null)
+ * - NO estamos en areAllFiltersOnTodas (eso muestra HistoricalCard)
+ */
+const showRegionalCharts = computed(() => {
+  if (shouldHidePanel.value) return false
+  if (selectedState.value) return false  // Si hay estado, mostrar ChartsComponent
+  if (areAllFiltersOnTodas.value) return false  // Si todos en "Todas...", mostrar HistoricalCard
+  
+  // Mostrar cuando: Entidad = null (Todas) Y Año = específico
+  return selectedEntity.value === null && selectedYear.value !== null
+})
+
+/**
  * Mostrar panel de ranking cuando:
  * - No hay filtros en blanco
- * - Hay estado seleccionado O se debe mostrar HistoricalCard
+ * - Hay estado seleccionado O se debe mostrar HistoricalCard O se debe mostrar RegionalCharts
  */
 const showRankingPanel = computed(() => {
   if (shouldHidePanel.value) return false
-  return selectedState.value || showHistoricalCard.value
+  return selectedState.value || showHistoricalCard.value || showRegionalCharts.value
 })
 
 // ============================================================================
@@ -543,11 +593,13 @@ const handleEntityChange = (entity) => {
   
   if (entity === '') {
     resetSelection()
+    // ✅ Restaurar años iniciales cuando se selecciona "-"
+    restoreInitialYears()
     return
   }
   
   if (entity === null) {
-    // "Todas las entidades" seleccionado
+    // "Todas las entidades" seleccionado - mantener años actuales (podrían ser regionales)
     resetSelection()
     if (!isRetractableExpanded.value && !areAllFiltersOnTodas.value) {
       if (selectedVariable.value && selectedVariable.value !== '' && selectedVariable.value !== null) {
@@ -559,7 +611,8 @@ const handleEntityChange = (entity) => {
     return
   }
   
-  // Entidad específica seleccionada
+  // Entidad específica seleccionada - restaurar años iniciales
+  restoreInitialYears()
   handleStateClick(entity)
   console.log('🗺️ [HomePage] Mapa actualizado con:', entity)
 }
@@ -612,6 +665,9 @@ const handleStateClickWithEmit = async (stateName) => {
     selectedEntity.value = ''
     emit('region-selected', null)
     
+    // ✅ Restaurar años iniciales cuando se deselecciona estado
+    restoreInitialYears()
+    
     if (!isRetractableExpanded.value) {
       if (selectedVariable.value && selectedVariable.value !== '' && selectedVariable.value !== null) {
         updateRankingByVariable(selectedVariable.value)
@@ -624,6 +680,9 @@ const handleStateClickWithEmit = async (stateName) => {
   
   handleStateClick(stateName)
   selectedEntity.value = stateName
+  
+  // ✅ Restaurar años iniciales cuando se selecciona un estado específico
+  restoreInitialYears()
   
   await nextTick()
   
@@ -692,6 +751,52 @@ const handleYearsLoaded = async (years) => {
   }
 }
 
+// ✅ NUEVO: Handler para años cargados desde RegionalChartsComponent
+const handleRegionalYearsLoaded = async (years) => {
+  console.log('📅 [HomePage] Años recibidos de RegionalChartsComponent:', years)
+  
+  if (years && years.length > 0) {
+    // Guardar los años regionales
+    regionalYears.value = [...years]
+    
+    // Actualizar los años disponibles en el filtro
+    availableYears.value = years
+    
+    // Si el año actual no está en los años regionales, seleccionar el primero
+    if (!years.includes(selectedYear.value)) {
+      const firstYear = years[0]
+      selectedYear.value = firstYear
+      setActiveYear(firstYear)
+      console.log('📅 [Regional] Año actualizado al primero disponible:', firstYear)
+    }
+    
+    // Forzar re-render del filtro
+    filterBarKey.value++
+    await nextTick()
+    
+    console.log('✅ [HomePage] Filtro actualizado con años regionales:', years)
+  }
+}
+
+// ✅ NUEVO: Función para restaurar años iniciales
+const restoreInitialYears = async () => {
+  if (initialYears.value.length > 0) {
+    console.log('🔄 [HomePage] Restaurando años iniciales:', initialYears.value)
+    availableYears.value = [...initialYears.value]
+    
+    // Si el año actual no está en los años iniciales, seleccionar el primero
+    if (!initialYears.value.includes(selectedYear.value)) {
+      const firstYear = initialYears.value[0]
+      selectedYear.value = firstYear
+      setActiveYear(firstYear)
+      console.log('📅 Año restaurado al primero de cuantitativos:', firstYear)
+    }
+    
+    filterBarKey.value++
+    await nextTick()
+  }
+}
+
 const handlePanelClosed = async () => {
   console.log('🔄 [HomePage] Panel cualitativo cerrado, reseteando filtros a DEFAULT...')
   
@@ -738,9 +843,12 @@ const handleMapContainerClick = (event) => {
 const handleOverlayClick = async () => {
   console.log('🔲 [HomePage] Click en overlay, cambiando a DEFAULT...')
   
-  // ✅ Cambiar a DEFAULT ('', primerAño, null) para salir de "Todas..."
+  // ✅ Cambiar a DEFAULT ('', primerAño, null) para salir de "Todas..." o vista regional
   selectedEntity.value = ''
   selectedVariable.value = null
+  
+  // ✅ Restaurar años iniciales
+  restoreInitialYears()
   
   if (availableYears.value.length > 0) {
     const firstYear = availableYears.value[0]
@@ -803,6 +911,20 @@ watch(areAllFiltersOnTodas, async (newValue, oldValue) => {
 })
 
 /**
+ * ✅ NUEVO: Watch para detectar cuando se muestra/oculta RegionalChartsComponent
+ * y restaurar años cuando se oculta
+ */
+watch(showRegionalCharts, async (newValue, oldValue) => {
+  console.log('👀 [showRegionalCharts] cambió de', oldValue, 'a', newValue)
+  
+  if (!newValue && oldValue) {
+    // Se ocultó el componente regional, restaurar años iniciales
+    console.log('🔄 [HomePage] RegionalCharts se ocultó, restaurando años iniciales...')
+    await restoreInitialYears()
+  }
+})
+
+/**
  * Watch para actualizar ranking cuando cambia la variable (y no estamos en "Todas...")
  */
 watch(selectedVariable, (newVariable) => {
@@ -854,11 +976,10 @@ watch(selectedState, (newState, oldState) => {
       name: newState,
       data: stateData
     })
-  } else if (!newState && oldState) {
-    if (!isRetractableExpanded.value) {
+} else if (!newState && oldState) {
+    if (!isRetractableExpanded.value && selectedEntity.value !== null) {
       selectedEntity.value = ''
     }
-    
     emit('region-selected', null)
     
     if (!isRetractableExpanded.value && !areAllFiltersOnTodas.value) {
@@ -928,7 +1049,7 @@ onMounted(async () => {
   width: 95%;
   max-width: 2000px;
   margin: 0 auto;
-  padding: 0;
+  padding: 0 0 8px 0;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
@@ -1093,6 +1214,14 @@ onMounted(async () => {
   transition: all 0.3s ease;
 }
 
+.ranking-panel.regional-view {
+  width: 2000px;
+  height: 1150px;
+  padding-bottom: 15px;
+  margin-bottom: 150px;
+  transition: all 0.3s ease;
+}
+
 .ranking-panel.variable-view {
   width: 2000px;
   height: 1350px; 
@@ -1101,34 +1230,19 @@ onMounted(async () => {
 }
 
 .header-ranking-panel {
-  display: flex;
-  flex-direction: row; 
-  height: 1%;
-  width: 100%;
-  padding: 0px;
-  margin-bottom: 0px;
-}
-
-h2 {
-  padding: 4px 0 2px 0;
-  text-align: center;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-weight: 200;
-  color: #535353;
-  font-size: 20px;
-  margin: 0;  
-  flex-shrink: 0;
-  justify-content: space-between; 
-  margin-right: auto; 
-}
-
-.ranking-hamburger-menu {
-  margin-left: auto;
+  display: none;
 }
 
 .body-ranking-panel {
   height: 100%;
   width: 100%;
+  padding-bottom: 5px;
+}
+
+/* ✅ Espacio después de RegionalChartsComponent */
+.regional-charts-spacing {
+  margin-bottom: 10px;
+  padding-bottom: 5px;
 }
 
 .map-overlay-filter {
@@ -1150,6 +1264,20 @@ h2 {
 
 .map-overlay-filter:hover {
   background: rgba(160, 160, 160, 0.94);
+}
+
+/* Estilo diferente para overlay regional */
+.map-overlay-filter.regional-overlay {
+  background: rgba(22, 60, 95, 0.85);
+  cursor: pointer;
+}
+
+.map-overlay-filter.regional-overlay:hover {
+  background: rgba(22, 60, 95, 0.88);
+}
+
+.map-overlay-filter.regional-overlay .overlay-text {
+  color: white;
 }
 
 .overlay-message {

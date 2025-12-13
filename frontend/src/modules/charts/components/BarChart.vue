@@ -1,5 +1,7 @@
 <!-- src/modules/charts/components/BarChart.vue -->
 <!-- ✅ ACTUALIZADO: Header Dark + KPI Cards + Barras originales con porcentaje -->
+<!-- ✅ FIX: formatCurrency con 2 decimales y espacio antes de M/B/K -->
+<!-- ✅ FIX: Área del gráfico más centrada con espacio blanco -->
 <template>
   <div class="vertical-bar-chart">
 
@@ -89,6 +91,14 @@
           :key="variable.key"
           class="bar-column"
         >
+          <!-- ✅ Valor numérico arriba de la barra (se oculta con tooltip) -->
+          <div 
+            v-show="hoveredBar?.key !== variable.key"
+            class="bar-value-label" 
+            :class="variable.colorClass"
+          >
+            {{ formatCurrency(variable.value) }}
+          </div>
           <div class="bar-wrapper-vertical">
             <div 
               class="bar-vertical"
@@ -207,7 +217,8 @@ const getShortLabel = (label) => {
   const shortLabels = {
     'Presupuesto Total': 'Total', 'Presupuesto Sostenible': 'Sostenible', 'Presupuesto Intensivo en Carbono': 'Carbono',
     'Ingreso Total': 'Total', 'Ingresos Sostenibles': 'Sostenible', 'Ingresos Intensivos en Carbono': 'Carbono',
-    'PT': 'Total', 'PS': 'Sostenible', 'PIC': 'Carbono', 'IT': 'Total', 'IS': 'Sostenible', 'IIC': 'Carbono'
+    'PT': 'Total', 'PS': 'Sostenible', 'PIC': 'Carbono', 'IT': 'Total', 'IS': 'Sostenible', 'IIC': 'Carbono',
+    'Ingresos Total': 'Ingresos Total', 'Presupuestos Intensivos en Carbono': 'Presupuestos Intensivos en Carbono'
   }
   return shortLabels[label] || label
 }
@@ -276,10 +287,11 @@ const getBarHeightPixels = (value) => {
   return (barsContainerHeight.value * (value / maxValue.value) * 100) / 100
 }
 
+// ✅ FIX: 2 decimales y espacio antes de M/B/K
 const formatCurrency = (value) => {
-  if (Math.abs(value) >= 1000000000) return `$${(value / 1000000000).toFixed(1)}B`
-  if (Math.abs(value) >= 1000000) return `$${(value / 1000000).toFixed(1)}M`
-  if (Math.abs(value) >= 1000) return `$${(value / 1000).toFixed(1)}K`
+  if (Math.abs(value) >= 1000000000) return `$${(value / 1000000000).toFixed(2)} B`
+  if (Math.abs(value) >= 1000000) return `$${(value / 1000000).toFixed(2)} M`
+  if (Math.abs(value) >= 1000) return `$${(value / 1000).toFixed(2)} K`
   return `$${value.toFixed(0)}`
 }
 
@@ -293,7 +305,8 @@ const activateVariablesSequentially = () => {
 
 const updateBarsContainerHeight = () => {
   if (barsContainerRef.value) {
-    const height = barsContainerRef.value.clientHeight - 20
+    // Restar espacio para el label de valor (aprox 25px)
+    const height = barsContainerRef.value.clientHeight - 35
     if (height > 0) barsContainerHeight.value = height
   }
 }
@@ -427,19 +440,29 @@ watch(() => props.data, () => { nextTick(() => updateBarsContainerHeight()) }, {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* Chart Area */
+/* ✅ Chart Area - MÁS CENTRADO CON ESPACIO BLANCO */
 .chart-area {
-  margin-top: 5px;
+  margin-top: 10px;
   flex: 1;
   display: flex;
   position: relative;
   min-height: 0;
   width: 100%;
   overflow: visible;
-  padding: 0 15px 15px 15px;
+  padding: 25px 40px 30px 25px;
+  background: #fafbfc;
+  border-radius: 8px;
+  margin-left: 15px;
+  margin-right: 15px;
+  margin-bottom: 15px;
+  width: calc(100% - 30px);
 }
 
-.y-axis { width: 60px; position: relative; flex-shrink: 0; }
+.y-axis { 
+  width: 65px; 
+  position: relative; 
+  flex-shrink: 0; 
+}
 
 .y-tick {
   position: absolute;
@@ -454,16 +477,16 @@ watch(() => props.data, () => { nextTick(() => updateBarsContainerHeight()) }, {
   font-size: 10px;
   color: #666;
   text-align: right;
-  width: 50px;
-  padding-right: 8px;
+  width: 55px;
+  padding-right: 10px;
 }
 
 .grid-lines {
   position: absolute;
-  top: 0;
-  left: 60px;
-  right: 15px;
-  bottom: 15px;
+  top: 25px;
+  left: 90px;
+  right: 40px;
+  bottom: 30px;
   pointer-events: none;
   z-index: 1;
 }
@@ -480,12 +503,14 @@ watch(() => props.data, () => { nextTick(() => updateBarsContainerHeight()) }, {
   display: flex;
   flex-direction: row;
   justify-content: center;
-  gap: 5px;
+  align-items: flex-end;
+  gap: 20px;
   flex: 1;
   width: 100%;
   height: 100%;
   position: relative;
   z-index: 2;
+  padding: 0 30px;
 }
 
 .bar-column {
@@ -498,6 +523,21 @@ watch(() => props.data, () => { nextTick(() => updateBarsContainerHeight()) }, {
   justify-content: flex-end;
 }
 
+/* ✅ Valor numérico arriba de la barra - solo texto */
+.bar-value-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  letter-spacing: -0.3px;
+}
+
+.bar-value-label.gray { color: #6b7280; }
+.bar-value-label.green { color: #558b2f; }
+.bar-value-label.red { color: #b91c1c; }
+
 .bar-wrapper-vertical {
   width: 100%;
   height: 100%;
@@ -508,9 +548,9 @@ watch(() => props.data, () => { nextTick(() => updateBarsContainerHeight()) }, {
   justify-content: center;
 }
 
-.bars-container.bars-count-1 .bar-column { width: 100%; max-width: 600px; }
-.bars-container.bars-count-2 .bar-column { width: 45%; max-width: 350px; }
-.bars-container.bars-count-3 .bar-column { width: 30%; max-width: 250px; }
+.bars-container.bars-count-1 .bar-column { width: 100%; max-width: 500px; }
+.bars-container.bars-count-2 .bar-column { width: 40%; max-width: 300px; }
+.bars-container.bars-count-3 .bar-column { width: 28%; max-width: 220px; }
 
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(20px); }
@@ -598,8 +638,16 @@ watch(() => props.data, () => { nextTick(() => updateBarsContainerHeight()) }, {
 @media (max-width: 768px) {
   .kpi-cards-row { grid-template-columns: 1fr; gap: 6px; }
   .kpi-card { padding: 8px; }
+  .chart-area {
+    padding: 15px 20px 20px 15px;
+    margin-left: 10px;
+    margin-right: 10px;
+    width: calc(100% - 20px);
+  }
+  .bars-container { padding: 0 15px; gap: 10px; }
   .bars-container.bars-count-1 .bar-column,
   .bars-container.bars-count-2 .bar-column,
   .bars-container.bars-count-3 .bar-column { width: 100%; max-width: none; }
+  .bar-value-label { font-size: 10px; }
 }
 </style>

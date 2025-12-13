@@ -40,10 +40,11 @@ export const storageConfig = {
         }
       },
       cuantitativosRegional: {
-        sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_CUANTITATIVOS,
+        sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID,
         files: {
-          chartsPresupuestosRegional: '2024', 
-          chartsIngresosRegional: '2024'  
+          chartsPresupuestosRegional: 'Hoja 1', 
+          chartsIngresosRegional: 'Hoja 1',
+          cardIFSRegional: 'Hoja 1'
         }
       },
       // Configuración modular para cada componente ambiental
@@ -247,7 +248,8 @@ export const storageConfig = {
       financiamientos: '2024',
       programas: '2024',
       chartsPresupuestosRegional: 'Hoja 1',
-      chartsIngresosRegional: 'Hoja 1'
+      chartsIngresosRegional: 'Hoja 1',
+      cardIFS: 'Hoja 1'
     }
   },
   
@@ -1031,6 +1033,221 @@ export const storageConfig = {
       ]
     },
     
+// CUANTITATIVOS REGIONALES
+    chartsPresupuestosRegional: {
+      stateColumn: 'Año',
+      variableColumns: [
+        {
+          key: 'presupuesto_total_reg',
+          column: 'PT',
+          label: 'Presupuesto Total',
+          colorClass: 'gray',
+          color: '#9ca3af',
+          order: 1
+        },
+        {
+          key: 'presupuesto_sostenible_reg',
+          column: 'PS ($)',
+          label: 'Presupuesto Sostenible',
+          colorClass: 'green',
+          color: '#7cb342',
+          order: 2
+        },
+        {
+          key: 'presupuesto_carbono_reg',
+          column: 'PIC ($)',
+          label: 'Presupuestos Intensivos en Carbono',
+          colorClass: 'red',
+          color: '#DC143C',
+          order: 3
+        }
+      ],
+      donutSectorsPSRegional: [
+        {
+          key: 'ps_cambio_climatico_reg',
+          column: 'PS_CC',
+          label: 'Cambio climático',
+          colorClass: 'dark-green',
+          color: '#2e7d32'
+        },
+        {
+          key: 'ps_energia_renovable_reg',
+          column: 'PS_ER',
+          label: 'Energía Renovable',
+          colorClass: 'dark-green',
+          color: '#43a047'
+        },
+        {
+          key: 'ps_eficiencia_energetica_reg',
+          column: 'PS_EE',
+          label: 'Eficiencia Energética',
+          colorClass: 'dark-green',
+          color: '#66bb6a'
+        },
+        {
+          key: 'ps_desastres_reg',
+          column: 'PS_DN',
+          label: 'Desastres Naturales',
+          colorClass: 'dark-green',
+          color: '#1b5e20'
+        }
+      ],
+      donutSectorsPICRegional: [
+        {
+          key: 'pic_hidrocarburos_reg',
+          column: 'PIC_H',
+          label: 'Hidrocarburos',
+          colorClass: 'light-red',
+          color: '#ef5350'
+        }
+      ]
+    },
+    
+    chartsIngresosRegional: {
+      stateColumn: 'Año',
+      variableColumns: [
+        {
+          key: 'ingresos_total_reg',
+          column: 'IT ($)',
+          label: 'Ingresos Total',
+          colorClass: 'gray',
+          color: '#9ca3af',
+          order: 1
+        },
+        {
+          key: 'ingresos_sostenibles_reg',
+          column: 'IS ($)',
+          label: 'Ingresos Sostenibles',
+          colorClass: 'green',
+          color: '#7cb342',
+          order: 2
+        },
+        {
+          key: 'ingresos_carbono_reg',
+          column: 'IIC ($)',
+          label: 'Ingresos Intensivos en Carbono',
+          colorClass: 'red',
+          color: '#DC143C',
+          order: 3
+        }
+      ],
+      donutSectorsISRegional: [
+        {
+          key: 'is_ambiental_reg',
+          column: 'IS_A',
+          label: 'Ambiental',
+          colorClass: 'dark-green',
+          color: '#558b2f'
+        },
+        {
+          key: 'is_ecologico_reg',
+          column: 'IS_E',
+          label: 'Ecológico',
+          colorClass: 'green',
+          color: '#7cb342'
+        },
+        {
+          key: 'is_movilidad_reg',
+          column: 'IS_MS',
+          label: 'Movilidad Sustentable',
+          colorClass: 'light-green',
+          color: '#9ccc65'
+        }
+      ],
+      donutSectorsIICRegional: [
+        {
+          key: 'iic_hidrocarburos_reg',
+          column: 'IIC_H',
+          label: 'Hidrocarburos',
+          colorClass: 'dark-red',
+          color: '#b71c1c'
+        },
+        {
+          key: 'iic_mineria_reg',
+          column: 'IIC_M',
+          label: 'Minería',
+          colorClass: 'red',
+          color: '#DC143C'
+        },
+        {
+          key: 'iic_combustible_reg',
+          column: 'IIC_C',
+          label: 'Combustible',
+          colorClass: 'light-red',
+          color: '#ef5350'
+        }
+      ]
+    },
+    cardIFSRegional: {
+      stateColumn: 'Año',
+      variableColumns: [
+        {
+          key: 'ifs_val_reg',
+          column: 'IFS',
+          label: 'IFS Regional',
+          colorClass: 'gray',
+          color: '#9ca3af',
+          order: 1
+        },
+        {
+          key: 'ifs_pos_reg',
+          column: 'POS_IFS',
+          label: 'Posicion IFS Regional',
+          colorClass: 'green',
+          color: '#7cb342',
+          order: 2
+        },
+        {
+          key: 'is_val_reg',
+          column: 'IS ($)',
+          label: 'IS Regional',
+          colorClass: 'gray',
+          color: '#9ca3af',
+          order: 1
+        },
+        {
+          key: 'is_pos_reg',
+          column: 'POS_IS',
+          label: 'Posicion IS Regional',
+          colorClass: 'green',
+          color: '#7cb342',
+          order: 2
+        },
+        {
+          key: 'iic_val_reg',
+          column: 'IIC ($)',
+          label: 'IIC Regional',
+          colorClass: 'gray',
+          color: '#9ca3af',
+          order: 1
+        },
+        {
+          key: 'icc_pos_reg',
+          column: 'POS_IIC',
+          label: 'Posicion IIC Regional',
+          colorClass: 'green',
+          color: '#7cb342',
+          order: 2
+        },
+        {
+          key: 'pic_val_reg',
+          column: 'PIC ($)',
+          label: 'PIC Regional',
+          colorClass: 'gray',
+          color: '#9ca3af',
+          order: 1
+        },
+        {
+          key: 'pic_pos_reg',
+          column: 'POS_PIC',
+          label: 'Posicion PIC Regional',
+          colorClass: 'green',
+          color: '#7cb342',
+          order: 2
+        }
+      ]
+    },
+
     rankingCuantitativo: {
       stateColumn: 'Entidad Federativa',
       columnsByVariable: {
@@ -1051,7 +1268,7 @@ export const storageConfig = {
         }
       ]
     },
-    
+ //Historicos  
     iicBarChart: {
       yearColumn: 'Año',
       variableColumns: [
@@ -1114,7 +1331,7 @@ export const storageConfig = {
       variableColumns: [
         {
           key: 'IS',
-          column: 'IS($)', 
+          column: 'IS ($)', 
           label: 'IS',
           color: '#0F3759',
           order: 1
@@ -1153,7 +1370,7 @@ export const storageConfig = {
       variableColumns: [
         {
           key: 'IS_Total',
-          column: 'IS($)',
+          column: 'IS ($)',
           label: 'IS Total'
         },
         {
