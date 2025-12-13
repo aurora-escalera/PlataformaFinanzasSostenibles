@@ -1,4 +1,4 @@
-<!-- HorizontalRankingChart.vue - Con colores del mapa (7 categorías) -->
+<!-- HorizontalRankingChart.vue - Con colores del mapa (6 categorías) -->
 <template>
   <div class="horizontal-bar-chart" :style="{ width: width, height: height }">
     <!-- Título -->
@@ -115,42 +115,29 @@ const tooltip = ref({ visible: false, x: 0, y: 0, label: '', value: '', color: '
 const internalVariables = ref([])
 const animatedWidths = ref({})
 
-// ✅ FUNCIÓN ACTUALIZADA: Obtener color según valor IFSS (7 categorías igual que el mapa)
+// ✅ ACTUALIZADO: Obtener color según valor IFSS (6 categorías)
 const getIFSSColorByValue = (value) => {
   const numValue = parseFloat(value) || 0
   
-  // Verde oscuro (Muy Alto)
-  if (numValue >= 2.5) return '#6ac952'      // Muy Alto
-  
-  // Verde (Alto)
-  if (numValue >= 2.3) return '#94d351'      // Alto
-  
-  // Verde-amarillo (Medio Alto)
-  if (numValue >= 2.0) return '#bddc50'      // Medio Alto
-  
-  // Amarillo (Medio)
-  if (numValue >= 1.8) return '#e6d64f'      // Medio
-  
-  // Naranja (Medio Bajo)
-  if (numValue >= 1.5) return '#e6a74c'      // Medio Bajo
-  
-  // Naranja-rojo (Bajo)
-  if (numValue >= 0.7) return '#e67849'      // Bajo
-  
-  // Rojo (Muy Bajo)
-  return '#e52845'                           // Muy Bajo
+  // ✅ Nuevos rangos (6 categorías)
+  if (numValue >= 4) return '#6ac952'       // Alto
+  if (numValue >= 2.3) return '#94d351'     // Medio Alto
+  if (numValue >= 1.9) return '#bddc50'     // Medio
+  if (numValue >= 1.5) return '#e6a74c'     // Medio Bajo
+  if (numValue > 0.7) return '#e67849'      // Bajo
+  return '#e52845'                          // Muy Bajo (<= 0.7)
 }
 
-// ✅ FUNCIÓN ACTUALIZADA: Obtener clasificación según valor IFSS (7 categorías igual que el mapa)
+// ✅ ACTUALIZADO: Obtener clasificación según valor IFSS (6 categorías)
 const getIFSSClassification = (value) => {
   const numValue = parseFloat(value) || 0
   
-  if (numValue >= 2.5) return 'Muy Alto'
-  if (numValue >= 2.3) return 'Alto'
-  if (numValue >= 2.0) return 'Medio Alto'
-  if (numValue >= 1.8) return 'Medio'
+  // ✅ Nuevos rangos (6 categorías)
+  if (numValue >= 4) return 'Alto'
+  if (numValue >= 2.3) return 'Medio Alto'
+  if (numValue >= 1.9) return 'Medio'
   if (numValue >= 1.5) return 'Medio Bajo'
-  if (numValue >= 0.7) return 'Bajo'
+  if (numValue > 0.7) return 'Bajo'
   return 'Muy Bajo'
 }
 

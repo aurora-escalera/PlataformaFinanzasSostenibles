@@ -7,6 +7,12 @@
       lastUpdate="24 de septiembre de 2025"
     />
 
+    <!-- Barra de toggle Vista/Moneda -->
+    <DataViewToggleBar 
+      v-model="currentDataView"
+      :currency="currentCurrency"
+    />
+
     <!-- Contenido principal -->
     <main class="app-main">
       <router-view />
@@ -15,8 +21,16 @@
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import HeaderComponent from '@modules/other/components/HeaderComponent.vue'
 import TitleBarComponent from '@modules/other/components/TitleBarComponent.vue'
+import DataViewToggleBar from './modules/other/components/DataViewToggleBar.vue'
+
+// Estado del toggle de vista
+const currentDataView = ref('subnacional')
+
+// Estado de la moneda (puede venir de una API o configuración)
+const currentCurrency = ref('MXN')
 </script>
 
 <style>

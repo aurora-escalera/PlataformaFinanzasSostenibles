@@ -1,4 +1,5 @@
 <!-- src/modules/maps/components/MexicoMapSVG.vue --> 
+<!-- ✅ ACTUALIZADO: Leyenda con 6 categorías de IFSS + rangos numéricos + hover -->
 <template>
   <div class="map-wrapper" @click="handleBackgroundClick">
     <!-- CARD FLOTANTE CON INFO DEL ESTADO/NACIONAL -->
@@ -73,44 +74,52 @@
       </div>
     </div>
 
-    <!-- Leyenda de colores IFSS -->
+    <!-- ✅ ACTUALIZADO: Leyenda de colores IFSS con rangos numéricos -->
     <div class="color-legend">
-      <div v-if="!selectedState" class="legend-items-horizontal">
+      <!-- Leyenda completa: solo cuando NO hay estado seleccionado NI hover -->
+      <div v-if="!selectedState && !hoveredState" class="legend-items-horizontal">
         <div class="legend-item-horizontal">
           <div class="legend-color-horizontal" style="background-color: #6ac952"></div>
-          <span>Muy Alto</span>
+          <span class="legend-label">Alto</span>
+          <span class="legend-range">≥ a 4</span>
         </div>
         <div class="legend-item-horizontal">
           <div class="legend-color-horizontal" style="background-color: #94d351"></div>
-          <span>Alto</span>
+          <span class="legend-label">Medio Alto</span>
+          <span class="legend-range">2.3 - 3.9</span>
         </div>
         <div class="legend-item-horizontal">
           <div class="legend-color-horizontal" style="background-color: #bddc50"></div>
-          <span>Medio Alto</span>
-        </div>
-        <div class="legend-item-horizontal">
-          <div class="legend-color-horizontal" style="background-color: #e6d64f"></div>
-          <span>Medio</span>
+          <span class="legend-label">Medio</span>
+          <span class="legend-range">1.9 - 2.2</span>
         </div>
         <div class="legend-item-horizontal">
           <div class="legend-color-horizontal" style="background-color: #e6a74c"></div>
-          <span>Medio Bajo</span>
+          <span class="legend-label">Medio Bajo</span>
+          <span class="legend-range">1.5 - 1.8</span>
         </div>
         <div class="legend-item-horizontal">
           <div class="legend-color-horizontal" style="background-color: #e67849"></div>
-          <span>Bajo</span>
+          <span class="legend-label">Bajo</span>
+          <span class="legend-range">0.6 - 1.4</span>
         </div>
         <div class="legend-item-horizontal">
           <div class="legend-color-horizontal" style="background-color: #e52845"></div>
-          <span>Muy Bajo</span>
+          <span class="legend-label">Muy Bajo</span>
+          <span class="legend-range">≤ 0.7</span>
         </div>
       </div>
+      
+      <!-- Barra única: cuando hay estado seleccionado O hover -->
       <div v-else class="legend-selected-state">
         <div 
           class="selected-state-bar"
-          :style="{ backgroundColor: getSelectedStateColor() }"
+          :style="{ backgroundColor: getActiveStateColor() }"
         >
-          <span class="selected-state-label">{{ getSelectedStateClassification() }}</span>
+          <span class="selected-state-label">
+            {{ getActiveStateClassification() }} 
+            <span class="selected-state-value">({{ getActiveStateValue() }})</span>
+          </span>
         </div>
       </div>
     </div>
@@ -301,6 +310,28 @@ const getCurrentPosition = () => {
     return '--'
   }
   return '15'
+}
+
+// ✅ NUEVAS FUNCIONES para estado activo (seleccionado o hover)
+const getActiveStateColor = () => {
+  const activeState = props.selectedState || props.hoveredState
+  if (!activeState) return '#cccccc'
+  return props.getStateColor(activeState)
+}
+
+const getActiveStateClassification = () => {
+  const activeState = props.selectedState || props.hoveredState
+  if (!activeState) return ''
+  const stateInfo = props.getStateInfo(activeState)
+  const value = stateInfo.value || 0
+  return props.getIFSSLabel(value).label
+}
+
+const getActiveStateValue = () => {
+  const activeState = props.selectedState || props.hoveredState
+  if (!activeState) return '0'
+  const stateInfo = props.getStateInfo(activeState)
+  return stateInfo.value || 0
 }
 
 const getSelectedStateColor = () => {
@@ -536,21 +567,75 @@ const tooltipStyle = computed(() => {
   transition: all 0.3s ease;
 }
 
+/* ✅ LEYENDA - Posición original mantenida */
 .color-legend {
   position: absolute;
   bottom: 60px;
-  left: 16%;
+  left: 24%;
   transform: translateX(-50%);
   background: rgba(255, 255, 255, 0.95);
   border: none;
   border-radius: 8px;
   z-index: 10;
   backdrop-filter: blur(5px);
-  width: 230px;
   min-height: 30px;
   transition: all 0.3s ease;
 }
 
+.legend-items-horizontal {
+  display: flex;
+  gap: 0;
+  align-items: stretch;
+  justify-content: center;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 0px solid rgba(0,0,0,0.1);
+  width: 390px;
+}
+
+.legend-item-horizontal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #333;
+  flex: 1;
+  text-align: center;
+  min-width: 60px;
+}
+
+.legend-color-horizontal {
+  width: 100%;
+  height: 22px;
+  border: none;
+}
+
+.legend-item-horizontal:first-child .legend-color-horizontal {
+  border-radius: 4px 0 0 4px;
+}
+
+.legend-item-horizontal:last-child .legend-color-horizontal {
+  border-radius: 0 4px 4px 0;
+}
+
+/* ✅ Etiquetas con letra más grande */
+.legend-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #374151;
+  margin-top: 4px;
+  line-height: 1.2;
+}
+
+/* ✅ Rangos numéricos */
+.legend-range {
+  font-size: 11px;
+  font-weight: 200;
+  color: #6b7280;
+  margin-top: 1px;
+  line-height: 1.2;
+}
+
+/* Barra única para estado seleccionado o hover */
 .legend-selected-state {
   display: flex;
   gap: 0;
@@ -560,7 +645,7 @@ const tooltipStyle = computed(() => {
   overflow: hidden;
   border: 0px solid rgba(0,0,0,0.1);
   height: 30px;
-  width: 360px;
+  width: 390px;
   animation: legendFadeIn 0.4s ease;
 }
 
@@ -581,6 +666,12 @@ const tooltipStyle = computed(() => {
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   letter-spacing: 0.5px;
   text-transform: uppercase;
+}
+
+.selected-state-value {
+  font-weight: 500;
+  margin-left: 4px;
+  opacity: 0.9;
 }
 
 @keyframes legendFadeIn {
@@ -611,48 +702,6 @@ const tooltipStyle = computed(() => {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   border-bottom: 2px solid #bfbdbd; 
   padding-bottom: 14px;
-}
-
-.legend-items-horizontal {
-  display: flex;
-  gap: 0;
-  align-items: stretch;
-  justify-content: center;
-  border-radius: 4px;
-  overflow: hidden;
-  border: 0px solid rgba(0,0,0,0.1);
-  height: 30px;
-  width: 360px;
-}
-
-.legend-item-horizontal {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  font-size: 8px;
-  color: #333;
-  flex: 1;
-  text-align: center;
-}
-
-.legend-color-horizontal {
-  width: 100%;
-  height: 100%;
-  border: none;
-  padding-bottom: 10px;
-}
-
-.legend-item-horizontal:first-child .legend-color-horizontal {
-  border-radius: 4px 0 0 4px;
-}
-
-.legend-item-horizontal:last-child .legend-color-horizontal {
-  border-radius: 0 4px 4px 0;
-}
-
-.legend-item-horizontal span {
-  font-size: 7px;
-  line-height: 1.2;
 }
 
 .mexico-map {
@@ -719,6 +768,14 @@ const tooltipStyle = computed(() => {
 @media (max-width: 768px) {
   .color-legend {
     min-width: 140px;
+  }
+  
+  .legend-items-horizontal {
+    width: 300px;
+  }
+  
+  .legend-selected-state {
+    width: 300px;
   }
   
   .map-info-card {
