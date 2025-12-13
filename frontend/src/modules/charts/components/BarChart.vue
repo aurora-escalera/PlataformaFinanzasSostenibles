@@ -470,7 +470,7 @@ watch(() => props.data, () => { nextTick(() => updateBarsContainerHeight()) }, {
 /* ✅ Posición */
 .kpi-position {
   font-size: 12px;
-  font-weight: 400;
+  font-weight: 600;
   margin-top: 1px;
 }
 
