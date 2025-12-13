@@ -1,4 +1,4 @@
-<!-- HorizontalRankingChart.vue - Con colores del mapa (6 categorías) -->
+<!-- HorizontalRankingChart.vue - Con colores dinámicos por variable -->
 <template>
   <div class="horizontal-bar-chart" :style="{ width: width, height: height }">
     <!-- Título -->
@@ -84,8 +84,8 @@
           <div class="tooltip-color" :style="{ backgroundColor: tooltip.color }"></div>
           <div class="tooltip-info">
             <div class="tooltip-label">{{ tooltip.label }}</div>
-            <div class="tooltip-value">IFS: {{ formatValue(tooltip.value) }}</div>
-            <div class="tooltip-classification">{{ getIFSSClassification(tooltip.value) }}</div>
+            <div class="tooltip-value">{{ currentVariableKey || 'IFSS' }}: {{ formatValue(tooltip.value) }}</div>
+            <div class="tooltip-classification">{{ tooltip.classification }}</div>
           </div>
         </div>
       </div>
@@ -107,50 +107,155 @@ const props = defineProps({
   showAllBars: { type: Boolean, default: false },
   initialBarsCount: { type: Number, default: 4 },
   valueFormatter: { type: Function, default: null },
-  selectedState: { type: String, default: null }
+  selectedState: { type: String, default: null },
+  // ✅ NUEVO: Variable seleccionada para determinar rangos de color
+  selectedVariable: { 
+    type: [Object, String, null], 
+    default: null 
+  }
 })
 
 const hoveredBarKey = ref(null)
-const tooltip = ref({ visible: false, x: 0, y: 0, label: '', value: '', color: '' })
+const tooltip = ref({ visible: false, x: 0, y: 0, label: '', value: '', color: '', classification: '' })
 const internalVariables = ref([])
 const animatedWidths = ref({})
 
-// ✅ ACTUALIZADO: Obtener color según valor IFSS (6 categorías)
-const getIFSSColorByValue = (value) => {
+// ✅ Obtener la key de la variable actual
+const currentVariableKey = computed(() => {
+  if (!props.selectedVariable) return null
+  if (typeof props.selectedVariable === 'string') return props.selectedVariable
+  return props.selectedVariable?.key || null
+})
+
+// ============================================================================
+// RANGOS DE COLORES POR VARIABLE
+// ============================================================================
+
+/**
+ * IFSS - Índice de Finanzas Sostenibles Subnacional
+ * Muy Bajo <= 0.5 | 0.5 < Bajo < 1.5 | 1.5 <= Medio Bajo < 1.9 | 
+ * 1.9 <= Medio < 2.3 | 2.3 <= Medio Alto < 4 | 4 <= Alto
+ */
+const getIFSSColor = (value) => {
   const numValue = parseFloat(value) || 0
-  
-  // ✅ Nuevos rangos (6 categorías)
-  if (numValue >= 4) return '#6ac952'       // Alto
-  if (numValue >= 2.3) return '#94d351'     // Medio Alto
-  if (numValue >= 1.9) return '#bddc50'     // Medio
-  if (numValue >= 1.5) return '#e6a74c'     // Medio Bajo
-  if (numValue > 0.7) return '#e67849'      // Bajo
-  return '#e52845'                          // Muy Bajo (<= 0.7)
+  if (numValue >= 4) return { color: '#6ac952', label: 'Alto' }
+  if (numValue >= 2.3) return { color: '#94d351', label: 'Medio Alto' }
+  if (numValue >= 1.9) return { color: '#bddc50', label: 'Medio' }
+  if (numValue >= 1.5) return { color: '#e6a74c', label: 'Medio Bajo' }
+  if (numValue > 0.5) return { color: '#e67849', label: 'Bajo' }
+  return { color: '#e52845', label: 'Muy Bajo' }
 }
 
-// ✅ ACTUALIZADO: Obtener clasificación según valor IFSS (6 categorías)
-const getIFSSClassification = (value) => {
+/**
+ * IS - Ingresos Sostenibles (valores en porcentaje, mayor es mejor)
+ * Muy Bajo < 0.11% | 0.11% <= Bajo < 0.51% | 0.51% <= Medio Bajo < 1.25% |
+ * 1.25% <= Medio < 3.29% | 3.29% <= Medio Alto < 10% | 10% <= Alto
+ */
+const getISColor = (value) => {
   const numValue = parseFloat(value) || 0
-  
-  // ✅ Nuevos rangos (6 categorías)
-  if (numValue >= 4) return 'Alto'
-  if (numValue >= 2.3) return 'Medio Alto'
-  if (numValue >= 1.9) return 'Medio'
-  if (numValue >= 1.5) return 'Medio Bajo'
-  if (numValue > 0.7) return 'Bajo'
-  return 'Muy Bajo'
+  if (numValue >= 10) return { color: '#6ac952', label: 'Alto' }
+  if (numValue >= 3.29) return { color: '#94d351', label: 'Medio Alto' }
+  if (numValue >= 1.25) return { color: '#bddc50', label: 'Medio' }
+  if (numValue >= 0.51) return { color: '#e6a74c', label: 'Medio Bajo' }
+  if (numValue >= 0.11) return { color: '#e67849', label: 'Bajo' }
+  return { color: '#e52845', label: 'Muy Bajo' }
 }
+
+/**
+ * IIC - Ingresos Intensivos en Carbono (INVERTIDO: menor es mejor)
+ * 0.49% <= Bajo < 2.1% | 2.1% <= Medio Bajo < 4.32% |
+ * 4.32% <= Medio < 6.19% | 6.19% <= Medio Alto < 11.08% | >= 11.08% Muy Alto
+ */
+const getIICColor = (value) => {
+  const numValue = parseFloat(value) || 0
+  if (numValue < 2.1) return { color: '#6ac952', label: 'Bajo' }
+  if (numValue < 4.32) return { color: '#94d351', label: 'Medio Bajo' }
+  if (numValue < 6.19) return { color: '#bddc50', label: 'Medio' }
+  if (numValue < 11.08) return { color: '#e6a74c', label: 'Medio Alto' }
+  return { color: '#e52845', label: 'Muy Alto' }
+}
+
+/**
+ * PS - Presupuestos Sostenibles (valores en porcentaje, mayor es mejor)
+ * Muy Bajo <= 0.13% | 0.13% <= Bajo < 0.54% | 0.54% <= Medio Bajo < 1.50% |
+ * 1.50% <= Medio < 4.59% | 4.59% <= Alto
+ */
+const getPSColor = (value) => {
+  const numValue = parseFloat(value) || 0
+  if (numValue >= 4.59) return { color: '#6ac952', label: 'Alto' }
+  if (numValue >= 1.50) return { color: '#bddc50', label: 'Medio' }
+  if (numValue >= 0.54) return { color: '#e6a74c', label: 'Medio Bajo' }
+  if (numValue >= 0.13) return { color: '#e67849', label: 'Bajo' }
+  return { color: '#e52845', label: 'Muy Bajo' }
+}
+
+/**
+ * PIC - Presupuestos Intensivos en Carbono (INVERTIDO: menor es mejor)
+ * < 0.11% Muy Bajo (verde alto) | 0.11% <= Bajo < 2.18% | 2.18% <= Medio Bajo < 4.13% |
+ * 4.13% <= Medio < 6.22% | 6.22% <= Medio Alto < 15.53% | >= 15.53% Muy Alto (rojo)
+ */
+const getPICColor = (value) => {
+  const numValue = parseFloat(value) || 0
+  if (numValue < 0.11) return { color: '#6ac952', label: 'Muy Bajo' }
+  if (numValue < 2.18) return { color: '#94d351', label: 'Bajo' }
+  if (numValue < 4.13) return { color: '#f0d648', label: 'Medio Bajo' }
+  if (numValue < 6.22) return { color: '#e6a74c', label: 'Medio' }
+  if (numValue < 15.53) return { color: '#e67849', label: 'Medio Alto' }
+  return { color: '#e52845', label: 'Muy Alto' }
+}
+
+// ============================================================================
+// FUNCIÓN PRINCIPAL: Obtener color según variable seleccionada
+// ============================================================================
+
+const getColorByVariable = (value) => {
+  const variableKey = currentVariableKey.value
+  
+  switch (variableKey) {
+    case 'IS':
+      return getISColor(value)
+    case 'IIC':
+      return getIICColor(value)
+    case 'PS':
+      return getPSColor(value)
+    case 'PIC':
+      return getPICColor(value)
+    case 'IFSS':
+    default:
+      // Por defecto usar rangos de IFSS
+      return getIFSSColor(value)
+  }
+}
+
+// ✅ Función wrapper para obtener solo el color
+const getColorValue = (value) => {
+  return getColorByVariable(value).color
+}
+
+// ✅ Función wrapper para obtener solo la clasificación
+const getClassification = (value) => {
+  return getColorByVariable(value).label
+}
+
+// ============================================================================
+// INICIALIZACIÓN Y LÓGICA DE BARRAS
+// ============================================================================
 
 const initializeVariables = () => {
-  internalVariables.value = props.variables.map(v => ({
-    key: v.key,
-    label: v.label || v.key,
-    value: v.value || 0,
-    colorClass: v.colorClass || 'default',
-    // ✅ Usar color del mapa basado en el valor IFSS
-    color: getIFSSColorByValue(v.value),
-    active: false
-  }))
+  console.log('🎨 [HorizontalRankingChart] Inicializando con variable:', currentVariableKey.value)
+  
+  internalVariables.value = props.variables.map(v => {
+    const colorInfo = getColorByVariable(v.value)
+    return {
+      key: v.key,
+      label: v.label || v.key,
+      value: v.value || 0,
+      colorClass: v.colorClass || 'default',
+      color: colorInfo.color,
+      classification: colorInfo.label,
+      active: false
+    }
+  })
   
   animatedWidths.value = {}
   props.variables.forEach(v => {
@@ -174,6 +279,20 @@ const activateBarsWithAnimation = async () => {
     await new Promise(resolve => setTimeout(resolve, delay))
   }
 }
+
+// ✅ Watch para actualizar colores cuando cambia la variable seleccionada
+watch(() => props.selectedVariable, (newVar, oldVar) => {
+  console.log('🔄 [HorizontalRankingChart] Variable cambió de', oldVar, 'a', newVar)
+  // Recalcular colores para todas las barras
+  internalVariables.value = internalVariables.value.map(v => {
+    const colorInfo = getColorByVariable(v.value)
+    return {
+      ...v,
+      color: colorInfo.color,
+      classification: colorInfo.label
+    }
+  })
+}, { deep: true })
 
 watch(() => props.variables, () => {
   initializeVariables()
@@ -199,15 +318,11 @@ const dynamicBarHeight = computed(() => {
   const count = activeVariables.value.length
   if (count === 0) return '100%'
   
-  // Alturas fijas en píxeles
-  const titleHeight = 30  // Altura del título + margen
-  const xAxisHeight = 36  // Altura del eje X + márgenes
-  const gapSize = 3       // Gap entre barras en px
-  
-  // Total de gaps = cantidad de barras - 1
+  const titleHeight = 30
+  const xAxisHeight = 36
+  const gapSize = 3
   const totalGaps = (count - 1) * gapSize
   
-  // Calcular: (100% - título - eje X - gaps) / número de barras
   return `calc((100% - ${titleHeight}px - ${xAxisHeight}px - ${totalGaps}px) / ${count})`
 })
 
@@ -219,7 +334,7 @@ const maxValue = computed(() => {
 // Calcular ticks del eje X
 const xAxisTicks = computed(() => {
   const max = maxValue.value
-  const step = max / 5 // 5 divisiones
+  const step = max / 5
   
   const ticks = []
   for (let i = 0; i <= 5; i++) {
@@ -251,7 +366,8 @@ const handleMouseEnter = (variable, event) => {
     y: event.clientY,
     label: variable.label,
     value: variable.value,
-    color: variable.color
+    color: variable.color,
+    classification: variable.classification
   }
 }
 
@@ -280,7 +396,7 @@ const formatValue = (value) => {
   if (props.valueFormatter) {
     return props.valueFormatter(value)
   }
-  return typeof value === 'number' ? value.toFixed(1) : value
+  return typeof value === 'number' ? value.toFixed(2) : value
 }
 </script>
 
@@ -404,7 +520,7 @@ const formatValue = (value) => {
 
 .bar-horizontal {
   height: 100%;
-  transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease;
   position: relative;
   border-radius: 4px;
   display: flex;
