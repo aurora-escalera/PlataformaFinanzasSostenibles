@@ -1,122 +1,59 @@
-<!-- src/modules/other/components/DataToggleComponent.vue -->
+<!-- src/App.vue -->
 <template>
-  <div class="data-toggle-container">
-    <!-- Toggle de Datos federales/subnacionales -->
-    <div class="toggle-group">
-      <button 
-        :class="['toggle-btn', { 'active': dataType === 'federal' }]"
-        @click="setDataType('federal')"
-      >
-        Datos federales
-      </button>
-      <button 
-        :class="['toggle-btn', { 'active': dataType === 'subnacional' }]"
-        @click="setDataType('subnacional')"
-      >
-        Datos subnacionales
-      </button>
-    </div>
+  <div id="app">
+    <!-- Barra de título con botones de acción -->
+    <TitleBarComponent 
+      title="Plataforma del Índice de Finanzas Sostenibles Subnacional (IFSS)"
+      lastUpdate="24 de septiembre de 2025"
+    />
 
-    <!-- Toggle de Moneda -->
-    <div class="toggle-group currency-group">
-      <button 
-        :class="['toggle-btn currency-btn', { 'active': currency === 'usd' }]"
-        @click="setCurrency('usd')"
-      >
-        USD
-      </button>
-      <button 
-        :class="['toggle-btn currency-btn', { 'active': currency === 'mxn' }]"
-        @click="setCurrency('mxn')"
-      >
-        MXN
-      </button>
-    </div>
+    <!-- Barra de toggle Vista/Moneda -->
+    <DataViewToggleBar 
+      v-model="currentDataView"
+      :currency="currentCurrency"
+    />
+
+    <!-- Contenido principal -->
+    <main class="app-main">
+      <router-view />
+    </main>
   </div>
 </template>
 
 <script setup>
-import { useDataToggle } from '@/composables/useDataToggle'
+import { ref } from 'vue'
+import HeaderComponent from '@modules/other/components/HeaderComponent.vue'
+import TitleBarComponent from '@modules/other/components/TitleBarComponent.vue'
+import DataViewToggleBar from '@modules/other/components/DataViewToggleBar.vue'
 
-// Usar el composable
-const {
-  dataType,
-  currency,
-  setDataType,
-  setCurrency
-} = useDataToggle()
+// Estado del toggle de vista
+const currentDataView = ref('subnacional')
+
+// Estado de la moneda (puede venir de una API o configuración)
+const currentCurrency = ref('MXN')
 </script>
 
-<style scoped>
-.data-toggle-container {
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: #f8f9fa;
+  line-height: 1.6;
+}
+
+#app {
+  min-height: 100vh;
   display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.5rem 1rem;
+  flex-direction: column;
 }
 
-.toggle-group {
-  display: flex;
-  background: #e8e8e8;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.currency-group {
-  background: transparent;
-}
-
-.toggle-btn {
-  padding: 0.5rem 1rem;
-  border: none;
-  background: transparent;
-  color: #666;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-  font-weight: 500;
-}
-
-.toggle-btn:hover {
-  color: #333;
-}
-
-.toggle-btn.active {
-  background: #5a5a5a;
-  color: white;
-}
-
-.currency-btn {
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
-  padding: 0.4rem 0.8rem;
-  margin-left: 4px;
-}
-
-.currency-btn:first-child {
-  margin-left: 0;
-}
-
-.currency-btn.active {
-  background: #7cb342;
-  border-color: #7cb342;
-  color: white;
-}
-
-@media (max-width: 768px) {
-  .data-toggle-container {
-    flex-direction: column;
-    gap: 0.5rem;
-    align-items: stretch;
-  }
-
-  .toggle-group {
-    width: 100%;
-  }
-
-  .toggle-btn {
-    flex: 1;
-  }
+.app-main {
+  flex: 1;
+  padding: 0;
 }
 </style>

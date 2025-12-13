@@ -44,6 +44,7 @@
         :class="{ 'no-gap': isRetractableExpanded }"
         @click="handleMapContainerClick"
       >
+     
           <!-- Componente del Mapa SVG -->
           <MexicoMapSVG
             :geoData="geoData"
@@ -64,7 +65,6 @@
             @navigate-federal="handleDatosFederalesClick"
             @view-change="handleViewChange"
           />
-          
           <!-- Overlay sobre SOLO el mapa - Usa areAllFiltersOnTodas o showRegionalCharts -->
           <transition name="overlay-fade">
             <div 
@@ -80,6 +80,7 @@
               </div>
             </div>
           </transition>
+          
           
         <!-- COMPONENTE: Panel Cualitativo - Escucha eventos de años y cierre -->
         <QualitativePanel
@@ -196,6 +197,9 @@
         </div>
       </div>
 
+      <DefaultInfoCard 
+        v-if="isDefaultState && !isRetractableExpanded"
+      />
       <!-- Panel de Charts Component - Abajo -->
       <!-- Solo mostrar cuando NO está expandido el panel retráctil -->
       <div 
@@ -262,6 +266,7 @@ import { useStateRanking } from '@/composables/useStateRanking'
 import { useStorageData } from '@/dataConection/useStorageData'
 import { getMapping, getSheetName, setActiveYear } from '@/dataConection/storageConfig'
 import { useStackedAreaData } from '@/composables/useStackedArea'
+import DefaultInfoCard from '@/modules/maps/components/DefaultInfoCard.vue'
 
 const props = defineProps({
   title: {
@@ -526,6 +531,13 @@ const showRegionalCharts = computed(() => {
 const showRankingPanel = computed(() => {
   if (shouldHidePanel.value) return false
   return selectedState.value || showHistoricalCard.value || showRegionalCharts.value
+})
+
+//Card de info
+const isDefaultState = computed(() => {
+  return selectedEntity.value === '' && 
+         selectedVariable.value === null &&
+         selectedYear.value !== null
 })
 
 // ============================================================================
