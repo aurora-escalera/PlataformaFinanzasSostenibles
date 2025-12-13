@@ -125,8 +125,8 @@
               <div class="monetary-value-row">
                 <span class="monetary-currency">$</span>
                 <span class="monetary-amount">{{ formattedMonetaryValue }}</span>
-                <span class="monetary-unit">{{ monetaryUnit }}</span>
               </div>
+              <div class="monetary-unit">{{ monetaryUnitText }}</div>
             </div>
             
             <!-- Posición -->
@@ -296,15 +296,15 @@ const formattedMonetaryValue = computed(() => {
   return value.toFixed(2)
 })
 
-// Computed - Unidad monetaria
-const monetaryUnit = computed(() => {
+// ✅ NUEVO: Texto completo de unidad monetaria en dólares
+const monetaryUnitText = computed(() => {
   const value = metricValue.value
   
-  if (value >= 1e12) return 'Billones'
-  if (value >= 1e9) return 'MMP'
-  if (value >= 1e6) return 'MDP'
-  if (value >= 1e3) return 'Miles'
-  return 'Pesos'
+  if (value >= 1e12) return 'Billones de dólares (USD)'
+  if (value >= 1e9) return 'Billones de dólares (USD)'
+  if (value >= 1e6) return 'Millones de dólares (USD)'
+  if (value >= 1e3) return 'Miles de dólares (USD)'
+  return 'Dólares (USD)'
 })
 
 // Computed - Progreso del gauge (solo IFS)
@@ -730,11 +730,12 @@ onMounted(() => {
   color: #1e293b;
 }
 
+/* ✅ NUEVO: Unidad monetaria en línea separada */
 .monetary-unit {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
   color: #64748b;
-  margin-left: 4px;
+  margin-top: 8px;
 }
 
 /* Position Card - Monetario */

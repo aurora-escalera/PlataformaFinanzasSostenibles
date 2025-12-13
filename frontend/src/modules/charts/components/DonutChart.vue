@@ -550,7 +550,7 @@ function formatValue(value) {
 }
 
 .center-value {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 700;
   transition: all 0.3s ease;
 }
