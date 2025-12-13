@@ -206,9 +206,9 @@ const processedSectors = computed(() => {
   return props.sectors.map(sector => {
     let shortLabel = sector.label
     
-    if (sector.label === 'Movilidad Sustentable') shortLabel = 'Movilidad'
-    if (sector.label === 'Protección Ambiental') shortLabel = 'Protección'
-    if (sector.label === 'Desastres Naturales') shortLabel = 'Desastres'
+    if (sector.label === 'Movilidad Sustentable') shortLabel = 'Movilidad Sustentable'
+    if (sector.label === 'Protección Ambiental') shortLabel = 'Protección Ambiental'
+    if (sector.label === 'Desastres Naturales') shortLabel = 'Desastres Naturales'
     
     return {
       ...sector,
@@ -550,7 +550,7 @@ function formatValue(value) {
 }
 
 .center-value {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   transition: all 0.3s ease;
 }
