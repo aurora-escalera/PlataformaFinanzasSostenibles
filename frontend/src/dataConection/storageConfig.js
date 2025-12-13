@@ -43,7 +43,8 @@ export const storageConfig = {
         sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID,
         files: {
           chartsPresupuestosRegional: 'Hoja 1', 
-          chartsIngresosRegional: 'Hoja 1'  
+          chartsIngresosRegional: 'Hoja 1',
+          cardIFSRegional: 'Hoja 1'
         }
       },
       // Configuración modular para cada componente ambiental
@@ -247,7 +248,8 @@ export const storageConfig = {
       financiamientos: '2024',
       programas: '2024',
       chartsPresupuestosRegional: 'Hoja 1',
-      chartsIngresosRegional: 'Hoja 1'
+      chartsIngresosRegional: 'Hoja 1',
+      cardIFS: 'Hoja 1'
     }
   },
   
@@ -1106,7 +1108,7 @@ export const storageConfig = {
       variableColumns: [
         {
           key: 'ingresos_total_reg',
-          column: 'IT',
+          column: 'IT ($)',
           label: 'Ingresos Total',
           colorClass: 'gray',
           color: '#9ca3af',
@@ -1173,6 +1175,75 @@ export const storageConfig = {
           label: 'Combustible',
           colorClass: 'light-red',
           color: '#ef5350'
+        }
+      ]
+    },
+    cardIFSRegional: {
+      stateColumn: 'Año',
+      variableColumns: [
+        {
+          key: 'ifs_val_reg',
+          column: 'IFS',
+          label: 'IFS Regional',
+          colorClass: 'gray',
+          color: '#9ca3af',
+          order: 1
+        },
+        {
+          key: 'ifs_pos_reg',
+          column: 'POS_IFS',
+          label: 'Posicion IFS Regional',
+          colorClass: 'green',
+          color: '#7cb342',
+          order: 2
+        },
+        {
+          key: 'is_val_reg',
+          column: 'IS ($)',
+          label: 'IS Regional',
+          colorClass: 'gray',
+          color: '#9ca3af',
+          order: 1
+        },
+        {
+          key: 'is_pos_reg',
+          column: 'POS_IS',
+          label: 'Posicion IS Regional',
+          colorClass: 'green',
+          color: '#7cb342',
+          order: 2
+        },
+        {
+          key: 'iic_val_reg',
+          column: 'IIC ($)',
+          label: 'IIC Regional',
+          colorClass: 'gray',
+          color: '#9ca3af',
+          order: 1
+        },
+        {
+          key: 'icc_pos_reg',
+          column: 'POS_IIC',
+          label: 'Posicion IIC Regional',
+          colorClass: 'green',
+          color: '#7cb342',
+          order: 2
+        },
+        {
+          key: 'pic_val_reg',
+          column: 'PIC ($)',
+          label: 'PIC Regional',
+          colorClass: 'gray',
+          color: '#9ca3af',
+          order: 1
+        },
+        {
+          key: 'pic_pos_reg',
+          column: 'POS_PIC',
+          label: 'Posicion PIC Regional',
+          colorClass: 'green',
+          color: '#7cb342',
+          order: 2
         }
       ]
     },

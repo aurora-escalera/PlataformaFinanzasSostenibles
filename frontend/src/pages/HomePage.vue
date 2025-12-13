@@ -153,6 +153,13 @@
                 </div>
               </div>
               
+              <!-- ========== IFS REGIONAL CARD - Cuando showRegionalCharts ========== -->
+              <IFSRegionalCard 
+                v-else-if="showRegionalCharts"
+                :selectedYear="selectedYear"
+                :selectedVariable="selectedVariable"
+              />
+              
               <!-- ========== RANKING CHART ========== -->
               <!-- Loading State para Ranking -->
               <div v-else-if="rankingLoading" class="ranking-loading">
@@ -213,12 +220,13 @@
             @filter-change="handleFilterChange"
           />
           
-          <!-- ✅ NUEVO: Mostrar RegionalChartsComponent cuando Entidad=Todas y Año=específico -->
+          <!-- ✅ RegionalChartsComponent - Ahora escucha @years-loaded -->
           <RegionalChartsComponent 
             v-else-if="showRegionalCharts"
             :selectedYear="selectedYear"
             :selectedVariable="selectedVariable"
             class="regional-charts-spacing"
+            @years-loaded="handleRegionalYearsLoaded"
           />
           
           <!-- Mostrar ChartsComponent cuando hay un estado seleccionado -->
@@ -242,7 +250,8 @@ import { useCharts } from '@/composables/useCharts'
 import { useRouter } from 'vue-router'
 import MexicoMapSVG from '../modules/maps/components/MexicoMapSVG.vue'
 import ChartsComponent from '../modules/charts/components/ChartsComponent.vue'
-import RegionalChartsComponent from '../modules/charts/components/RegionalChartsComponent.vue'  // ✅ NUEVO
+import RegionalChartsComponent from '../modules/charts/components/RegionalChartsComponent.vue'
+import IFSRegionalCard from '../modules/charts/components/IFSRegionalCard.vue'
 import RetractableFilterBar from '@/modules/maps/components/RetractableFilterBar.vue'
 import HorizontalRankingChart from '../modules/charts/components/HorizontalRankingChart.vue'
 import HistoricalCard from '../modules/object/component/HistoricalCard.vue'
@@ -344,6 +353,9 @@ const availableYears = ref([])
 
 // Guardar años iniciales de cuantitativos
 const initialYears = ref([])
+
+// ✅ NUEVO: Guardar años regionales cuando se cargan
+const regionalYears = ref([])
 
 // Guardar estado inicial de filtros
 const initialFilters = ref({
@@ -490,7 +502,7 @@ const showHistoricalCard = computed(() => {
 })
 
 /**
- * ✅ NUEVO: Mostrar RegionalChartsComponent cuando:
+ * ✅ Mostrar RegionalChartsComponent cuando:
  * - No hay filtros en blanco
  * - No hay estado seleccionado en el mapa
  * - Entidad es "Todas las entidades" (null)
@@ -581,11 +593,13 @@ const handleEntityChange = (entity) => {
   
   if (entity === '') {
     resetSelection()
+    // ✅ Restaurar años iniciales cuando se selecciona "-"
+    restoreInitialYears()
     return
   }
   
   if (entity === null) {
-    // "Todas las entidades" seleccionado
+    // "Todas las entidades" seleccionado - mantener años actuales (podrían ser regionales)
     resetSelection()
     if (!isRetractableExpanded.value && !areAllFiltersOnTodas.value) {
       if (selectedVariable.value && selectedVariable.value !== '' && selectedVariable.value !== null) {
@@ -597,7 +611,8 @@ const handleEntityChange = (entity) => {
     return
   }
   
-  // Entidad específica seleccionada
+  // Entidad específica seleccionada - restaurar años iniciales
+  restoreInitialYears()
   handleStateClick(entity)
   console.log('🗺️ [HomePage] Mapa actualizado con:', entity)
 }
@@ -650,6 +665,9 @@ const handleStateClickWithEmit = async (stateName) => {
     selectedEntity.value = ''
     emit('region-selected', null)
     
+    // ✅ Restaurar años iniciales cuando se deselecciona estado
+    restoreInitialYears()
+    
     if (!isRetractableExpanded.value) {
       if (selectedVariable.value && selectedVariable.value !== '' && selectedVariable.value !== null) {
         updateRankingByVariable(selectedVariable.value)
@@ -662,6 +680,9 @@ const handleStateClickWithEmit = async (stateName) => {
   
   handleStateClick(stateName)
   selectedEntity.value = stateName
+  
+  // ✅ Restaurar años iniciales cuando se selecciona un estado específico
+  restoreInitialYears()
   
   await nextTick()
   
@@ -730,6 +751,52 @@ const handleYearsLoaded = async (years) => {
   }
 }
 
+// ✅ NUEVO: Handler para años cargados desde RegionalChartsComponent
+const handleRegionalYearsLoaded = async (years) => {
+  console.log('📅 [HomePage] Años recibidos de RegionalChartsComponent:', years)
+  
+  if (years && years.length > 0) {
+    // Guardar los años regionales
+    regionalYears.value = [...years]
+    
+    // Actualizar los años disponibles en el filtro
+    availableYears.value = years
+    
+    // Si el año actual no está en los años regionales, seleccionar el primero
+    if (!years.includes(selectedYear.value)) {
+      const firstYear = years[0]
+      selectedYear.value = firstYear
+      setActiveYear(firstYear)
+      console.log('📅 [Regional] Año actualizado al primero disponible:', firstYear)
+    }
+    
+    // Forzar re-render del filtro
+    filterBarKey.value++
+    await nextTick()
+    
+    console.log('✅ [HomePage] Filtro actualizado con años regionales:', years)
+  }
+}
+
+// ✅ NUEVO: Función para restaurar años iniciales
+const restoreInitialYears = async () => {
+  if (initialYears.value.length > 0) {
+    console.log('🔄 [HomePage] Restaurando años iniciales:', initialYears.value)
+    availableYears.value = [...initialYears.value]
+    
+    // Si el año actual no está en los años iniciales, seleccionar el primero
+    if (!initialYears.value.includes(selectedYear.value)) {
+      const firstYear = initialYears.value[0]
+      selectedYear.value = firstYear
+      setActiveYear(firstYear)
+      console.log('📅 Año restaurado al primero de cuantitativos:', firstYear)
+    }
+    
+    filterBarKey.value++
+    await nextTick()
+  }
+}
+
 const handlePanelClosed = async () => {
   console.log('🔄 [HomePage] Panel cualitativo cerrado, reseteando filtros a DEFAULT...')
   
@@ -779,6 +846,9 @@ const handleOverlayClick = async () => {
   // ✅ Cambiar a DEFAULT ('', primerAño, null) para salir de "Todas..." o vista regional
   selectedEntity.value = ''
   selectedVariable.value = null
+  
+  // ✅ Restaurar años iniciales
+  restoreInitialYears()
   
   if (availableYears.value.length > 0) {
     const firstYear = availableYears.value[0]
@@ -837,6 +907,20 @@ watch(areAllFiltersOnTodas, async (newValue, oldValue) => {
   if (newValue && !oldValue) {
     console.log('🌎 [HomePage] Filtros en "Todas...", cargando LinearChart')
     await loadIFSSData()
+  }
+})
+
+/**
+ * ✅ NUEVO: Watch para detectar cuando se muestra/oculta RegionalChartsComponent
+ * y restaurar años cuando se oculta
+ */
+watch(showRegionalCharts, async (newValue, oldValue) => {
+  console.log('👀 [showRegionalCharts] cambió de', oldValue, 'a', newValue)
+  
+  if (!newValue && oldValue) {
+    // Se ocultó el componente regional, restaurar años iniciales
+    console.log('🔄 [HomePage] RegionalCharts se ocultó, restaurando años iniciales...')
+    await restoreInitialYears()
   }
 })
 
