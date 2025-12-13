@@ -52,6 +52,34 @@
             </p>
           </div>
         </div>
+        
+        <!-- Sección 3: ¿Qué es el IFS e IFSS? -->
+        <div class="section-row">
+          <div class="icon-wrapper">
+            <div class="icon-box icon-chart">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </div>
+            <div class="timeline-connector"></div>
+          </div>
+          <div class="text-section">
+            <h4 class="section-title">¿Qué es el IFS y el IFSS?</h4>
+            <p class="section-text">
+              El <span class="highlight-primary">Índice de Finanzas Sostenibles (IFS)</span> mide el grado de sostenibilidad 
+              fiscal de México a nivel nacional, considerando la proporción de ingresos y egresos destinados a actividades 
+              ambientalmente sostenibles versus aquellas intensivas en carbono. Este índice evalúa cuatro componentes clave: 
+              Ingresos Sostenibles (IS), Presupuestos Sostenibles (PS), Ingresos Intensivos en Carbono (IIC) y Presupuestos 
+              Intensivos en Carbono (PIC).
+            </p>
+            <p class="section-text">
+              El <span class="highlight-primary">Índice de Finanzas Sostenibles Subnacional (IFSS)</span> aplica la misma 
+              metodología a nivel estatal, permitiendo analizar y comparar el desempeño de las 32 entidades federativas de 
+              México en materia de sostenibilidad fiscal. Esto facilita la identificación de buenas prácticas y áreas de 
+              oportunidad en cada estado para avanzar hacia una transición económica baja en carbono.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -139,10 +167,18 @@
   color: #d97706;
 }
 
+.icon-chart {
+  background: #dcfce7;
+}
+
+.icon-chart svg {
+  color: #16a34a;
+}
+
 .timeline-connector {
   width: 3px;
   flex: 1;
-  min-height: 80px;
+  min-height: 100px;
   background: #e2e8f0;
   margin-top: 8px;
 }
@@ -154,6 +190,10 @@
   flex-direction: column;
   gap: 16px;
   padding-bottom: 32px;
+}
+
+.text-section p + p {
+  margin-top: 4px;
 }
 
 .section-row:last-child .text-section {
