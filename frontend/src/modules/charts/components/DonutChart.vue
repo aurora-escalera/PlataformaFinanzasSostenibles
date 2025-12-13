@@ -24,6 +24,8 @@
           @click="toggleSector(index)"
         />
       </div>
+      <!-- ✅ Leyenda de moneda dinámica -->
+      <div class="currency-legend">{{ currencyLegend }}</div>
     </div>
     
     <!-- Área principal - Dona + Badge -->
@@ -35,22 +37,42 @@
           <circle cx="100" cy="100" r="72" fill="none" stroke="#e2e8f0" stroke-width="25"/>
           
           <!-- Sectores -->
-          <path 
-            v-for="(sector, index) in computedSectorPaths" 
-            :key="index"
-            class="donut-ring"
-            :class="{ 
-              dimmed: !activeSectors[index] || (hoveredIndex !== null && hoveredIndex !== index),
-              highlighted: hoveredIndex === index 
-            }"
-            :d="sector.path"
-            fill="none"
-            :stroke="sector.color"
-            stroke-width="25"
-            @mouseenter="onSectorHover(index)"
-            @mouseleave="onSectorLeave"
-            @click="toggleSector(index)"
-          />
+          <template v-for="(sector, index) in computedSectorPaths" :key="index">
+            <!-- Caso especial: sector es 100% - usar círculo completo -->
+            <circle
+              v-if="sector.isFullCircle"
+              class="donut-ring"
+              :class="{ 
+                dimmed: !activeSectors[index] || (hoveredIndex !== null && hoveredIndex !== index),
+                highlighted: hoveredIndex === index 
+              }"
+              cx="100"
+              cy="100"
+              r="72"
+              fill="none"
+              :stroke="sector.color"
+              stroke-width="25"
+              @mouseenter="onSectorHover(index)"
+              @mouseleave="onSectorLeave"
+              @click="toggleSector(index)"
+            />
+            <!-- Caso normal: usar path de arco -->
+            <path 
+              v-else
+              class="donut-ring"
+              :class="{ 
+                dimmed: !activeSectors[index] || (hoveredIndex !== null && hoveredIndex !== index),
+                highlighted: hoveredIndex === index 
+              }"
+              :d="sector.path"
+              fill="none"
+              :stroke="sector.color"
+              stroke-width="25"
+              @mouseenter="onSectorHover(index)"
+              @mouseleave="onSectorLeave"
+              @click="toggleSector(index)"
+            />
+          </template>
           
           <!-- Porcentajes en el anillo -->
           <text 
@@ -63,9 +85,9 @@
             text-anchor="middle"
             dominant-baseline="middle"
             :transform="`rotate(${sector.textRotation}, ${sector.percentX}, ${sector.percentY})`"
-            v-show="sector.displayPercent >= 5"
+            v-show="parseFloat(sector.displayPercent) >= 5"
           >
-            {{ sector.displayPercent }}%
+            {{ sector.displayPercent }} %
           </text>
         </svg>
         
@@ -116,7 +138,7 @@
         <div class="data-item-right">
           <span class="data-item-value">{{ formatValue(sector.value) }}</span>
           <span class="data-item-percent" :style="{ background: sector.color }">
-            {{ getPercentForSector(index) }}%
+            {{ getPercentForSector(index) }} %
           </span>
         </div>
       </div>
@@ -151,6 +173,10 @@ const props = defineProps({
   sectors: {
     type: Array,
     default: () => []
+  },
+  currency: {
+    type: String,
+    default: 'MXN' // 'USD' para Regional, 'MXN' para Estados
   }
 })
 
@@ -203,11 +229,19 @@ const totalAllSectors = computed(() => {
   return props.sectors.reduce((acc, sector) => acc + (sector.value || 0), 0)
 })
 
+// ✅ Leyenda de moneda dinámica
+const currencyLegend = computed(() => {
+  if (props.currency === 'USD') {
+    return '* Cifras en dólares estadounidenses (USD)'
+  }
+  return '* Cifras en pesos mexicanos (MXN)'
+})
+
 // Obtener porcentaje para un sector específico
 function getPercentForSector(index) {
-  if (!props.sectors[index] || totalAllSectors.value === 0) return 0
+  if (!props.sectors[index] || totalAllSectors.value === 0) return '0.00'
   const percent = (props.sectors[index].value / totalAllSectors.value) * 100
-  return Math.round(percent * 10) / 10
+  return percent.toFixed(2)
 }
 
 // Título dinámico a mostrar en el indicador
@@ -254,7 +288,7 @@ const hasActiveFilters = computed(() => {
   return activeCount > 0 && activeCount < props.sectors.length
 })
 
-// Calcular paths SVG de los sectores con sus posiciones de porcentaje
+// ✅ CORREGIDO: Calcular paths SVG de los sectores con manejo especial para 100%
 const computedSectorPaths = computed(() => {
   if (!props.sectors || props.sectors.length === 0) return []
   
@@ -272,6 +306,9 @@ const computedSectorPaths = computed(() => {
     const startAngle = currentAngle
     const endAngle = currentAngle + angleSpan
     
+    // ✅ NUEVO: Detectar si es un círculo completo (100% o muy cercano)
+    const isFullCircle = angleSpan >= 359.9
+    
     const startRad = (startAngle * Math.PI) / 180
     const endRad = (endAngle * Math.PI) / 180
     
@@ -282,22 +319,33 @@ const computedSectorPaths = computed(() => {
     
     const largeArc = angleSpan > 180 ? 1 : 0
     
+    // Calcular posición del porcentaje (en el medio del arco)
     const midAngle = startAngle + angleSpan / 2
     const midRad = (midAngle * Math.PI) / 180
     const percentX = cx + r * Math.cos(midRad)
     const percentY = cy + r * Math.sin(midRad)
     
-    const textRotation = midAngle + 90
+    // Para 100%, posicionar el texto arriba del centro
+    const textRotation = isFullCircle ? 0 : midAngle + 90
+    const finalPercentX = isFullCircle ? cx : percentX
+    const finalPercentY = isFullCircle ? cy - r : percentY
     
     currentAngle = endAngle
     
+    // ✅ NUEVO: Para círculo completo, no necesitamos path (usaremos <circle>)
+    let path = ''
+    if (!isFullCircle && angleSpan > 0) {
+      path = `M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2}`
+    }
+    
     return {
       ...sector,
-      path: angleSpan > 0 ? `M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2}` : '',
-      percentX,
-      percentY,
+      path,
+      isFullCircle, // ✅ NUEVO: Flag para renderizar círculo en lugar de path
+      percentX: finalPercentX,
+      percentY: finalPercentY,
       textRotation,
-      displayPercent: Math.round(percent * 10) / 10
+      displayPercent: percent.toFixed(2)
     }
   })
 })
@@ -322,19 +370,23 @@ function onSectorLeave() {
 }
 
 function formatValue(value) {
-  if (!value || value === 0) return '$0'
+  if (!value || value === 0) return '$0.00'
   
   const millions = value / 1000000
   
   if (millions >= 1000) {
-    return '$' + (millions / 1000).toFixed(1) + 'B'
+    // Billones (miles de millones)
+    return '$' + (millions / 1000).toFixed(2) + ' B'
   } else if (millions >= 1) {
-    return '$' + Math.round(millions) + 'M'
-  } else if (millions >= 0.1) {
-    return '$' + millions.toFixed(1) + 'M'
+    // Millones
+    return '$' + millions.toFixed(2) + ' M'
+  } else if (millions >= 0.01) {
+    // Millones pequeños
+    return '$' + millions.toFixed(2) + ' M'
   } else {
+    // Miles
     const thousands = value / 1000
-    return '$' + Math.round(thousands) + 'K'
+    return '$' + thousands.toFixed(2) + ' K'
   }
 }
 </script>
@@ -347,13 +399,13 @@ function formatValue(value) {
 .donut-item-vertical {
   flex: 1;
   border-radius: 0 0 12px 12px;
-  padding: 14px; /* ✅ Aumentado de 12px */
+  padding: 14px;
   display: flex;
   flex-direction: column;
   height: 100%;
   min-height: 0;
   background-color: white;
-  gap: 12px; /* ✅ Aumentado de 10px */
+  gap: 12px;
 }
 
 /* ============================================
@@ -367,11 +419,11 @@ function formatValue(value) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px; /* ✅ Aumentado de 6px */
+  margin-bottom: 8px;
 }
 
 .distribution-label {
-  font-size: 11px; /* ✅ Aumentado de 10px */
+  font-size: 11px;
   color: #64748b;
   font-weight: 500;
   text-transform: uppercase;
@@ -379,7 +431,7 @@ function formatValue(value) {
 }
 
 .distribution-value {
-  font-size: 15px; /* ✅ Aumentado de 13px */
+  font-size: 15px;
   font-weight: 700;
 }
 
@@ -393,7 +445,7 @@ function formatValue(value) {
 
 .distribution-bar {
   display: flex;
-  height: 14px; /* ✅ Aumentado de 12px */
+  height: 14px;
   border-radius: 7px;
   overflow: hidden;
   background: #e2e8f0;
@@ -417,6 +469,15 @@ function formatValue(value) {
   filter: brightness(1.15);
 }
 
+/* ✅ Leyenda de moneda */
+.currency-legend {
+  font-size: 12px;
+  font-style: italic;
+  color: #94a3b8;
+  margin-top: 4px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
 /* ============================================
    Área principal - Dona + Badge
    ============================================ */
@@ -425,16 +486,16 @@ function formatValue(value) {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 24px; /* ✅ Aumentado de 20px */
-  min-height: 180px; /* ✅ Aumentado */
-  padding: 10px 0; /* ✅ Aumentado de 8px */
+  gap: 24px;
+  min-height: 180px;
+  padding: 10px 0;
 }
 
 /* Dona SVG - TAMAÑO AUMENTADO */
 .donut-svg-container {
   position: relative;
-  width: 170px; /* ✅ Aumentado de 140px */
-  height: 170px; /* ✅ Aumentado de 140px */
+  width: 170px;
+  height: 170px;
   flex-shrink: 0;
 }
 
@@ -464,7 +525,7 @@ function formatValue(value) {
 
 /* Porcentajes dentro del anillo */
 .sector-percent {
-  font-size: 11px; /* ✅ Aumentado de 10px */
+  font-size: 11px;
   font-weight: 600;
   fill: white;
   stroke: #1e3a5f;
@@ -489,7 +550,7 @@ function formatValue(value) {
 }
 
 .center-value {
-  font-size: 22px; /* ✅ Aumentado de 18px */
+  font-size: 18px;
   font-weight: 700;
   transition: all 0.3s ease;
 }
@@ -506,11 +567,11 @@ function formatValue(value) {
    Badge indicador - TAMAÑO AUMENTADO
    ============================================ */
 .badge-indicator {
-  padding: 16px 14px; /* ✅ Aumentado de 14px 12px */
-  border-radius: 14px; /* ✅ Aumentado de 12px */
+  padding: 16px 14px;
+  border-radius: 14px;
   text-align: center;
   flex-shrink: 0;
-  min-width: 80px; /* ✅ Añadido mínimo */
+  min-width: 80px;
 }
 
 .badge-indicator.green {
@@ -524,13 +585,13 @@ function formatValue(value) {
 }
 
 .badge-icon-circle {
-  width: 38px; /* ✅ Aumentado de 32px */
-  height: 38px; /* ✅ Aumentado de 32px */
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 10px; /* ✅ Aumentado de 8px */
+  margin: 0 auto 10px;
 }
 
 .badge-icon-circle.green {
@@ -544,12 +605,12 @@ function formatValue(value) {
 }
 
 .badge-icon-circle svg {
-  width: 20px; /* ✅ Aumentado de 16px */
-  height: 20px; /* ✅ Aumentado de 16px */
+  width: 20px;
+  height: 20px;
 }
 
 .badge-text {
-  font-size: 8px; /* ✅ Aumentado de 7px */
+  font-size: 8px;
   font-weight: 700;
   text-transform: uppercase;
   line-height: 1.3;
@@ -569,8 +630,8 @@ function formatValue(value) {
    ============================================ */
 .data-list-section {
   background: #f8fafc;
-  border-radius: 12px; /* ✅ Aumentado de 10px */
-  padding: 10px; /* ✅ Aumentado de 8px */
+  border-radius: 12px;
+  padding: 10px;
   border: 1px solid #e2e8f0;
   flex-shrink: 0;
 }
@@ -579,8 +640,8 @@ function formatValue(value) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 12px; /* ✅ Aumentado de 8px 10px */
-  border-radius: 8px; /* ✅ Aumentado de 6px */
+  padding: 10px 12px;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -601,18 +662,18 @@ function formatValue(value) {
 .data-item-left {
   display: flex;
   align-items: center;
-  gap: 10px; /* ✅ Aumentado de 8px */
+  gap: 10px;
 }
 
 .data-color-dot {
-  width: 14px; /* ✅ Aumentado de 12px */
-  height: 14px; /* ✅ Aumentado de 12px */
+  width: 14px;
+  height: 14px;
   border-radius: 4px;
   flex-shrink: 0;
 }
 
 .data-item-label {
-  font-size: 12px; /* ✅ Aumentado de 11px */
+  font-size: 12px;
   font-weight: 500;
   color: #374151;
 }
@@ -620,22 +681,22 @@ function formatValue(value) {
 .data-item-right {
   display: flex;
   align-items: center;
-  gap: 14px; /* ✅ Aumentado de 12px */
+  gap: 14px;
 }
 
 .data-item-value {
-  font-size: 14px; /* ✅ Aumentado de 12px */
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 500;
   color: #1e3a5f;
 }
 
 .data-item-percent {
-  font-size: 11px; /* ✅ Aumentado de 10px */
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 500;
   color: white;
-  padding: 4px 10px; /* ✅ Aumentado de 3px 8px */
-  border-radius: 12px; /* ✅ Aumentado de 10px */
-  min-width: 48px; /* ✅ Aumentado de 42px */
+  padding: 4px 10px;
+  border-radius: 12px;
+  min-width: 65px;
   text-align: center;
 }
 
@@ -685,7 +746,7 @@ function formatValue(value) {
   .data-item-percent {
     font-size: 10px;
     padding: 3px 8px;
-    min-width: 42px;
+    min-width: 58px;
   }
 }
 </style>

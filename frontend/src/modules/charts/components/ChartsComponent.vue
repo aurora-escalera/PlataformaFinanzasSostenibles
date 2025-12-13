@@ -1,5 +1,6 @@
 <!-- src/modules/charts/components/ChartsComponent.vue -->
 <!-- ✅ Para datos ESTATALES - usa columnas PT ($) e IT ($) -->
+<!-- ✅ NUEVO: Posición y porcentaje en KPI cards -->
 <template>
   <div class="charts-wrapper" :class="{ 'single-card': showingSingleCard }">
 
@@ -183,6 +184,32 @@ const rawIngresosData = ref([])
 const presupuestosMapping = getMapping('chartsPresupuestos')
 const ingresosMapping = getMapping('chartsIngresos')
 
+// ============================================================================
+// ✅ NUEVO: MAPEO DE COLUMNAS PARA POSICIÓN Y PORCENTAJE (ESTATALES)
+// ============================================================================
+
+// Mapeo de columnas de posición por tipo de variable
+const positionColumnMap = {
+  'presupuesto_total': null, // PT no tiene posición
+  'presupuesto_sostenible': 'POS_PS',
+  'presupuesto_carbono': 'POS_PIC',
+  'ingresos_total': null, // IT no tiene posición
+  'ingresos_sostenibles': 'POS_IS',
+  'ingresos_carbono': 'POS_IIC'
+}
+
+// Mapeo de columnas de porcentaje por tipo de variable
+const percentageColumnMap = {
+  'presupuesto_total': null, // PT es 100%
+  'presupuesto_sostenible': 'PS (%)',
+  'presupuesto_carbono': 'PIC (%)',
+  'ingresos_total': null, // IT es 100%
+  'ingresos_sostenibles': 'IS (%)',
+  'ingresos_carbono': 'IIC (%)'
+}
+
+// ============================================================================
+
 const loadChartData = async () => {
   try {
     const presupuestosSheetName = getSheetName('chartsPresupuestos')
@@ -231,15 +258,33 @@ const getCleanValue = (row, column) => {
   return parseFloat(raw) || 0
 }
 
+// ✅ ACTUALIZADO: Función para transformar datos con posición y porcentaje
 const transformSingleRowToBarChart = (row, mapping) => {
   if (!row) return { variables: [] }
+  
   const variables = mapping.variableColumns.map(varConfig => {
     const value = getCleanValue(row, varConfig.column)
+    
+    // ✅ NUEVO: Obtener posición de la columna correspondiente
+    const positionColumn = positionColumnMap[varConfig.key]
+    const position = positionColumn ? getCleanValue(row, positionColumn) : null
+    
+    // ✅ NUEVO: Obtener porcentaje de la columna correspondiente
+    const percentageColumn = percentageColumnMap[varConfig.key]
+    const percentage = percentageColumn ? getCleanValue(row, percentageColumn) : null
+    
     return {
-      key: varConfig.key, label: varConfig.label, value,
-      color: varConfig.color, colorClass: varConfig.colorClass, order: varConfig.order || 0
+      key: varConfig.key, 
+      label: varConfig.label, 
+      value,
+      color: varConfig.color, 
+      colorClass: varConfig.colorClass, 
+      order: varConfig.order || 0,
+      position: position || null,
+      percentage: percentage || null
     }
   })
+  
   variables.sort((a, b) => a.order - b.order)
   return { variables }
 }

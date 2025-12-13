@@ -2,6 +2,8 @@
 <!-- ✅ ACTUALIZADO: Header Dark + KPI Cards + Barras originales con porcentaje -->
 <!-- ✅ FIX: formatCurrency con 2 decimales y espacio antes de M/B/K -->
 <!-- ✅ FIX: Área del gráfico más centrada con espacio blanco -->
+<!-- ✅ NUEVO: Leyenda USD debajo de las KPI cards -->
+<!-- ✅ NUEVO: Posición y porcentaje en KPI cards -->
 <template>
   <div class="vertical-bar-chart">
 
@@ -20,7 +22,7 @@
       </div>
     </div>
 
-    <!-- KPI Cards con tendencias -->
+    <!-- KPI Cards con tendencias, posición y porcentaje -->
     <div class="kpi-cards-row">
       <div
         v-for="(variable, index) in variables"
@@ -38,27 +40,27 @@
         @mouseenter="hoveredCard = index"
         @mouseleave="hoveredCard = null"
       >
-        <div class="kpi-card-top">
-          <span class="kpi-dot" :class="variable.colorClass"></span>
-          <span 
-            class="kpi-trend"
-            :class="{ 'positive': variable.change >= 0, 'negative': variable.change < 0 }"
-          >
-            <svg v-if="variable.change >= 0" xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
-              <polyline points="17 6 23 6 23 12"/>
-            </svg>
-            <svg v-else xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/>
-              <polyline points="17 18 23 18 23 12"/>
-            </svg>
-            {{ Math.abs(variable.change || 0).toFixed(1) }}%
-          </span>
-        </div>
+        <!-- Dot en esquina superior derecha -->
+        <span class="kpi-dot" :class="variable.colorClass"></span>
+        
         <div class="kpi-value">{{ formatCurrency(variable.value) }}</div>
+        
+        <!-- ✅ Porcentaje debajo del valor -->
+        <div v-if="variable.percentage !== undefined && variable.percentage !== null" class="kpi-percentage" :class="variable.colorClass">
+          {{ formatPercentage(variable.percentage) }}% del total
+        </div>
+        
+        <!-- ✅ Posición -->
+        <div v-if="variable.position !== undefined && variable.position !== null" class="kpi-position" :class="variable.colorClass">
+          Posición: #{{ variable.position }}
+        </div>
+        
         <div class="kpi-label">{{ variable.shortLabel || variable.label }}</div>
       </div>
     </div>
+    
+    <!-- ✅ Leyenda de moneda dinámica -->
+    <div class="currency-legend">{{ currencyLegend }}</div>
 
     <!-- ÁREA DEL GRÁFICO CON EJES -->
     <div class="chart-area">
@@ -142,6 +144,16 @@
           <span class="tooltip-variable-name">{{ hoveredBar.label }}:</span>
           <span class="tooltip-variable-value">{{ formatCurrency(hoveredBar.value) }}</span>
         </div>
+        <!-- Mostrar porcentaje en tooltip -->
+        <div v-if="hoveredBar.percentage" class="tooltip-item">
+          <span class="tooltip-variable-name">Porcentaje:</span>
+          <span class="tooltip-variable-value">{{ formatPercentage(hoveredBar.percentage) }}%</span>
+        </div>
+        <!-- Mostrar posición en tooltip si existe -->
+        <div v-if="hoveredBar.position" class="tooltip-item">
+          <span class="tooltip-variable-name">Posición:</span>
+          <span class="tooltip-variable-value">#{{ hoveredBar.position }}</span>
+        </div>
       </div>
     </div>
   </Teleport>
@@ -171,13 +183,17 @@ const props = defineProps({
   selectedYear: {
     type: String,
     default: ''
+  },
+  currency: {
+    type: String,
+    default: 'MXN' // 'USD' para Regional, 'MXN' para Estados
   }
 })
 
 const variables = ref([
-  { key: 'presupuesto_total', label: 'Presupuesto Total', shortLabel: 'Total', colorClass: 'gray', color: '#9ca3af', value: 0, change: 0, active: false },
-  { key: 'presupuesto_sostenible', label: 'Presupuesto Sostenible', shortLabel: 'Sostenible', colorClass: 'green', color: '#7cb342', value: 0, change: 0, active: false },
-  { key: 'presupuesto_carbono', label: 'Presupuesto Intensivo en Carbono', shortLabel: 'Carbono', colorClass: 'red', color: '#DC143C', value: 0, change: 0, active: false }
+  { key: 'presupuesto_total', label: 'Presupuesto Total', shortLabel: 'Presupuesto Total', colorClass: 'gray', color: '#9ca3af', value: 0, change: 0, position: null, percentage: null, active: false },
+  { key: 'presupuesto_sostenible', label: 'Presupuesto Sostenible', shortLabel: 'Presupuesto Sostenible', colorClass: 'green', color: '#7cb342', value: 0, change: 0, position: null, percentage: null, active: false },
+  { key: 'presupuesto_carbono', label: 'Presupuesto Intensivo en Carbono', shortLabel: 'Presupuesto Intensivo en Carbono', colorClass: 'red', color: '#DC143C', value: 0, change: 0, position: null, percentage: null, active: false }
 ])
 
 const barsContainerRef = ref(null)
@@ -197,6 +213,8 @@ const initializeVariablesFromData = () => {
       color: dataVar.color || '#9ca3af',
       value: dataVar.value || 0,
       change: dataVar.change !== undefined ? dataVar.change : generateRandomChange(),
+      position: dataVar.position !== undefined ? dataVar.position : null,
+      percentage: dataVar.percentage !== undefined ? dataVar.percentage : null,
       active: false
     }))
   } else if (Array.isArray(props.data) && props.data.length > 0 && props.data[0].variables) {
@@ -208,6 +226,8 @@ const initializeVariablesFromData = () => {
       color: dataVar.color || '#9ca3af',
       value: dataVar.value || 0,
       change: dataVar.change !== undefined ? dataVar.change : generateRandomChange(),
+      position: dataVar.position !== undefined ? dataVar.position : null,
+      percentage: dataVar.percentage !== undefined ? dataVar.percentage : null,
       active: false
     }))
   }
@@ -215,10 +235,10 @@ const initializeVariablesFromData = () => {
 
 const getShortLabel = (label) => {
   const shortLabels = {
-    'Presupuesto Total': 'Total', 'Presupuesto Sostenible': 'Sostenible', 'Presupuesto Intensivo en Carbono': 'Carbono',
-    'Ingreso Total': 'Total', 'Ingresos Sostenibles': 'Sostenible', 'Ingresos Intensivos en Carbono': 'Carbono',
-    'PT': 'Total', 'PS': 'Sostenible', 'PIC': 'Carbono', 'IT': 'Total', 'IS': 'Sostenible', 'IIC': 'Carbono',
-    'Ingresos Total': 'Ingresos Total', 'Presupuestos Intensivos en Carbono': 'Presupuestos Intensivos en Carbono'
+    'Presupuesto Total': 'Presupuesto Total', 'Presupuestos Sostenibles': 'Presupuestos Sostenibles', 'Presupuestos Intensivos en Carbono': 'Presupuestos Intensivos en Carbono',
+    'Ingreso Total': 'Total', 'Ingresos Sostenibles': 'Ingresos Sostenibles', 'Ingresos Intensivos en Carbono': 'Ingresos Intensivos en Carbono',
+    'PT': 'Presupuesto Total', 'PS': 'Presupuestos Sostenibles', 'Presupuestos Intensivos en Carbono': 'Presupuestos Intensivos en Carbono', 'IT': 'Ingreso Total', 'IS': 'Ingresos Sostenibles', 'IIC': 'Ingresos Intensivos en Carbono',
+    'Ingreso Total': 'Ingreso Total', 'Presupuestos Intensivos en Carbono': 'Presupuestos Intensivos en Carbono'
   }
   return shortLabels[label] || label
 }
@@ -229,6 +249,12 @@ const getPercentageOfTotal = (value) => {
   const totalVar = variables.value[0]
   if (!totalVar || totalVar.value === 0) return 0
   return Math.round((value / totalVar.value) * 100)
+}
+
+// ✅ NUEVO: Formatear porcentaje con 2 decimales
+const formatPercentage = (value) => {
+  if (value === null || value === undefined) return '0.00'
+  return parseFloat(value).toFixed(2)
 }
 
 const getKpiCardStyle = (variable, index) => {
@@ -281,6 +307,14 @@ const toggleVariable = (key) => {
 }
 
 const isVariableActive = (key) => variables.value.find(v => v.key === key)?.active || false
+
+// ✅ Leyenda de moneda dinámica
+const currencyLegend = computed(() => {
+  if (props.currency === 'USD') {
+    return '* Cifras en dólares estadounidenses (USD)'
+  }
+  return '* Cifras en pesos mexicanos (MXN)'
+})
 
 const getBarHeightPixels = (value) => {
   if (maxValue.value === 0) return 0
@@ -389,7 +423,7 @@ watch(() => props.data, () => { nextTick(() => updateBarsContainerHeight()) }, {
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   flex-shrink: 0;
-  padding: 15px 15px 10px 15px;
+  padding: 15px 15px 0 15px;
 }
 
 .kpi-card {
@@ -398,32 +432,21 @@ watch(() => props.data, () => { nextTick(() => updateBarsContainerHeight()) }, {
   border: 2px solid #e2e8f0;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
 }
 
-.kpi-card-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 4px;
+/* ✅ Dot en esquina superior derecha */
+.kpi-dot { 
+  width: 8px; 
+  height: 8px; 
+  border-radius: 2px; 
+  position: absolute;
+  top: 10px;
+  right: 10px;
 }
-
-.kpi-dot { width: 8px; height: 8px; border-radius: 2px; }
 .kpi-dot.gray { background: #9ca3af; }
 .kpi-dot.green { background: #7cb342; }
 .kpi-dot.red { background: #DC143C; }
-
-.kpi-trend {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  font-size: 9px;
-  font-weight: 600;
-  padding: 2px 5px;
-  border-radius: 4px;
-}
-
-.kpi-trend.positive { color: #16a34a; background: #dcfce7; }
-.kpi-trend.negative { color: #dc2626; background: #fee2e2; }
 
 .kpi-value {
   font-size: 16px;
@@ -433,10 +456,43 @@ watch(() => props.data, () => { nextTick(() => updateBarsContainerHeight()) }, {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
+/* ✅ Porcentaje debajo del valor */
+.kpi-percentage {
+  font-size: 12px;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.kpi-percentage.gray { color: #6b7280; }
+.kpi-percentage.green { color: #3f6212; }
+.kpi-percentage.red { color: #991b1b; }
+
+/* ✅ Posición */
+.kpi-position {
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 1px;
+}
+
+.kpi-position.gray { color: #6b7280; }
+.kpi-position.green { color: #3f6212; }
+.kpi-position.red { color: #991b1b; }
+
+/* ✅ Label de la variable */
 .kpi-label {
   font-size: 10px;
   color: #64748b;
   font-weight: 500;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  margin-top: 2px;
+}
+
+/* ✅ Leyenda USD */
+.currency-legend {
+  font-size: 11px;
+  font-style: italic;
+  color: #94a3b8;
+  padding: 4px 15px 0 15px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
@@ -638,6 +694,9 @@ watch(() => props.data, () => { nextTick(() => updateBarsContainerHeight()) }, {
 @media (max-width: 768px) {
   .kpi-cards-row { grid-template-columns: 1fr; gap: 6px; }
   .kpi-card { padding: 8px; }
+  .kpi-dot { top: 8px; right: 8px; }
+  .kpi-percentage { font-size: 11px; }
+  .kpi-position { font-size: 11px; }
   .chart-area {
     padding: 15px 20px 20px 15px;
     margin-left: 10px;
@@ -649,5 +708,6 @@ watch(() => props.data, () => { nextTick(() => updateBarsContainerHeight()) }, {
   .bars-container.bars-count-2 .bar-column,
   .bars-container.bars-count-3 .bar-column { width: 100%; max-width: none; }
   .bar-value-label { font-size: 10px; }
+  .currency-legend { font-size: 8px; }
 }
 </style>

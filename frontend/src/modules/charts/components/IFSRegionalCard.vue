@@ -12,7 +12,7 @@
       </div>
       <div class="header-text">
         <h3 class="header-title">{{ currentConfig.headerTitle }}</h3>
-        <p class="header-subtitle">Datos Federales</p>
+        <p class="header-subtitle">Datos Federales Consolidados</p>
       </div>
       <span class="year-badge">{{ selectedYear || '—' }}</span>
     </div>
@@ -125,8 +125,8 @@
               <div class="monetary-value-row">
                 <span class="monetary-currency">$</span>
                 <span class="monetary-amount">{{ formattedMonetaryValue }}</span>
-                <span class="monetary-unit">{{ monetaryUnit }}</span>
               </div>
+              <div class="monetary-unit">{{ monetaryUnitText }}</div>
             </div>
             
             <!-- Posición -->
@@ -296,15 +296,15 @@ const formattedMonetaryValue = computed(() => {
   return value.toFixed(2)
 })
 
-// Computed - Unidad monetaria
-const monetaryUnit = computed(() => {
+// ✅ NUEVO: Texto completo de unidad monetaria en dólares
+const monetaryUnitText = computed(() => {
   const value = metricValue.value
   
-  if (value >= 1e12) return 'Billones'
-  if (value >= 1e9) return 'MMP'
-  if (value >= 1e6) return 'MDP'
-  if (value >= 1e3) return 'Miles'
-  return 'Pesos'
+  if (value >= 1e12) return 'Billones de dólares (USD)'
+  if (value >= 1e9) return 'Billones de dólares (USD)'
+  if (value >= 1e6) return 'Millones de dólares (USD)'
+  if (value >= 1e3) return 'Miles de dólares (USD)'
+  return 'Dólares (USD)'
 })
 
 // Computed - Progreso del gauge (solo IFS)
@@ -579,7 +579,7 @@ onMounted(() => {
 }
 
 .gauge-value {
-  font-size: 42px;
+  font-size: 30px;
   font-weight: 700;
   color: #1e3a5f;
   line-height: 1;
@@ -647,7 +647,7 @@ onMounted(() => {
 }
 
 .position-value {
-  font-size: 48px;
+  font-size: 28px;
   font-weight: 700;
   line-height: 1;
 }
@@ -668,17 +668,20 @@ onMounted(() => {
 
 .monetary-row {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
-  gap: 40px;
+  gap: 30px;
 }
 
 .monetary-main {
   text-align: center;
-  padding: 35px 70px;
-  border-radius: 20px;
+  padding: 30px 40px;
+  border-radius: 16px;
   border: 2px solid;
-    min-height: 180px;
+  width: 280px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .monetary-main.green {
@@ -692,11 +695,11 @@ onMounted(() => {
 }
 
 .monetary-label {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 2px;
-  margin-bottom: 12px;
+  letter-spacing: 1.5px;
+  margin-bottom: 10px;
   color: #64748b;
 }
 
@@ -704,11 +707,11 @@ onMounted(() => {
   display: flex;
   align-items: baseline;
   justify-content: center;
-  gap: 4px;
+  gap: 3px;
 }
 
 .monetary-currency {
-  font-size: 32px;
+  font-size: 20px;
   font-weight: 500;
 }
 
@@ -721,30 +724,31 @@ onMounted(() => {
 }
 
 .monetary-amount {
-  font-size: 34px;
+  font-size: 32px;
   font-weight: 700;
   line-height: 1;
   color: #1e293b;
 }
 
+/* ✅ NUEVO: Unidad monetaria en línea separada */
 .monetary-unit {
-  font-size: 22px;
+  font-size: 12px;
   font-weight: 500;
   color: #64748b;
-  margin-left: 8px;
+  margin-top: 8px;
 }
 
 /* Position Card - Monetario */
 .position-card {
   background: #f8fafc;
-  border-radius: 20px;
-  padding: 35px 70px;
+  border-radius: 16px;
+  padding: 30px 40px;
   text-align: center;
   border: 2px solid #e2e8f0;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  min-height: 180px;
+  width: 280px;
 }
 
 .position-card.green {
@@ -763,11 +767,11 @@ onMounted(() => {
   text-transform: uppercase;
   letter-spacing: 1.5px;
   color: #94a3b8;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .position-value-monetary {
-  font-size: 36px;
+  font-size: 32px;
   font-weight: 700;
   color: #1e293b;
   line-height: 1;

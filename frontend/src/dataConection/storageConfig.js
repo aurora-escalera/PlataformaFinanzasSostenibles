@@ -36,7 +36,8 @@ export const storageConfig = {
         files: {
           datosCuantitativos: '2024',
           chartsPresupuestos: '2024', 
-          chartsIngresos: '2024'  
+          chartsIngresos: '2024', 
+          posicionesCuantitativos: '2024'  
         }
       },
       cuantitativosRegional: {
@@ -227,6 +228,7 @@ export const storageConfig = {
       datosCuantitativos: '2024',
       chartsPresupuestos: '2024',
       chartsIngresos: '2024',
+      posicionesCuantitativos: '2024',
       incendiosForestales: '2024',
       residuosSolidos: '2024',
       emisiones: '2024',
@@ -956,7 +958,43 @@ export const storageConfig = {
         }
       ]
     },
-    
+    posicionesCuantitativos: {
+      stateColumn: 'Entidad Federativa',
+      variableColumns: [
+        {
+          key: 'is_pos',
+          column: 'POS_IS',
+          label: 'Posicion Ingresos Sostenibles',
+          colorClass: 'gray',
+          color: '#7cb342',
+          order: 1
+        },
+        {
+          key: 'iic_pos',
+          column: 'POS_IIC',
+          label: 'Posición Ingresos Intensivos en Carbono',
+          colorClass: 'green',
+          color: '#DC143C',
+          order: 2
+        },
+        {
+          key: 'pic_pos',
+          column: 'POS_PIC',
+          label: 'Posición Presupuestos Intensivos en Carbono',
+          colorClass: 'red',
+          color: '#DC143C',
+          order: 3
+        },
+        {
+          key: 'pic_ps',
+          column: 'POS_PS',
+          label: 'Posición Presupuestos Sostenibles',
+          colorClass: 'red',
+          color: '#7cb342',
+          order: 4
+        }
+      ]
+    },
     chartsIngresos: {
       stateColumn: 'Entidad Federativa',
       variableColumns: [
@@ -1133,25 +1171,11 @@ export const storageConfig = {
       ],
       donutSectorsISRegional: [
         {
-          key: 'is_ambiental_reg',
-          column: 'IS_A',
-          label: 'Ambiental',
+          key: 'is_ftdcc_reg',
+          column: 'IS_FTDCC',
+          label: 'Financiamiento dedicado al cambio climático',
           colorClass: 'dark-green',
           color: '#558b2f'
-        },
-        {
-          key: 'is_ecologico_reg',
-          column: 'IS_E',
-          label: 'Ecológico',
-          colorClass: 'green',
-          color: '#7cb342'
-        },
-        {
-          key: 'is_movilidad_reg',
-          column: 'IS_MS',
-          label: 'Movilidad Sustentable',
-          colorClass: 'light-green',
-          color: '#9ccc65'
         }
       ],
       donutSectorsIICRegional: [
@@ -1244,7 +1268,23 @@ export const storageConfig = {
           colorClass: 'green',
           color: '#7cb342',
           order: 2
-        }
+        },
+        {
+      key: 'ps_val_reg',
+      column: 'PS ($)',
+      label: 'PS Regional',
+      colorClass: 'green',
+      color: '#7cb342',
+      order: 9
+    },
+    {
+      key: 'ps_pos_reg',
+      column: 'POS_PS',
+      label: 'Posicion PS Regional',
+      colorClass: 'green',
+      color: '#7cb342',
+      order: 10
+    }
       ]
     },
 
