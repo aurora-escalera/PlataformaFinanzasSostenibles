@@ -1,5 +1,10 @@
 // src/composables/useMaps.js
+// ✅ ACTUALIZADO: Obtiene datos de Google Sheets (misma fuente que el ranking)
+// ✅ ACTUALIZADO: Nuevos rangos de IFSS (6 categorías)
+
 import { ref, computed, onMounted } from 'vue'
+import { useStorageData } from '@/dataConection/useStorageData'
+import { getMapping, getSheetName } from '@/dataConection/storageConfig'
 
 export const useMaps = () => {
   // Estados reactivos
@@ -9,6 +14,9 @@ export const useMaps = () => {
   const error = ref(null)
   const selectedState = ref(null)
   const hoveredState = ref(null)
+  
+  // Composable para obtener datos de Google Sheets
+  const { fetchData } = useStorageData()
   
   // Configuración del mapa
   const mapConfig = ref({
@@ -25,6 +33,9 @@ export const useMaps = () => {
     
     const values = Object.values(sustainabilityData.value)
     const validValues = values.filter(item => item.value && item.value > 0)
+    
+    if (validValues.length === 0) return null
+    
     const total = validValues.reduce((sum, item) => sum + item.value, 0)
     const average = total / validValues.length
     
@@ -34,24 +45,107 @@ export const useMaps = () => {
     }
   })
 
-  // Cargar datos GeoJSON
+  // Cargar datos GeoJSON (se mantiene igual)
   const loadGeoData = async () => {
     try {
       const response = await fetch(`${import.meta.env.BASE_URL}mexicoStates.json`)
       if (!response.ok) throw new Error('Error al cargar datos geográficos')
       geoData.value = await response.json()
-      console.log('GeoData cargado:', geoData.value)
+      console.log('✅ GeoData cargado:', geoData.value?.features?.length, 'estados')
     } catch (err) {
-      console.error('Error cargando GeoJSON:', err)
+      console.error('❌ Error cargando GeoJSON:', err)
       error.value = err.message
     }
   }
 
-  // Cargar datos de sustentabilidad
+  // ✅ Cargar datos de sustentabilidad desde Google Sheets
+  // Usa la MISMA fuente que useStateRanking.js
   const loadSustainabilityData = async () => {
     try {
+      console.log('📊 [useMaps] Cargando datos de Google Sheets...')
+      
+      // Obtener nombre de hoja dinámico (año activo)
+      const sheetName = getSheetName('datosCuantitativos')
+      console.log(`📅 [useMaps] Cargando desde hoja: "${sheetName}"`)
+      
+      // Obtener mapping (igual que en useStateRanking)
+      const mapping = getMapping('rankingCuantitativo')
+      const stateColumn = mapping.stateColumn  // 'Entidad Federativa'
+      const valueColumn = mapping.columnsByVariable['IFSS']  // 'IFSS'
+      
+      console.log(`📋 [useMaps] Columnas: Estado="${stateColumn}", Valor="${valueColumn}"`)
+      
+      // Obtener datos de Google Sheets
+      const data = await fetchData('datosCuantitativos', sheetName)
+      
+      if (!data || data.length === 0) {
+        console.warn('⚠️ [useMaps] No se encontraron datos en el sheet')
+        sustainabilityData.value = {}
+        return
+      }
+      
+      console.log(`📊 [useMaps] Datos crudos obtenidos: ${data.length} filas`)
+      
+      // Transformar datos al formato esperado por el mapa
+      // Mismo proceso de limpieza que useStateRanking.js
+      const processedData = {}
+      
+      data.forEach(row => {
+        const stateName = row[stateColumn]
+        const rawValue = row[valueColumn]
+        
+        if (!stateName || stateName.trim() === '') return
+        
+        // Limpiar valor (misma lógica que useStateRanking.js)
+        let cleanValue = rawValue
+        if (typeof rawValue === 'string') {
+          // Eliminar comillas al inicio y final
+          cleanValue = rawValue.replace(/^["']+|["']+$/g, '').trim()
+          
+          // Si quedó vacío o solo comillas, es 0
+          if (cleanValue === '' || cleanValue === '""' || cleanValue === '"""') {
+            cleanValue = '0'
+          } else {
+            // Manejar formato europeo vs americano
+            if (cleanValue.includes(',')) {
+              // Formato europeo: punto para miles, coma para decimales
+              cleanValue = cleanValue.replace(/\./g, '').replace(',', '.')
+            }
+          }
+        }
+        
+        const numericValue = parseFloat(cleanValue) || 0
+        
+        processedData[stateName] = {
+          region: stateName,
+          value: numericValue,
+          year: parseInt(sheetName) || 2024  // Usar el año de la hoja
+        }
+      })
+      
+      sustainabilityData.value = processedData
+      
+      console.log(`✅ [useMaps] Datos procesados: ${Object.keys(processedData).length} estados`)
+      
+      // Log de ejemplo para verificar valores
+      const ejemplos = Object.entries(processedData).slice(0, 3)
+      console.log('📊 [useMaps] Ejemplos de datos:', ejemplos.map(([k, v]) => `${k}: ${v.value}`).join(', '))
+      
+    } catch (err) {
+      console.error('❌ [useMaps] Error cargando datos de sustentabilidad:', err)
+      error.value = err.message
+      
+      // Fallback: intentar cargar desde JSON local si falla Google Sheets
+      console.log('🔄 [useMaps] Intentando fallback a JSON local...')
+      await loadSustainabilityDataFallback()
+    }
+  }
+
+  // Fallback: Cargar desde JSON local si Google Sheets falla
+  const loadSustainabilityDataFallback = async () => {
+    try {
       const response = await fetch(`${import.meta.env.BASE_URL}sustainabilityData.json`)
-      if (!response.ok) throw new Error('Error al cargar datos de sustentabilidad')
+      if (!response.ok) throw new Error('Error al cargar datos de sustentabilidad (fallback)')
       const data = await response.json()
       
       sustainabilityData.value = data.reduce((acc, item) => {
@@ -59,10 +153,25 @@ export const useMaps = () => {
         return acc
       }, {})
       
-      console.log('Datos procesados:', sustainabilityData.value)
+      console.log('✅ [useMaps] Datos cargados desde fallback JSON:', Object.keys(sustainabilityData.value).length, 'estados')
     } catch (err) {
-      console.error('Error cargando datos de sustentabilidad:', err)
+      console.error('❌ [useMaps] Error en fallback:', err)
       error.value = err.message
+    }
+  }
+
+  // Método para recargar datos cuando cambia el año
+  const reloadDataForYear = async (year) => {
+    console.log(`🔄 [useMaps] Recargando datos para año: ${year}`)
+    loading.value = true
+    error.value = null
+    
+    try {
+      await loadSustainabilityData()
+    } catch (err) {
+      error.value = err.message
+    } finally {
+      loading.value = false
     }
   }
 
@@ -83,7 +192,7 @@ export const useMaps = () => {
     }
   }
 
-  // Obtener color basado en IFSS
+  // ✅ ACTUALIZADO: Obtener color basado en IFSS (6 categorías)
   const getStateColor = (stateName) => {
     if (!sustainabilityData.value || !sustainabilityData.value[stateName]) {
       return '#e0e0e0'
@@ -92,13 +201,13 @@ export const useMaps = () => {
     const data = sustainabilityData.value[stateName]
     const ifssValue = data.value || 0
     
-    if (ifssValue >= 2.5) return '#6ac952'
-    if (ifssValue >= 2.0) return '#94d351'
-    if (ifssValue >= 1.8) return '#bddc50'
-    if (ifssValue >= 1.5) return '#e6d64f'
-    if (ifssValue >= 1.0) return '#e6a74c'
-    if (ifssValue >= 0.7) return '#e67849'
-    return '#e52845'
+    // ✅ Nuevos rangos (6 categorías)
+    if (ifssValue >= 4) return '#6ac952'       // Alto
+    if (ifssValue >= 2.3) return '#94d351'     // Medio Alto
+    if (ifssValue >= 1.9) return '#bddc50'     // Medio
+    if (ifssValue >= 1.5) return '#e6a74c'     // Medio Bajo
+    if (ifssValue > 0.7) return '#e67849'      // Bajo
+    return '#e52845'                           // Muy Bajo (<= 0.7)
   }
 
   // Obtener info del estado
@@ -107,7 +216,7 @@ export const useMaps = () => {
       return {
         region: stateName,
         value: 0,
-        year: 2023,
+        year: 2024,
         descripcion: 'Sin datos IFSS disponibles'
       }
     }
@@ -141,7 +250,7 @@ export const useMaps = () => {
       avgIFSS: Math.round(avgIFSS * 100) / 100,
       maxIFSS,
       minIFSS,
-      year: 2023
+      year: Object.values(sustainabilityData.value)[0]?.year || 2024
     }
   })
 
@@ -174,28 +283,24 @@ export const useMaps = () => {
       }))
   })
 
-  // MÉTODO PRINCIPAL: Manejar click en estado - CON LOGS DE DEBUG
+  // MÉTODO PRINCIPAL: Manejar click en estado
   const handleStateClick = (stateName) => {
-    console.log('=== USEMAPS: handleStateClick llamado con ===', stateName)
-    console.log('=== USEMAPS: sustainabilityData disponible? ===', !!sustainabilityData.value)
+    console.log('🗺️ [useMaps] handleStateClick:', stateName)
     
     if (!stateName) {
       selectedState.value = null
       return
     }
 
-    // Normalizar nombre
     const normalizedName = stateName.trim()
-    console.log('=== USEMAPS: Nombre normalizado ===', normalizedName)
     
     if (sustainabilityData.value) {
-      console.log('=== USEMAPS: Keys en sustainabilityData ===', Object.keys(sustainabilityData.value))
-      
       if (sustainabilityData.value[normalizedName]) {
         selectedState.value = selectedState.value === normalizedName ? null : normalizedName
-        console.log('=== USEMAPS: selectedState actualizado a ===', selectedState.value)
+        console.log('✅ [useMaps] selectedState:', selectedState.value)
       } else {
-        console.warn('=== USEMAPS: Estado NO encontrado ===', normalizedName)
+        console.warn('⚠️ [useMaps] Estado no encontrado:', normalizedName)
+        console.log('📋 [useMaps] Estados disponibles:', Object.keys(sustainabilityData.value))
       }
     }
   }
@@ -235,7 +340,7 @@ export const useMaps = () => {
       }))
   }
 
-  const filterByRange = (minValue = 0, maxValue = 3) => {
+  const filterByRange = (minValue = 0, maxValue = 5) => {
     if (!sustainabilityData.value) return []
     
     return Object.entries(sustainabilityData.value)
@@ -251,14 +356,14 @@ export const useMaps = () => {
       }))
   }
 
+  // ✅ ACTUALIZADO: Etiquetas IFSS (6 categorías)
   const getIFSSLabel = (ifssValue) => {
-    if (ifssValue >= 2.5) return { label: 'Muy alto', color: '#6ac952' }
-    if (ifssValue >= 2.0) return { label: 'Alto', color: '#94d351' }
-    if (ifssValue >= 1.8) return { label: 'Medio alto', color: '#bddc50' }
-    if (ifssValue >= 1.5) return { label: 'Medio', color: '#e6d64f' }
-    if (ifssValue >= 1.0) return { label: 'Medio bajo', color: '#e6a74c' }
-    if (ifssValue >= 0.7) return { label: 'Bajo', color: '#e67849' }
-    return { label: 'Muy bajo', color: '#e52845' }
+    if (ifssValue >= 4) return { label: 'Alto', color: '#6ac952' }
+    if (ifssValue >= 2.3) return { label: 'Medio Alto', color: '#94d351' }
+    if (ifssValue >= 1.9) return { label: 'Medio', color: '#bddc50' }
+    if (ifssValue >= 1.5) return { label: 'Medio Bajo', color: '#e6a74c' }
+    if (ifssValue > 0.7) return { label: 'Bajo', color: '#e67849' }
+    return { label: 'Muy Bajo', color: '#e52845' }
   }
   
   onMounted(() => {
@@ -266,6 +371,7 @@ export const useMaps = () => {
   })
 
   return {
+    // Estado
     geoData,
     sustainabilityData,
     loading,
@@ -277,6 +383,8 @@ export const useMaps = () => {
     topPerformingStates,
     worstPerformingStates,
     nationalIFSS,
+    
+    // Métodos
     getStateColor,
     getStateInfo,
     getIFSSLabel,
@@ -287,6 +395,7 @@ export const useMaps = () => {
     setMapSize,
     searchState,
     filterByRange,
-    initializeData
+    initializeData,
+    reloadDataForYear
   }
 }
