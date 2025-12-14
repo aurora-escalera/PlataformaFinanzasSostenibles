@@ -77,17 +77,26 @@
         </div>
       </div>
 
-      <!-- Eje X con valores -->
-      <div class="x-axis">
-        <div class="x-axis-spacer"></div>
-        <div class="x-axis-labels">
-          <div 
-            v-for="tick in xAxisTicks" 
-            :key="tick.value"
-            class="x-axis-tick"
-            :style="{ left: tick.position + '%' }"
-          >
-            <span class="tick-label">{{ tick.label }}</span>
+      <!-- ✅ LEYENDA DE COLORES AL FONDO (REEMPLAZA EJE X) -->
+      <div class="color-legend-strip">
+        <div class="legend-spacer"></div>
+        <div class="legend-bar-container">
+          <div class="legend-items">
+            <div 
+              v-for="(item, index) in legendItems" 
+              :key="index"
+              class="legend-item"
+              :style="{ flex: item.flex || 1 }"
+            >
+              <div 
+                class="legend-color-block" 
+                :style="{ backgroundColor: item.color }"
+              >
+                <!-- ✅ Indicador dentro del bloque de color -->
+                <span class="legend-indicator">{{ item.label }}</span>
+              </div>
+              <span class="legend-range-value">{{ item.range }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -240,6 +249,61 @@ const getColorByVariable = (value) => {
 }
 
 // ============================================================================
+// LEYENDA DE COLORES DINÁMICA CON LABELS
+// ============================================================================
+
+const legendItems = computed(() => {
+  const variableKey = currentVariableKey.value
+  
+  switch (variableKey) {
+    case 'IS':
+      return [
+        { color: '#6ac952', range: '≥10', label: 'Alto' },
+        { color: '#94d351', range: '3.3-10', label: 'Medio Alto' },
+        { color: '#bddc50', range: '1.3-3.3', label: 'Medio' },
+        { color: '#e6a74c', range: '0.5-1.2', label: 'Medio Bajo' },
+        { color: '#e67849', range: '0.1-0.5', label: 'Bajo' },
+        { color: '#e52845', range: '<0.1', label: 'Muy Bajo' }
+      ]
+    case 'IIC':
+      return [
+        { color: '#6ac952', range: '<2.1', label: 'Bajo' },
+        { color: '#94d351', range: '2.1-4.3', label: 'Medio Bajo' },
+        { color: '#bddc50', range: '4.3-6.2', label: 'Medio' },
+        { color: '#e6a74c', range: '6.2-11', label: 'Medio Alto' },
+        { color: '#e52845', range: '≥11', label: 'Muy Alto' }
+      ]
+    case 'PS':
+      return [
+        { color: '#6ac952', range: '≥4.6', label: 'Alto' },
+        { color: '#bddc50', range: '1.5-4.6', label: 'Medio' },
+        { color: '#e6a74c', range: '0.5-1.5', label: 'Medio Bajo' },
+        { color: '#e67849', range: '0.1-0.5', label: 'Bajo' },
+        { color: '#e52845', range: '<0.1', label: 'Muy Bajo' }
+      ]
+    case 'PIC':
+      return [
+        { color: '#94d351', range: '<0.1', label: 'Muy Bajo' },
+        { color: '#6ac952', range: '0.1-2.2', label: 'Bajo' },
+        { color: '#f0d648', range: '2.2-4.1', label: 'Medio Bajo' },
+        { color: '#e6a74c', range: '4.1-6.2', label: 'Medio' },
+        { color: '#e67849', range: '6.2-15.5', label: 'Medio Alto' },
+        { color: '#e52845', range: '≥15.5', label: 'Muy Alto' }
+      ]
+    case 'IFSS':
+    default:
+      return [
+        { color: '#6ac952', range: '≥4', label: 'Alto' },
+        { color: '#94d351', range: '2.3-4', label: 'Medio Alto' },
+        { color: '#bddc50', range: '1.9-2.3', label: 'Medio' },
+        { color: '#e6a74c', range: '1.5-1.9', label: 'Medio Bajo' },
+        { color: '#e67849', range: '0.5-1.5', label: 'Bajo' },
+        { color: '#e52845', range: '≤0.5', label: 'Muy Bajo' }
+      ]
+  }
+})
+
+// ============================================================================
 // INICIALIZACIÓN Y LÓGICA DE BARRAS
 // ============================================================================
 
@@ -359,17 +423,17 @@ const isSelected = (variable) => {
   return variable.label === props.selectedState || variable.key === props.selectedState
 }
 
-// Cálculo dinámico de altura por barra
+// Cálculo dinámico de altura por barra (sin eje X, solo leyenda)
 const dynamicBarHeight = computed(() => {
   const count = activeVariables.value.length
   if (count === 0) return '100%'
   
   const titleHeight = 30
-  const xAxisHeight = 36
+  const legendHeight = 40 // ✅ Altura de la leyenda al fondo
   const gapSize = 3
   const totalGaps = (count - 1) * gapSize
   
-  return `calc((100% - ${titleHeight}px - ${xAxisHeight}px - ${totalGaps}px) / ${count})`
+  return `calc((100% - ${titleHeight}px - ${legendHeight}px - ${totalGaps}px) / ${count})`
 })
 
 const maxValue = computed(() => {
@@ -377,7 +441,7 @@ const maxValue = computed(() => {
   return Math.max(...values, 1)
 })
 
-// Calcular ticks del eje X
+// Calcular ticks del eje X (solo para grid lines, ya no se muestra el eje)
 const xAxisTicks = computed(() => {
   const max = maxValue.value
   const step = max / 5
@@ -465,8 +529,8 @@ const formatValue = (value) => {
 
 .chart-title {
   margin: 0;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 300;
   color: #2c3e50;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
@@ -681,40 +745,86 @@ const formatValue = (value) => {
   }
 }
 
-/* Eje X */
-.x-axis {
+/* ============================================================================
+   LEYENDA DE COLORES AL FONDO (REEMPLAZA EJE X)
+   ============================================================================ */
+
+.color-legend-strip {
   display: grid;
   grid-template-columns: 140px 1fr;
   gap: 10px;
-  margin-top: 6px;
-  padding-top: 6px;
-  border-top: 2px solid #e5e7eb;
   flex-shrink: 0;
-  height: 28px;
+  height: 40px;
+  margin-top: 0px;
+  padding-top: 0px;
+  border-top: 1px solid #e5e7eb;
 }
 
-.x-axis-spacer {
-  /* Espacio para alinear con los labels */
+.legend-spacer {
+  /* Espacio para alinear con los labels de estados */
 }
 
-.x-axis-labels {
-  position: relative;
-  height: 22px;
+.legend-bar-container {
+  width: 100%;
+  height: 100%;
 }
 
-.x-axis-tick {
-  position: absolute;
-  transform: translateX(-50%);
+.legend-items {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.legend-item {
   display: flex;
   flex-direction: column;
   align-items: center;
+  flex: 1;
+  min-width: 0;
 }
 
-.tick-label {
-  font-size: 9px;
+.legend-color-block {
+  width: 100%;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.legend-item:first-child .legend-color-block {
+  border-radius: 4px 0 0 4px;
+}
+
+.legend-item:last-child .legend-color-block {
+  border-radius: 0 4px 4px 0;
+}
+
+/* ✅ Indicador dentro del bloque de color */
+.legend-indicator {
+  font-size: 10px;
+  font-weight: 600;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 3px;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.legend-range-value {
+  font-size: 13px;
   font-weight: 500;
   color: #6b7280;
-  margin-top: 3px;
+  margin-top: 2px;
+  white-space: nowrap;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
