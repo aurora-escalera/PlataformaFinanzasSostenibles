@@ -1,38 +1,71 @@
 // src/composables/useDataToggle.js
-import { ref, watch } from 'vue'
+import { ref, computed } from 'vue'
+
+// ============================================================================
+// ESTADO GLOBAL COMPARTIDO (Singleton)
+// Estas variables están FUERA del composable para que todas las instancias
+// compartan el mismo estado
+// ============================================================================
+
+const dataType = ref('subnacional') // 'federal' o 'subnacional'
+const currency = ref('mxn') // 'usd' o 'mxn'
+
+// Estado de filtros actual (recibido de HomePage)
+const currentFiltersState = ref({
+  selectedEntity: '',
+  selectedYear: null,
+  selectedVariable: null,
+  selectedState: null
+})
+
+// Años disponibles (recibidos de HomePage)
+const availableYears = ref([])
+
+// ============================================================================
+// CONSTANTES
+// ============================================================================
+
+const VIEW_TYPES = {
+  FEDERAL: 'federal',
+  SUBNACIONAL: 'subnacional'
+}
+
+// ============================================================================
+// COMPOSABLE
+// ============================================================================
 
 export const useDataToggle = () => {
-  // Estados reactivos
-  const dataType = ref('subnacional') // 'federal' o 'subnacional'
-  const currency = ref('mxn') // 'usd' o 'mxn'
+  
+  // ============================================================================
+  // MÉTODOS: TIPO DE DATOS
+  // ============================================================================
 
-  // Método para cambiar tipo de datos
   const setDataType = (type) => {
     if (type === 'federal' || type === 'subnacional') {
       dataType.value = type
-      console.log('Tipo de datos cambiado a:', type)
+      console.log('🔘 [useDataToggle] Tipo de datos cambiado a:', type)
     } else {
-      console.error('Tipo de datos inválido:', type)
+      console.error('❌ [useDataToggle] Tipo de datos inválido:', type)
     }
   }
 
-  // Método para cambiar moneda
+  // ============================================================================
+  // MÉTODOS: MONEDA
+  // ============================================================================
+
   const setCurrency = (curr) => {
     if (curr === 'usd' || curr === 'mxn') {
       currency.value = curr
-      console.log('Moneda cambiada a:', curr.toUpperCase())
+      console.log('💰 [useDataToggle] Moneda cambiada a:', curr.toUpperCase())
     } else {
-      console.error('Moneda inválida:', curr)
+      console.error('❌ [useDataToggle] Moneda inválida:', curr)
     }
   }
 
-  // Método para obtener el tipo de cambio (ejemplo)
   const getExchangeRate = () => {
-    // Aquí podrías hacer una llamada a una API para obtener la tasa de cambio
     return 17.5 // Ejemplo: 1 USD = 17.5 MXN
   }
 
-  // Método para convertir valores según la moneda seleccionada
   const convertCurrency = (value, fromCurrency = 'mxn') => {
     if (currency.value === fromCurrency) {
       return value
@@ -49,10 +82,8 @@ export const useDataToggle = () => {
     return value
   }
 
-  // Método para formatear valores monetarios
   const formatCurrency = (value) => {
     const converted = convertCurrency(value)
-    const symbol = currency.value === 'usd' ? '$' : '$'
     const locale = currency.value === 'usd' ? 'en-US' : 'es-MX'
     
     return new Intl.NumberFormat(locale, {
@@ -63,44 +94,222 @@ export const useDataToggle = () => {
     }).format(converted)
   }
 
-  // Watch para reaccionar a cambios
-  watch(dataType, (newType) => {
-    console.log('Datos actualizados a:', newType)
-    // Aquí podrías emitir un evento o actualizar otros datos
+  // ============================================================================
+  // LÓGICA DEL TOGGLE DE VISTA
+  // ============================================================================
+
+  /**
+   * Actualiza el estado de filtros actual
+   * @param {Object} state - Estado de filtros desde HomePage
+   */
+  const updateFiltersState = (state) => {
+    console.log('📡 [useDataToggle] Actualizando estado de filtros:', state)
+    currentFiltersState.value = { ...state }
+    
+    // Actualizar dataType basado en las condiciones
+    const activeToggle = getActiveToggleFromFilters(state)
+    if (activeToggle) {
+      dataType.value = activeToggle
+      console.log('🔄 [useDataToggle] dataType actualizado automáticamente a:', activeToggle)
+    }
+  }
+
+  /**
+   * Actualiza los años disponibles
+   * @param {Array} years - Lista de años disponibles
+   */
+  const updateAvailableYears = (years) => {
+    console.log('📅 [useDataToggle] Actualizando años disponibles:', years)
+    availableYears.value = [...years]
+  }
+
+  /**
+   * Determina qué toggle debe estar ACTIVO basado en el estado de filtros
+   * @param {Object} state - Estado de filtros
+   * @returns {'federal'|'subnacional'|null}
+   */
+  const getActiveToggleFromFilters = (state) => {
+    const { selectedEntity, selectedYear, selectedVariable, selectedState } = state
+    
+    // Condición: isDefaultState (entity='', year=específico, variable=null)
+    const isDefaultState = selectedEntity === '' && 
+                           selectedYear !== null && 
+                           selectedVariable === null
+    
+    // Condición: areAllFiltersOnTodas (entity=null, year=null, variable=null)
+    const areAllFiltersOnTodas = selectedEntity === null && 
+                                  selectedYear === null && 
+                                  selectedVariable === null
+    
+    // Condición: showRegionalCharts (entity=null, year=específico)
+    const showRegionalCharts = selectedEntity === null && 
+                               selectedYear !== null && 
+                               !areAllFiltersOnTodas
+    
+    // Condición: hasSelectedState (hay un estado seleccionado en el mapa)
+    const hasSelectedState = selectedState !== null && selectedState !== ''
+    
+    console.log('🔍 [useDataToggle] Evaluando condiciones:', {
+      isDefaultState,
+      areAllFiltersOnTodas,
+      showRegionalCharts,
+      hasSelectedState,
+      state
+    })
+    
+    // ========================================================================
+    // MAPEO DE CONDICIONES A TOGGLE ACTIVO
+    // ========================================================================
+    
+    // CASO 1: DefaultInfoCard + RankingChart → "Datos Subnacionales" activo
+    if (isDefaultState && !hasSelectedState) {
+      console.log('📌 [useDataToggle] Caso 1: isDefaultState → SUBNACIONAL')
+      return VIEW_TYPES.SUBNACIONAL
+    }
+    
+    // CASO 2: HistoricalCard + LinearChart + Overlay Gris → "Datos Federales" activo
+    if (areAllFiltersOnTodas && !hasSelectedState) {
+      console.log('📌 [useDataToggle] Caso 2: areAllFiltersOnTodas → FEDERAL')
+      return VIEW_TYPES.FEDERAL
+    }
+    
+    // CASO 3: RegionalCharts + IFSRegionalCard + Overlay Azul → "Datos Federales" activo
+    if (showRegionalCharts && !hasSelectedState) {
+      console.log('📌 [useDataToggle] Caso 3: showRegionalCharts → FEDERAL')
+      return VIEW_TYPES.FEDERAL
+    }
+    
+    // CASO 4: ChartsComponent + RankingChart (estado seleccionado) → "Datos Subnacionales" activo
+    if (hasSelectedState) {
+      console.log('📌 [useDataToggle] Caso 4: hasSelectedState → SUBNACIONAL')
+      return VIEW_TYPES.SUBNACIONAL
+    }
+    
+    // Default: subnacional
+    console.log('📌 [useDataToggle] Default → SUBNACIONAL')
+    return VIEW_TYPES.SUBNACIONAL
+  }
+
+  /**
+   * Computed: Toggle activo basado en el dataType actual
+   */
+  const activeToggle = computed(() => {
+    return dataType.value
   })
 
-  watch(currency, (newCurrency) => {
-    console.log('Moneda actualizada a:', newCurrency.toUpperCase())
-    // Aquí podrías recalcular valores o actualizar gráficas
+  /**
+   * Computed: ¿Está activo "Datos Subnacionales"?
+   */
+  const isSubnacionalActive = computed(() => {
+    const result = dataType.value === VIEW_TYPES.SUBNACIONAL
+    console.log('🔵 [useDataToggle] isSubnacionalActive:', result, '(dataType:', dataType.value, ')')
+    return result
   })
 
-  // Método para obtener la configuración actual
+  /**
+   * Computed: ¿Está activo "Datos Federales"?
+   */
+  const isFederalActive = computed(() => {
+    const result = dataType.value === VIEW_TYPES.FEDERAL
+    console.log('🟢 [useDataToggle] isFederalActive:', result, '(dataType:', dataType.value, ')')
+    return result
+  })
+
+  // ============================================================================
+  // FILTROS PARA CLICK EN TOGGLE
+  // ============================================================================
+
+  /**
+   * Obtiene los filtros para cuando se hace click en "Datos Subnacionales"
+   * Resultado: DefaultInfoCard + RankingChart + No overlay
+   * @returns {Object} - Valores de filtros a setear
+   */
+  const getSubnacionalClickFilters = () => {
+    const firstYear = availableYears.value.length > 0 ? availableYears.value[0] : null
+    
+    return {
+      entity: '',           // Guión "-"
+      year: firstYear,      // Primer año disponible
+      variable: null        // IFSS (todas)
+    }
+  }
+
+  /**
+   * Obtiene los filtros para cuando se hace click en "Datos Federales"
+   * Resultado: LinearChart + HistoricalCard + Overlay Gris
+   * @returns {Object} - Valores de filtros a setear
+   */
+  const getFederalClickFilters = () => {
+    return {
+      entity: null,         // "Datos Regionales" (todas las entidades)
+      year: null,           // "Todos los años"
+      variable: null        // IFSS (todas)
+    }
+  }
+
+  // ============================================================================
+  // MÉTODOS DE UTILIDAD
+  // ============================================================================
+
   const getCurrentConfig = () => {
     return {
       dataType: dataType.value,
       currency: currency.value,
       currencySymbol: currency.value === 'usd' ? '$' : '$',
-      currencyCode: currency.value.toUpperCase()
+      currencyCode: currency.value.toUpperCase(),
+      activeToggle: activeToggle.value,
+      filtersState: currentFiltersState.value
     }
   }
 
-  // Método para resetear a valores por defecto
   const resetToDefaults = () => {
     dataType.value = 'subnacional'
     currency.value = 'mxn'
+    currentFiltersState.value = {
+      selectedEntity: '',
+      selectedYear: null,
+      selectedVariable: null,
+      selectedState: null
+    }
+    console.log('🔄 [useDataToggle] Reseteado a valores por defecto')
   }
 
+  // ============================================================================
+  // RETURN
+  // ============================================================================
+
   return {
-    // Estados
+    // Estados (compartidos globalmente)
     dataType,
     currency,
+    currentFiltersState,
+    availableYears,
     
-    // Métodos
+    // Constantes
+    VIEW_TYPES,
+    
+    // Computed
+    activeToggle,
+    isSubnacionalActive,
+    isFederalActive,
+    
+    // Métodos de tipo de datos
     setDataType,
+    
+    // Métodos de moneda
     setCurrency,
     getExchangeRate,
     convertCurrency,
     formatCurrency,
+    
+    // Métodos del toggle de vista
+    updateFiltersState,
+    updateAvailableYears,
+    getActiveToggleFromFilters,
+    getSubnacionalClickFilters,
+    getFederalClickFilters,
+    
+    // Utilidades
     getCurrentConfig,
     resetToDefaults
   }

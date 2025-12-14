@@ -1,3 +1,4 @@
+<!-- src/modules/other/components/DataViewToggleBar.vue -->
 <template>
   <div class="toggle-bar">
     <div class="toggle-bar-content">
@@ -5,18 +6,21 @@
       <div class="toggle-section">
         <span class="toggle-label">Vista:</span>
         <div class="toggle-buttons">
+          <!-- Botón Datos Regionales (Federal) -->
           <button
-            :class="['toggle-btn', { active: modelValue === 'regional' }]"
-            @click="$emit('update:modelValue', 'regional')"
+            :class="['toggle-btn', { active: isFederalActive }]"
+            @click="handleFederalClick"
           >
             <svg class="toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             Datos Regionales
           </button>
+          
+          <!-- Botón Datos Subnacionales -->
           <button
-            :class="['toggle-btn', { active: modelValue === 'subnacional' }]"
-            @click="$emit('update:modelValue', 'subnacional')"
+            :class="['toggle-btn', { active: isSubnacionalActive }]"
+            @click="handleSubnacionalClick"
           >
             <svg class="toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
@@ -26,12 +30,15 @@
         </div>
       </div>
 
-      <!-- Indicador Moneda -->
+      <!-- Indicador Moneda - Cambia según el toggle -->
       <div class="currency-section">
         <span class="currency-label">Moneda:</span>
-        <div class="currency-badge">
-          <span class="currency-code">{{ currency }}</span>
-          <span class="currency-name">({{ currencyName }})</span>
+        <div 
+          class="currency-badge"
+          :class="{ 'currency-usd': isFederalActive, 'currency-mxn': isSubnacionalActive }"
+        >
+          <span class="currency-name">{{ currencyName }}</span>
+          <span class="currency-code">({{ currencyCode }})</span>
         </div>
       </div>
     </div>
@@ -40,24 +47,113 @@
 
 <script setup>
 import { computed } from 'vue'
+import { useDataToggle } from '@/composables/useDataToggle'
 
+// ============================================================================
+// COMPOSABLE
+// ============================================================================
+const { 
+  isSubnacionalActive, 
+  isFederalActive,
+  setDataType,
+  setCurrency,
+  getSubnacionalClickFilters,
+  getFederalClickFilters
+} = useDataToggle()
+
+// ============================================================================
+// PROPS (para compatibilidad con v-model si se necesita)
+// ============================================================================
 const props = defineProps({
   modelValue: {
     type: String,
     default: 'subnacional',
-    validator: (value) => ['regional', 'subnacional'].includes(value)
-  },
-  currency: {
-    type: String,
-    default: 'MXN'
+    validator: (value) => ['regional', 'subnacional', 'federal'].includes(value)
   }
 })
 
-defineEmits(['update:modelValue'])
+// ============================================================================
+// EMITS
+// ============================================================================
+const emit = defineEmits([
+  'update:modelValue',
+  'click-federal',
+  'click-subnacional'
+])
 
-const currencyName = computed(() => {
-  return props.currency === 'MXN' ? 'Pesos Mexicanos' : 'Dólares USD'
+// ============================================================================
+// COMPUTED - Moneda basada en el toggle
+// ============================================================================
+
+/**
+ * Código de moneda según el toggle activo
+ * Federal (Regionales) → USD
+ * Subnacional → MXN
+ */
+const currencyCode = computed(() => {
+  return isFederalActive.value ? 'USD' : 'MXN'
 })
+
+/**
+ * Nombre de moneda según el toggle activo
+ */
+const currencyName = computed(() => {
+  return isFederalActive.value ? 'Dólares estadounidenses' : 'Pesos mexicanos'
+})
+
+// ============================================================================
+// HANDLERS
+// ============================================================================
+
+/**
+ * Handler para click en "Datos Regionales" (Federal)
+ * Setea: entity=null, year=null, variable=null
+ * Moneda: USD
+ * Resultado: HistoricalCard + LinearChart + Overlay Gris
+ */
+const handleFederalClick = () => {
+  console.log('🔘 [Toggle] Click en "Datos Regionales"')
+  
+  const filters = getFederalClickFilters()
+  console.log('📤 [Toggle] Filtros para federal:', filters)
+  
+  // Actualizar el estado global del toggle
+  setDataType('federal')
+  
+  // Actualizar moneda a USD
+  setCurrency('usd')
+  
+  // Emitir para v-model (compatibilidad)
+  emit('update:modelValue', 'regional')
+  
+  // Emitir evento con filtros para HomePage
+  emit('click-federal', filters)
+}
+
+/**
+ * Handler para click en "Datos Subnacionales"
+ * Setea: entity='', year=primerAño, variable=null
+ * Moneda: MXN
+ * Resultado: DefaultInfoCard + RankingChart + No overlay
+ */
+const handleSubnacionalClick = () => {
+  console.log('🔘 [Toggle] Click en "Datos Subnacionales"')
+  
+  const filters = getSubnacionalClickFilters()
+  console.log('📤 [Toggle] Filtros para subnacional:', filters)
+  
+  // Actualizar el estado global del toggle
+  setDataType('subnacional')
+  
+  // Actualizar moneda a MXN
+  setCurrency('mxn')
+  
+  // Emitir para v-model (compatibilidad)
+  emit('update:modelValue', 'subnacional')
+  
+  // Emitir evento con filtros para HomePage
+  emit('click-subnacional', filters)
+}
 </script>
 
 <style scoped>
@@ -151,20 +247,62 @@ const currencyName = computed(() => {
   display: flex;
   align-items: center;
   gap: 6px;
-  background-color: #fef3c7;
   padding: 8px 14px;
   border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+/* Estilo MXN (Pesos mexicanos) - Amarillo/Dorado */
+.currency-badge.currency-mxn {
+  background-color: #fef3c7;
   border: 1px solid #fcd34d;
 }
 
-.currency-code {
+.currency-badge.currency-mxn .currency-name {
   font-size: 15px;
   font-weight: 600;
   color: #b45309;
 }
 
-.currency-name {
+.currency-badge.currency-mxn .currency-code {
   font-size: 15px;
   color: #d97706;
+}
+
+/* Estilo USD (Dólares estadounidenses) - Verde */
+.currency-badge.currency-usd {
+  background-color: #d1fae5;
+  border: 1px solid #6ee7b7;
+}
+
+.currency-badge.currency-usd .currency-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #047857;
+}
+
+.currency-badge.currency-usd .currency-code {
+  font-size: 15px;
+  color: #059669;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .toggle-bar-content {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  
+  .toggle-buttons {
+    width: 100%;
+  }
+  
+  .toggle-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 8px 12px;
+    font-size: 13px;
+  }
 }
 </style>
