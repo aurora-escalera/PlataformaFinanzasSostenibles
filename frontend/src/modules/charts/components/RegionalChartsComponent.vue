@@ -7,6 +7,28 @@
     <div v-if="!selectedVariable || selectedVariable.key === 'IS' || selectedVariable.key === 'IIC'" class="chart-card">
       <div class="chart-card-header">
         <h4 class="card-title">{{ cardTitleIngresos }}</h4>
+        <!-- ✅ Botón circular de exportación para toda la card -->
+        <div class="export-wrapper-card" ref="exportIngresosCardRef">
+          <button class="export-btn-card" @click.stop="toggleCardExportMenu('ingresos')" title="Exportar datos de Ingresos">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+          </button>
+          <transition name="dropdown-fade">
+            <div v-if="activeCardExportMenu === 'ingresos'" class="export-dropdown-card">
+              <button class="export-option" @click="handleCardExport('xlsx', 'ingresos')">
+                <span class="option-icon xlsx">XLS</span>
+                <span>Excel</span>
+              </button>
+              <button class="export-option" @click="handleCardExport('csv', 'ingresos')">
+                <span class="option-icon csv">CSV</span>
+                <span>CSV</span>
+              </button>
+            </div>
+          </transition>
+        </div>
       </div>
       
       <div class="chart-card-body">
@@ -168,6 +190,28 @@
     <div v-if="!selectedVariable || selectedVariable.key === 'PS' || selectedVariable.key === 'PIC'" class="chart-card">
       <div class="chart-card-header">
         <h4 class="card-title">{{ cardTitlePresupuestos }}</h4>
+        <!-- ✅ Botón circular de exportación para toda la card -->
+        <div class="export-wrapper-card" ref="exportPresupuestosCardRef">
+          <button class="export-btn-card" @click.stop="toggleCardExportMenu('presupuestos')" title="Exportar datos de Presupuestos">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+          </button>
+          <transition name="dropdown-fade">
+            <div v-if="activeCardExportMenu === 'presupuestos'" class="export-dropdown-card">
+              <button class="export-option" @click="handleCardExport('xlsx', 'presupuestos')">
+                <span class="option-icon xlsx">XLS</span>
+                <span>Excel</span>
+              </button>
+              <button class="export-option" @click="handleCardExport('csv', 'presupuestos')">
+                <span class="option-icon csv">CSV</span>
+                <span>CSV</span>
+              </button>
+            </div>
+          </transition>
+        </div>
       </div>
       
       <div class="chart-card-body">
@@ -329,7 +373,7 @@
 </template>
 
 <script setup>
-import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
+import { computed, ref, watch, onMounted, onUnmounted, onBeforeUnmount } from 'vue'
 import { useStorageData } from '@/dataConection/useStorageData'
 import { getMapping, getSheetName } from '@/dataConection/storageConfig'
 import { getCleanValue } from '@/composables/parseNumber'  
@@ -418,14 +462,26 @@ const toggleExportMenu = (menuId) => {
   activeExportMenu.value = activeExportMenu.value === menuId ? null : menuId
 }
 
-// Click outside handler para cerrar menús
+// Click outside handler para cerrar menús (donut y card)
 const handleClickOutside = (event) => {
+  // Cerrar menús de donut
   if (activeExportMenu.value && !event.target.closest('.export-wrapper-donut')) {
     activeExportMenu.value = null
   }
+  // Cerrar menús de card
+  if (activeCardExportMenu.value && !event.target.closest('.export-wrapper-card')) {
+    activeCardExportMenu.value = null
+  }
 }
 
-// Registrar evento de click outside
+// Variable para exportación de cards
+const activeCardExportMenu = ref(null)
+
+const toggleCardExportMenu = (menuId) => {
+  activeCardExportMenu.value = activeCardExportMenu.value === menuId ? null : menuId
+}
+
+// Registrar evento de click outside (único para ambos tipos)
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
 })
@@ -511,6 +567,67 @@ const exportToCSV = (data, fileName) => {
     console.log('✅ CSV exportado:', fileName)
   } catch (err) {
     console.error('❌ Error al exportar CSV:', err)
+  }
+}
+
+// ============================================================================
+// ✅ EXPORTACIÓN DE CARDS COMPLETAS (Botón en header)
+// ============================================================================
+
+const handleCardExport = (format, cardType) => {
+  console.log(`📥 [RegionalCharts] Exportando card ${cardType} en formato:`, format)
+  activeCardExportMenu.value = null
+  
+  let exportData = []
+  let fileName = ''
+  
+  if (cardType === 'ingresos') {
+    // Combinar datos de IS e IIC
+    const isData = (sectoresIngresosSostenibles.value || []).map(s => ({
+      Categoría: 'Ingresos Sostenibles',
+      Sector: s.label || s.name || 'Sin nombre',
+      Valor: s.value || 0,
+      Porcentaje: s.percentage ? `${s.percentage.toFixed(2)}%` : '0%'
+    }))
+    
+    const iicData = (sectoresIngresosCarbono.value || []).map(s => ({
+      Categoría: 'Ingresos Intensivos en Carbono',
+      Sector: s.label || s.name || 'Sin nombre',
+      Valor: s.value || 0,
+      Porcentaje: s.percentage ? `${s.percentage.toFixed(2)}%` : '0%'
+    }))
+    
+    exportData = [...isData, ...iicData]
+    fileName = `Ingresos_Regional_${props.selectedYear || 'todos'}`
+  } else if (cardType === 'presupuestos') {
+    // Combinar datos de PS y PIC
+    const psData = (sectoresPresupuestosSostenibles.value || []).map(s => ({
+      Categoría: 'Presupuestos Sostenibles',
+      Sector: s.label || s.name || 'Sin nombre',
+      Valor: s.value || 0,
+      Porcentaje: s.percentage ? `${s.percentage.toFixed(2)}%` : '0%'
+    }))
+    
+    const picData = (sectoresPresupuestosCarbono.value || []).map(s => ({
+      Categoría: 'Presupuestos Intensivos en Carbono',
+      Sector: s.label || s.name || 'Sin nombre',
+      Valor: s.value || 0,
+      Porcentaje: s.percentage ? `${s.percentage.toFixed(2)}%` : '0%'
+    }))
+    
+    exportData = [...psData, ...picData]
+    fileName = `Presupuestos_Regional_${props.selectedYear || 'todos'}`
+  }
+  
+  if (exportData.length === 0) {
+    console.warn(`⚠️ No hay datos para exportar en ${cardType}`)
+    return
+  }
+  
+  if (format === 'xlsx') {
+    exportToExcel(exportData, fileName)
+  } else {
+    exportToCSV(exportData, fileName)
   }
 }
 
@@ -1107,6 +1224,79 @@ const variablesIngresosCarbono = computed(() => {
 
 .export-dropdown-donut .option-icon.xlsx { background: #107c41; }
 .export-dropdown-donut .option-icon.csv { background: #6366f1; }
+
+/* ============================================================================
+   ESTILOS PARA BOTÓN DE EXPORTACIÓN EN CARD HEADER
+   ============================================================================ */
+
+.export-wrapper-card {
+  position: relative;
+  margin-left: 12px;
+}
+
+.export-btn-card {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #163C5F 0%, #1e4a73 100%);
+  border: 2px solid #2563eb;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(22, 60, 95, 0.3);
+}
+
+.export-btn-card:hover {
+  background: linear-gradient(135deg, #1e4a73 0%, #2563eb 100%);
+  transform: scale(1.08);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+}
+
+.export-btn-card svg { width: 14px; height: 14px; }
+
+.export-dropdown-card {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+  z-index: 1000;
+  min-width: 120px;
+}
+
+.export-dropdown-card .export-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 14px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  font-size: 13px;
+  color: #374151;
+}
+
+.export-dropdown-card .export-option:hover { background: #f3f4f6; }
+.export-dropdown-card .export-option:first-child { border-bottom: 1px solid #e5e7eb; }
+
+.export-dropdown-card .option-icon {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 6px;
+  border-radius: 4px;
+  color: white;
+}
+
+.export-dropdown-card .option-icon.xlsx { background: #107c41; }
+.export-dropdown-card .option-icon.csv { background: #6366f1; }
 
 .dropdown-fade-enter-active, .dropdown-fade-leave-active {
   transition: opacity 0.15s ease, transform 0.15s ease;
