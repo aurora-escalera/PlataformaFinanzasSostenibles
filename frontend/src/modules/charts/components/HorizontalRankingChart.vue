@@ -1,4 +1,4 @@
-<!-- HorizontalRankingChart.vue - Con colores del mapa (6 categorías) -->
+<!-- HorizontalRankingChart.vue - Con colores dinámicos por variable y tarjeta de estado seleccionado -->
 <template>
   <div class="horizontal-bar-chart" :style="{ width: width, height: height }">
     <!-- Título -->
@@ -15,15 +15,17 @@
           :key="variable.key"
           class="bar-row"
           :class="{ 
-            'is-hovered': hoveredBarKey === variable.key || isSelected(variable),
-            'is-dimmed': (hoveredBarKey !== null && hoveredBarKey !== variable.key) || (selectedState !== null && !isSelected(variable))
+            'is-hovered': hoveredBarKey === variable.key,
+            'is-selected': isSelected(variable),
+            'is-dimmed': (hoveredBarKey !== null && hoveredBarKey !== variable.key && !isSelected(variable)) || 
+                         (selectedState !== null && isSelectionActive && !isSelected(variable) && hoveredBarKey === null)
           }"
           @mouseenter="handleMouseEnter(variable, $event)"
           @mousemove="handleMouseMove($event)"
           @mouseleave="handleMouseLeave"
         >
           <!-- Label del estado (izquierda) -->
-          <div class="state-label">
+          <div class="state-label" :class="{ 'selected-label': isSelected(variable) }">
             {{ variable.label }}
           </div>
           
@@ -43,9 +45,9 @@
             <div class="bar-wrapper-horizontal">
               <div 
                 class="bar-horizontal"
-                :class="variable.colorClass"
+                :class="[variable.colorClass, { 'selected-bar': isSelected(variable) }]"
                 :style="{ 
-                  width: getAnimatedWidth(variable) + '%',
+                  width: getBarWidth(variable.value) + '%',
                   background: variable.color
                 }"
               >
@@ -53,6 +55,20 @@
                 <span class="bar-value">{{ formatValue(variable.value) }}</span>
               </div>
             </div>
+
+            <!-- ✅ Indicador flotante debajo de la barra -->
+            <transition name="floating-indicator">
+              <span 
+                v-if="isSelected(variable)" 
+                class="floating-classification"
+                :style="{ 
+                  color: variable.color,
+                  textShadow: `0 0 8px ${variable.color}60`
+                }"
+              >
+                {{ variable.classification }}
+              </span>
+            </transition>
           </div>
         </div>
 
@@ -61,31 +77,40 @@
         </div>
       </div>
 
-      <!-- Eje X con valores -->
-      <div class="x-axis">
-        <div class="x-axis-spacer"></div>
-        <div class="x-axis-labels">
-          <div 
-            v-for="tick in xAxisTicks" 
-            :key="tick.value"
-            class="x-axis-tick"
-            :style="{ left: tick.position + '%' }"
-          >
-            <span class="tick-label">{{ tick.label }}</span>
+      <!-- ✅ LEYENDA DE COLORES AL FONDO (REEMPLAZA EJE X) -->
+      <div class="color-legend-strip">
+        <div class="legend-spacer"></div>
+        <div class="legend-bar-container">
+          <div class="legend-items">
+            <div 
+              v-for="(item, index) in legendItems" 
+              :key="index"
+              class="legend-item"
+              :style="{ flex: item.flex || 1 }"
+            >
+              <div 
+                class="legend-color-block" 
+                :style="{ backgroundColor: item.color }"
+              >
+                <!-- ✅ Indicador dentro del bloque de color -->
+                <span class="legend-indicator">{{ item.label }}</span>
+              </div>
+              <span class="legend-range-value">{{ item.range }}</span>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Tooltip -->
+    <!-- Tooltip (para hover, no para selección) -->
     <Teleport to="body">
-      <div v-if="tooltip.visible" class="tooltip" :style="tooltipStyle">
+      <div v-if="tooltip.visible && !isTooltipForSelectedState" class="tooltip" :style="tooltipStyle">
         <div class="tooltip-content">
           <div class="tooltip-color" :style="{ backgroundColor: tooltip.color }"></div>
           <div class="tooltip-info">
             <div class="tooltip-label">{{ tooltip.label }}</div>
-            <div class="tooltip-value">IFS: {{ formatValue(tooltip.value) }}</div>
-            <div class="tooltip-classification">{{ getIFSSClassification(tooltip.value) }}</div>
+            <div class="tooltip-value">{{ currentVariableKey || 'IFSS' }}: {{ formatValue(tooltip.value) }}</div>
+            <div class="tooltip-classification">{{ tooltip.classification }}</div>
           </div>
         </div>
       </div>
@@ -107,108 +132,308 @@ const props = defineProps({
   showAllBars: { type: Boolean, default: false },
   initialBarsCount: { type: Number, default: 4 },
   valueFormatter: { type: Function, default: null },
-  selectedState: { type: String, default: null }
+  selectedState: { type: String, default: null },
+  // Variable seleccionada para determinar rangos de color
+  selectedVariable: { 
+    type: [Object, String, null], 
+    default: null 
+  }
 })
 
 const hoveredBarKey = ref(null)
-const tooltip = ref({ visible: false, x: 0, y: 0, label: '', value: '', color: '' })
+const tooltip = ref({ visible: false, x: 0, y: 0, label: '', value: '', color: '', classification: '' })
 const internalVariables = ref([])
-const animatedWidths = ref({})
+const isAnimated = ref(false) // ✅ Control para animación de llenado
+const isSelectionActive = ref(true) // ✅ Control para mostrar/ocultar selección durante animación
 
-// ✅ ACTUALIZADO: Obtener color según valor IFSS (6 categorías)
-const getIFSSColorByValue = (value) => {
+// Obtener la key de la variable actual
+const currentVariableKey = computed(() => {
+  if (!props.selectedVariable) return null
+  if (typeof props.selectedVariable === 'string') return props.selectedVariable
+  return props.selectedVariable?.key || null
+})
+
+// Verificar si el tooltip es para el estado seleccionado (para no mostrarlo)
+const isTooltipForSelectedState = computed(() => {
+  if (!props.selectedState || !tooltip.value.label) return false
+  return tooltip.value.label === props.selectedState
+})
+
+// ============================================================================
+// RANGOS DE COLORES POR VARIABLE
+// ============================================================================
+
+/**
+ * IFSS - Índice de Finanzas Sostenibles Subnacional
+ */
+const getIFSSColor = (value) => {
   const numValue = parseFloat(value) || 0
-  
-  // ✅ Nuevos rangos (6 categorías)
-  if (numValue >= 4) return '#6ac952'       // Alto
-  if (numValue >= 2.3) return '#94d351'     // Medio Alto
-  if (numValue >= 1.9) return '#bddc50'     // Medio
-  if (numValue >= 1.5) return '#e6a74c'     // Medio Bajo
-  if (numValue > 0.7) return '#e67849'      // Bajo
-  return '#e52845'                          // Muy Bajo (<= 0.7)
+  if (numValue >= 4) return { color: '#6ac952', label: 'Alto' }
+  if (numValue >= 2.3) return { color: '#94d351', label: 'Medio Alto' }
+  if (numValue >= 1.9) return { color: '#bddc50', label: 'Medio' }
+  if (numValue >= 1.5) return { color: '#e6a74c', label: 'Medio Bajo' }
+  if (numValue > 0.5) return { color: '#e67849', label: 'Bajo' }
+  return { color: '#e52845', label: 'Muy Bajo' }
 }
 
-// ✅ ACTUALIZADO: Obtener clasificación según valor IFSS (6 categorías)
-const getIFSSClassification = (value) => {
+/**
+ * IS - Ingresos Sostenibles
+ */
+const getISColor = (value) => {
   const numValue = parseFloat(value) || 0
-  
-  // ✅ Nuevos rangos (6 categorías)
-  if (numValue >= 4) return 'Alto'
-  if (numValue >= 2.3) return 'Medio Alto'
-  if (numValue >= 1.9) return 'Medio'
-  if (numValue >= 1.5) return 'Medio Bajo'
-  if (numValue > 0.7) return 'Bajo'
-  return 'Muy Bajo'
+  if (numValue >= 10) return { color: '#6ac952', label: 'Alto' }
+  if (numValue >= 3.29) return { color: '#94d351', label: 'Medio Alto' }
+  if (numValue >= 1.25) return { color: '#bddc50', label: 'Medio' }
+  if (numValue >= 0.51) return { color: '#e6a74c', label: 'Medio Bajo' }
+  if (numValue >= 0.11) return { color: '#e67849', label: 'Bajo' }
+  return { color: '#e52845', label: 'Muy Bajo' }
 }
 
-const initializeVariables = () => {
-  internalVariables.value = props.variables.map(v => ({
-    key: v.key,
-    label: v.label || v.key,
-    value: v.value || 0,
-    colorClass: v.colorClass || 'default',
-    // ✅ Usar color del mapa basado en el valor IFSS
-    color: getIFSSColorByValue(v.value),
-    active: false
-  }))
-  
-  animatedWidths.value = {}
-  props.variables.forEach(v => {
-    animatedWidths.value[v.key] = 0
-  })
+/**
+ * IIC - Ingresos Intensivos en Carbono (INVERTIDO)
+ */
+const getIICColor = (value) => {
+  const numValue = parseFloat(value) || 0
+  if (numValue < 2.1) return { color: '#6ac952', label: 'Bajo' }
+  if (numValue < 4.32) return { color: '#94d351', label: 'Medio Bajo' }
+  if (numValue < 6.19) return { color: '#bddc50', label: 'Medio' }
+  if (numValue < 11.08) return { color: '#e6a74c', label: 'Medio Alto' }
+  return { color: '#e52845', label: 'Muy Alto' }
 }
 
-const activateBarsWithAnimation = async () => {
-  await new Promise(resolve => setTimeout(resolve, props.animationDelay))
+/**
+ * PS - Presupuestos Sostenibles
+ */
+const getPSColor = (value) => {
+  const numValue = parseFloat(value) || 0
+  if (numValue >= 4.59) return { color: '#6ac952', label: 'Alto' }
+  if (numValue >= 1.50) return { color: '#bddc50', label: 'Medio' }
+  if (numValue >= 0.54) return { color: '#e6a74c', label: 'Medio Bajo' }
+  if (numValue >= 0.13) return { color: '#e67849', label: 'Bajo' }
+  return { color: '#e52845', label: 'Muy Bajo' }
+}
+
+/**
+ * PIC - Presupuestos Intensivos en Carbono (INVERTIDO)
+ */
+const getPICColor = (value) => {
+  const numValue = parseFloat(value) || 0
+  if (numValue < 0.11) return { color: '#94d351', label: 'Muy Bajo' }
+  if (numValue < 2.18) return { color: '#6ac952', label: 'Bajo' }
+  if (numValue < 4.13) return { color: '#f0d648', label: 'Medio Bajo' }
+  if (numValue < 6.22) return { color: '#e6a74c', label: 'Medio' }
+  if (numValue < 15.53) return { color: '#e67849', label: 'Medio Alto' }
+  return { color: '#e52845', label: 'Muy Alto' }
+}
+
+// ============================================================================
+// FUNCIÓN PRINCIPAL: Obtener color según variable seleccionada
+// ============================================================================
+
+const getColorByVariable = (value) => {
+  const variableKey = currentVariableKey.value
   
-  const count = props.showAllBars 
-    ? internalVariables.value.length 
-    : Math.min(props.initialBarsCount, internalVariables.value.length)
-  
-  for (let i = 0; i < count; i++) {
-    internalVariables.value[i].active = true
-    await new Promise(resolve => setTimeout(resolve, 50))
-    const targetWidth = getBarWidth(internalVariables.value[i].value)
-    animatedWidths.value[internalVariables.value[i].key] = targetWidth
-    const delay = props.showAllBars && count > 10 ? 20 : 200
-    await new Promise(resolve => setTimeout(resolve, delay))
+  switch (variableKey) {
+    case 'IS':
+      return getISColor(value)
+    case 'IIC':
+      return getIICColor(value)
+    case 'PS':
+      return getPSColor(value)
+    case 'PIC':
+      return getPICColor(value)
+    case 'IFSS':
+    default:
+      return getIFSSColor(value)
   }
 }
 
+// ============================================================================
+// LEYENDA DE COLORES DINÁMICA CON LABELS
+// ============================================================================
+
+const legendItems = computed(() => {
+  const variableKey = currentVariableKey.value
+  
+  switch (variableKey) {
+    case 'IS':
+      return [
+        { color: '#6ac952', range: '≥10', label: 'Alto' },
+        { color: '#94d351', range: '3.3-10', label: 'Medio Alto' },
+        { color: '#bddc50', range: '1.3-3.3', label: 'Medio' },
+        { color: '#e6a74c', range: '0.5-1.2', label: 'Medio Bajo' },
+        { color: '#e67849', range: '0.1-0.5', label: 'Bajo' },
+        { color: '#e52845', range: '<0.1', label: 'Muy Bajo' }
+      ]
+    case 'IIC':
+      return [
+        { color: '#6ac952', range: '<2.1', label: 'Bajo' },
+        { color: '#94d351', range: '2.1-4.3', label: 'Medio Bajo' },
+        { color: '#bddc50', range: '4.3-6.2', label: 'Medio' },
+        { color: '#e6a74c', range: '6.2-11', label: 'Medio Alto' },
+        { color: '#e52845', range: '≥11', label: 'Muy Alto' }
+      ]
+    case 'PS':
+      return [
+        { color: '#6ac952', range: '≥4.6', label: 'Alto' },
+        { color: '#bddc50', range: '1.5-4.6', label: 'Medio' },
+        { color: '#e6a74c', range: '0.5-1.5', label: 'Medio Bajo' },
+        { color: '#e67849', range: '0.1-0.5', label: 'Bajo' },
+        { color: '#e52845', range: '<0.1', label: 'Muy Bajo' }
+      ]
+    case 'PIC':
+      return [
+        { color: '#94d351', range: '<0.1', label: 'Muy Bajo' },
+        { color: '#6ac952', range: '0.1-2.2', label: 'Bajo' },
+        { color: '#f0d648', range: '2.2-4.1', label: 'Medio Bajo' },
+        { color: '#e6a74c', range: '4.1-6.2', label: 'Medio' },
+        { color: '#e67849', range: '6.2-15.5', label: 'Medio Alto' },
+        { color: '#e52845', range: '≥15.5', label: 'Muy Alto' }
+      ]
+    case 'IFSS':
+    default:
+      return [
+        { color: '#6ac952', range: '≥4', label: 'Alto' },
+        { color: '#94d351', range: '2.3-4', label: 'Medio Alto' },
+        { color: '#bddc50', range: '1.9-2.3', label: 'Medio' },
+        { color: '#e6a74c', range: '1.5-1.9', label: 'Medio Bajo' },
+        { color: '#e67849', range: '0.5-1.5', label: 'Bajo' },
+        { color: '#e52845', range: '≤0.5', label: 'Muy Bajo' }
+      ]
+  }
+})
+
+// ============================================================================
+// INICIALIZACIÓN Y LÓGICA DE BARRAS
+// ============================================================================
+
+const initializeVariables = () => {
+  console.log('🎨 [HorizontalRankingChart] Inicializando con variable:', currentVariableKey.value)
+  
+  internalVariables.value = props.variables.map(v => {
+    const colorInfo = getColorByVariable(v.value)
+    return {
+      key: v.key,
+      label: v.label || v.key,
+      value: v.value || 0,
+      colorClass: v.colorClass || 'default',
+      color: colorInfo.color,
+      classification: colorInfo.label,
+      active: true  // ✅ Todas las barras activas inmediatamente
+    }
+  })
+}
+
+// Watch para actualizar colores cuando cambia la variable seleccionada
+watch(() => props.selectedVariable, (newVar, oldVar) => {
+  console.log('🔄 [HorizontalRankingChart] Variable cambió de', oldVar, 'a', newVar)
+  
+  // ✅ Si hay un estado seleccionado, desactivar temporalmente la selección
+  if (props.selectedState) {
+    isSelectionActive.value = false
+  }
+  
+  // Resetear animación
+  isAnimated.value = false
+  
+  // Actualizar colores
+  internalVariables.value = internalVariables.value.map(v => {
+    const colorInfo = getColorByVariable(v.value)
+    return {
+      ...v,
+      color: colorInfo.color,
+      classification: colorInfo.label
+    }
+  })
+  
+  // Iniciar animación de llenado
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      isAnimated.value = true
+      
+      // ✅ Después de que termine la animación de llenado, reactivar la selección
+      if (props.selectedState) {
+        setTimeout(() => {
+          isSelectionActive.value = true
+        }, 850) // Un poco más que la duración de la animación (0.8s = 800ms)
+      }
+    }, 50)
+  })
+}, { deep: true })
+
 watch(() => props.variables, () => {
+  // ✅ Si hay un estado seleccionado, desactivar temporalmente la selección
+  if (props.selectedState) {
+    isSelectionActive.value = false
+  }
+  
+  // ✅ Resetear animación cuando cambian los datos
+  isAnimated.value = false
   initializeVariables()
-  activateBarsWithAnimation()
+  
+  // Reactivar animación
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      isAnimated.value = true
+      
+      // ✅ Después de la animación, reactivar la selección
+      if (props.selectedState) {
+        setTimeout(() => {
+          isSelectionActive.value = true
+        }, 850)
+      }
+    }, 50)
+  })
 }, { immediate: true, deep: true })
 
 onMounted(() => {
-  activateBarsWithAnimation()
+  initializeVariables()
+  
+  // ✅ Si hay un estado seleccionado al montar, desactivar temporalmente la selección
+  if (props.selectedState) {
+    isSelectionActive.value = false
+  }
+  
+  // ✅ Activar animación de llenado después de un pequeño delay
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      isAnimated.value = true
+      
+      // ✅ Después de la animación, reactivar la selección
+      if (props.selectedState) {
+        setTimeout(() => {
+          isSelectionActive.value = true
+        }, 850)
+      }
+    }, 50)
+  })
 })
 
 const activeVariables = computed(() => {
-  return internalVariables.value.filter(v => v.active)
+  const count = props.showAllBars 
+    ? internalVariables.value.length 
+    : Math.min(props.initialBarsCount, internalVariables.value.length)
+  return internalVariables.value.slice(0, count)
 })
 
-// Verificar si una barra está seleccionada
+// Verificar si una barra está seleccionada (respeta isSelectionActive)
 const isSelected = (variable) => {
   if (!props.selectedState) return false
+  if (!isSelectionActive.value) return false // ✅ No mostrar selección durante animación
   return variable.label === props.selectedState || variable.key === props.selectedState
 }
 
-// Cálculo dinámico de altura por barra
+// Cálculo dinámico de altura por barra (sin eje X, solo leyenda)
 const dynamicBarHeight = computed(() => {
   const count = activeVariables.value.length
   if (count === 0) return '100%'
   
-  // Alturas fijas en píxeles
-  const titleHeight = 30  // Altura del título + margen
-  const xAxisHeight = 36  // Altura del eje X + márgenes
-  const gapSize = 3       // Gap entre barras en px
-  
-  // Total de gaps = cantidad de barras - 1
+  const titleHeight = 30
+  const legendHeight = 40 // ✅ Altura de la leyenda al fondo
+  const gapSize = 3
   const totalGaps = (count - 1) * gapSize
   
-  // Calcular: (100% - título - eje X - gaps) / número de barras
-  return `calc((100% - ${titleHeight}px - ${xAxisHeight}px - ${totalGaps}px) / ${count})`
+  return `calc((100% - ${titleHeight}px - ${legendHeight}px - ${totalGaps}px) / ${count})`
 })
 
 const maxValue = computed(() => {
@@ -216,10 +441,10 @@ const maxValue = computed(() => {
   return Math.max(...values, 1)
 })
 
-// Calcular ticks del eje X
+// Calcular ticks del eje X (solo para grid lines, ya no se muestra el eje)
 const xAxisTicks = computed(() => {
   const max = maxValue.value
-  const step = max / 5 // 5 divisiones
+  const step = max / 5
   
   const ticks = []
   for (let i = 0; i <= 5; i++) {
@@ -251,7 +476,8 @@ const handleMouseEnter = (variable, event) => {
     y: event.clientY,
     label: variable.label,
     value: variable.value,
-    color: variable.color
+    color: variable.color,
+    classification: variable.classification
   }
 }
 
@@ -267,20 +493,18 @@ const handleMouseLeave = () => {
   tooltip.value.visible = false
 }
 
+// ✅ Calcula el ancho - proporcional al valor, el min-width de CSS garantiza espacio para texto
 const getBarWidth = (value) => {
+  if (!isAnimated.value) return 0
   const percentage = (value / maxValue.value) * 100
   return Math.min(percentage, 100)
-}
-
-const getAnimatedWidth = (variable) => {
-  return animatedWidths.value[variable.key] || 0
 }
 
 const formatValue = (value) => {
   if (props.valueFormatter) {
     return props.valueFormatter(value)
   }
-  return typeof value === 'number' ? value.toFixed(1) : value
+  return typeof value === 'number' ? value.toFixed(2) : value
 }
 </script>
 
@@ -305,8 +529,8 @@ const formatValue = (value) => {
 
 .chart-title {
   margin: 0;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 300;
   color: #2c3e50;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
@@ -338,8 +562,9 @@ const formatValue = (value) => {
   min-height: 12px;
   flex-shrink: 0;
   padding: 0;
-  transition: opacity 0.3s ease, transform 0.2s ease;
+  transition: opacity 0.4s ease, filter 0.4s ease, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
+  position: relative;
 }
 
 .bar-row.is-hovered {
@@ -348,14 +573,23 @@ const formatValue = (value) => {
   z-index: 10;
 }
 
+/* ✅ Estilo mejorado para estado seleccionado */
+.bar-row.is-selected {
+  opacity: 1;
+  transform: translateX(2px);
+  z-index: 100;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.25));
+  min-height: 14px;
+}
+
 .bar-row.is-dimmed {
-  opacity: 0.2;
-  transition: opacity 0.3s ease, filter 0.3s ease;
+  opacity: 0.15;
+  filter: grayscale(40%);
 }
 
 /* Label del estado */
 .state-label {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 100;
   color: #374151;
   text-align: right;
@@ -365,6 +599,14 @@ const formatValue = (value) => {
   text-overflow: ellipsis;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.2;
+  transition: all 0.3s ease;
+}
+
+/* ✅ Label resaltado cuando está seleccionado */
+.state-label.selected-label {
+  font-weight: 200;
+  color: #1a202c;
+  font-size: 16px;
 }
 
 /* Área de la barra con grid */
@@ -402,25 +644,51 @@ const formatValue = (value) => {
   min-height: 12px;
 }
 
+/* ✅ Área gris transparente cuando está seleccionada */
+.bar-row.is-selected .bar-wrapper-horizontal {
+  background: transparent;
+  box-shadow: none;
+  border: none;
+}
+
 .bar-horizontal {
   height: 100%;
-  transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+  /* ✅ Transición de width para animación de llenado */
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease, box-shadow 0.3s ease;
   position: relative;
   border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   padding-right: 6px;
+  padding-left: 4px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  min-width: 36px; /* ✅ Reducido para mejor diferenciación */
+  box-sizing: border-box;
 }
 
 .bar-row.is-hovered .bar-horizontal {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
+/* ✅ Barra seleccionada con efecto de pulso */
+.bar-horizontal.selected-bar {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  }
+  50% {
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35), 0 0 0 3px rgba(255, 255, 255, 0.3);
+  }
+}
+
 /* Valor dentro de la barra */
 .bar-value {
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 600;
   color: white;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
@@ -429,40 +697,134 @@ const formatValue = (value) => {
   line-height: 1;
 }
 
-/* Eje X */
-.x-axis {
+/* ✅ Indicador flotante debajo de la barra - solo texto */
+.floating-classification {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  box-shadow: 200px #050709;
+  transform: translateX(-50%);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  white-space: nowrap;
+  z-index: 1000;
+  pointer-events: none;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Animación de entrada para el indicador */
+.floating-indicator-enter-active {
+  animation: indicatorFadeIn 0.3s ease-out;
+}
+
+.floating-indicator-leave-active {
+  animation: indicatorFadeOut 0.2s ease-in;
+}
+
+@keyframes indicatorFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-5px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes indicatorFadeOut {
+  0% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-5px);
+  }
+}
+
+/* ============================================================================
+   LEYENDA DE COLORES AL FONDO (REEMPLAZA EJE X)
+   ============================================================================ */
+
+.color-legend-strip {
   display: grid;
   grid-template-columns: 140px 1fr;
   gap: 10px;
-  margin-top: 6px;
-  padding-top: 6px;
-  border-top: 2px solid #e5e7eb;
   flex-shrink: 0;
-  height: 28px;
+  height: 40px;
+  margin-top: 0px;
+  padding-top: 0px;
+  border-top: 1px solid #e5e7eb;
 }
 
-.x-axis-spacer {
-  /* Espacio para alinear con los labels */
+.legend-spacer {
+  /* Espacio para alinear con los labels de estados */
 }
 
-.x-axis-labels {
-  position: relative;
-  height: 22px;
+.legend-bar-container {
+  width: 100%;
+  height: 100%;
 }
 
-.x-axis-tick {
-  position: absolute;
-  transform: translateX(-50%);
+.legend-items {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.legend-item {
   display: flex;
   flex-direction: column;
   align-items: center;
+  flex: 1;
+  min-width: 0;
 }
 
-.tick-label {
-  font-size: 9px;
+.legend-color-block {
+  width: 100%;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.legend-item:first-child .legend-color-block {
+  border-radius: 4px 0 0 4px;
+}
+
+.legend-item:last-child .legend-color-block {
+  border-radius: 0 4px 4px 0;
+}
+
+/* ✅ Indicador dentro del bloque de color */
+.legend-indicator {
+  font-size: 10px;
+  font-weight: 600;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 3px;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.legend-range-value {
+  font-size: 13px;
   font-weight: 500;
   color: #6b7280;
-  margin-top: 3px;
+  margin-top: 2px;
+  white-space: nowrap;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
@@ -476,6 +838,7 @@ const formatValue = (value) => {
   font-size: 14px;
 }
 
+/* Tooltip para hover */
 .tooltip {
   position: fixed;
   background: rgba(0, 0, 0, 0.92);

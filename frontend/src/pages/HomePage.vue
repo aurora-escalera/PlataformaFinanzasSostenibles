@@ -184,6 +184,7 @@
                 :showAllBars="true"
                 :animationDelay="0"
                 :selectedState="selectedState"
+                :selectedVariable="selectedVariable" 
               />
               
               <!-- Empty State -->
@@ -651,8 +652,8 @@ const handleVariableChange = (variable) => {
   
   if (variable === '') return
   
-  // Si no hay estado seleccionado y no estamos en "Todas...", actualizar ranking
-  if (!selectedState.value && !areAllFiltersOnTodas.value) {
+  // Actualizar ranking cuando no estamos en "Todas..." (independiente de si hay estado seleccionado)
+  if (!areAllFiltersOnTodas.value) {
     if (variable === null) {
       loadAllStatesRanking(null)
     } else {

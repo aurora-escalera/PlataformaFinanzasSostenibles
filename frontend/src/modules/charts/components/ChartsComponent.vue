@@ -443,7 +443,7 @@ const variablesIngresosCarbono = computed(() => {
 }
 
 .charts-wrapper.single-card { align-items: center; }
-.charts-wrapper.single-card .chart-card { height: 50%; max-height: 50%; }
+.charts-wrapper.single-card .chart-card { height: 55%; max-height: 100%; }
 
 .chart-card {
   display: flex;
