@@ -415,7 +415,7 @@ const loadData = async () => {
     
     const sheetName = getSheetName('chartsPresupuestosRegional')
     const data = await fetchData('chartsPresupuestosRegional', sheetName)
-    
+    console.log('DATOS:' +data)
     if (!data || data.length === 0) {
       console.warn('⚠️ [IFSRegionalCard] No hay datos')
       return
