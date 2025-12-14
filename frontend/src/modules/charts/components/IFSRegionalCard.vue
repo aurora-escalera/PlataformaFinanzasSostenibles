@@ -1,5 +1,5 @@
 <!-- src/modules/charts/components/IFSRegionalCard.vue -->
-<!-- Card que muestra métricas federales de México - cambia según la variable seleccionada -->
+<!-- ✅ ACTUALIZADO: Botón de exportación circular en header -->
 <template>
   <div class="ifs-regional-card">
     <!-- Header -->
@@ -15,6 +15,36 @@
         <p class="header-subtitle">Datos Federales Consolidados</p>
       </div>
       <span class="year-badge">{{ selectedYear || '—' }}</span>
+      
+      <!-- ✅ Botón de exportación circular -->
+      <div class="export-wrapper" ref="exportWrapperRef">
+        <button 
+          class="export-btn-circle"
+          :class="{ 'is-open': showExportMenu }"
+          @click.stop="toggleExportMenu"
+          title="Exportar datos"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+        </button>
+        
+        <!-- Dropdown menu -->
+        <transition name="dropdown-fade">
+          <div v-if="showExportMenu" class="export-dropdown">
+            <button class="export-option" @click="handleExport('xlsx')">
+              <span class="option-icon xlsx">XLS</span>
+              <span>Excel</span>
+            </button>
+            <button class="export-option" @click="handleExport('csv')">
+              <span class="option-icon csv">CSV</span>
+              <span>CSV</span>
+            </button>
+          </div>
+        </transition>
+      </div>
     </div>
 
     <!-- Body -->
@@ -156,10 +186,11 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useStorageData } from '@/dataConection/useStorageData'
 import { getMapping, getSheetName } from '@/dataConection/storageConfig'
 import { getCleanValue } from '@/composables/parseNumber'
+import { useExportData } from '@/composables/useExportData'
 
 const props = defineProps({
   selectedYear: {
@@ -173,8 +204,52 @@ const props = defineProps({
 })
 
 const { fetchData, loading, error } = useStorageData()
+const { exportIFSRegionalData } = useExportData()
+
 const metricValue = ref(0)
 const positionValue = ref(null)
+
+// ✅ Estado del menú de exportación
+const showExportMenu = ref(false)
+const exportWrapperRef = ref(null)
+
+const toggleExportMenu = () => {
+  showExportMenu.value = !showExportMenu.value
+}
+
+// Cerrar menú al hacer clic fuera
+const handleClickOutside = (event) => {
+  if (exportWrapperRef.value && !exportWrapperRef.value.contains(event.target)) {
+    showExportMenu.value = false
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+  loadData()
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
+
+// ✅ Handler de exportación
+const handleExport = (format) => {
+  console.log('📥 [IFSRegionalCard] Exportando en formato:', format)
+  showExportMenu.value = false
+  
+  const exportData = {
+    indicador: currentConfig.value.headerTitle,
+    valor: isIFSMode.value ? formattedIFSValue.value : metricValue.value,
+    posicion: positionValue.value,
+    tipo: isIFSMode.value ? 'Índice' : 'Monetario (USD)'
+  }
+  
+  exportIFSRegionalData(exportData, format, {
+    year: props.selectedYear,
+    variable: props.selectedVariable
+  })
+}
 
 // Configuración por variable
 const variableConfigs = {
@@ -296,7 +371,7 @@ const formattedMonetaryValue = computed(() => {
   return value.toFixed(2)
 })
 
-// ✅ NUEVO: Texto completo de unidad monetaria en dólares
+// Texto completo de unidad monetaria en dólares
 const monetaryUnitText = computed(() => {
   const value = metricValue.value
   
@@ -387,10 +462,6 @@ const loadData = async () => {
 watch([() => props.selectedYear, () => props.selectedVariable], () => {
   loadData()
 }, { immediate: false })
-
-onMounted(() => {
-  loadData()
-})
 </script>
 
 <style scoped>
@@ -465,6 +536,106 @@ onMounted(() => {
   border-radius: 20px;
   font-size: 14px;
   font-weight: 500;
+}
+
+/* ==================== BOTÓN DE EXPORTACIÓN CIRCULAR ==================== */
+.export-wrapper {
+  position: relative;
+  margin-left: 8px;
+}
+
+.export-btn-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.export-btn-circle:hover {
+  background: rgba(255, 255, 255, 0.25);
+  color: white;
+  transform: scale(1.08);
+}
+
+.export-btn-circle.is-open {
+  background: rgba(255, 255, 255, 0.3);
+  color: white;
+}
+
+.export-btn-circle svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Dropdown */
+.export-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+  z-index: 1000;
+  min-width: 120px;
+}
+
+.export-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 14px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  font-size: 13px;
+  color: #374151;
+}
+
+.export-option:hover {
+  background: #f3f4f6;
+}
+
+.export-option:first-child {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.option-icon {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 3px 6px;
+  border-radius: 4px;
+  color: white;
+}
+
+.option-icon.xlsx {
+  background: #107c41;
+}
+
+.option-icon.csv {
+  background: #6366f1;
+}
+
+/* Animación dropdown */
+.dropdown-fade-enter-active,
+.dropdown-fade-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.dropdown-fade-enter-from,
+.dropdown-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
 }
 
 /* ==================== BODY ==================== */
@@ -730,7 +901,6 @@ onMounted(() => {
   color: #1e293b;
 }
 
-/* ✅ NUEVO: Unidad monetaria en línea separada */
 .monetary-unit {
   font-size: 12px;
   font-weight: 500;
@@ -888,6 +1058,39 @@ onMounted(() => {
 
 /* ==================== RESPONSIVE ==================== */
 @media (max-width: 768px) {
+  .card-header {
+    padding: 12px 16px;
+    gap: 10px;
+  }
+  
+  .header-icon {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .header-title {
+    font-size: 15px;
+  }
+  
+  .header-subtitle {
+    font-size: 11px;
+  }
+  
+  .year-badge {
+    padding: 4px 12px;
+    font-size: 12px;
+  }
+  
+  .export-btn-circle {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .export-btn-circle svg {
+    width: 12px;
+    height: 12px;
+  }
+  
   .metrics-row {
     flex-direction: column;
     gap: 24px;

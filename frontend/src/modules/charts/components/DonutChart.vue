@@ -1,10 +1,44 @@
+<!-- src/modules/charts/components/DonutChart.vue -->
+<!-- ✅ ACTUALIZADO: Botón de exportación circular en distribution-header -->
 <template>
   <div class="donut-item-vertical">
     <!-- Barra de distribución horizontal superior -->
     <div class="distribution-bar-section">
       <div class="distribution-header">
         <span class="distribution-label">Distribución</span>
-        <span class="distribution-value" :class="badgeColorClass">{{ displayValue }}</span>
+        <div class="distribution-header-right">
+          <span class="distribution-value" :class="badgeColorClass">{{ displayValue }}</span>
+          
+          <!-- ✅ Botón de exportación circular -->
+          <div class="export-button-wrapper" ref="exportWrapperRef">
+            <button 
+              class="export-btn-circle"
+              :class="[badgeColorClass, { 'is-open': showExportMenu }]"
+              @click.stop="toggleExportMenu"
+              title="Exportar datos"
+            >
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+            </button>
+            
+            <!-- Dropdown menu -->
+            <transition name="dropdown-fade">
+              <div v-if="showExportMenu" class="export-dropdown-mini">
+                <button class="export-option" @click="handleExport('xlsx')">
+                  <span class="option-icon xlsx">XLS</span>
+                  <span class="option-text">Excel</span>
+                </button>
+                <button class="export-option" @click="handleExport('csv')">
+                  <span class="option-icon csv">CSV</span>
+                  <span class="option-text">CSV</span>
+                </button>
+              </div>
+            </transition>
+          </div>
+        </div>
       </div>
       <div class="distribution-bar">
         <div 
@@ -24,21 +58,16 @@
           @click="toggleSector(index)"
         />
       </div>
-      <!-- ✅ Leyenda de moneda dinámica -->
       <div class="currency-legend">{{ currencyLegend }}</div>
     </div>
     
     <!-- Área principal - Dona + Badge -->
     <div class="donut-main-area">
-      <!-- Dona SVG -->
       <div class="donut-svg-container">
         <svg class="donut-svg" viewBox="0 0 200 200">
-          <!-- Anillo de fondo -->
           <circle cx="100" cy="100" r="72" fill="none" stroke="#e2e8f0" stroke-width="25"/>
           
-          <!-- Sectores -->
           <template v-for="(sector, index) in computedSectorPaths" :key="index">
-            <!-- Caso especial: sector es 100% - usar círculo completo -->
             <circle
               v-if="sector.isFullCircle"
               class="donut-ring"
@@ -46,9 +75,7 @@
                 dimmed: !activeSectors[index] || (hoveredIndex !== null && hoveredIndex !== index),
                 highlighted: hoveredIndex === index 
               }"
-              cx="100"
-              cy="100"
-              r="72"
+              cx="100" cy="100" r="72"
               fill="none"
               :stroke="sector.color"
               stroke-width="25"
@@ -56,7 +83,6 @@
               @mouseleave="onSectorLeave"
               @click="toggleSector(index)"
             />
-            <!-- Caso normal: usar path de arco -->
             <path 
               v-else
               class="donut-ring"
@@ -74,7 +100,6 @@
             />
           </template>
           
-          <!-- Porcentajes en el anillo -->
           <text 
             v-for="(sector, index) in computedSectorPaths" 
             :key="'pct-' + index"
@@ -91,7 +116,6 @@
           </text>
         </svg>
         
-        <!-- Centro con valor -->
         <div class="donut-center">
           <div class="center-value" :class="badgeColorClass">{{ displayValue }}</div>
         </div>
@@ -147,52 +171,64 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 
 const props = defineProps({
-  data: {
-    type: Array,
-    default: () => []
-  },
-  title: {
-    type: String,
-    default: ''
-  },
-  subtitle: {
-    type: String,
-    default: ''
-  },
-  size: {
-    type: Number,
-    default: 220
-  },
-  variables: {
-    type: Array,
-    default: () => []
-  },
-  sectors: {
-    type: Array,
-    default: () => []
-  },
-  currency: {
-    type: String,
-    default: 'MXN' // 'USD' para Regional, 'MXN' para Estados
-  }
+  data: { type: Array, default: () => [] },
+  title: { type: String, default: '' },
+  subtitle: { type: String, default: '' },
+  size: { type: Number, default: 220 },
+  variables: { type: Array, default: () => [] },
+  sectors: { type: Array, default: () => [] },
+  currency: { type: String, default: 'MXN' }
 })
 
-// Estado
+const emit = defineEmits(['export'])
+
+const showExportMenu = ref(false)
+const exportWrapperRef = ref(null)
+
+const toggleExportMenu = () => {
+  showExportMenu.value = !showExportMenu.value
+}
+
+const handleExport = (format) => {
+  showExportMenu.value = false
+  emit('export', { format, data: getExportData() })
+}
+
+const getExportData = () => {
+  return props.sectors.map(s => ({
+    'Sector': s.label,
+    'Valor': s.value,
+    'Porcentaje': totalAllSectors.value > 0 
+      ? `${((s.value / totalAllSectors.value) * 100).toFixed(2)}%` 
+      : '0%'
+  }))
+}
+
+const handleClickOutside = (event) => {
+  if (exportWrapperRef.value && !exportWrapperRef.value.contains(event.target)) {
+    showExportMenu.value = false
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
+
 const activeSectors = ref([])
 const hoveredIndex = ref(null)
 
-// Determinar color del badge basado en el título (IS, IIC, PS, PIC)
 const badgeColorClass = computed(() => {
-  if (props.title === 'IS' || props.title === 'PS') {
-    return 'green'
-  }
+  if (props.title === 'IS' || props.title === 'PS') return 'green'
   return 'red'
 })
 
-// Título del badge
 const badgeTitle = computed(() => {
   if (props.title === 'IS') return 'Ingresos\nSostenibles'
   if (props.title === 'IIC') return 'Ingresos\nInt. Carbono'
@@ -201,75 +237,33 @@ const badgeTitle = computed(() => {
   return props.title
 })
 
-// Procesar sectores con shortLabels para los filtros
 const processedSectors = computed(() => {
-  return props.sectors.map(sector => {
-    let shortLabel = sector.label
-    
-    if (sector.label === 'Movilidad Sustentable') shortLabel = 'Movilidad Sustentable'
-    if (sector.label === 'Protección Ambiental') shortLabel = 'Protección Ambiental'
-    if (sector.label === 'Desastres Naturales') shortLabel = 'Desastres Naturales'
-    
-    return {
-      ...sector,
-      shortLabel
-    }
-  })
+  return props.sectors.map(sector => ({
+    ...sector,
+    shortLabel: sector.label
+  }))
 })
 
-// Inicializar sectores activos cuando cambian los props
 watch(() => props.sectors, (newSectors) => {
   if (newSectors && newSectors.length > 0) {
     activeSectors.value = newSectors.map(() => true)
   }
 }, { immediate: true })
 
-// Calcular el total de todos los sectores
 const totalAllSectors = computed(() => {
   return props.sectors.reduce((acc, sector) => acc + (sector.value || 0), 0)
 })
 
-// ✅ Leyenda de moneda dinámica
 const currencyLegend = computed(() => {
-  if (props.currency === 'USD') {
-    return '* Cifras en dólares estadounidenses (USD)'
-  }
-  return '* Cifras en pesos mexicanos (MXN)'
+  return props.currency === 'USD' ? '* Cifras en dólares estadounidenses (USD)' : '* Cifras en pesos mexicanos (MXN)'
 })
 
-// Obtener porcentaje para un sector específico
 function getPercentForSector(index) {
   if (!props.sectors[index] || totalAllSectors.value === 0) return '0.00'
   const percent = (props.sectors[index].value / totalAllSectors.value) * 100
   return percent.toFixed(2)
 }
 
-// Título dinámico a mostrar en el indicador
-const displayTitle = computed(() => {
-  if (hoveredIndex.value !== null && processedSectors.value[hoveredIndex.value]) {
-    return processedSectors.value[hoveredIndex.value].label
-  }
-  
-  const activeIndices = activeSectors.value
-    .map((active, i) => active ? i : -1)
-    .filter(i => i !== -1)
-  
-  if (activeIndices.length === props.sectors.length || activeIndices.length === 0) {
-    if (props.title === 'IS') return 'Ingresos Sostenibles'
-    if (props.title === 'IIC') return 'Ingresos Int. Carbono'
-    if (props.title === 'PS') return 'Presupuestos Sostenibles'
-    if (props.title === 'PIC') return 'Presupuestos Int. Carbono'
-    return props.title
-  } 
-  else if (activeIndices.length === 1) {
-    return processedSectors.value[activeIndices[0]]?.label || ''
-  } 
-  else {
-    return activeIndices.map(i => processedSectors.value[i]?.shortLabel || processedSectors.value[i]?.label).join(' + ')
-  }
-})
-
-// Valor dinámico a mostrar (suma de sectores activos)
 const displayValue = computed(() => {
   if (hoveredIndex.value !== null && processedSectors.value[hoveredIndex.value]) {
     return formatValue(processedSectors.value[hoveredIndex.value].value)
@@ -282,31 +276,18 @@ const displayValue = computed(() => {
   return formatValue(sum)
 })
 
-// Computed: hay filtros activos (no todos seleccionados)
-const hasActiveFilters = computed(() => {
-  const activeCount = activeSectors.value.filter(Boolean).length
-  return activeCount > 0 && activeCount < props.sectors.length
-})
-
-// ✅ CORREGIDO: Calcular paths SVG de los sectores con manejo especial para 100%
 const computedSectorPaths = computed(() => {
   if (!props.sectors || props.sectors.length === 0) return []
   
-  const cx = 100
-  const cy = 100
-  const r = 72
-  
+  const cx = 100, cy = 100, r = 72
   const total = totalAllSectors.value
-  
   let currentAngle = -90
   
-  return props.sectors.map((sector, index) => {
+  return props.sectors.map((sector) => {
     const percent = total > 0 ? (sector.value / total) * 100 : 0
     const angleSpan = (percent / 100) * 360
     const startAngle = currentAngle
     const endAngle = currentAngle + angleSpan
-    
-    // ✅ NUEVO: Detectar si es un círculo completo (100% o muy cercano)
     const isFullCircle = angleSpan >= 359.9
     
     const startRad = (startAngle * Math.PI) / 180
@@ -318,21 +299,17 @@ const computedSectorPaths = computed(() => {
     const y2 = cy + r * Math.sin(endRad)
     
     const largeArc = angleSpan > 180 ? 1 : 0
-    
-    // Calcular posición del porcentaje (en el medio del arco)
     const midAngle = startAngle + angleSpan / 2
     const midRad = (midAngle * Math.PI) / 180
     const percentX = cx + r * Math.cos(midRad)
     const percentY = cy + r * Math.sin(midRad)
     
-    // Para 100%, posicionar el texto arriba del centro
     const textRotation = isFullCircle ? 0 : midAngle + 90
     const finalPercentX = isFullCircle ? cx : percentX
     const finalPercentY = isFullCircle ? cy - r : percentY
     
     currentAngle = endAngle
     
-    // ✅ NUEVO: Para círculo completo, no necesitamos path (usaremos <circle>)
     let path = ''
     if (!isFullCircle && angleSpan > 0) {
       path = `M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2}`
@@ -341,7 +318,7 @@ const computedSectorPaths = computed(() => {
     return {
       ...sector,
       path,
-      isFullCircle, // ✅ NUEVO: Flag para renderizar círculo en lugar de path
+      isFullCircle,
       percentX: finalPercentX,
       percentY: finalPercentY,
       textRotation,
@@ -350,19 +327,15 @@ const computedSectorPaths = computed(() => {
   })
 })
 
-// Métodos
 function toggleSector(index) {
   activeSectors.value[index] = !activeSectors.value[index]
-  
   if (!activeSectors.value.some(Boolean)) {
     activeSectors.value = activeSectors.value.map(() => true)
   }
 }
 
 function onSectorHover(index) {
-  if (activeSectors.value[index]) {
-    hoveredIndex.value = index
-  }
+  if (activeSectors.value[index]) hoveredIndex.value = index
 }
 
 function onSectorLeave() {
@@ -371,31 +344,15 @@ function onSectorLeave() {
 
 function formatValue(value) {
   if (!value || value === 0) return '$0.00'
-  
   const millions = value / 1000000
-  
-  if (millions >= 1000) {
-    // Billones (miles de millones)
-    return '$' + (millions / 1000).toFixed(2) + ' B'
-  } else if (millions >= 1) {
-    // Millones
-    return '$' + millions.toFixed(2) + ' M'
-  } else if (millions >= 0.01) {
-    // Millones pequeños
-    return '$' + millions.toFixed(2) + ' M'
-  } else {
-    // Miles
-    const thousands = value / 1000
-    return '$' + thousands.toFixed(2) + ' K'
-  }
+  if (millions >= 1000) return '$' + (millions / 1000).toFixed(2) + ' B'
+  if (millions >= 1) return '$' + millions.toFixed(2) + ' M'
+  if (millions >= 0.01) return '$' + millions.toFixed(2) + ' M'
+  return '$' + (value / 1000).toFixed(2) + ' K'
 }
 </script>
 
 <style scoped>
-/* ============================================
-   Container principal - Vertical Stack
-   TAMAÑOS AUMENTADOS para mayor altura
-   ============================================ */
 .donut-item-vertical {
   flex: 1;
   border-radius: 0 0 12px 12px;
@@ -408,12 +365,7 @@ function formatValue(value) {
   gap: 12px;
 }
 
-/* ============================================
-   Barra de distribución horizontal superior
-   ============================================ */
-.distribution-bar-section {
-  flex-shrink: 0;
-}
+.distribution-bar-section { flex-shrink: 0; }
 
 .distribution-header {
   display: flex;
@@ -430,17 +382,99 @@ function formatValue(value) {
   letter-spacing: 0.3px;
 }
 
-.distribution-value {
-  font-size: 15px;
-  font-weight: 700;
+.distribution-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.distribution-value.green {
+.distribution-value { font-size: 15px; font-weight: 700; }
+.distribution-value.green { color: #166534; }
+.distribution-value.red { color: #dc2626; }
+
+/* ✅ Botón de exportación circular pequeño */
+.export-button-wrapper { position: relative; }
+
+.export-btn-circle {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.export-btn-circle.green {
+  background: #f0fdf4;
+  border-color: #86efac;
   color: #166534;
 }
 
-.distribution-value.red {
+.export-btn-circle.green:hover { background: #dcfce7; }
+
+.export-btn-circle.red {
+  background: #fef2f2;
+  border-color: #fca5a5;
   color: #dc2626;
+}
+
+.export-btn-circle.red:hover { background: #fee2e2; }
+
+.export-btn-circle:hover { transform: scale(1.08); }
+.export-btn-circle.is-open { transform: scale(1.08); }
+.export-btn-circle svg { width: 10px; height: 10px; }
+
+.export-dropdown-mini {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+  z-index: 1000;
+  min-width: 95px;
+}
+
+.export-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  font-size: 11px;
+  color: #374151;
+}
+
+.export-option:hover { background: #f3f4f6; }
+.export-option:first-child { border-bottom: 1px solid #e5e7eb; }
+
+.option-icon {
+  font-size: 8px;
+  font-weight: 700;
+  padding: 2px 4px;
+  border-radius: 3px;
+  color: white;
+}
+
+.option-icon.xlsx { background: #107c41; }
+.option-icon.csv { background: #6366f1; }
+.option-text { font-weight: 500; }
+
+.dropdown-fade-enter-active, .dropdown-fade-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.dropdown-fade-enter-from, .dropdown-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
 }
 
 .distribution-bar {
@@ -457,19 +491,10 @@ function formatValue(value) {
   cursor: pointer;
 }
 
-.distribution-segment:hover {
-  filter: brightness(1.1);
-}
+.distribution-segment:hover { filter: brightness(1.1); }
+.distribution-segment.dimmed { opacity: 0.2; }
+.distribution-segment.highlighted { filter: brightness(1.15); }
 
-.distribution-segment.dimmed {
-  opacity: 0.2;
-}
-
-.distribution-segment.highlighted {
-  filter: brightness(1.15);
-}
-
-/* ✅ Leyenda de moneda */
 .currency-legend {
   font-size: 12px;
   font-style: italic;
@@ -478,9 +503,6 @@ function formatValue(value) {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* ============================================
-   Área principal - Dona + Badge
-   ============================================ */
 .donut-main-area {
   flex: 1;
   display: flex;
@@ -491,7 +513,6 @@ function formatValue(value) {
   padding: 10px 0;
 }
 
-/* Dona SVG - TAMAÑO AUMENTADO */
 .donut-svg-container {
   position: relative;
   width: 170px;
@@ -510,20 +531,10 @@ function formatValue(value) {
   cursor: pointer;
 }
 
-.donut-ring:hover {
-  filter: brightness(1.1);
-}
+.donut-ring:hover { filter: brightness(1.1); }
+.donut-ring.dimmed { opacity: 0.2; }
+.donut-ring.highlighted { filter: brightness(1.15); stroke-width: 28; }
 
-.donut-ring.dimmed {
-  opacity: 0.2;
-}
-
-.donut-ring.highlighted {
-  filter: brightness(1.15);
-  stroke-width: 28;
-}
-
-/* Porcentajes dentro del anillo */
 .sector-percent {
   font-size: 11px;
   font-weight: 600;
@@ -535,11 +546,8 @@ function formatValue(value) {
   transition: opacity 0.3s ease;
 }
 
-.sector-percent.dimmed {
-  opacity: 0.2;
-}
+.sector-percent.dimmed { opacity: 0.2; }
 
-/* Centro con valor - TAMAÑO AUMENTADO */
 .donut-center {
   position: absolute;
   top: 50%;
@@ -549,23 +557,10 @@ function formatValue(value) {
   pointer-events: none;
 }
 
-.center-value {
-  font-size: 16px;
-  font-weight: 700;
-  transition: all 0.3s ease;
-}
+.center-value { font-size: 16px; font-weight: 700; transition: all 0.3s ease; }
+.center-value.green { color: #166534; }
+.center-value.red { color: #dc2626; }
 
-.center-value.green {
-  color: #166534;
-}
-
-.center-value.red {
-  color: #dc2626;
-}
-
-/* ============================================
-   Badge indicador - TAMAÑO AUMENTADO
-   ============================================ */
 .badge-indicator {
   padding: 16px 14px;
   border-radius: 14px;
@@ -574,15 +569,8 @@ function formatValue(value) {
   min-width: 80px;
 }
 
-.badge-indicator.green {
-  background: #f0fdf4;
-  border: 2px solid #86efac;
-}
-
-.badge-indicator.red {
-  background: #fef2f2;
-  border: 2px solid #fca5a5;
-}
+.badge-indicator.green { background: #f0fdf4; border: 2px solid #86efac; }
+.badge-indicator.red { background: #fef2f2; border: 2px solid #fca5a5; }
 
 .badge-icon-circle {
   width: 38px;
@@ -604,10 +592,7 @@ function formatValue(value) {
   color: white;
 }
 
-.badge-icon-circle svg {
-  width: 20px;
-  height: 20px;
-}
+.badge-icon-circle svg { width: 20px; height: 20px; }
 
 .badge-text {
   font-size: 8px;
@@ -617,17 +602,9 @@ function formatValue(value) {
   white-space: pre-line;
 }
 
-.badge-indicator.green .badge-text {
-  color: #166534;
-}
+.badge-indicator.green .badge-text { color: #166534; }
+.badge-indicator.red .badge-text { color: #dc2626; }
 
-.badge-indicator.red .badge-text {
-  color: #dc2626;
-}
-
-/* ============================================
-   Lista de datos inferior - TAMAÑO AUMENTADO
-   ============================================ */
 .data-list-section {
   background: #f8fafc;
   border-radius: 12px;
@@ -646,24 +623,11 @@ function formatValue(value) {
   transition: all 0.2s ease;
 }
 
-.data-list-item:not(:last-child) {
-  border-bottom: 1px solid #e2e8f0;
-}
+.data-list-item:not(:last-child) { border-bottom: 1px solid #e2e8f0; }
+.data-list-item:hover, .data-list-item.highlighted { background: white; }
+.data-list-item.dimmed { opacity: 0.35; }
 
-.data-list-item:hover,
-.data-list-item.highlighted {
-  background: white;
-}
-
-.data-list-item.dimmed {
-  opacity: 0.35;
-}
-
-.data-item-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
+.data-item-left { display: flex; align-items: center; gap: 10px; }
 
 .data-color-dot {
   width: 14px;
@@ -672,23 +636,9 @@ function formatValue(value) {
   flex-shrink: 0;
 }
 
-.data-item-label {
-  font-size: 12px;
-  font-weight: 500;
-  color: #374151;
-}
-
-.data-item-right {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.data-item-value {
-  font-size: 14px;
-  font-weight: 500;
-  color: #1e3a5f;
-}
+.data-item-label { font-size: 12px; font-weight: 500; color: #374151; }
+.data-item-right { display: flex; align-items: center; gap: 14px; }
+.data-item-value { font-size: 14px; font-weight: 500; color: #1e3a5f; }
 
 .data-item-percent {
   font-size: 11px;
@@ -700,53 +650,18 @@ function formatValue(value) {
   text-align: center;
 }
 
-/* ============================================
-   Responsive
-   ============================================ */
 @media (max-width: 768px) {
-  .donut-svg-container {
-    width: 140px;
-    height: 140px;
-  }
-  
-  .donut-main-area {
-    gap: 16px;
-  }
-  
-  .badge-indicator {
-    padding: 12px 10px;
-  }
-  
-  .badge-icon-circle {
-    width: 32px;
-    height: 32px;
-  }
-  
-  .badge-icon-circle svg {
-    width: 16px;
-    height: 16px;
-  }
-  
-  .badge-text {
-    font-size: 7px;
-  }
-  
-  .center-value {
-    font-size: 18px;
-  }
-  
-  .data-item-label {
-    font-size: 11px;
-  }
-  
-  .data-item-value {
-    font-size: 12px;
-  }
-  
-  .data-item-percent {
-    font-size: 10px;
-    padding: 3px 8px;
-    min-width: 58px;
-  }
+  .donut-svg-container { width: 140px; height: 140px; }
+  .donut-main-area { gap: 16px; }
+  .badge-indicator { padding: 12px 10px; }
+  .badge-icon-circle { width: 32px; height: 32px; }
+  .badge-icon-circle svg { width: 16px; height: 16px; }
+  .badge-text { font-size: 7px; }
+  .center-value { font-size: 18px; }
+  .data-item-label { font-size: 11px; }
+  .data-item-value { font-size: 12px; }
+  .data-item-percent { font-size: 10px; padding: 3px 8px; min-width: 58px; }
+  .export-btn-circle { width: 20px; height: 20px; }
+  .export-btn-circle svg { width: 9px; height: 9px; }
 }
 </style>
