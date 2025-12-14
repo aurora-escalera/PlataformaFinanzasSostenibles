@@ -7,30 +7,109 @@
       lastUpdate="24 de septiembre de 2025"
     />
 
-    <!-- Barra de toggle Vista/Moneda -->
+    <!-- Barra de toggle Vista -->
     <DataViewToggleBar 
-      v-model="currentDataView"
-      :currency="currentCurrency"
+      @click-federal="handleToggleFederalClick"
+      @click-subnacional="handleToggleSubnacionalClick"
     />
 
     <!-- Contenido principal -->
     <main class="app-main">
-      <router-view />
+      <router-view 
+        @filters-state-change="handleFiltersStateChange"
+        @available-years-change="handleAvailableYearsChange"
+      />
     </main>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import HeaderComponent from '@modules/other/components/HeaderComponent.vue'
+import { ref, provide } from 'vue'
 import TitleBarComponent from '@modules/other/components/TitleBarComponent.vue'
-import DataViewToggleBar from './modules/other/components/DataViewToggleBar.vue'
+import DataViewToggleBar from '@modules/other/components/DataViewToggleBar.vue'
+import { useDataToggle } from '@/composables/useDataToggle'
 
-// Estado del toggle de vista
-const currentDataView = ref('subnacional')
+// ============================================================================
+// COMPOSABLE
+// ============================================================================
+const { 
+  updateFiltersState,
+  updateAvailableYears,
+  getFederalClickFilters,
+  getSubnacionalClickFilters
+} = useDataToggle()
 
-// Estado de la moneda (puede venir de una API o configuración)
-const currentCurrency = ref('MXN')
+// ============================================================================
+// ESTADO
+// ============================================================================
+
+// Ref reactivo para la acción del toggle (para comunicar con HomePage)
+const toggleAction = ref(null)
+
+// ============================================================================
+// HANDLERS: Recibir estado de HomePage
+// ============================================================================
+
+/**
+ * Recibe cambios en el estado de los filtros desde HomePage
+ * Actualiza el composable para que el toggle refleje el estado correcto
+ */
+const handleFiltersStateChange = (state) => {
+  console.log('📡 [App] Recibido estado de filtros:', state)
+  updateFiltersState(state)
+}
+
+/**
+ * Recibe cambios en los años disponibles desde HomePage
+ */
+const handleAvailableYearsChange = (years) => {
+  console.log('📅 [App] Años disponibles actualizados:', years)
+  updateAvailableYears(years)
+}
+
+// ============================================================================
+// HANDLERS: Click en toggle
+// ============================================================================
+
+/**
+ * Handler para click en "Datos Regionales" (Federal)
+ * Setea filtros: entity=null, year=null, variable=null
+ * Resultado: LinearChart + HistoricalCard + Overlay Gris
+ */
+const handleToggleFederalClick = (filters) => {
+  console.log('🔘 [App] Click en toggle "Datos Regionales" (Federal)')
+  console.log('📤 [App] Enviando filtros a HomePage:', filters)
+  
+  // Emitir acción para que HomePage aplique los filtros
+  toggleAction.value = { 
+    type: 'federal', 
+    filters, 
+    timestamp: Date.now() 
+  }
+}
+
+/**
+ * Handler para click en "Datos Subnacionales"
+ * Setea filtros: entity='', year=primerAño, variable=null
+ * Resultado: DefaultInfoCard + RankingChart + No overlay
+ */
+const handleToggleSubnacionalClick = (filters) => {
+  console.log('🔘 [App] Click en toggle "Datos Subnacionales"')
+  console.log('📤 [App] Enviando filtros a HomePage:', filters)
+  
+  // Emitir acción para que HomePage aplique los filtros
+  toggleAction.value = { 
+    type: 'subnacional', 
+    filters, 
+    timestamp: Date.now() 
+  }
+}
+
+// ============================================================================
+// PROVIDE: Pasar acciones del toggle a HomePage via provide/inject
+// ============================================================================
+
+provide('toggleAction', toggleAction)
 </script>
 
 <style>
