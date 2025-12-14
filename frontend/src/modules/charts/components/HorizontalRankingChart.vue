@@ -1,4 +1,4 @@
-<!-- HorizontalRankingChart.vue - Con colores dinámicos por variable -->
+<!-- HorizontalRankingChart.vue - Con colores dinámicos por variable y tarjeta de estado seleccionado -->
 <template>
   <div class="horizontal-bar-chart" :style="{ width: width, height: height }">
     <!-- Título -->
@@ -15,15 +15,17 @@
           :key="variable.key"
           class="bar-row"
           :class="{ 
-            'is-hovered': hoveredBarKey === variable.key || isSelected(variable),
-            'is-dimmed': (hoveredBarKey !== null && hoveredBarKey !== variable.key) || (selectedState !== null && !isSelected(variable))
+            'is-hovered': hoveredBarKey === variable.key,
+            'is-selected': isSelected(variable),
+            'is-dimmed': (hoveredBarKey !== null && hoveredBarKey !== variable.key && !isSelected(variable)) || 
+                         (selectedState !== null && isSelectionActive && !isSelected(variable) && hoveredBarKey === null)
           }"
           @mouseenter="handleMouseEnter(variable, $event)"
           @mousemove="handleMouseMove($event)"
           @mouseleave="handleMouseLeave"
         >
           <!-- Label del estado (izquierda) -->
-          <div class="state-label">
+          <div class="state-label" :class="{ 'selected-label': isSelected(variable) }">
             {{ variable.label }}
           </div>
           
@@ -43,9 +45,9 @@
             <div class="bar-wrapper-horizontal">
               <div 
                 class="bar-horizontal"
-                :class="variable.colorClass"
+                :class="[variable.colorClass, { 'selected-bar': isSelected(variable) }]"
                 :style="{ 
-                  width: getAnimatedWidth(variable) + '%',
+                  width: getBarWidth(variable.value) + '%',
                   background: variable.color
                 }"
               >
@@ -53,6 +55,20 @@
                 <span class="bar-value">{{ formatValue(variable.value) }}</span>
               </div>
             </div>
+
+            <!-- ✅ Indicador flotante debajo de la barra -->
+            <transition name="floating-indicator">
+              <span 
+                v-if="isSelected(variable)" 
+                class="floating-classification"
+                :style="{ 
+                  color: variable.color,
+                  textShadow: `0 0 8px ${variable.color}60`
+                }"
+              >
+                {{ variable.classification }}
+              </span>
+            </transition>
           </div>
         </div>
 
@@ -77,9 +93,9 @@
       </div>
     </div>
 
-    <!-- Tooltip -->
+    <!-- Tooltip (para hover, no para selección) -->
     <Teleport to="body">
-      <div v-if="tooltip.visible" class="tooltip" :style="tooltipStyle">
+      <div v-if="tooltip.visible && !isTooltipForSelectedState" class="tooltip" :style="tooltipStyle">
         <div class="tooltip-content">
           <div class="tooltip-color" :style="{ backgroundColor: tooltip.color }"></div>
           <div class="tooltip-info">
@@ -108,7 +124,7 @@ const props = defineProps({
   initialBarsCount: { type: Number, default: 4 },
   valueFormatter: { type: Function, default: null },
   selectedState: { type: String, default: null },
-  // ✅ NUEVO: Variable seleccionada para determinar rangos de color
+  // Variable seleccionada para determinar rangos de color
   selectedVariable: { 
     type: [Object, String, null], 
     default: null 
@@ -118,13 +134,20 @@ const props = defineProps({
 const hoveredBarKey = ref(null)
 const tooltip = ref({ visible: false, x: 0, y: 0, label: '', value: '', color: '', classification: '' })
 const internalVariables = ref([])
-const animatedWidths = ref({})
+const isAnimated = ref(false) // ✅ Control para animación de llenado
+const isSelectionActive = ref(true) // ✅ Control para mostrar/ocultar selección durante animación
 
-// ✅ Obtener la key de la variable actual
+// Obtener la key de la variable actual
 const currentVariableKey = computed(() => {
   if (!props.selectedVariable) return null
   if (typeof props.selectedVariable === 'string') return props.selectedVariable
   return props.selectedVariable?.key || null
+})
+
+// Verificar si el tooltip es para el estado seleccionado (para no mostrarlo)
+const isTooltipForSelectedState = computed(() => {
+  if (!props.selectedState || !tooltip.value.label) return false
+  return tooltip.value.label === props.selectedState
 })
 
 // ============================================================================
@@ -133,8 +156,6 @@ const currentVariableKey = computed(() => {
 
 /**
  * IFSS - Índice de Finanzas Sostenibles Subnacional
- * Muy Bajo <= 0.5 | 0.5 < Bajo < 1.5 | 1.5 <= Medio Bajo < 1.9 | 
- * 1.9 <= Medio < 2.3 | 2.3 <= Medio Alto < 4 | 4 <= Alto
  */
 const getIFSSColor = (value) => {
   const numValue = parseFloat(value) || 0
@@ -147,9 +168,7 @@ const getIFSSColor = (value) => {
 }
 
 /**
- * IS - Ingresos Sostenibles (valores en porcentaje, mayor es mejor)
- * Muy Bajo < 0.11% | 0.11% <= Bajo < 0.51% | 0.51% <= Medio Bajo < 1.25% |
- * 1.25% <= Medio < 3.29% | 3.29% <= Medio Alto < 10% | 10% <= Alto
+ * IS - Ingresos Sostenibles
  */
 const getISColor = (value) => {
   const numValue = parseFloat(value) || 0
@@ -162,9 +181,7 @@ const getISColor = (value) => {
 }
 
 /**
- * IIC - Ingresos Intensivos en Carbono (INVERTIDO: menor es mejor)
- * 0.49% <= Bajo < 2.1% | 2.1% <= Medio Bajo < 4.32% |
- * 4.32% <= Medio < 6.19% | 6.19% <= Medio Alto < 11.08% | >= 11.08% Muy Alto
+ * IIC - Ingresos Intensivos en Carbono (INVERTIDO)
  */
 const getIICColor = (value) => {
   const numValue = parseFloat(value) || 0
@@ -176,9 +193,7 @@ const getIICColor = (value) => {
 }
 
 /**
- * PS - Presupuestos Sostenibles (valores en porcentaje, mayor es mejor)
- * Muy Bajo <= 0.13% | 0.13% <= Bajo < 0.54% | 0.54% <= Medio Bajo < 1.50% |
- * 1.50% <= Medio < 4.59% | 4.59% <= Alto
+ * PS - Presupuestos Sostenibles
  */
 const getPSColor = (value) => {
   const numValue = parseFloat(value) || 0
@@ -190,14 +205,12 @@ const getPSColor = (value) => {
 }
 
 /**
- * PIC - Presupuestos Intensivos en Carbono (INVERTIDO: menor es mejor)
- * < 0.11% Muy Bajo (verde alto) | 0.11% <= Bajo < 2.18% | 2.18% <= Medio Bajo < 4.13% |
- * 4.13% <= Medio < 6.22% | 6.22% <= Medio Alto < 15.53% | >= 15.53% Muy Alto (rojo)
+ * PIC - Presupuestos Intensivos en Carbono (INVERTIDO)
  */
 const getPICColor = (value) => {
   const numValue = parseFloat(value) || 0
-  if (numValue < 0.11) return { color: '#6ac952', label: 'Muy Bajo' }
-  if (numValue < 2.18) return { color: '#94d351', label: 'Bajo' }
+  if (numValue < 0.11) return { color: '#94d351', label: 'Muy Bajo' }
+  if (numValue < 2.18) return { color: '#6ac952', label: 'Bajo' }
   if (numValue < 4.13) return { color: '#f0d648', label: 'Medio Bajo' }
   if (numValue < 6.22) return { color: '#e6a74c', label: 'Medio' }
   if (numValue < 15.53) return { color: '#e67849', label: 'Medio Alto' }
@@ -222,19 +235,8 @@ const getColorByVariable = (value) => {
       return getPICColor(value)
     case 'IFSS':
     default:
-      // Por defecto usar rangos de IFSS
       return getIFSSColor(value)
   }
-}
-
-// ✅ Función wrapper para obtener solo el color
-const getColorValue = (value) => {
-  return getColorByVariable(value).color
-}
-
-// ✅ Función wrapper para obtener solo la clasificación
-const getClassification = (value) => {
-  return getColorByVariable(value).label
 }
 
 // ============================================================================
@@ -253,37 +255,24 @@ const initializeVariables = () => {
       colorClass: v.colorClass || 'default',
       color: colorInfo.color,
       classification: colorInfo.label,
-      active: false
+      active: true  // ✅ Todas las barras activas inmediatamente
     }
   })
-  
-  animatedWidths.value = {}
-  props.variables.forEach(v => {
-    animatedWidths.value[v.key] = 0
-  })
 }
 
-const activateBarsWithAnimation = async () => {
-  await new Promise(resolve => setTimeout(resolve, props.animationDelay))
-  
-  const count = props.showAllBars 
-    ? internalVariables.value.length 
-    : Math.min(props.initialBarsCount, internalVariables.value.length)
-  
-  for (let i = 0; i < count; i++) {
-    internalVariables.value[i].active = true
-    await new Promise(resolve => setTimeout(resolve, 50))
-    const targetWidth = getBarWidth(internalVariables.value[i].value)
-    animatedWidths.value[internalVariables.value[i].key] = targetWidth
-    const delay = props.showAllBars && count > 10 ? 20 : 200
-    await new Promise(resolve => setTimeout(resolve, delay))
-  }
-}
-
-// ✅ Watch para actualizar colores cuando cambia la variable seleccionada
+// Watch para actualizar colores cuando cambia la variable seleccionada
 watch(() => props.selectedVariable, (newVar, oldVar) => {
   console.log('🔄 [HorizontalRankingChart] Variable cambió de', oldVar, 'a', newVar)
-  // Recalcular colores para todas las barras
+  
+  // ✅ Si hay un estado seleccionado, desactivar temporalmente la selección
+  if (props.selectedState) {
+    isSelectionActive.value = false
+  }
+  
+  // Resetear animación
+  isAnimated.value = false
+  
+  // Actualizar colores
   internalVariables.value = internalVariables.value.map(v => {
     const colorInfo = getColorByVariable(v.value)
     return {
@@ -292,24 +281,81 @@ watch(() => props.selectedVariable, (newVar, oldVar) => {
       classification: colorInfo.label
     }
   })
+  
+  // Iniciar animación de llenado
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      isAnimated.value = true
+      
+      // ✅ Después de que termine la animación de llenado, reactivar la selección
+      if (props.selectedState) {
+        setTimeout(() => {
+          isSelectionActive.value = true
+        }, 850) // Un poco más que la duración de la animación (0.8s = 800ms)
+      }
+    }, 50)
+  })
 }, { deep: true })
 
 watch(() => props.variables, () => {
+  // ✅ Si hay un estado seleccionado, desactivar temporalmente la selección
+  if (props.selectedState) {
+    isSelectionActive.value = false
+  }
+  
+  // ✅ Resetear animación cuando cambian los datos
+  isAnimated.value = false
   initializeVariables()
-  activateBarsWithAnimation()
+  
+  // Reactivar animación
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      isAnimated.value = true
+      
+      // ✅ Después de la animación, reactivar la selección
+      if (props.selectedState) {
+        setTimeout(() => {
+          isSelectionActive.value = true
+        }, 850)
+      }
+    }, 50)
+  })
 }, { immediate: true, deep: true })
 
 onMounted(() => {
-  activateBarsWithAnimation()
+  initializeVariables()
+  
+  // ✅ Si hay un estado seleccionado al montar, desactivar temporalmente la selección
+  if (props.selectedState) {
+    isSelectionActive.value = false
+  }
+  
+  // ✅ Activar animación de llenado después de un pequeño delay
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      isAnimated.value = true
+      
+      // ✅ Después de la animación, reactivar la selección
+      if (props.selectedState) {
+        setTimeout(() => {
+          isSelectionActive.value = true
+        }, 850)
+      }
+    }, 50)
+  })
 })
 
 const activeVariables = computed(() => {
-  return internalVariables.value.filter(v => v.active)
+  const count = props.showAllBars 
+    ? internalVariables.value.length 
+    : Math.min(props.initialBarsCount, internalVariables.value.length)
+  return internalVariables.value.slice(0, count)
 })
 
-// Verificar si una barra está seleccionada
+// Verificar si una barra está seleccionada (respeta isSelectionActive)
 const isSelected = (variable) => {
   if (!props.selectedState) return false
+  if (!isSelectionActive.value) return false // ✅ No mostrar selección durante animación
   return variable.label === props.selectedState || variable.key === props.selectedState
 }
 
@@ -383,13 +429,11 @@ const handleMouseLeave = () => {
   tooltip.value.visible = false
 }
 
+// ✅ Calcula el ancho - proporcional al valor, el min-width de CSS garantiza espacio para texto
 const getBarWidth = (value) => {
+  if (!isAnimated.value) return 0
   const percentage = (value / maxValue.value) * 100
   return Math.min(percentage, 100)
-}
-
-const getAnimatedWidth = (variable) => {
-  return animatedWidths.value[variable.key] || 0
 }
 
 const formatValue = (value) => {
@@ -454,8 +498,9 @@ const formatValue = (value) => {
   min-height: 12px;
   flex-shrink: 0;
   padding: 0;
-  transition: opacity 0.3s ease, transform 0.2s ease;
+  transition: opacity 0.4s ease, filter 0.4s ease, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
+  position: relative;
 }
 
 .bar-row.is-hovered {
@@ -464,14 +509,23 @@ const formatValue = (value) => {
   z-index: 10;
 }
 
+/* ✅ Estilo mejorado para estado seleccionado */
+.bar-row.is-selected {
+  opacity: 1;
+  transform: translateX(2px);
+  z-index: 100;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.25));
+  min-height: 14px;
+}
+
 .bar-row.is-dimmed {
-  opacity: 0.2;
-  transition: opacity 0.3s ease, filter 0.3s ease;
+  opacity: 0.15;
+  filter: grayscale(40%);
 }
 
 /* Label del estado */
 .state-label {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 100;
   color: #374151;
   text-align: right;
@@ -481,6 +535,14 @@ const formatValue = (value) => {
   text-overflow: ellipsis;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.2;
+  transition: all 0.3s ease;
+}
+
+/* ✅ Label resaltado cuando está seleccionado */
+.state-label.selected-label {
+  font-weight: 200;
+  color: #1a202c;
+  font-size: 16px;
 }
 
 /* Área de la barra con grid */
@@ -518,31 +580,105 @@ const formatValue = (value) => {
   min-height: 12px;
 }
 
+/* ✅ Área gris transparente cuando está seleccionada */
+.bar-row.is-selected .bar-wrapper-horizontal {
+  background: transparent;
+  box-shadow: none;
+  border: none;
+}
+
 .bar-horizontal {
   height: 100%;
-  transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease;
+  /* ✅ Transición de width para animación de llenado */
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease, box-shadow 0.3s ease;
   position: relative;
   border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   padding-right: 6px;
+  padding-left: 4px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  min-width: 36px; /* ✅ Reducido para mejor diferenciación */
+  box-sizing: border-box;
 }
 
 .bar-row.is-hovered .bar-horizontal {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
+/* ✅ Barra seleccionada con efecto de pulso */
+.bar-horizontal.selected-bar {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  }
+  50% {
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35), 0 0 0 3px rgba(255, 255, 255, 0.3);
+  }
+}
+
 /* Valor dentro de la barra */
 .bar-value {
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 600;
   color: white;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
   white-space: nowrap;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   line-height: 1;
+}
+
+/* ✅ Indicador flotante debajo de la barra - solo texto */
+.floating-classification {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  box-shadow: 200px #050709;
+  transform: translateX(-50%);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  white-space: nowrap;
+  z-index: 1000;
+  pointer-events: none;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Animación de entrada para el indicador */
+.floating-indicator-enter-active {
+  animation: indicatorFadeIn 0.3s ease-out;
+}
+
+.floating-indicator-leave-active {
+  animation: indicatorFadeOut 0.2s ease-in;
+}
+
+@keyframes indicatorFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-5px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes indicatorFadeOut {
+  0% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-5px);
+  }
 }
 
 /* Eje X */
@@ -592,6 +728,7 @@ const formatValue = (value) => {
   font-size: 14px;
 }
 
+/* Tooltip para hover */
 .tooltip {
   position: fixed;
   background: rgba(0, 0, 0, 0.92);
