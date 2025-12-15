@@ -4,7 +4,7 @@
     <div class="historic-table">
       <!-- ROW 1 -->
       <div class="row-1">
-        <!-- IS Stacked Area Chart Card - SIN símbolo $ y CON decimales -->
+        <!-- IS Stacked Area Chart Card - CON porcentaje y posición en tooltip -->
         <div class="chart-card IS-anual-linear-chart">
           <div class="chart-card-header">
             <h4 class="card-title">Análisis histórico de los Ingresos Sostenibles (IS)</h4>
@@ -13,12 +13,13 @@
             <StackedArea
               :data="chartDataLinear"
               :xLabels="years"
-              :showCurrencySymbol="false"
-              :decimalPlaces="1"
+              :showCurrencySymbol="true"
+              :decimalPlaces="2"
               :hideHeader="true"
               :width="950"
               :height="350"
-
+              :positionsByYear="isPositionsByYear"
+              :percentagesByYear="isPercentagesByYear"
             />
           </div>
         </div>
@@ -75,7 +76,7 @@
 
       <!-- ROW 3 -->
       <div class="row-3">
-        <!-- PS-PIC Linear Chart Card (Full Width) - CON símbolo $ (default) -->
+        <!-- PS-PIC Linear Chart Card (Full Width) -->
         <div class="chart-card PS-PIC-anual-linear-chart">
           <div class="chart-card-header">
             <h4 class="card-title">Análisis histórico de los Intensivos en Carbono y Presupuestos Sostenibles (PS-PIC)</h4>
@@ -135,7 +136,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import LinearChart from '../../charts/components/LinearChart.vue'
 import StackedArea from '../../charts/components/StackedArea.vue'
 import HistoricBarChart from '../../charts/components/HistoricBarChart.vue'
@@ -153,7 +154,6 @@ const props = defineProps({
   }
 })
 
-// Composable de Google Sheets - Importar transformToLinearChartData
 const { fetchData, transformToBarChartData, transformToLinearChartData, transformToStackedAreaData } = useStorageData()
 
 // Datos para gráficas
@@ -165,6 +165,10 @@ const chartDataLinear = ref({})
 const chartDataLinearPSPIC = ref({}) 
 const chartDataStackedArea = ref({})
 const years = ref(['2020', '2021', '2022', '2023', '2024'])
+
+// ✅ NUEVOS: Datos para tooltip extendido de IS
+const isPositionsByYear = ref({})
+const isPercentagesByYear = ref({})
 
 // Cargar datos de Google Sheets
 const loadData = async () => {
@@ -183,6 +187,9 @@ const loadData = async () => {
       console.error('❌ No se obtuvieron datos del Google Sheet')
       return
     }
+    
+    // ✅ NUEVO: Extraer posiciones y porcentajes de IS
+    extractISTooltipData(rawData)
     
     // Transformar datos para IIC
     const mappingIIC = storageConfig.mappings.iicBarChart
@@ -207,7 +214,7 @@ const loadData = async () => {
     const mappingStackedArea = storageConfig.mappings.iicStackedArea
     chartDataStackedArea.value = transformToStackedAreaData(rawData, mappingStackedArea)
 
-    // Convertir formato: { data: [...], labels: [...] } → { 'Variable 1': [...], 'Variable 2': [...] }
+    // Convertir formato para LinearChart IS
     const formattedData = {}
     linearResult.data.forEach(series => {
       formattedData[series.label] = series.data
@@ -218,31 +225,21 @@ const loadData = async () => {
     
     // Transformar datos para LinearChart PS-PIC
     const mappingPSPIC = storageConfig.mappings.pspicLinearChart
-    console.log('🔍 mappingPSPIC:', mappingPSPIC)
-    console.log('🔍 Valor de GT ($) en primera fila:', rawData[0]['GT ($)'])
-    console.log('🔍 Tipo de GT ($):', typeof rawData[0]['GT ($)'])
-    
     const linearResultPSPIC = transformToLinearChartData(rawData, mappingPSPIC)
-    console.log('🔍 linearResultPSPIC:', linearResultPSPIC)
     
     const formattedDataPSPIC = {}
     linearResultPSPIC.data.forEach(series => {
       formattedDataPSPIC[series.label] = series.data
-      console.log(`🔍 Serie "${series.label}":`, series.data)
     })
     
     chartDataLinearPSPIC.value = formattedDataPSPIC
     
-    console.log('✅ Datos transformados para IIC BarChart:', chartDataBar.value?.length || 0, 'años')
-    console.log('✅ Datos transformados para IS BarChart:', chartDataBarIS.value?.length || 0, 'años')
-    console.log('✅ Datos transformados para PIC BarChart:', chartDataBarPIC.value?.length || 0, 'años')
-    console.log('✅ Datos transformados para PS BarChart:', chartDataBarPS.value?.length || 0, 'años')
-    console.log('✅ Datos transformados para LinearChart IS:', chartDataLinear.value)
-    console.log('✅ Datos transformados para LinearChart PS-PIC:', chartDataLinearPSPIC.value)
+    console.log('✅ Datos transformados')
+    console.log('📍 isPositionsByYear:', isPositionsByYear.value)
+    console.log('📊 isPercentagesByYear:', isPercentagesByYear.value)
 
   } catch (err) {
     console.error('❌ Error cargando datos:', err)
-    console.error('Error completo:', err.message)
     chartDataBar.value = []
     chartDataBarIS.value = []
     chartDataBarPIC.value = []
@@ -250,7 +247,69 @@ const loadData = async () => {
     chartDataLinear.value = {}
     chartDataLinearPSPIC.value = {} 
     chartDataStackedArea.value = {}
+    isPositionsByYear.value = {}
+    isPercentagesByYear.value = {}
   }
+}
+
+/**
+ * ✅ NUEVA FUNCIÓN: Extrae posiciones y porcentajes de IS del rawData
+ * Columnas esperadas: Año, IS ($), IS (%), POS_IS, FT ($)
+ */
+const extractISTooltipData = (rawData) => {
+  console.log('🔧 [extractISTooltipData] Extrayendo datos de tooltip para IS...')
+  
+  const positions = {}
+  const percentages = {}
+  
+  // Nombres de columnas (ajustar si son diferentes en tu sheet)
+  const yearColumn = 'Año'
+  const percentageColumn = 'IS (%)'
+  const positionColumn = 'POS_IS'
+  
+  // Mapeo de variables del gráfico a columnas
+  // En isLinearChart tienes: 'IS Total' (de 'IS ($)') y 'Financiamiento Total' (de 'FT ($)')
+  const variableMapping = {
+    'IS Total': { percentageCol: percentageColumn, positionCol: positionColumn },
+    // Financiamiento Total no tiene porcentaje ni posición
+  }
+  
+  rawData.forEach((row, index) => {
+    const year = row[yearColumn]
+    if (!year) return
+    
+    const yearStr = String(year).trim()
+    positions[yearStr] = {}
+    percentages[yearStr] = {}
+    
+    // Extraer porcentaje de IS
+    const pctRaw = row[percentageColumn]
+    if (pctRaw !== undefined && pctRaw !== null && pctRaw !== '') {
+      // Manejar formato europeo (coma como decimal)
+      const pctValue = parseFloat(String(pctRaw).replace(',', '.'))
+      if (!isNaN(pctValue)) {
+        percentages[yearStr]['IS Total'] = pctValue
+        console.log(`📊 [DEBUG] Año ${yearStr} - IS (%): ${pctValue}`)
+      }
+    }
+    
+    // Extraer posición de IS
+    const posRaw = row[positionColumn]
+    if (posRaw !== undefined && posRaw !== null && posRaw !== '') {
+      const posValue = parseInt(posRaw)
+      if (!isNaN(posValue)) {
+        positions[yearStr]['IS Total'] = posValue
+        console.log(`📍 [DEBUG] Año ${yearStr} - POS_IS: ${posValue}`)
+      }
+    }
+  })
+  
+  isPositionsByYear.value = positions
+  isPercentagesByYear.value = percentages
+  
+  console.log('✅ [extractISTooltipData] Completado')
+  console.log('📍 Positions:', JSON.stringify(positions, null, 2))
+  console.log('📊 Percentages:', JSON.stringify(percentages, null, 2))
 }
 
 // Cargar datos al montar (con delay de 2 segundos)
@@ -287,7 +346,6 @@ onMounted(async () => {
   gap: 8px;
 }
 
-/* Todas las rows con mismo tamaño */
 .row-1, .row-2, .row-3, .row-4 {
   display: flex;
   flex-direction: row;
@@ -295,7 +353,6 @@ onMounted(async () => {
   gap: 8px;
 }
 
-/* ===== ESTILOS DE CARD (igual que ChartsComponent) ===== */
 .chart-card {
   display: flex;
   flex-direction: column;
@@ -341,15 +398,11 @@ onMounted(async () => {
   min-height: 0;
 }
 
-/* Asegurar que los componentes hijos ocupen todo el espacio */
 .chart-card-body > * {
   width: 100%;
   height: 100%;
 }
 
-/* ===== TAMAÑOS ESPECÍFICOS DE CARDS ===== */
-
-/* Cards de 50% del ancho (row-1, row-2, row-4) */
 .IS-anual-linear-chart,
 .IIC-anual-linear-chart,
 .IIC-anual-bar-chart,
@@ -359,7 +412,6 @@ onMounted(async () => {
   width: 50%;
 }
 
-/* Card de 100% del ancho (row-3) */
 .PS-PIC-anual-linear-chart {
   width: 100%;
 }
