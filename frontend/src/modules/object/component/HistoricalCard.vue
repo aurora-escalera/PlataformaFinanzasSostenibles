@@ -65,7 +65,7 @@
         <!-- IS Bar Chart Card -->
         <div class="chart-card IS-anual-bar-chart">
           <div class="chart-card-header">
-            <h4 class="card-title">Financiamiento total destinado al financiamiento para el desarrollo a cambio climático por Año (FTDCC)</h4>
+            <h4 class="card-title">Ingresos Sostenibles (IS) por Año</h4>
           </div>
           <div class="chart-card-body">
             <HistoricBarChart
@@ -80,23 +80,25 @@
 
       <!-- ROW 3 -->
       <div class="row-3">
-        <!-- PS-PIC Linear Chart Card (Full Width) -->
+        <!-- PS-PIC Stacked Area Chart Card (Full Width) -->
         <div class="chart-card PS-PIC-anual-linear-chart">
           <div class="chart-card-header">
             <h4 class="card-title">Análisis histórico de los Intensivos en Carbono y Presupuestos Sostenibles (PS-PIC)</h4>
           </div>
           <div class="chart-card-body">
-            <LinearChart
+            <StackedArea
               :data="chartDataLinearPSPIC"
               :xLabels="years"
               :width="1900"
               :height="340"
               :hideHeader="true"
-              :padding="{
-                top: 20,
-                right: 0,
-                bottom: 100,
-                left: 100
+              :showCurrencySymbol="true"
+              :decimalPlaces="2"
+              :positionsByYear="pspicPositionsByYear"
+              :percentagesByYear="pspicPercentagesByYear"
+              :tooltipLabels="{
+                'Presupuestos Intensivos en Carbono': 'PIC',
+                'Presupuestos Sostenibles': 'PS'
               }"
             />
           </div>
@@ -178,6 +180,10 @@ const isPercentagesByYear = ref({})
 const iicPositionsByYear = ref({})
 const iicPercentagesByYear = ref({})
 
+// ✅ NUEVOS: Datos para tooltip extendido de PS-PIC (LinearChart)
+const pspicPositionsByYear = ref({})
+const pspicPercentagesByYear = ref({})
+
 // Cargar datos de Google Sheets
 const loadData = async () => {
   try {
@@ -201,6 +207,9 @@ const loadData = async () => {
     
     // ✅ NUEVO: Extraer posiciones y porcentajes de IIC
     extractIICTooltipData(rawData)
+    
+    // ✅ NUEVO: Extraer posiciones y porcentajes de PS-PIC
+    extractPSPICTooltipData(rawData)
     
     // Transformar datos para IIC
     const mappingIIC = storageConfig.mappings.iicBarChart
@@ -262,6 +271,8 @@ const loadData = async () => {
     isPercentagesByYear.value = {}
     iicPositionsByYear.value = {}
     iicPercentagesByYear.value = {}
+    pspicPositionsByYear.value = {}
+    pspicPercentagesByYear.value = {}
   }
 }
 
@@ -392,6 +403,85 @@ const extractIICTooltipData = (rawData) => {
   console.log('✅ [extractIICTooltipData] Completado')
   console.log('📍 IIC Positions:', JSON.stringify(positions, null, 2))
   console.log('📊 IIC Percentages:', JSON.stringify(percentages, null, 2))
+}
+
+/**
+ * ✅ FUNCIÓN GENÉRICA: Extrae posiciones y porcentajes desde un mapping de storageConfig
+ * Lee las columnas percentageColumn y positionColumn definidas en el mapping
+ */
+const extractTooltipDataFromMapping = (rawData, mappingName) => {
+  console.log(`🔧 [extractTooltipDataFromMapping] Extrayendo datos de tooltip para ${mappingName}...`)
+  
+  const mapping = storageConfig.mappings[mappingName]
+  if (!mapping) {
+    console.error(`❌ Mapping "${mappingName}" no encontrado en storageConfig`)
+    return { positions: {}, percentages: {} }
+  }
+  
+  const positions = {}
+  const percentages = {}
+  
+  const yearColumn = mapping.yearColumn || 'Año'
+  const variableColumns = mapping.variableColumns || []
+  
+  console.log(`📋 [${mappingName}] Variables configuradas:`, variableColumns.map(v => ({
+    label: v.label,
+    percentageColumn: v.percentageColumn,
+    positionColumn: v.positionColumn
+  })))
+  
+  rawData.forEach((row) => {
+    const year = row[yearColumn]
+    if (!year) return
+    
+    const yearStr = String(year).trim()
+    positions[yearStr] = positions[yearStr] || {}
+    percentages[yearStr] = percentages[yearStr] || {}
+    
+    // Iterar sobre cada variable del mapping
+    variableColumns.forEach((varConfig) => {
+      const label = varConfig.label
+      
+      // Extraer porcentaje si está definido
+      if (varConfig.percentageColumn) {
+        const pctRaw = row[varConfig.percentageColumn]
+        if (pctRaw !== undefined && pctRaw !== null && pctRaw !== '') {
+          const pctValue = parseFloat(String(pctRaw).replace(',', '.'))
+          if (!isNaN(pctValue)) {
+            percentages[yearStr][label] = pctValue
+            console.log(`📊 [${mappingName}] Año ${yearStr} - ${label} porcentaje: ${pctValue}`)
+          }
+        }
+      }
+      
+      // Extraer posición si está definida
+      if (varConfig.positionColumn) {
+        const posRaw = row[varConfig.positionColumn]
+        if (posRaw !== undefined && posRaw !== null && posRaw !== '') {
+          const posValue = parseInt(posRaw)
+          if (!isNaN(posValue)) {
+            positions[yearStr][label] = posValue
+            console.log(`📍 [${mappingName}] Año ${yearStr} - ${label} posición: ${posValue}`)
+          }
+        }
+      }
+    })
+  })
+  
+  console.log(`✅ [extractTooltipDataFromMapping] ${mappingName} completado`)
+  console.log('📍 Positions:', JSON.stringify(positions, null, 2))
+  console.log('📊 Percentages:', JSON.stringify(percentages, null, 2))
+  
+  return { positions, percentages }
+}
+
+/**
+ * ✅ Extrae posiciones y porcentajes de PS-PIC usando el mapping de storageConfig
+ */
+const extractPSPICTooltipData = (rawData) => {
+  const { positions, percentages } = extractTooltipDataFromMapping(rawData, 'pspicLinearChart')
+  pspicPositionsByYear.value = positions
+  pspicPercentagesByYear.value = percentages
 }
 
 // Cargar datos al montar (con delay de 2 segundos)

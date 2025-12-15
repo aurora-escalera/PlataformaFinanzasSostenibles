@@ -1446,17 +1446,28 @@ export const storageConfig = {
         {
           key: 'GT',
           column: 'GT ($)',
-          label: 'Gasto Total'
-        },
-        {
-          key: 'PS',
-          column: 'PS ($)',
-          label: 'Presupuestos Sostenibles'
+          label: 'Gasto Total',
+          tooltipLabel: 'Gasto Total',
+          color: '#9E9E9E'
+          // Sin percentageColumn ni positionColumn
         },
         {
           key: 'PIC',
           column: 'PIC ($)',
-          label: 'Presupuestos Intensivos en Carbono'
+          label: 'Presupuestos Intensivos en Carbono',
+          tooltipLabel: 'PIC',
+          color: '#DC143C',
+          percentageColumn: 'PIC (%)',
+          positionColumn: 'POS_PIC'
+        },
+        {
+          key: 'PS',
+          column: 'PS ($)',
+          label: 'Presupuestos Sostenibles',
+          tooltipLabel: 'PS',
+          color: '#7cb342',
+          percentageColumn: 'PS (%)',
+          positionColumn: 'POS_PS'
         }
       ]
     },

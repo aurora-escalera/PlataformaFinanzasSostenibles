@@ -239,7 +239,9 @@ const props = defineProps({
   initialVisibleVariables: { type: Array, default: null },
   // ✅ NUEVAS PROPS para tooltip extendido
   positionsByYear: { type: Object, default: () => ({}) },
-  percentagesByYear: { type: Object, default: () => ({}) }
+  percentagesByYear: { type: Object, default: () => ({}) },
+  // ✅ NUEVA PROP: Labels cortos para tooltip (ej: { 'Presupuestos Sostenibles': 'PS' })
+  tooltipLabels: { type: Object, default: () => ({}) }
 })
 
 const emit = defineEmits(['variable-toggle'])
@@ -289,6 +291,9 @@ const tooltipItems = computed(() => {
     const value = data[index]
     const color = getVariableColor(varName)
     
+    // ✅ Usar tooltipLabel si existe, sino usar varName
+    const displayName = props.tooltipLabels[varName] || varName
+    
     // Obtener porcentaje
     let percentage = null
     if (props.percentagesByYear && props.percentagesByYear[year]) {
@@ -306,7 +311,7 @@ const tooltipItems = computed(() => {
     
     return {
       key: `${varName}-${year}`,
-      name: varName,
+      name: displayName,
       value,
       formattedValue: formatValue(value),
       color,
