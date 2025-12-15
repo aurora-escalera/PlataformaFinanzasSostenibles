@@ -1,6 +1,6 @@
 <!-- src/modules/charts/components/ChartsComponent.vue -->
 <!-- ✅ Para datos ESTATALES - usa columnas PT ($) e IT ($) -->
-<!-- ✅ NUEVO: Posición y porcentaje en KPI cards -->
+<!-- ✅ CORREGIDO: Porcentaje en KPI cards = mismo valor que dentro de las barras -->
 <template>
   <div class="charts-wrapper" :class="{ 'single-card': showingSingleCard }">
 
@@ -185,27 +185,17 @@ const presupuestosMapping = getMapping('chartsPresupuestos')
 const ingresosMapping = getMapping('chartsIngresos')
 
 // ============================================================================
-// ✅ NUEVO: MAPEO DE COLUMNAS PARA POSICIÓN Y PORCENTAJE (ESTATALES)
+// MAPEO DE COLUMNAS PARA POSICIÓN (sin porcentaje de columna)
 // ============================================================================
 
 // Mapeo de columnas de posición por tipo de variable
 const positionColumnMap = {
-  'presupuesto_total': null, // PT no tiene posición
+  'presupuesto_total': null,
   'presupuesto_sostenible': 'POS_PS',
   'presupuesto_carbono': 'POS_PIC',
-  'ingresos_total': null, // IT no tiene posición
+  'ingresos_total': null,
   'ingresos_sostenibles': 'POS_IS',
   'ingresos_carbono': 'POS_IIC'
-}
-
-// Mapeo de columnas de porcentaje por tipo de variable
-const percentageColumnMap = {
-  'presupuesto_total': null, // PT es 100%
-  'presupuesto_sostenible': 'PS (%)',
-  'presupuesto_carbono': 'PIC (%)',
-  'ingresos_total': null, // IT es 100%
-  'ingresos_sostenibles': 'IS (%)',
-  'ingresos_carbono': 'IIC (%)'
 }
 
 // ============================================================================
@@ -258,20 +248,33 @@ const getCleanValue = (row, column) => {
   return parseFloat(raw) || 0
 }
 
-// ✅ ACTUALIZADO: Función para transformar datos con posición y porcentaje
+// ✅ CORREGIDO: Función para calcular porcentaje respecto al total (igual que BarChart)
+const calculatePercentageOfTotal = (value, totalValue) => {
+  if (!totalValue || totalValue === 0) return null
+  return ((value / totalValue) * 100).toFixed(2)
+}
+
+// ✅ CORREGIDO: Función para transformar datos con porcentaje CALCULADO (no de columna)
 const transformSingleRowToBarChart = (row, mapping) => {
   if (!row) return { variables: [] }
   
-  const variables = mapping.variableColumns.map(varConfig => {
+  // Primero, obtener el valor total (primera variable)
+  const totalColumn = mapping.variableColumns[0]?.column
+  const totalValue = totalColumn ? getCleanValue(row, totalColumn) : 0
+  
+  const variables = mapping.variableColumns.map((varConfig, index) => {
     const value = getCleanValue(row, varConfig.column)
     
-    // ✅ NUEVO: Obtener posición de la columna correspondiente
+    // Obtener posición de la columna correspondiente
     const positionColumn = positionColumnMap[varConfig.key]
     const position = positionColumn ? getCleanValue(row, positionColumn) : null
     
-    // ✅ NUEVO: Obtener porcentaje de la columna correspondiente
-    const percentageColumn = percentageColumnMap[varConfig.key]
-    const percentage = percentageColumn ? getCleanValue(row, percentageColumn) : null
+    // ✅ CORREGIDO: Calcular porcentaje igual que BarChart (value / total * 100)
+    // Para el total (index 0), el porcentaje es null (no se muestra)
+    let percentage = null
+    if (index > 0 && totalValue > 0) {
+      percentage = calculatePercentageOfTotal(value, totalValue)
+    }
     
     return {
       key: varConfig.key, 
@@ -281,7 +284,7 @@ const transformSingleRowToBarChart = (row, mapping) => {
       colorClass: varConfig.colorClass, 
       order: varConfig.order || 0,
       position: position || null,
-      percentage: percentage || null
+      percentage: percentage
     }
   })
   
