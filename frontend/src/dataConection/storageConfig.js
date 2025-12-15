@@ -1368,7 +1368,8 @@ export const storageConfig = {
           key: 'IFS',
           column: 'IFS',
           label: 'IFS',
-          color: '#10b981'
+          color: '#10b981',
+          positionColumn: 'POS_IFS'
         }
       ]
     },

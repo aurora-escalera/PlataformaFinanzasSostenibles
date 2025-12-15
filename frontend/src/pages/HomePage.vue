@@ -144,6 +144,7 @@
                     :height="440"
                     :hideHeader="true"
                     :initialVisibleVariables="['IFS']"
+                    :positionsByYear="stackedAreaPositions"
                     :padding="{
                       top: 20,
                       right: 70,
@@ -360,7 +361,8 @@ const {
   loading: stackedAreaLoading,
   error: stackedAreaError,
   title: stackedAreaTitle,
-  loadIFSSData
+  loadIFSSData,
+  positionsByYear: stackedAreaPositions
 } = useStackedAreaData()
 
 const router = useRouter()

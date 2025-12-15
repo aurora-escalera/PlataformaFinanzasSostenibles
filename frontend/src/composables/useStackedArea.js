@@ -1,7 +1,5 @@
 // src/composables/useStackedArea.js
-// ✅ Composable para cargar datos de StackedArea del IFS desde Google Sheets
-// ✅ Procesamiento manual de datos siguiendo patrón de useLinearChart
-// ✅ CORREGIDO: Ahora carga del sheet principal (VITE_GOOGLE_SHEET_ID)
+// ✅ ACTUALIZADO: Extrae IFS y POS_IFS para el tooltip
 
 import { ref, computed } from 'vue'
 import { useStorageData } from '@/dataConection/useStorageData'
@@ -12,189 +10,155 @@ export function useStackedAreaData() {
   const years = ref([])
   const loading = ref(false)
   const error = ref(null)
+  
+  // ✅ Posiciones por año para mostrar en tooltip
+  const positionsByYear = ref({})
 
   const { fetchData } = useStorageData()
 
   /**
    * Procesa los datos crudos de Google Sheets para el formato StackedArea
-   * @param {Array} rawData - Datos crudos del sheet
-   * @param {Object} mapping - Configuración del mapping
-   * @returns {Object} Datos procesados { chartData, years }
    */
   const processIFSData = (rawData, mapping) => {
-    console.log('🔧 [processIFSData] Iniciando procesamiento manual...')
+    console.log('🔧 [processIFSData] Iniciando procesamiento...')
     
     if (!rawData || rawData.length === 0) {
       throw new Error('No hay datos para procesar')
     }
 
-    const yearColumn = mapping.yearColumn // 'Año'
-    const ifsConfig = mapping.variableColumns[0] // { key: 'IFS', column: 'IFS', ... }
-    const ifsColumnName = ifsConfig.column // 'IFS'
-    const ifsLabel = ifsConfig.label // 'IFS'
+    const yearColumn = mapping.yearColumn
+    const variableColumns = mapping.variableColumns || []
 
-    console.log(`📋 Buscando columna de años: "${yearColumn}"`)
-    console.log(`📋 Buscando columna de IFS: "${ifsColumnName}"`)
+    console.log(`📋 Columna de años: "${yearColumn}"`)
+    console.log(`📋 Variables:`, variableColumns)
+
+    if (rawData.length > 0) {
+      console.log('🔍 [DEBUG] Claves en primera fila:', Object.keys(rawData[0]))
+      console.log('🔍 [DEBUG] Primera fila:', rawData[0])
+    }
 
     const extractedYears = []
-    const ifsValues = []
-
-    // ✅ NUEVO: Mostrar TODAS las claves disponibles en la primera fila
-    if (rawData.length > 0) {
-      console.log('🔍 [DEBUG] Claves disponibles en primera fila:', Object.keys(rawData[0]))
-      console.log('🔍 [DEBUG] Primera fila completa:', JSON.stringify(rawData[0], null, 2))
-    }
+    const dataByVariable = {}
+    const positions = {}
+    
+    // Inicializar estructuras
+    variableColumns.forEach(varConfig => {
+      dataByVariable[varConfig.label] = []
+    })
 
     // Procesar cada fila
     for (let i = 0; i < rawData.length; i++) {
       const row = rawData[i]
-      
-      // ✅ NUEVO: Mostrar contenido completo de las primeras 3 filas
-      if (i < 3) {
-        console.log(`🔍 [DEBUG] Fila ${i} completa:`, JSON.stringify(row, null, 2))
-        console.log(`🔍 [DEBUG] Fila ${i} - Claves:`, Object.keys(row))
-      }
-      
-      // Extraer año
       const year = row[yearColumn]
       
-      // ✅ NUEVO: Log detallado de qué está buscando y qué encuentra
-      console.log(`🔍 [DEBUG] Fila ${i} - Buscando key "${yearColumn}", encontrado:`, year, `(tipo: ${typeof year})`)
-      
       if (!year) {
-        console.warn(`⚠️ Fila ${i} no tiene año, saltando...`)
         continue
       }
 
-      // Extraer valor IFS
-      const ifsValue = row[ifsColumnName]
-      
-      console.log(`📊 Fila ${i}: Año=${year}, IFS=${ifsValue}`)
+      const yearStr = String(year).trim()
+      extractedYears.push(yearStr)
+      positions[yearStr] = {}
 
-      if (ifsValue !== undefined && ifsValue !== null && ifsValue !== '') {
-        const parsedValue = parseFloat(ifsValue)
+      // Extraer valores y posiciones de cada variable
+      variableColumns.forEach(varConfig => {
+        // Valor de la variable
+        const rawValue = row[varConfig.column]
+        // Manejar formato europeo (coma como decimal)
+        const valueStr = String(rawValue || '0').replace(',', '.')
+        const parsedValue = parseFloat(valueStr)
         
         if (!isNaN(parsedValue)) {
-          extractedYears.push(year.toString())
-          ifsValues.push(parsedValue)
+          dataByVariable[varConfig.label].push(parsedValue)
         } else {
-          console.warn(`⚠️ Valor IFS inválido en año ${year}: "${ifsValue}"`)
+          dataByVariable[varConfig.label].push(0)
         }
-      } else {
-        console.warn(`⚠️ Año ${year} no tiene valor IFS`)
-      }
+        
+        // ✅ Extraer posición si existe positionColumn
+        if (varConfig.positionColumn) {
+          const posRaw = row[varConfig.positionColumn]
+          console.log(`📍 [DEBUG] Año ${yearStr} - Columna "${varConfig.positionColumn}" = "${posRaw}"`)
+          
+          if (posRaw !== undefined && posRaw !== null && posRaw !== '') {
+            const parsedPos = parseInt(posRaw)
+            if (!isNaN(parsedPos)) {
+              positions[yearStr][varConfig.label] = parsedPos
+              console.log(`✅ [DEBUG] Guardado: positions["${yearStr}"]["${varConfig.label}"] = ${parsedPos}`)
+            }
+          }
+        }
+      })
     }
 
-    console.log('✅ Procesamiento completado:')
-    console.log('📅 Años extraídos:', extractedYears)
-    console.log('📊 Valores IFS:', ifsValues)
-
-    // Validar que tenemos datos
-    if (extractedYears.length === 0 || ifsValues.length === 0) {
-      throw new Error('No se encontraron datos válidos en las columnas especificadas')
-    }
-
-    // Crear estructura para el gráfico
-    const processedData = {
-      [ifsLabel]: ifsValues
-    }
+    console.log('✅ Procesamiento completado')
+    console.log('📅 Años:', extractedYears)
+    console.log('📊 Data:', dataByVariable)
+    console.log('📍 Posiciones:', JSON.stringify(positions, null, 2))
 
     return {
-      chartData: processedData,
-      years: extractedYears
+      chartData: dataByVariable,
+      years: extractedYears,
+      positions
     }
   }
 
   /**
-   * Cargar datos del IFS StackedArea desde Google Sheets
-   * Usa el mapping 'ifssStackedArea' y la columna 'IFS'
-   * ✅ CORREGIDO: Ahora carga del sheet principal (VITE_GOOGLE_SHEET_ID) usando 'indicadores'
+   * Cargar datos del IFS desde Google Sheets
    */
   const loadIFSSData = async () => {
     try {
-      console.log('\n📊 ===== [useStackedAreaData] INICIANDO CARGA =====')
+      console.log('\n📊 ===== [useStackedAreaData] CARGANDO =====')
       loading.value = true
       error.value = null
 
-      // ✅ CORREGIDO: Usar 'indicadores' para cargar del sheet principal
       const mapping = getMapping('ifssStackedArea')
       const sheetName = getSheetName('indicadores')
       
-      console.log('📋 Mapping ifssStackedArea:', JSON.stringify(mapping, null, 2))
-      console.log('📄 Nombre de hoja (sheet principal):', sheetName)
-      console.log('🔑 Sheet ID que se usará: VITE_GOOGLE_SHEET_ID (principal)')
+      console.log('📋 Mapping:', JSON.stringify(mapping, null, 2))
+      console.log('📄 Sheet:', sheetName)
 
-      // Obtener datos crudos de Google Sheets
-      console.log('📥 Solicitando datos desde sheet principal...')
       const rawData = await fetchData('indicadores', sheetName)
       
-      console.log(`✅ Datos crudos recibidos: ${rawData.length} filas`)
-      
-      if (rawData.length > 0) {
-        console.log('📊 Encabezados disponibles:', Object.keys(rawData[0]))
-        console.log('📊 Primera fila completa:', rawData[0])
-        console.log('📊 Segunda fila completa:', rawData[1])
-      }
+      console.log(`✅ Datos recibidos: ${rawData.length} filas`)
 
       if (!rawData || rawData.length === 0) {
-        throw new Error('No se obtuvieron datos de Google Sheets')
+        throw new Error('No se obtuvieron datos')
       }
 
-      // Procesar datos manualmente
       const processed = processIFSData(rawData, mapping)
       
-      console.log('✅ Datos procesados exitosamente')
-      console.log('📊 Chart Data final:', processed.chartData)
-      console.log('📅 Years final:', processed.years)
-
-      // Actualizar refs
       chartData.value = processed.chartData
       years.value = processed.years
+      positionsByYear.value = processed.positions
 
-      console.log('✅ ===== CARGA COMPLETADA EXITOSAMENTE =====\n')
+      console.log('✅ ===== CARGA COMPLETADA =====')
+      console.log('📍 positionsByYear final:', positionsByYear.value)
 
     } catch (err) {
-      console.error('❌ ===== ERROR EN CARGA =====')
-      console.error('Error completo:', err)
-      console.error('Stack:', err.stack)
+      console.error('❌ Error:', err)
       error.value = err.message
       
-      // Datos de fallback en caso de error
-      console.warn('⚠️ Usando datos de fallback para IFS')
-      chartData.value = {
-        'IFS': [45.2, 48.7, 52.1, 55.8, 59.3]
-      }
+      // Fallback
+      chartData.value = { 'IFS': [1.5, 1.4, 1.0, 0.7, 1.3] }
       years.value = ['2020', '2021', '2022', '2023', '2024']
+      positionsByYear.value = {
+        '2020': { 'IFS': 18 },
+        '2021': { 'IFS': 16 },
+        '2022': { 'IFS': 18 },
+        '2023': { 'IFS': 18 },
+        '2024': { 'IFS': 15 }
+      }
       
     } finally {
       loading.value = false
     }
   }
 
-  /**
-   * Verificar si hay datos cargados
-   */
   const hasData = computed(() => {
     return Object.keys(chartData.value).length > 0 && years.value.length > 0
   })
 
-  /**
-   * Obtener el número de series de datos
-   */
-  const seriesCount = computed(() => {
-    return Object.keys(chartData.value).length
-  })
-
-  /**
-   * Obtener el número de años
-   */
-  const yearsCount = computed(() => {
-    return years.value.length
-  })
-
-  /**
-   * Obtener el título del gráfico
-   */
+  const seriesCount = computed(() => Object.keys(chartData.value).length)
+  const yearsCount = computed(() => years.value.length)
   const title = 'Análisis histórico del ranking de Indice de Finanzas Sostenibles (IFS)'
 
   return {
@@ -206,7 +170,8 @@ export function useStackedAreaData() {
     seriesCount,
     yearsCount,
     title,
-    loadIFSSData
+    loadIFSSData,
+    positionsByYear
   }
 }
 
