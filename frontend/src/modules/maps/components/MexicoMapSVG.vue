@@ -619,7 +619,7 @@ const tooltipStyle = computed(() => {
 
 /* ✅ Etiquetas con letra más grande */
 .legend-label {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   color: #374151;
   margin-top: 4px;
@@ -628,7 +628,7 @@ const tooltipStyle = computed(() => {
 
 /* ✅ Rangos numéricos */
 .legend-range {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 200;
   color: #6b7280;
   margin-top: 1px;

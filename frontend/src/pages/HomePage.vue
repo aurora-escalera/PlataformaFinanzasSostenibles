@@ -65,12 +65,11 @@
             @navigate-federal="handleDatosFederalesClick"
             @view-change="handleViewChange"
           />
-          <!-- Overlay sobre SOLO el mapa - Usa areAllFiltersOnTodas o showRegionalCharts -->
+          <!-- Overlay sobre SOLO el mapa - Aparece cuando entidad es "Datos Regionales" (null) -->
           <transition name="overlay-fade">
             <div 
               v-if="showMapOverlay" 
-              class="map-overlay-filter"
-              :class="{ 'regional-overlay': showRegionalCharts && !areAllFiltersOnTodas }"
+              class="map-overlay-filter regional-overlay"
               @click.stop="handleOverlayClick"
             >
               <div class="overlay-message">
@@ -503,23 +502,22 @@ const showStackedArea = computed(() => {
 })
 
 /**
- * Mostrar overlay del mapa cuando los 3 filtros están en "Todas..." O cuando se muestran los charts regionales
+ * Mostrar overlay del mapa cuando la entidad es "Datos Regionales" (null)
+ * Sin importar si el año es "Todos los años" o un año específico
  */
 const showMapOverlay = computed(() => {
   if (isRetractableExpanded.value) {
     return false
   }
-  return areAllFiltersOnTodas.value || showRegionalCharts.value
+  // Mostrar overlay siempre que la entidad sea "Datos Regionales" (null)
+  return selectedEntity.value === null
 })
 
 /**
- * Mensaje dinámico del overlay según el contexto
+ * Mensaje del overlay - unificado para ambos casos
  */
 const overlayMessage = computed(() => {
-  if (areAllFiltersOnTodas.value) {
-    return 'Haz click en cualquier entidad del mapa para regresar a los resultados subnacionales'
-  }
-  if (showRegionalCharts.value) {
+  if (selectedEntity.value === null) {
     return 'Te encuentras en la vista de resultados federales. Haz clic en cualquier sección del área azul encima del mapa para regresar a los datos subnacionales.'
   }
   return ''

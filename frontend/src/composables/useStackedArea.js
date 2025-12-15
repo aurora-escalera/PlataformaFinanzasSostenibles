@@ -159,7 +159,7 @@ export function useStackedAreaData() {
 
   const seriesCount = computed(() => Object.keys(chartData.value).length)
   const yearsCount = computed(() => years.value.length)
-  const title = 'Análisis histórico del ranking de Indice de Finanzas Sostenibles (IFS)'
+  const title = 'Análisis histórico del Indice de Finanzas Sostenibles (IFS) por año'
 
   return {
     chartData,

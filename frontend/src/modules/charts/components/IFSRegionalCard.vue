@@ -1,5 +1,5 @@
 <!-- src/modules/charts/components/IFSRegionalCard.vue -->
-<!-- ✅ ACTUALIZADO: Botón de exportación circular en header -->
+<!-- ✅ ACTUALIZADO: Nuevos rangos IFS (escala 0-4 con 6 niveles) -->
 <template>
   <div class="ifs-regional-card">
     <!-- Header -->
@@ -106,7 +106,7 @@
           </div>
         </div>
 
-        <!-- Leyenda IFS con escala -->
+        <!-- Leyenda IFS con escala de 6 niveles -->
         <div class="legend-section">
           <div class="legend-header">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -126,7 +126,7 @@
                 :style="{ background: level.color }"
               ></div>
             </div>
-            <div class="scale-labels">
+            <div class="scale-labels scale-labels-6">
               <div 
                 v-for="(level, index) in ifsLevels" 
                 :key="index"
@@ -320,12 +320,15 @@ const variableConfigs = {
   }
 }
 
-// Niveles del IFS
+// ✅ ACTUALIZADO: Niveles del IFS (escala 0-4 con 6 niveles)
+// Orden: Alto → Muy Bajo (izquierda a derecha, como en la imagen de referencia)
 const ifsLevels = [
-  { range: '0.00 - 0.25', label: 'Bajo', color: '#ef4444' },
-  { range: '0.26 - 0.50', label: 'Medio', color: '#f59e0b' },
-  { range: '0.51 - 0.75', label: 'Alto', color: '#7cb342' },
-  { range: '0.76 - 1.00', label: 'Óptimo', color: '#22c55e' }
+  { range: '3.5 - 4', label: 'Alto', color: '#22c55e' },
+  { range: '2.3 - 3.5', label: 'Medio Alto', color: '#84cc16' },
+  { range: '1.9 - 2.2', label: 'Medio', color: '#eab308' },
+  { range: '1.5 - 1.8', label: 'Medio Bajo', color: '#f97316' },
+  { range: '0.6 - 1.5', label: 'Bajo', color: '#ef4444' },
+  { range: '0 - 0.5', label: 'Muy Bajo', color: '#dc2626' }
 ]
 
 // Computed - Obtener key de variable actual
@@ -382,18 +385,22 @@ const monetaryUnitText = computed(() => {
   return 'Dólares (USD)'
 })
 
-// Computed - Progreso del gauge (solo IFS)
+// ✅ ACTUALIZADO: Progreso del gauge (escala 0-4)
 const gaugeProgress = computed(() => {
-  return Math.min(metricValue.value, 1) * 365
+  // Normalizar valor de 0-4 a 0-1, luego multiplicar por circunferencia
+  const normalizedValue = Math.min(metricValue.value, 4) / 4
+  return normalizedValue * 365
 })
 
-// Computed - Nivel actual IFS
+// ✅ ACTUALIZADO: Nivel actual IFS (6 niveles, orden Alto → Muy Bajo)
 const currentLevelIndex = computed(() => {
   const val = metricValue.value
-  if (val <= 0.25) return 0
-  if (val <= 0.50) return 1
-  if (val <= 0.75) return 2
-  return 3
+  if (val >= 3.5) return 0      // Alto
+  if (val >= 2.3) return 1      // Medio Alto
+  if (val >= 1.9) return 2      // Medio
+  if (val >= 1.5) return 3      // Medio Bajo
+  if (val >= 0.6) return 4      // Bajo
+  return 5                       // Muy Bajo
 })
 
 const currentLevelColor = computed(() => {
@@ -1016,12 +1023,19 @@ watch([() => props.selectedYear, () => props.selectedVariable], () => {
   gap: 8px;
 }
 
+/* ✅ NUEVO: Grid de 6 columnas para los 6 niveles */
+.scale-labels-6 {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+}
+
 .scale-label {
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
+  gap: 6px;
+  padding: 6px 8px;
   background: white;
   border-radius: 8px;
   border: 1px solid #e2e8f0;
@@ -1034,25 +1048,29 @@ watch([() => props.selectedYear, () => props.selectedVariable], () => {
 }
 
 .label-indicator {
-  width: 12px;
-  height: 12px;
-  border-radius: 4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
   flex-shrink: 0;
 }
 
 .label-text {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .label-name {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: #475569;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .label-range {
-  font-size: 10px;
+  font-size: 9px;
   color: #94a3b8;
 }
 
@@ -1101,12 +1119,9 @@ watch([() => props.selectedYear, () => props.selectedVariable], () => {
     height: 1px;
   }
   
-  .scale-labels {
-    flex-wrap: wrap;
-  }
-  
-  .scale-label {
-    flex: 1 1 45%;
+  /* ✅ Grid responsive para 6 niveles */
+  .scale-labels-6 {
+    grid-template-columns: repeat(3, 1fr);
   }
   
   .content-monetary {
@@ -1124,6 +1139,12 @@ watch([() => props.selectedYear, () => props.selectedVariable], () => {
   
   .position-value-monetary {
     font-size: 40px;
+  }
+}
+
+@media (max-width: 480px) {
+  .scale-labels-6 {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 </style>

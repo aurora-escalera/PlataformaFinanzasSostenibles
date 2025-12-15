@@ -7,7 +7,7 @@
         <!-- IS Stacked Area Chart Card -->
         <div v-if="shouldShowCard('IS')" class="chart-card IS-anual-linear-chart" :class="{ 'full-width': isOnlyCardInRow('IS', 'row1') }">
           <div class="chart-card-header">
-            <h4 class="card-title">Análisis histórico de los Ingresos Sostenibles (IS)</h4>
+            <h4 class="card-title">Análisis histórico de los Ingresos Sostenibles y Financiamiento Total</h4>
           </div>
           <div class="chart-card-body">
             <StackedArea
@@ -27,7 +27,7 @@
         <!-- IIC Stacked Area Card -->
         <div v-if="shouldShowCard('IIC')" class="chart-card IIC-anual-linear-chart" :class="{ 'full-width': isOnlyCardInRow('IIC', 'row1') }">
           <div class="chart-card-header">
-            <h4 class="card-title">Análisis de IIC e Ingreso Total</h4>
+            <h4 class="card-title">Análisis histórico de Ingresos Intensivos en Carbono e Ingreso Total</h4>
           </div>
           <div class="chart-card-body">
             <StackedArea
@@ -50,7 +50,7 @@
         <!-- IIC Bar Chart Card -->
         <div v-if="shouldShowCard('IIC')" class="chart-card IIC-anual-bar-chart" :class="{ 'full-width': isOnlyCardInRow('IIC', 'row2') }">
           <div class="chart-card-header">
-            <h4 class="card-title">Ingresos de Inversión en Contribución (IIC)</h4>
+            <h4 class="card-title">Análisis histórico de los componentes de los Ingresos Intensivos en Carbono</h4>
           </div>
           <div class="chart-card-body">
             <HistoricBarChart
@@ -65,7 +65,7 @@
         <!-- IS Bar Chart Card -->
         <div v-if="shouldShowCard('IS')" class="chart-card IS-anual-bar-chart" :class="{ 'full-width': isOnlyCardInRow('IS', 'row2') }">
           <div class="chart-card-header">
-            <h4 class="card-title">Ingresos Sostenibles (IS) por Año</h4>
+            <h4 class="card-title">Análisis histórico del Financiamiento Total destinado al desarrollo dedicado a cambio climático de Ingresos Sostenibles </h4>
           </div>
           <div class="chart-card-body">
             <HistoricBarChart
@@ -83,7 +83,7 @@
         <!-- PS-PIC Stacked Area Chart Card (Full Width) -->
         <div class="chart-card PS-PIC-anual-linear-chart">
           <div class="chart-card-header">
-            <h4 class="card-title">Análisis histórico de los Intensivos en Carbono y Presupuestos Sostenibles (PS-PIC)</h4>
+            <h4 class="card-title">Análisis histórico de los Ingresos Intensivos en Carbono, Presupuestos Sostenibles y Gasto Total</h4>
           </div>
           <div class="chart-card-body">
             <StackedArea
@@ -111,7 +111,7 @@
         <!-- PIC Bar Chart Card -->
         <div v-if="shouldShowCard('PIC')" class="chart-card PIC-anual-bar-chart" :class="{ 'full-width': isOnlyCardInRow('PIC', 'row4') }">
           <div class="chart-card-header">
-            <h4 class="card-title">Presupuestos Intensivos en Carbono (PIC)</h4>
+            <h4 class="card-title">Análisis histórico de componente de Presupuestos Intensivos en Carbono</h4>
           </div>
           <div class="chart-card-body">
             <HistoricBarChart
@@ -126,7 +126,7 @@
         <!-- PS Bar Chart Card --> 
         <div v-if="shouldShowCard('PS')" class="chart-card PS-anual-bar-chart" :class="{ 'full-width': isOnlyCardInRow('PS', 'row4') }">
           <div class="chart-card-header">
-            <h4 class="card-title">Presupuestos Sostenibles (PS)</h4>
+            <h4 class="card-title">Análisis histórico de componentes de Presupuestos Sostenibles</h4>
           </div>
           <div class="chart-card-body">
             <HistoricBarChart
