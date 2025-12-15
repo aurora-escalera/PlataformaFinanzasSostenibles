@@ -1,4 +1,4 @@
-<!-- src/components/ExportButton.vue -->
+<!-- src/modules/other/components/ExportButton.vue -->
 <template>
   <div class="export-button-container" ref="containerRef">
     <!-- Botón principal -->

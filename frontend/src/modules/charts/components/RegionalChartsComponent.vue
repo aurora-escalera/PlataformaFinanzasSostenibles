@@ -1,5 +1,5 @@
 <!-- src/modules/charts/components/RegionalChartsComponent.vue -->
-<!-- ✅ MODIFICADO: Agregado botón de exportación en cada card -->
+<!-- ✅ LIMPIO: Botones de exportación eliminados - Centralizado en header -->
 <template>
   <div class="charts-wrapper" :class="{ 'single-card': showingSingleCard }">
 
@@ -42,29 +42,6 @@
                 </svg>
               </div>
               <span class="donut-header-title">Componentes de Ingresos Sostenibles</span>
-              
-              <!-- ✅ Botón de exportación -->
-              <div class="export-wrapper-donut" ref="exportISRef">
-                <button class="export-btn-donut" @click.stop="toggleExportMenu('IS')" title="Exportar datos">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                    <polyline points="7 10 12 15 17 10"/>
-                    <line x1="12" y1="15" x2="12" y2="3"/>
-                  </svg>
-                </button>
-                <transition name="dropdown-fade">
-                  <div v-if="activeExportMenu === 'IS'" class="export-dropdown-donut">
-                    <button class="export-option" @click="handleDonutExport('xlsx', 'IS')">
-                      <span class="option-icon xlsx">XLS</span>
-                      <span>Excel</span>
-                    </button>
-                    <button class="export-option" @click="handleDonutExport('csv', 'IS')">
-                      <span class="option-icon csv">CSV</span>
-                      <span>CSV</span>
-                    </button>
-                  </div>
-                </transition>
-              </div>
             </div>
             
             <!-- Estado sin datos para IS -->
@@ -107,29 +84,6 @@
                 </svg>
               </div>
               <span class="donut-header-title">Componentes de Ingresos Intensivos en Carbono</span>
-              
-              <!-- ✅ Botón de exportación -->
-              <div class="export-wrapper-donut">
-                <button class="export-btn-donut" @click.stop="toggleExportMenu('IIC')" title="Exportar datos">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                    <polyline points="7 10 12 15 17 10"/>
-                    <line x1="12" y1="15" x2="12" y2="3"/>
-                  </svg>
-                </button>
-                <transition name="dropdown-fade">
-                  <div v-if="activeExportMenu === 'IIC'" class="export-dropdown-donut">
-                    <button class="export-option" @click="handleDonutExport('xlsx', 'IIC')">
-                      <span class="option-icon xlsx">XLS</span>
-                      <span>Excel</span>
-                    </button>
-                    <button class="export-option" @click="handleDonutExport('csv', 'IIC')">
-                      <span class="option-icon csv">CSV</span>
-                      <span>CSV</span>
-                    </button>
-                  </div>
-                </transition>
-              </div>
             </div>
             
             <!-- Estado sin datos para IIC -->
@@ -203,29 +157,6 @@
                 </svg>
               </div>
               <span class="donut-header-title">Componentes de Presupuestos Sostenibles</span>
-              
-              <!-- ✅ Botón de exportación -->
-              <div class="export-wrapper-donut">
-                <button class="export-btn-donut" @click.stop="toggleExportMenu('PS')" title="Exportar datos">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                    <polyline points="7 10 12 15 17 10"/>
-                    <line x1="12" y1="15" x2="12" y2="3"/>
-                  </svg>
-                </button>
-                <transition name="dropdown-fade">
-                  <div v-if="activeExportMenu === 'PS'" class="export-dropdown-donut">
-                    <button class="export-option" @click="handleDonutExport('xlsx', 'PS')">
-                      <span class="option-icon xlsx">XLS</span>
-                      <span>Excel</span>
-                    </button>
-                    <button class="export-option" @click="handleDonutExport('csv', 'PS')">
-                      <span class="option-icon csv">CSV</span>
-                      <span>CSV</span>
-                    </button>
-                  </div>
-                </transition>
-              </div>
             </div>
             
             <!-- Estado sin datos para PS -->
@@ -268,29 +199,6 @@
                 </svg>
               </div>
               <span class="donut-header-title">Componentes de Presupuestos Intensivos en Carbono</span>
-              
-              <!-- ✅ Botón de exportación -->
-              <div class="export-wrapper-donut">
-                <button class="export-btn-donut" @click.stop="toggleExportMenu('PIC')" title="Exportar datos">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                    <polyline points="7 10 12 15 17 10"/>
-                    <line x1="12" y1="15" x2="12" y2="3"/>
-                  </svg>
-                </button>
-                <transition name="dropdown-fade">
-                  <div v-if="activeExportMenu === 'PIC'" class="export-dropdown-donut">
-                    <button class="export-option" @click="handleDonutExport('xlsx', 'PIC')">
-                      <span class="option-icon xlsx">XLS</span>
-                      <span>Excel</span>
-                    </button>
-                    <button class="export-option" @click="handleDonutExport('csv', 'PIC')">
-                      <span class="option-icon csv">CSV</span>
-                      <span>CSV</span>
-                    </button>
-                  </div>
-                </transition>
-              </div>
             </div>
             
             <!-- Estado sin datos para PIC -->
@@ -329,11 +237,10 @@
 </template>
 
 <script setup>
-import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
+import { computed, ref, watch, onMounted } from 'vue'
 import { useStorageData } from '@/dataConection/useStorageData'
 import { getMapping, getSheetName } from '@/dataConection/storageConfig'
 import { getCleanValue } from '@/composables/parseNumber'  
-import { useExportData } from '@/composables/useExportData'
 import BarChart from './BarChart.vue'
 import DonutChart from './DonutChart.vue'
 
@@ -344,9 +251,6 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['years-loaded'])
-
-// ✅ NUEVO: Composable de exportación
-const { exportRegionalChartsData } = useExportData()
 
 const showingSingleCard = computed(() => !!props.selectedVariable)
 const showingSingleDonutPresupuestos = computed(() => props.selectedVariable && (props.selectedVariable.key === 'PS' || props.selectedVariable.key === 'PIC'))
@@ -361,158 +265,6 @@ const ingresosMapping = getMapping('chartsIngresosRegional')
 
 // Mapping para obtener posiciones y porcentajes
 const cardIFSMapping = getMapping('cardIFSRegional')
-
-// ============================================================================
-// ✅ NUEVO: HANDLERS DE EXPORTACIÓN
-// ============================================================================
-
-const handleExportIngresos = (format) => {
-  console.log('📥 [RegionalCharts] Exportando Ingresos en formato:', format)
-  
-  const sectoresData = {
-    is: sectoresIngresosSostenibles.value,
-    iic: sectoresIngresosCarbono.value
-  }
-  
-  const success = exportRegionalChartsData(
-    { variables: [] }, // No exportamos presupuestos aquí
-    ingresosData.value,
-    sectoresData,
-    format,
-    { year: props.selectedYear, variable: props.selectedVariable }
-  )
-  
-  if (!success && exportIngresosRef.value) {
-    exportIngresosRef.value.setError('Error al exportar los datos')
-  }
-}
-
-const handleExportPresupuestos = (format) => {
-  console.log('📥 [RegionalCharts] Exportando Presupuestos en formato:', format)
-  
-  const sectoresData = {
-    ps: sectoresPresupuestosSostenibles.value,
-    pic: sectoresPresupuestosCarbono.value
-  }
-  
-  const success = exportRegionalChartsData(
-    presupuestosData.value,
-    { variables: [] }, // No exportamos ingresos aquí
-    sectoresData,
-    format,
-    { year: props.selectedYear, variable: props.selectedVariable }
-  )
-  
-  if (!success && exportPresupuestosRef.value) {
-    exportPresupuestosRef.value.setError('Error al exportar los datos')
-  }
-}
-
-// ============================================================================
-// ✅ EXPORTACIÓN DE DONAS INDIVIDUALES
-// ============================================================================
-
-const activeExportMenu = ref(null)
-
-const toggleExportMenu = (menuId) => {
-  activeExportMenu.value = activeExportMenu.value === menuId ? null : menuId
-}
-
-// Click outside handler para cerrar menús
-const handleClickOutside = (event) => {
-  if (activeExportMenu.value && !event.target.closest('.export-wrapper-donut')) {
-    activeExportMenu.value = null
-  }
-}
-
-// Registrar evento de click outside
-onMounted(() => {
-  document.addEventListener('click', handleClickOutside)
-})
-
-onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside)
-})
-
-const handleDonutExport = (format, chartType) => {
-  console.log(`📥 [RegionalCharts] Exportando ${chartType} en formato:`, format)
-  activeExportMenu.value = null
-  
-  let sectores = []
-  let title = ''
-  
-  switch(chartType) {
-    case 'IS':
-      sectores = sectoresIngresosSostenibles.value
-      title = 'Ingresos_Sostenibles'
-      break
-    case 'IIC':
-      sectores = sectoresIngresosCarbono.value
-      title = 'Ingresos_Intensivos_Carbono'
-      break
-    case 'PS':
-      sectores = sectoresPresupuestosSostenibles.value
-      title = 'Presupuestos_Sostenibles'
-      break
-    case 'PIC':
-      sectores = sectoresPresupuestosCarbono.value
-      title = 'Presupuestos_Intensivos_Carbono'
-      break
-  }
-  
-  if (!sectores || sectores.length === 0) {
-    console.warn(`⚠️ No hay datos para exportar en ${chartType}`)
-    return
-  }
-  
-  // Preparar datos para exportación
-  const exportData = sectores.map(sector => ({
-    Sector: sector.label || sector.name || 'Sin nombre',
-    Valor: sector.value || 0,
-    Porcentaje: sector.percentage ? `${sector.percentage.toFixed(2)}%` : '0%'
-  }))
-  
-  const fileName = `${title}_${props.selectedYear || 'todos'}`
-  
-  if (format === 'xlsx') {
-    exportToExcel(exportData, fileName)
-  } else {
-    exportToCSV(exportData, fileName)
-  }
-}
-
-// Funciones auxiliares de exportación
-const exportToExcel = async (data, fileName) => {
-  try {
-    const XLSX = await import('xlsx')
-    const ws = XLSX.utils.json_to_sheet(data)
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, 'Datos')
-    XLSX.writeFile(wb, `${fileName}.xlsx`)
-    console.log('✅ Excel exportado:', fileName)
-  } catch (err) {
-    console.error('❌ Error al exportar Excel:', err)
-  }
-}
-
-const exportToCSV = (data, fileName) => {
-  try {
-    const headers = Object.keys(data[0])
-    const csvContent = [
-      headers.join(','),
-      ...data.map(row => headers.map(h => `"${row[h]}"`).join(','))
-    ].join('\n')
-    
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(blob)
-    link.download = `${fileName}.csv`
-    link.click()
-    console.log('✅ CSV exportado:', fileName)
-  } catch (err) {
-    console.error('❌ Error al exportar CSV:', err)
-  }
-}
 
 // ============================================================================
 // MAPEO DE COLUMNAS PARA POSICIÓN Y PORCENTAJE
@@ -1029,91 +781,6 @@ const variablesIngresosCarbono = computed(() => {
   line-height: 1.2;
   letter-spacing: 0.2px;
   flex: 1;
-}
-
-/* ============================================================================
-   ESTILOS PARA BOTÓN DE EXPORTACIÓN EN DONUT HEADER
-   ============================================================================ */
-
-.export-wrapper-donut {
-  position: relative;
-  margin-left: auto;
-}
-
-.export-btn-donut {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: rgba(255, 255, 255, 0.85);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.export-btn-donut:hover {
-  background: rgba(255, 255, 255, 0.22);
-  color: white;
-  transform: scale(1.08);
-}
-
-.export-btn-donut.is-open {
-  background: rgba(255, 255, 255, 0.28);
-  color: white;
-}
-
-.export-btn-donut svg { width: 12px; height: 12px; }
-
-.export-dropdown-donut {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  border: 1px solid #e5e7eb;
-  overflow: hidden;
-  z-index: 1000;
-  min-width: 100px;
-}
-
-.export-dropdown-donut .export-option {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 10px 12px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  transition: background 0.15s ease;
-  font-size: 12px;
-  color: #374151;
-}
-
-.export-dropdown-donut .export-option:hover { background: #f3f4f6; }
-.export-dropdown-donut .export-option:first-child { border-bottom: 1px solid #e5e7eb; }
-
-.export-dropdown-donut .option-icon {
-  font-size: 9px;
-  font-weight: 700;
-  padding: 3px 5px;
-  border-radius: 3px;
-  color: white;
-}
-
-.export-dropdown-donut .option-icon.xlsx { background: #107c41; }
-.export-dropdown-donut .option-icon.csv { background: #6366f1; }
-
-.dropdown-fade-enter-active, .dropdown-fade-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
-}
-.dropdown-fade-enter-from, .dropdown-fade-leave-to {
-  opacity: 0;
-  transform: translateY(-8px);
 }
 
 /* ============================================================================

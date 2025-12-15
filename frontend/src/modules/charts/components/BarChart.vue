@@ -69,7 +69,7 @@
         <span class="kpi-dot" :class="variable.colorClass"></span>
         <div class="kpi-value">{{ formatCurrency(variable.value) }}</div>
         <div v-if="variable.percentage !== undefined && variable.percentage !== null" class="kpi-percentage" :class="variable.colorClass">
-          {{ formatPercentage(variable.percentage) }}% 
+         Porcentaje: {{ formatPercentage(variable.percentage) }}% 
         </div>
         <div v-if="variable.position !== undefined && variable.position !== null" class="kpi-position" :class="variable.colorClass">
           Posición: No. {{ variable.position }}
