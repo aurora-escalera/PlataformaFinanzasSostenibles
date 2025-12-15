@@ -25,6 +25,11 @@
       </button>
     </div>
 
+    <!-- ✅ NUEVA LEYENDA EN GRIS -->
+    <div v-if="availableVariables.length > 0" class="currency-legend">
+      * Cifras en dólares estadounidenses (USD)
+    </div>
+
     <!-- Mensaje si no hay datos -->
     <div v-if="!hasData" class="no-data">
       <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -64,7 +69,7 @@
           <text
             v-for="i in gridLines"
             :key="`y-label-${i}`"
-            :x="padding.left - 5"
+            :x="padding.left - 8"
             :y="padding.top + (i - 1) * gridSpacing + 3"
             class="y-axis-label"
             text-anchor="end"
@@ -79,7 +84,7 @@
             v-for="(label, i) in props.xLabels"
             :key="`x-label-${i}`"
             :x="getXPosition(i)"
-            :y="dimensions.height - padding.bottom + 15"
+            :y="dimensions.height - padding.bottom + 20"
             class="x-axis-label-svg"
             text-anchor="middle"
           >
@@ -263,7 +268,8 @@ const hoverState = ref({
 })
 
 const animatingPoints = ref({})
-const padding = { top: 10, right: 15, bottom: 25, left: 40 }
+// ✅ PADDING AUMENTADO para más espacio
+const padding = { top: 20, right: 25, bottom: 35, left: 75 }
 
 const colorPalette = ['#7cb342', '#9E9E9E', '#DC143C', '#8b5cf6', '#f59e0b', '#ec4899', '#06b6d4', '#ef4444']
 
@@ -273,6 +279,7 @@ const semanticColors = {
   'IIC Total': '#DC143C', 'IIC': '#DC143C', 'Ingresos Intensivos en Carbono': '#DC143C',
   'PIC': '#DC143C', 'Presupuestos Intensivos en Carbono': '#DC143C',
   'Financiamiento Total': '#9E9E9E', 'Gasto Total': '#9E9E9E', 'Ingreso Total': '#9E9E9E',
+  'IFS': '#9E9E9E', ' IFS': '#9E9E9E'
 }
 
 const availableVariables = computed(() => Object.keys(props.data))
@@ -420,7 +427,7 @@ const getVariableColor = (variable) => {
   const l = variable.toLowerCase()
   if (l.includes('sostenible') || l === 'is' || l.includes('ps')) return '#7cb342'
   if (l.includes('carbono') || l.includes('iic') || l.includes('pic')) return '#DC143C'
-  if (l.includes('total') || l.includes('financiamiento')) return '#9E9E9E'
+  if (l.includes('total') || l.includes('financiamiento') || l.includes('ifs')) return '#9E9E9E'
   return colorPalette[availableVariables.value.indexOf(variable) % colorPalette.length]
 }
 
@@ -647,36 +654,172 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.area-chart-container { width: 100%; height: 100%; display: flex; flex-direction: column; background: white; border-radius: 12px; padding: 4px 6px; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; box-sizing: border-box; overflow: visible; }
-.chart-header { display: flex; justify-content: center; align-items: center; margin-bottom: 4px; flex-shrink: 0; }
+.area-chart-container { 
+  width: 100%; 
+  height: 100%; 
+  display: flex; 
+  flex-direction: column; 
+  background: white; 
+  border-radius: 12px; 
+  padding: 8px 12px; 
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+  box-sizing: border-box; 
+  overflow: visible; 
+}
+
+.chart-header { 
+  display: flex; 
+  justify-content: center; 
+  align-items: center; 
+  margin-bottom: 8px; 
+  flex-shrink: 0; 
+}
+
 .header-content { flex: 1; }
-.chart-title { margin: 0; letter-spacing: -0.2px; font-size: 12px; text-align: center; font-weight: 600; color: #2c3e50; line-height: 1.2; }
-.chart-subtitle { font-size: 11px; color: #6b7280; margin: 0; line-height: 1.2; text-align: center; }
-.variable-filters { background: #f5f5f5; border-radius: 20px; padding: 6px; margin-bottom: 12px; display: flex; justify-content: center; width: 100%; gap: 4px; flex-wrap: wrap; flex-shrink: 0; }
-.filter-btn { padding: 6px 14px; border: none; border-radius: 16px; cursor: pointer; font-size: 13px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 6px; background: transparent; color: #666; transition: all 0.3s ease; }
-.btn-color-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.filter-btn.filter-active { background: white; color: #2c3e50; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-.filter-btn.filter-inactive { background: transparent; color: #999; opacity: 0.7; }
+
+.chart-title { 
+  margin: 0; 
+  letter-spacing: -0.2px; 
+  font-size: 12px; 
+  text-align: center; 
+  font-weight: 600; 
+  color: #2c3e50; 
+  line-height: 1.2; 
+}
+
+.chart-subtitle { 
+  font-size: 11px; 
+  color: #6b7280; 
+  margin: 0; 
+  line-height: 1.2; 
+  text-align: center; 
+}
+
+.variable-filters { 
+  background: #f5f5f5; 
+  border-radius: 20px; 
+  padding: 6px; 
+  margin-bottom: 4px; 
+  display: flex; 
+  justify-content: center; 
+  width: 100%; 
+  gap: 4px; 
+  flex-wrap: wrap; 
+  flex-shrink: 0; 
+}
+
+.filter-btn { 
+  padding: 6px 14px; 
+  border: none; 
+  border-radius: 16px; 
+  cursor: pointer; 
+  font-size: 13px; 
+  font-weight: 500; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  gap: 6px; 
+  background: transparent; 
+  color: #666; 
+  transition: all 0.3s ease; 
+}
+
+.btn-color-dot { 
+  width: 8px; 
+  height: 8px; 
+  border-radius: 50%; 
+  flex-shrink: 0; 
+}
+
+.filter-btn.filter-active { 
+  background: white; 
+  color: #2c3e50; 
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
+}
+
+.filter-btn.filter-inactive { 
+  background: transparent; 
+  color: #999; 
+  opacity: 0.7; 
+}
+
 .filter-btn:hover { transform: scale(1.05); }
-.no-data { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; min-height: 0; color: #9ca3af; gap: 8px; }
+
+/* ✅ LEYENDA EN GRIS */
+.currency-legend {
+  font-size: 11px;
+  font-style: italic;
+  color: #888;
+  text-align: left;
+  width: 100%;
+  margin-bottom: 12px;
+  padding-left: 8px;
+}
+
+.no-data { 
+  display: flex; 
+  flex-direction: column; 
+  align-items: center; 
+  justify-content: center; 
+  flex: 1; 
+  min-height: 0; 
+  color: #9ca3af; 
+  gap: 8px; 
+}
+
 .no-data svg { opacity: 0.5; width: 32px; height: 32px; }
 .no-data p { margin: 0; font-size: 12px; }
-.chart-wrapper { position: relative; width: 100%; height: 100%; flex: 1; min-height: 0; min-width: 0; display: block; overflow: visible; box-sizing: border-box; }
+
+.chart-wrapper { 
+  position: relative; 
+  width: 100%; 
+  height: 100%; 
+  flex: 1; 
+  min-height: 0; 
+  min-width: 0; 
+  display: block; 
+  overflow: visible; 
+  box-sizing: border-box; 
+}
+
 .area-chart { display: block; }
 .grid-line { stroke: #e5e7eb; stroke-width: 1; }
-.y-axis-label { font-size: 14px; font-weight: 300; fill: #6b7280; user-select: none; }
-.x-axis-label-svg { font-size: 10px; font-weight: 300; fill: #6b7280; user-select: none; }
+.y-axis-label { font-size: 12px; font-weight: 300; fill: #6b7280; user-select: none; }
+.x-axis-label-svg { font-size: 11px; font-weight: 400; fill: #6b7280; user-select: none; }
 .hover-line { transition: opacity 0.15s ease; pointer-events: none; }
 .area-path { opacity: 0; animation: fadeInArea 1s ease-out forwards; }
 .line-path { stroke-dasharray: 3000; stroke-dashoffset: 3000; animation: drawLine 1.5s ease-out forwards; }
 .data-point { opacity: 1; transform-origin: center; transition: r 0.2s ease; }
 .animated-point { transition: none !important; animation: none !important; }
 .data-point.is-hovered { opacity: 1; filter: drop-shadow(0 0 6px rgba(0,0,0,0.4)); }
+
 @keyframes fadeInArea { to { opacity: 1; } }
 @keyframes drawLine { to { stroke-dashoffset: 0; } }
 
-.tooltip-container { position: fixed; transform: translate(-50%, calc(-100% - 12px)); background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); pointer-events: none; z-index: 99999; min-width: 200px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-.tooltip-container::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 8px solid transparent; border-top-color: white; }
+.tooltip-container { 
+  position: fixed; 
+  transform: translate(-50%, calc(-100% - 12px)); 
+  background: white; 
+  border: 1px solid #e0e0e0; 
+  border-radius: 8px; 
+  padding: 12px 14px; 
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15); 
+  pointer-events: none; 
+  z-index: 99999; 
+  min-width: 200px; 
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+}
+
+.tooltip-container::after { 
+  content: ''; 
+  position: absolute; 
+  top: 100%; 
+  left: 50%; 
+  transform: translateX(-50%); 
+  border: 8px solid transparent; 
+  border-top-color: white; 
+}
+
 .tooltip-header { margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #f0f0f0; }
 .tooltip-year-label { font-size: 14px; font-weight: 600; color: #333; }
 .tooltip-content { display: flex; flex-direction: column; gap: 5px; }

@@ -25,6 +25,11 @@
       </div>
     </div>
 
+    <!-- ✅ NUEVA LEYENDA EN GRIS -->
+    <div v-if="showFilters" class="currency-legend">
+      * Cifras en dólares estadounidenses (USD)
+    </div>
+
     <!-- 3. ÁREA DEL GRÁFICO -->
     <div class="chart-area">
       <!-- Eje Y con escala dinámica -->
@@ -618,7 +623,7 @@ watch(() => props.data, () => {
   background: #f5f5f5;
   border-radius: 20px;
   padding: 6px;
-  margin-bottom: 12px;
+  margin-bottom: 4px;
   display: flex;
   justify-content: center; 
   width: 100%; 
@@ -670,10 +675,21 @@ watch(() => props.data, () => {
   transform: scale(1.05);
 }
 
-/* ✅ ÁREA DEL GRÁFICO */
+/* ✅ LEYENDA EN GRIS */
+.currency-legend {
+  font-size: 11px;
+  font-style: italic;
+  color: #888;
+  text-align: left;
+  width: 100%;
+  margin-bottom: 12px;
+  padding-left: 8px;
+}
+
+/* ✅ ÁREA DEL GRÁFICO CON MÁS ESPACIO */
 .chart-area {
   margin-top: 8px;
-  padding-top: 15px;
+  padding-top: 20px;
   flex: 1;
   display: flex;
   position: relative;
@@ -684,9 +700,9 @@ watch(() => props.data, () => {
   align-self: stretch;
 }
 
-/* ✅ EJE Y */
+/* ✅ EJE Y CON MÁS ESPACIO */
 .y-axis {
-  width: 60px;
+  width: 70px;
   position: relative;
   flex-shrink: 0;
 }
@@ -701,16 +717,16 @@ watch(() => props.data, () => {
 }
 
 .tick-label {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 300;
   color: #666;
   text-align: right;
-  width: 55px;
-  padding-right: 8px;
+  width: 65px;
+  padding-right: 10px;
 }
 
 .tick-line {
-display: none; 
+  display: none; 
 }
 
 /* ✅ CONTENEDOR DE BARRAS */
@@ -864,10 +880,11 @@ display: none;
   display: flex;
   height: 30px;
   flex-shrink: 0;
+  margin-top: 8px;
 }
 
 .x-axis-spacer {
-  width: 60px;
+  width: 70px;
   flex-shrink: 0;
 }
 
@@ -892,7 +909,7 @@ display: none;
 .grid-lines {
   position: absolute;
   top: 0;
-  left: 60px;
+  left: 70px;
   right: 0;
   bottom: 0;
   pointer-events: none;

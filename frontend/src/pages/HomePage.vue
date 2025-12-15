@@ -98,8 +98,8 @@
           <div class="charts-container">
             <div class="ranking-chart-section" style="height: 100%; display: flex; flex-direction: column;">
               
-              <!-- ========== LINEAR CHART CON CARD - Usa areAllFiltersOnTodas ========== -->
-              <!-- Loading State para LinearChart -->
+              <!-- ========== STACKED AREA CHART CON CARD - Usa areAllFiltersOnTodas ========== -->
+              <!-- Loading State para StackedArea -->
               <div v-if="showStackedArea && stackedAreaLoading" class="chart-card linear-chart-card">
                 <div class="chart-card-header">
                   <h4 class="card-title">Evolución IFS</h4>
@@ -112,7 +112,7 @@
                 </div>
               </div>
               
-              <!-- Error State para LinearChart -->
+              <!-- Error State para StackedArea -->
               <div v-else-if="showStackedArea && stackedAreaError" class="chart-card linear-chart-card">
                 <div class="chart-card-header">
                   <h4 class="card-title">Evolución IFS</h4>
@@ -127,7 +127,7 @@
                 </div>
               </div>
               
-              <!-- LinearChart de IFS con card wrapper -->
+              <!-- StackedArea de IFS con card wrapper -->
               <div 
                 v-else-if="showStackedArea && stackedAreaChartData && Object.keys(stackedAreaChartData).length > 0" 
                 class="chart-card linear-chart-card"
@@ -136,7 +136,7 @@
                   <h4 class="card-title">{{ stackedAreaTitle }}</h4>
                 </div>
                 <div class="chart-card-body">
-                  <LinearChart
+                  <StackedArea
                     :data="stackedAreaChartData"
                     :xLabels="stackedAreaYears"
                     :showCurrencySymbol="false"
@@ -145,12 +145,7 @@
                     :hideHeader="true"
                     :initialVisibleVariables="['IFS']"
                     :positionsByYear="stackedAreaPositions"
-                    :padding="{
-                      top: 20,
-                      right: 70,
-                      bottom: 100,
-                      left: 60
-                    }"
+                    :decimalPlaces="2"
                   />
                 </div>
               </div>
@@ -261,7 +256,7 @@ import IFSRegionalCard from '../modules/charts/components/IFSRegionalCard.vue'
 import RetractableFilterBar from '@/modules/maps/components/RetractableFilterBar.vue'
 import HorizontalRankingChart from '../modules/charts/components/HorizontalRankingChart.vue'
 import HistoricalCard from '../modules/object/component/HistoricalCard.vue'
-import LinearChart from '../modules/charts/components/LinearChart.vue'
+import StackedArea from '../modules/charts/components/StackedArea.vue'
 import QualitativePanel from '../modules/qualitativeIndicators/components/QualitativePanel.vue'
 import { useSlider } from '@/composables/useSlider'
 import { useStateRanking } from '@/composables/useStateRanking'
@@ -487,7 +482,7 @@ const hasSpecificVariable = computed(() => {
 // ============================================================================
 
 /**
- * Mostrar StackedArea/LinearChart cuando los 3 filtros están en "Todas..."
+ * Mostrar StackedArea cuando los 3 filtros están en "Todas..."
  */
 const showStackedArea = computed(() => {
   if (isRetractableExpanded.value) {
@@ -966,7 +961,7 @@ watch(toggleAction, async (newAction) => {
   const { type, filters } = newAction
   
   if (type === 'federal') {
-    // Click en "Datos Regionales" (Federal) → HistoricalCard + LinearChart + Overlay
+    // Click en "Datos Regionales" (Federal) → HistoricalCard + StackedArea + Overlay
     console.log('🔘 [HomePage] Aplicando filtros para "Datos Regionales" (Federal)')
     
     selectedEntity.value = filters.entity      // null
@@ -976,7 +971,7 @@ watch(toggleAction, async (newAction) => {
     // Resetear selección del mapa
     resetSelection()
     
-    // Cargar datos del LinearChart
+    // Cargar datos del StackedArea
     await loadIFSSData()
     
     // Actualizar filtro visual
@@ -1019,12 +1014,12 @@ watch(toggleAction, async (newAction) => {
 }, { deep: true })
 
 /**
- * Watch para cargar datos del LinearChart cuando areAllFiltersOnTodas
+ * Watch para cargar datos del StackedArea cuando areAllFiltersOnTodas
  */
 watch(areAllFiltersOnTodas, async (newValue, oldValue) => {
   console.log('👀 [areAllFiltersOnTodas] cambió de', oldValue, 'a', newValue)
   if (newValue && !oldValue) {
-    console.log('🌎 [HomePage] Filtros en "Todas...", cargando LinearChart')
+    console.log('🌎 [HomePage] Filtros en "Todas...", cargando StackedArea')
     await loadIFSSData()
   }
 })
