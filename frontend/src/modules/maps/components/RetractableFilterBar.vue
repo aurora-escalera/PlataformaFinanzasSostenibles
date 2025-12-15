@@ -577,7 +577,7 @@ onMounted(async () => {
   await fetchAvailableYears()
   console.log('📅 Años del composable cargados:', composableYears.value)
   
-  if (props.initialYear !== null && props.initialYear !== undefined) {
+ if (props.initialYear !== undefined) {
     setYear(props.initialYear)
     if (props.initialYear !== '') {
       setActiveYear(props.initialYear)

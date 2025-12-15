@@ -81,32 +81,32 @@
         <div class="legend-item-horizontal">
           <div class="legend-color-horizontal" style="background-color: #6ac952"></div>
           <span class="legend-label">Alto</span>
-          <span class="legend-range">≥ a 4</span>
+          <span class="legend-range">4-3.5</span>
         </div>
         <div class="legend-item-horizontal">
           <div class="legend-color-horizontal" style="background-color: #94d351"></div>
           <span class="legend-label">Medio Alto</span>
-          <span class="legend-range">2.3 - 3.9</span>
+          <span class="legend-range">3.5 - 2.3</span>
         </div>
         <div class="legend-item-horizontal">
           <div class="legend-color-horizontal" style="background-color: #bddc50"></div>
           <span class="legend-label">Medio</span>
-          <span class="legend-range">1.9 - 2.2</span>
+          <span class="legend-range">2.2 - 1.9</span>
         </div>
         <div class="legend-item-horizontal">
           <div class="legend-color-horizontal" style="background-color: #e6a74c"></div>
           <span class="legend-label">Medio Bajo</span>
-          <span class="legend-range">1.5 - 1.8</span>
+          <span class="legend-range">1.8 - 1.5</span>
         </div>
         <div class="legend-item-horizontal">
           <div class="legend-color-horizontal" style="background-color: #e67849"></div>
           <span class="legend-label">Bajo</span>
-          <span class="legend-range">0.6 - 1.4</span>
+          <span class="legend-range">1.5 - 0.6</span>
         </div>
         <div class="legend-item-horizontal">
           <div class="legend-color-horizontal" style="background-color: #e52845"></div>
           <span class="legend-label">Muy Bajo</span>
-          <span class="legend-range">≤ 0.7</span>
+          <span class="legend-range">0.5 - 0</span>
         </div>
       </div>
       

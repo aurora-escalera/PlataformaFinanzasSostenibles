@@ -856,7 +856,8 @@ const restoreInitialYears = async () => {
     console.log('🔄 [HomePage] Restaurando años iniciales:', initialYears.value)
     availableYears.value = [...initialYears.value]
     
-    if (!initialYears.value.includes(selectedYear.value)) {
+    // CORREGIDO: No forzar el año si el usuario seleccionó "Todos los años" (null)
+    if (selectedYear.value !== null && !initialYears.value.includes(selectedYear.value)) {
       const firstYear = initialYears.value[0]
       selectedYear.value = firstYear
       setActiveYear(firstYear)

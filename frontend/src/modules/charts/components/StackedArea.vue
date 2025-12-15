@@ -84,7 +84,7 @@
             v-for="(label, i) in props.xLabels"
             :key="`x-label-${i}`"
             :x="getXPosition(i)"
-            :y="dimensions.height - padding.bottom + 20"
+            :y="dimensions.height - padding.bottom + 25"
             class="x-axis-label-svg"
             text-anchor="middle"
           >
@@ -661,7 +661,7 @@ onUnmounted(() => {
   flex-direction: column; 
   background: white; 
   border-radius: 12px; 
-  padding: 8px 12px; 
+  padding: 0px 0x; 
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
   box-sizing: border-box; 
   overflow: visible; 
@@ -713,7 +713,7 @@ onUnmounted(() => {
   border: none; 
   border-radius: 16px; 
   cursor: pointer; 
-  font-size: 13px; 
+  font-size: 14px; 
   font-weight: 500; 
   display: flex; 
   align-items: center; 
@@ -747,7 +747,7 @@ onUnmounted(() => {
 
 /* ✅ LEYENDA EN GRIS */
 .currency-legend {
-  font-size: 11px;
+  font-size: 14px;
   font-style: italic;
   color: #888;
   text-align: left;
@@ -784,8 +784,8 @@ onUnmounted(() => {
 
 .area-chart { display: block; }
 .grid-line { stroke: #e5e7eb; stroke-width: 1; }
-.y-axis-label { font-size: 12px; font-weight: 300; fill: #6b7280; user-select: none; }
-.x-axis-label-svg { font-size: 11px; font-weight: 400; fill: #6b7280; user-select: none; }
+.y-axis-label { font-size: 13px; font-weight: 300; fill: #6b7280; user-select: none;}
+.x-axis-label-svg { font-size: 13px; font-weight: 400; fill: #6b7280; user-select: none; }
 .hover-line { transition: opacity 0.15s ease; pointer-events: none; }
 .area-path { opacity: 0; animation: fadeInArea 1s ease-out forwards; }
 .line-path { stroke-dasharray: 3000; stroke-dashoffset: 3000; animation: drawLine 1.5s ease-out forwards; }

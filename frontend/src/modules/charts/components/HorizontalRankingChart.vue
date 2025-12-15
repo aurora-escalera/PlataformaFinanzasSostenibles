@@ -293,12 +293,12 @@ const legendItems = computed(() => {
     case 'IFSS':
     default:
       return [
-        { color: '#6ac952', range: '≥4', label: 'Alto' },
-        { color: '#94d351', range: '2.3-4', label: 'Medio Alto' },
-        { color: '#bddc50', range: '1.9-2.3', label: 'Medio' },
-        { color: '#e6a74c', range: '1.5-1.9', label: 'Medio Bajo' },
-        { color: '#e67849', range: '0.5-1.5', label: 'Bajo' },
-        { color: '#e52845', range: '≤0.5', label: 'Muy Bajo' }
+        { color: '#6ac952', range: '4-3.5', label: 'Alto' },
+        { color: '#94d351', range: '3.5-2.3', label: 'Medio Alto' },
+        { color: '#bddc50', range: '2.2-1.9', label: 'Medio' },
+        { color: '#e6a74c', range: '1.8-1.5', label: 'Medio Bajo' },
+        { color: '#e67849', range: '1.5-0.6', label: 'Bajo' },
+        { color: '#e52845', range: '0.5-0', label: 'Muy Bajo' }
       ]
   }
 })
