@@ -356,7 +356,7 @@ const getYearLabel = () => {
 }
 
 const getVariableLabel = () => {
-  if (!selectedVariable.value || selectedVariable.value === null) return 'IFSS'
+  if (!selectedVariable.value || selectedVariable.value === null) return 'Todas las variables'
   return selectedVariable.value.key
 }
 

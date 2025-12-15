@@ -1,5 +1,5 @@
 <!-- src/App.vue -->
-<!-- ✅ ACTUALIZADO: Agregado manejo de descargas centralizadas -->
+<!-- ✅ ACTUALIZADO: Maneja opciones de descarga (year) -->
 <template>
   <div id="app">
     <!-- Barra de título con botones de acción -->
@@ -55,86 +55,54 @@ const {
   updateFiltersState,
   updateAvailableYears,
   getFederalClickFilters,
-  getSubnacionalClickFilters,
-  filtersState
+  getSubnacionalClickFilters
 } = useDataToggle()
 
 const {
   handleDownload,
-  isExporting,
-  exportError,
-  exportProgress
+  exportError
 } = useDownloadCenter()
 
 // ============================================================================
 // ESTADO
 // ============================================================================
-
-// Ref reactivo para la acción del toggle (para comunicar con HomePage)
 const toggleAction = ref(null)
 
-// Estado del toast de descarga
 const downloadToast = ref({
   show: false,
-  type: 'loading', // 'loading', 'success', 'error'
+  type: 'loading',
   message: ''
 })
 
 // ============================================================================
-// HANDLERS: Recibir estado de HomePage
+// HANDLERS: Filtros
 // ============================================================================
-
-/**
- * Recibe cambios en el estado de los filtros desde HomePage
- */
 const handleFiltersStateChange = (state) => {
   console.log('📡 [App] Recibido estado de filtros:', state)
   updateFiltersState(state)
 }
 
-/**
- * Recibe cambios en los años disponibles desde HomePage
- */
 const handleAvailableYearsChange = (years) => {
   console.log('📅 [App] Años disponibles actualizados:', years)
   updateAvailableYears(years)
 }
 
 // ============================================================================
-// HANDLERS: Click en toggle
+// HANDLERS: Toggle
 // ============================================================================
-
-/**
- * Handler para click en "Datos Regionales" (Federal)
- */
 const handleToggleFederalClick = (filters) => {
-  console.log('🔘 [App] Click en toggle "Datos Regionales" (Federal)')
-  toggleAction.value = { 
-    type: 'federal', 
-    filters, 
-    timestamp: Date.now() 
-  }
+  console.log('🔘 [App] Click en toggle "Datos Regionales"')
+  toggleAction.value = { type: 'federal', filters, timestamp: Date.now() }
 }
 
-/**
- * Handler para click en "Datos Subnacionales"
- */
 const handleToggleSubnacionalClick = (filters) => {
   console.log('🔘 [App] Click en toggle "Datos Subnacionales"')
-  toggleAction.value = { 
-    type: 'subnacional', 
-    filters, 
-    timestamp: Date.now() 
-  }
+  toggleAction.value = { type: 'subnacional', filters, timestamp: Date.now() }
 }
 
 // ============================================================================
 // HANDLERS: Descargas
 // ============================================================================
-
-/**
- * Muestra un toast de notificación
- */
 const showToast = (type, message, duration = 3000) => {
   downloadToast.value = { show: true, type, message }
   
@@ -145,45 +113,37 @@ const showToast = (type, message, duration = 3000) => {
   }
 }
 
-/**
- * Handler para solicitudes de descarga desde el DataViewToggleBar
- */
-const handleDownloadRequest = async ({ viewType, format }) => {
-  console.log(`📥 [App] Solicitud de descarga recibida: ${viewType} - ${format}`)
+const handleDownloadRequest = async ({ viewType, format, options = {} }) => {
+  console.log(`📥 [App] Solicitud de descarga: ${viewType} - ${format}`, options)
   
-  // Mostrar toast de carga
+  // Nombres para el toast
   const viewNames = {
     'regional': 'Datos Regionales',
-    'subnacional': 'Datos Subnacionales',
+    'subnacional': options.year ? `Datos Subnacionales ${options.year}` : 'Datos Subnacionales',
     'historico': 'Serie Histórica',
+    'cualitativos': 'Cualitativos Estatales',
     'completo': 'Reporte Completo'
   }
-  showToast('loading', `Generando ${viewNames[viewType] || viewType}...`)
-
-  // Obtener opciones adicionales del estado actual de filtros
-  const options = {
-    year: filtersState.value?.selectedYear || null,
-    entity: filtersState.value?.selectedEntity || null
-  }
+  
+  showToast('loading', `Descargando ${viewNames[viewType] || viewType}...`)
 
   try {
     const success = await handleDownload(viewType, format, options)
     
     if (success) {
-      showToast('success', '¡Archivo descargado correctamente!')
+      showToast('success', '¡Descarga iniciada!')
     } else {
-      showToast('error', exportError.value || 'Error al generar el archivo')
+      showToast('error', exportError.value || 'Error al descargar')
     }
   } catch (err) {
     console.error('❌ [App] Error en descarga:', err)
-    showToast('error', 'Error inesperado al generar el archivo')
+    showToast('error', 'Error inesperado')
   }
 }
 
 // ============================================================================
-// PROVIDE: Pasar acciones del toggle a HomePage via provide/inject
+// PROVIDE
 // ============================================================================
-
 provide('toggleAction', toggleAction)
 </script>
 
@@ -211,10 +171,7 @@ body {
   padding: 0;
 }
 
-/* ============================================================================
-   TOAST DE DESCARGA
-   ============================================================================ */
-
+/* Toast */
 .download-toast {
   position: fixed;
   bottom: 24px;
@@ -279,7 +236,6 @@ body {
   white-space: nowrap;
 }
 
-/* Transición del toast */
 .toast-fade-enter-active,
 .toast-fade-leave-active {
   transition: opacity 0.3s ease, transform 0.3s ease;
