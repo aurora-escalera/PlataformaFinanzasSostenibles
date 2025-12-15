@@ -42,15 +42,6 @@
                 >
               </div>
               <div class="dropdown-options">
-                <!-- Default: Todas las entidades (IFS Regional) -->
-                <div 
-                  v-if="!entitySearch"
-                  @click="selectEntity(null)"
-                  class="dropdown-option"
-                  :class="{ 'selected': selectedEntity === null }"
-                >
-                  <span>Datos Regionales</span>
-                </div>
                 <!-- Entidades filtradas -->
                 <div 
                   v-for="entity in filteredEntities" 
@@ -60,6 +51,15 @@
                   :class="{ 'selected': selectedEntity === entity.name && selectedEntity !== '' && selectedEntity !== null }"
                 >
                   <span>{{ entity.name }}</span>
+                </div>
+                <!-- Datos Regionales (penúltima posición) -->
+                <div 
+                  v-if="!entitySearch"
+                  @click="selectEntity(null)"
+                  class="dropdown-option"
+                  :class="{ 'selected': selectedEntity === null }"
+                >
+                  <span>Datos Regionales</span>
                 </div>
                 <!-- Opción en blanco al FINAL (solo en Entidad) -->
                 <div 
@@ -163,7 +163,7 @@
                   class="dropdown-option"
                   :class="{ 'selected': selectedVariable === null }"
                 >
-                  <span>IFSS</span>
+                  <span>Todas las variables</span>
                 </div>
                 
                 <!-- Variables filtradas -->
@@ -273,15 +273,15 @@ const variableSearch = ref('')
 const selectedEntity = ref('')
 const selectedVariable = ref(null)
 
-// Definición de las 4 variables
+// Definición de las 4 variables (orden: IS, IIC, PS, PIC)
 const variables = {
-  PS: {
-    key: 'PS',
-    label: 'Presupuestos Sostenibles (PS)',
-    description: 'Presupuestos Sostenibles',
-    category: 'presupuestos',
-    barVariables: ['PS', 'PT'],
-    donutType: 'PS'
+  IS: {
+    key: 'IS',
+    label: 'Ingresos Sostenibles (IS)',
+    description: 'Ingresos Sostenibles',
+    category: 'ingresos',
+    barVariables: ['IS', 'IT'],
+    donutType: 'IS'
   },
   IIC: {
     key: 'IIC',
@@ -291,6 +291,14 @@ const variables = {
     barVariables: ['IIC', 'IT'],
     donutType: 'IIC'
   },
+  PS: {
+    key: 'PS',
+    label: 'Presupuestos Sostenibles (PS)',
+    description: 'Presupuestos Sostenibles',
+    category: 'presupuestos',
+    barVariables: ['PS', 'PT'],
+    donutType: 'PS'
+  },
   PIC: {
     key: 'PIC',
     label: 'Presupuestos Intensivos en Carbono (PIC)',
@@ -298,19 +306,16 @@ const variables = {
     category: 'presupuestos',
     barVariables: ['PIC', 'PT'],
     donutType: 'PIC'
-  },
-  IS: {
-    key: 'IS',
-    label: 'Ingresos Sostenibles (IS)',
-    description: 'Ingresos Sostenibles',
-    category: 'ingresos',
-    barVariables: ['IS', 'IT'],
-    donutType: 'IS'
   }
 }
 
-// Array de variables para facilitar el filtrado
-const variablesArray = computed(() => Object.values(variables))
+// Array de variables en el orden específico: IS, IIC, PS, PIC
+const variablesArray = computed(() => [
+  variables.IS,
+  variables.IIC,
+  variables.PS,
+  variables.PIC
+])
 
 // Computed: Entidades filtradas
 const filteredEntities = computed(() => {
@@ -577,7 +582,7 @@ onMounted(async () => {
   await fetchAvailableYears()
   console.log('📅 Años del composable cargados:', composableYears.value)
   
-  if (props.initialYear !== null && props.initialYear !== undefined) {
+ if (props.initialYear !== undefined) {
     setYear(props.initialYear)
     if (props.initialYear !== '') {
       setActiveYear(props.initialYear)

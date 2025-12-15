@@ -1347,16 +1347,27 @@ export const storageConfig = {
       yearColumn: 'Año',
       variableColumns: [
         {
-          key: 'IIC Total',
-          column: 'IIC ($)',
-          label: 'IIC Total',
-          color: '#3B5A70',
-        },
-        {
           key: 'Ingreso Total',
           column: 'IT ($)',
           label: 'Ingreso Total',
-          color: '#0F3759'
+          color: '#9E9E9E'
+          // Sin percentageColumn ni positionColumn
+        },
+        {
+          key: 'IIC Total',
+          column: 'IIC ($)',
+          label: 'IIC Total',
+          color: '#DC143C',
+          percentageColumn: 'IIC (%)',
+          positionColumn: 'POS_IIC'
+        },
+        {
+          key: 'IS Total',
+          column: 'IS ($)',
+          label: 'IS Total',
+          color: '#7cb342',
+          percentageColumn: 'IS (%)',
+          positionColumn: 'POS_IS'
         }
       ]
     },
@@ -1368,7 +1379,8 @@ export const storageConfig = {
           key: 'IFS',
           column: 'IFS',
           label: 'IFS',
-          color: '#10b981'
+          color: '#10b981',
+          positionColumn: 'POS_IFS'
         }
       ]
     },
@@ -1377,10 +1389,10 @@ export const storageConfig = {
       yearColumn: 'Año',
       variableColumns: [
         {
-          key: 'IS',
-          column: 'IS ($)', 
-          label: 'IS',
-          color: '#0F3759',
+          key: 'FTDCC',
+          column: 'IS_FTDCC', 
+          label: 'FTDCC',
+          color: '#7cb342',
           order: 1
         }
       ]
@@ -1390,10 +1402,10 @@ export const storageConfig = {
       yearColumn: 'Año',
       variableColumns: [
         {
-          key: 'PIC',
-          column: 'PIC ($)', 
-          label: 'PIC',
-          color: '#0F3759',
+          key: 'PIC_H',
+          column: 'PIC_H', 
+          label: 'Hidrocarburos',
+          color: '#DC143C',
           order: 1
         }
       ]
@@ -1403,11 +1415,32 @@ export const storageConfig = {
       yearColumn: 'Año',
       variableColumns: [
         {
-          key: 'PS',
-          column: 'PS ($)', 
-          label: 'PS',
-          color: '#6B8FA3',
+          key: 'PS_ER',
+          column: 'PS_ER', 
+          label: 'Energías Renovables',
+          color: '#2e7d32',
           order: 1
+        },
+        {
+          key: 'PS_DN',
+          column: 'PS_DN', 
+          label: 'Desastres Naturales',
+          color: '#558b2f',
+          order: 2
+        },
+        {
+          key: 'PS_EE',
+          column: 'PS_EE', 
+          label: 'Eficiencia Energética',
+          color: '#7cb342',
+          order: 3
+        },
+        {
+          key: 'PS_AM',
+          column: 'PS_CC', 
+          label: 'Cambio Climático',
+          color: '#9ccc65',
+          order: 3
         }
       ]
     },
@@ -1434,17 +1467,28 @@ export const storageConfig = {
         {
           key: 'GT',
           column: 'GT ($)',
-          label: 'Gasto Total'
-        },
-        {
-          key: 'PS',
-          column: 'PS ($)',
-          label: 'Presupuestos Sostenibles'
+          label: 'Gasto Total',
+          tooltipLabel: 'Gasto Total',
+          color: '#9E9E9E'
+          // Sin percentageColumn ni positionColumn
         },
         {
           key: 'PIC',
           column: 'PIC ($)',
-          label: 'Presupuestos Intensivos en Carbono'
+          label: 'Presupuestos Intensivos en Carbono',
+          tooltipLabel: 'PIC',
+          color: '#DC143C',
+          percentageColumn: 'PIC (%)',
+          positionColumn: 'POS_PIC'
+        },
+        {
+          key: 'PS',
+          column: 'PS ($)',
+          label: 'Presupuestos Sostenibles',
+          tooltipLabel: 'PS',
+          color: '#7cb342',
+          percentageColumn: 'PS (%)',
+          positionColumn: 'POS_PS'
         }
       ]
     },

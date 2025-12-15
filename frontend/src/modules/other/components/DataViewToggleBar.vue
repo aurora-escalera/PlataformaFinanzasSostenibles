@@ -1,5 +1,5 @@
 <!-- src/modules/other/components/DataViewToggleBar.vue -->
-<!-- ✅ ACTUALIZADO: Sin Serie Histórica ni Cualitativos. Reporte Completo descarga Regional + Subnacional -->
+<!-- ✅ CORREGIDO: Ahora usa useDownloadCenter directamente para ejecutar las descargas -->
 <template>
   <div class="toggle-bar">
     <div class="toggle-bar-content">
@@ -255,7 +255,23 @@
               <!-- Loading indicator -->
               <div v-if="isExporting" class="export-loading">
                 <div class="spinner-small"></div>
-                <span>Generando archivo...</span>
+                <span>{{ exportProgress || 'Generando archivo...' }}</span>
+              </div>
+
+              <!-- Error indicator -->
+              <div v-if="exportError" class="export-error">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>{{ exportError }}</span>
+              </div>
+
+              <!-- Success indicator -->
+              <div v-if="showSuccess" class="export-success">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>¡Descarga iniciada!</span>
               </div>
             </div>
           </transition>
@@ -269,6 +285,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useDataToggle } from '@/composables/useDataToggle'
 import { useYearFilter } from '@/composables/useYearFilter'
+import { useDownloadCenter } from '@/composables/useDownloadCenter' // ✅ IMPORTAR
 
 // ============================================================================
 // COMPOSABLES
@@ -287,6 +304,14 @@ const {
   loadingYears,
   fetchAvailableYears
 } = useYearFilter()
+
+// ✅ COMPOSABLE DE DESCARGAS
+const {
+  handleDownload: executeDownload,
+  isExporting: downloadExporting,
+  exportError: downloadError,
+  exportProgress: downloadProgress
+} = useDownloadCenter()
 
 // ============================================================================
 // COMPUTED: Años disponibles
@@ -323,6 +348,9 @@ const activeYearSubmenu = ref(null)
 const keepSubnacionalOpen = ref(false)
 const downloadsRef = ref(null)
 const isExporting = ref(false)
+const exportError = ref(null)
+const exportProgress = ref('')
+const showSuccess = ref(false)
 
 // ============================================================================
 // COMPUTED
@@ -386,19 +414,59 @@ const handleSubnacionalMouseLeave = () => {
   }, 100)
 }
 
+// ✅ FUNCIÓN CORREGIDA: Ahora ejecuta la descarga real
 const handleDownload = async (viewType, format, options = {}) => {
-  console.log(`📥 [Toggle] Solicitud de descarga: ${viewType} - ${format}`, options)
+  console.log(`📥 [Toggle] Iniciando descarga: ${viewType} - ${format}`, options)
   
+  // Resetear estados
   isExporting.value = true
+  exportError.value = null
+  exportProgress.value = 'Preparando descarga...'
+  showSuccess.value = false
   
-  emit('download-request', { viewType, format, options })
-  
-  setTimeout(() => {
+  try {
+    // ✅ EJECUTAR LA DESCARGA REAL usando el composable
+    const success = await executeDownload(viewType, format, options)
+    
+    if (success) {
+      console.log('✅ [Toggle] Descarga iniciada correctamente')
+      showSuccess.value = true
+      
+      // Ocultar mensaje de éxito después de 2 segundos
+      setTimeout(() => {
+        showSuccess.value = false
+      }, 2000)
+    } else {
+      console.error('❌ [Toggle] Error en la descarga:', downloadError.value)
+      exportError.value = downloadError.value || 'Error al iniciar la descarga'
+      
+      // Ocultar error después de 4 segundos
+      setTimeout(() => {
+        exportError.value = null
+      }, 4000)
+    }
+    
+    // Emitir evento por si el padre quiere saber (opcional)
+    emit('download-request', { viewType, format, options, success })
+    
+  } catch (err) {
+    console.error('❌ [Toggle] Error inesperado:', err)
+    exportError.value = err.message || 'Error inesperado'
+    
+    setTimeout(() => {
+      exportError.value = null
+    }, 4000)
+  } finally {
     isExporting.value = false
-    showDownloadsMenu.value = false
-    activeSubmenu.value = null
-    activeYearSubmenu.value = null
-  }, 2000)
+    exportProgress.value = ''
+    
+    // Cerrar menú después de un breve delay
+    setTimeout(() => {
+      showDownloadsMenu.value = false
+      activeSubmenu.value = null
+      activeYearSubmenu.value = null
+    }, 1500)
+  }
 }
 
 // ============================================================================
@@ -881,6 +949,34 @@ onUnmounted(() => {
   padding: 12px;
   background: #fef3c7;
   color: #92400e;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 0 0 12px 12px;
+}
+
+/* Export Error */
+.export-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px;
+  background: #fef2f2;
+  color: #dc2626;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 0 0 12px 12px;
+}
+
+/* Export Success */
+.export-success {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px;
+  background: #ecfdf5;
+  color: #059669;
   font-size: 13px;
   font-weight: 500;
   border-radius: 0 0 12px 12px;

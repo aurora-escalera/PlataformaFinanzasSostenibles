@@ -65,12 +65,11 @@
             @navigate-federal="handleDatosFederalesClick"
             @view-change="handleViewChange"
           />
-          <!-- Overlay sobre SOLO el mapa - Usa areAllFiltersOnTodas o showRegionalCharts -->
+          <!-- Overlay sobre SOLO el mapa - Aparece cuando entidad es "Datos Regionales" (null) -->
           <transition name="overlay-fade">
             <div 
               v-if="showMapOverlay" 
-              class="map-overlay-filter"
-              :class="{ 'regional-overlay': showRegionalCharts && !areAllFiltersOnTodas }"
+              class="map-overlay-filter regional-overlay"
               @click.stop="handleOverlayClick"
             >
               <div class="overlay-message">
@@ -98,8 +97,8 @@
           <div class="charts-container">
             <div class="ranking-chart-section" style="height: 100%; display: flex; flex-direction: column;">
               
-              <!-- ========== LINEAR CHART CON CARD - Usa areAllFiltersOnTodas ========== -->
-              <!-- Loading State para LinearChart -->
+              <!-- ========== STACKED AREA CHART CON CARD - Usa areAllFiltersOnTodas ========== -->
+              <!-- Loading State para StackedArea -->
               <div v-if="showStackedArea && stackedAreaLoading" class="chart-card linear-chart-card">
                 <div class="chart-card-header">
                   <h4 class="card-title">Evolución IFS</h4>
@@ -112,7 +111,7 @@
                 </div>
               </div>
               
-              <!-- Error State para LinearChart -->
+              <!-- Error State para StackedArea -->
               <div v-else-if="showStackedArea && stackedAreaError" class="chart-card linear-chart-card">
                 <div class="chart-card-header">
                   <h4 class="card-title">Evolución IFS</h4>
@@ -127,7 +126,7 @@
                 </div>
               </div>
               
-              <!-- LinearChart de IFS con card wrapper -->
+              <!-- StackedArea de IFS con card wrapper -->
               <div 
                 v-else-if="showStackedArea && stackedAreaChartData && Object.keys(stackedAreaChartData).length > 0" 
                 class="chart-card linear-chart-card"
@@ -136,7 +135,7 @@
                   <h4 class="card-title">{{ stackedAreaTitle }}</h4>
                 </div>
                 <div class="chart-card-body">
-                  <LinearChart
+                  <StackedArea
                     :data="stackedAreaChartData"
                     :xLabels="stackedAreaYears"
                     :showCurrencySymbol="false"
@@ -144,12 +143,8 @@
                     :height="440"
                     :hideHeader="true"
                     :initialVisibleVariables="['IFS']"
-                    :padding="{
-                      top: 20,
-                      right: 70,
-                      bottom: 100,
-                      left: 60
-                    }"
+                    :positionsByYear="stackedAreaPositions"
+                    :decimalPlaces="2"
                   />
                 </div>
               </div>
@@ -217,13 +212,16 @@
         
         <div class="body-ranking-panel">
           <!-- Mostrar HistoricalCard cuando NO hay estado Y filtros están en "Todas..." -->
-          <HistoricalCard
-            v-if="showHistoricalCard"
-            :statesData="statesDataForSlider"
-            :selectedStateValue="selectedStateIFSS"
-            @range-change="handleRangeChange"
-            @filter-change="handleFilterChange"
-          />
+        <HistoricalCard
+          v-if="showHistoricalCard"
+          :statesData="statesDataForSlider"
+          :selectedStateValue="selectedStateIFSS"
+          :selectedEntity="selectedEntity"
+          :selectedYear="selectedYear"
+          :selectedVariable="selectedVariable"
+          @range-change="handleRangeChange"
+          @filter-change="handleFilterChange"
+        />
           
           <!-- RegionalChartsComponent - Ahora escucha @years-loaded -->
           <RegionalChartsComponent 
@@ -260,7 +258,7 @@ import IFSRegionalCard from '../modules/charts/components/IFSRegionalCard.vue'
 import RetractableFilterBar from '@/modules/maps/components/RetractableFilterBar.vue'
 import HorizontalRankingChart from '../modules/charts/components/HorizontalRankingChart.vue'
 import HistoricalCard from '../modules/object/component/HistoricalCard.vue'
-import LinearChart from '../modules/charts/components/LinearChart.vue'
+import StackedArea from '../modules/charts/components/StackedArea.vue'
 import QualitativePanel from '../modules/qualitativeIndicators/components/QualitativePanel.vue'
 import { useSlider } from '@/composables/useSlider'
 import { useStateRanking } from '@/composables/useStateRanking'
@@ -360,7 +358,8 @@ const {
   loading: stackedAreaLoading,
   error: stackedAreaError,
   title: stackedAreaTitle,
-  loadIFSSData
+  loadIFSSData,
+  positionsByYear: stackedAreaPositions
 } = useStackedAreaData()
 
 const router = useRouter()
@@ -485,33 +484,40 @@ const hasSpecificVariable = computed(() => {
 // ============================================================================
 
 /**
- * Mostrar StackedArea/LinearChart cuando los 3 filtros están en "Todas..."
+ * Mostrar StackedArea cuando:
+ * - Entidad es "Datos Regionales" (null)
+ * - Año es "Todos los años" (null)
+ * - Variable puede ser cualquiera (null = Todas, o una específica)
  */
 const showStackedArea = computed(() => {
   if (isRetractableExpanded.value) {
     return false
   }
-  return areAllFiltersOnTodas.value
+  
+  const entityIsTodas = selectedEntity.value === null
+  const yearIsTodos = selectedYear.value === null
+  
+  // Mostrar si entidad y año están en "Todas" (variable puede ser cualquiera)
+  return entityIsTodas && yearIsTodos
 })
 
 /**
- * Mostrar overlay del mapa cuando los 3 filtros están en "Todas..." O cuando se muestran los charts regionales
+ * Mostrar overlay del mapa cuando la entidad es "Datos Regionales" (null)
+ * Sin importar si el año es "Todos los años" o un año específico
  */
 const showMapOverlay = computed(() => {
   if (isRetractableExpanded.value) {
     return false
   }
-  return areAllFiltersOnTodas.value || showRegionalCharts.value
+  // Mostrar overlay siempre que la entidad sea "Datos Regionales" (null)
+  return selectedEntity.value === null
 })
 
 /**
- * Mensaje dinámico del overlay según el contexto
+ * Mensaje del overlay - unificado para ambos casos
  */
 const overlayMessage = computed(() => {
-  if (areAllFiltersOnTodas.value) {
-    return 'Haz click en cualquier entidad del mapa para regresar a los resultados subnacionales'
-  }
-  if (showRegionalCharts.value) {
+  if (selectedEntity.value === null) {
     return 'Te encuentras en la vista de resultados federales. Haz clic en cualquier sección del área azul encima del mapa para regresar a los datos subnacionales.'
   }
   return ''
@@ -538,11 +544,19 @@ const shouldHidePanel = computed(() => {
  * Mostrar HistoricalCard cuando:
  * - No hay filtros en blanco
  * - No hay estado seleccionado en el mapa
- * - Los 3 filtros están en "Todas..." (null)
+ * - Entidad es "Datos Regionales" (null)
+ * - Año es "Todos los años" (null)
+ * - Variable puede ser cualquiera (null = Todas, o una específica)
  */
 const showHistoricalCard = computed(() => {
   if (shouldHidePanel.value) return false
-  return !selectedState.value && areAllFiltersOnTodas.value
+  if (selectedState.value) return false
+  
+  // Mostrar si entidad y año están en "Todas"
+  const entityIsTodas = selectedEntity.value === null
+  const yearIsTodos = selectedYear.value === null
+  
+  return entityIsTodas && yearIsTodos
 })
 
 /**
@@ -840,7 +854,8 @@ const restoreInitialYears = async () => {
     console.log('🔄 [HomePage] Restaurando años iniciales:', initialYears.value)
     availableYears.value = [...initialYears.value]
     
-    if (!initialYears.value.includes(selectedYear.value)) {
+    // CORREGIDO: No forzar el año si el usuario seleccionó "Todos los años" (null)
+    if (selectedYear.value !== null && !initialYears.value.includes(selectedYear.value)) {
       const firstYear = initialYears.value[0]
       selectedYear.value = firstYear
       setActiveYear(firstYear)
@@ -964,7 +979,7 @@ watch(toggleAction, async (newAction) => {
   const { type, filters } = newAction
   
   if (type === 'federal') {
-    // Click en "Datos Regionales" (Federal) → HistoricalCard + LinearChart + Overlay
+    // Click en "Datos Regionales" (Federal) → HistoricalCard + StackedArea + Overlay
     console.log('🔘 [HomePage] Aplicando filtros para "Datos Regionales" (Federal)')
     
     selectedEntity.value = filters.entity      // null
@@ -974,7 +989,7 @@ watch(toggleAction, async (newAction) => {
     // Resetear selección del mapa
     resetSelection()
     
-    // Cargar datos del LinearChart
+    // Cargar datos del StackedArea
     await loadIFSSData()
     
     // Actualizar filtro visual
@@ -1017,12 +1032,12 @@ watch(toggleAction, async (newAction) => {
 }, { deep: true })
 
 /**
- * Watch para cargar datos del LinearChart cuando areAllFiltersOnTodas
+ * Watch para cargar datos del StackedArea cuando areAllFiltersOnTodas
  */
 watch(areAllFiltersOnTodas, async (newValue, oldValue) => {
   console.log('👀 [areAllFiltersOnTodas] cambió de', oldValue, 'a', newValue)
   if (newValue && !oldValue) {
-    console.log('🌎 [HomePage] Filtros en "Todas...", cargando LinearChart')
+    console.log('🌎 [HomePage] Filtros en "Todas...", cargando StackedArea')
     await loadIFSSData()
   }
 })
