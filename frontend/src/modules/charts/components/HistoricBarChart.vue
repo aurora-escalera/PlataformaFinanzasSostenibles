@@ -499,23 +499,23 @@ const barWidth = computed(() => {
   
   // Caso especial: 1 sola barra activa
   if (activeCount === 1) {
-    return 120
+    return 140
   }
   
   // Caso especial: 2 barras activas
   if (activeCount === 2) {
-    return 55
+    return 75
   }
 
   // Caso especial: 3 barras activas
   if (activeCount === 3) {
-    return 38
+    return 50
   }
 
   // Para más de 3 barras, escalar proporcionalmente
-  const baseWidth = 70
-  const minWidth = 25
-  const maxWidth = 120
+  const baseWidth = 50
+  const minWidth = 10
+  const maxWidth = 100
   
   const calculatedWidth = baseWidth / Math.sqrt(activeCount * 0.6)
   
@@ -529,7 +529,7 @@ const yearGroupGap = computed(() => {
   
   // Gap mínimo entre años
   if (activeCount === totalVariables && totalVariables > 0) {
-    return '2px'
+    return '1px'
   }
   
   return '1px'

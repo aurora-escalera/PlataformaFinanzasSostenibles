@@ -1402,10 +1402,10 @@ export const storageConfig = {
       yearColumn: 'Año',
       variableColumns: [
         {
-          key: 'PIC',
-          column: 'PIC ($)', 
-          label: 'PIC',
-          color: '#0F3759',
+          key: 'PIC_H',
+          column: 'PIC_H', 
+          label: 'Hidrocarburos',
+          color: '#DC143C',
           order: 1
         }
       ]
@@ -1415,11 +1415,32 @@ export const storageConfig = {
       yearColumn: 'Año',
       variableColumns: [
         {
-          key: 'PS',
-          column: 'PS ($)', 
-          label: 'PS',
-          color: '#6B8FA3',
+          key: 'PS_ER',
+          column: 'PS_ER', 
+          label: 'Energías Renovables',
+          color: '#2e7d32',
           order: 1
+        },
+        {
+          key: 'PS_DN',
+          column: 'PS_DN', 
+          label: 'Desastres Naturales',
+          color: '#558b2f',
+          order: 2
+        },
+        {
+          key: 'PS_EE',
+          column: 'PS_EE', 
+          label: 'Eficiencia Energética',
+          color: '#7cb342',
+          order: 3
+        },
+        {
+          key: 'PS_AM',
+          column: 'PS_CC', 
+          label: 'Cambio Climático',
+          color: '#9ccc65',
+          order: 3
         }
       ]
     },
