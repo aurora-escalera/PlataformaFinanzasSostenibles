@@ -36,6 +36,10 @@
               :hideHeader="true"
               :width="950"
               :height="350"
+              :showCurrencySymbol="true"
+              :decimalPlaces="2"
+              :positionsByYear="iicPositionsByYear"
+              :percentagesByYear="iicPercentagesByYear"
             />
           </div>
         </div>
@@ -170,6 +174,10 @@ const years = ref(['2020', '2021', '2022', '2023', '2024'])
 const isPositionsByYear = ref({})
 const isPercentagesByYear = ref({})
 
+// ✅ NUEVOS: Datos para tooltip extendido de IIC (segunda gráfica StackedArea)
+const iicPositionsByYear = ref({})
+const iicPercentagesByYear = ref({})
+
 // Cargar datos de Google Sheets
 const loadData = async () => {
   try {
@@ -190,6 +198,9 @@ const loadData = async () => {
     
     // ✅ NUEVO: Extraer posiciones y porcentajes de IS
     extractISTooltipData(rawData)
+    
+    // ✅ NUEVO: Extraer posiciones y porcentajes de IIC
+    extractIICTooltipData(rawData)
     
     // Transformar datos para IIC
     const mappingIIC = storageConfig.mappings.iicBarChart
@@ -249,6 +260,8 @@ const loadData = async () => {
     chartDataStackedArea.value = {}
     isPositionsByYear.value = {}
     isPercentagesByYear.value = {}
+    iicPositionsByYear.value = {}
+    iicPercentagesByYear.value = {}
   }
 }
 
@@ -310,6 +323,75 @@ const extractISTooltipData = (rawData) => {
   console.log('✅ [extractISTooltipData] Completado')
   console.log('📍 Positions:', JSON.stringify(positions, null, 2))
   console.log('📊 Percentages:', JSON.stringify(percentages, null, 2))
+}
+
+/**
+ * ✅ NUEVA FUNCIÓN: Extrae posiciones y porcentajes de IIC del rawData
+ * Para la gráfica "Análisis de IIC e Ingreso Total"
+ * Variables: IS Total, IIC Total, Ingreso Total
+ */
+const extractIICTooltipData = (rawData) => {
+  console.log('🔧 [extractIICTooltipData] Extrayendo datos de tooltip para IIC...')
+  
+  const positions = {}
+  const percentages = {}
+  
+  const yearColumn = 'Año'
+  
+  rawData.forEach((row) => {
+    const year = row[yearColumn]
+    if (!year) return
+    
+    const yearStr = String(year).trim()
+    positions[yearStr] = {}
+    percentages[yearStr] = {}
+    
+    // ===== IS Total =====
+    // Porcentaje IS
+    const isPctRaw = row['IS (%)']
+    if (isPctRaw !== undefined && isPctRaw !== null && isPctRaw !== '') {
+      const pctValue = parseFloat(String(isPctRaw).replace(',', '.'))
+      if (!isNaN(pctValue)) {
+        percentages[yearStr]['IS Total'] = pctValue
+      }
+    }
+    // Posición IS
+    const isPosRaw = row['POS_IS']
+    if (isPosRaw !== undefined && isPosRaw !== null && isPosRaw !== '') {
+      const posValue = parseInt(isPosRaw)
+      if (!isNaN(posValue)) {
+        positions[yearStr]['IS Total'] = posValue
+      }
+    }
+    
+    // ===== IIC Total =====
+    // Porcentaje IIC
+    const iicPctRaw = row['IIC (%)']
+    if (iicPctRaw !== undefined && iicPctRaw !== null && iicPctRaw !== '') {
+      const pctValue = parseFloat(String(iicPctRaw).replace(',', '.'))
+      if (!isNaN(pctValue)) {
+        percentages[yearStr]['IIC Total'] = pctValue
+      }
+    }
+    // Posición IIC
+    const iicPosRaw = row['POS_IIC']
+    if (iicPosRaw !== undefined && iicPosRaw !== null && iicPosRaw !== '') {
+      const posValue = parseInt(iicPosRaw)
+      if (!isNaN(posValue)) {
+        positions[yearStr]['IIC Total'] = posValue
+      }
+    }
+    
+    // ===== Ingreso Total (IT) =====
+    // No tiene porcentaje ni posición
+  })
+  
+  iicPositionsByYear.value = positions
+  iicPercentagesByYear.value = percentages
+  
+  console.log('✅ [extractIICTooltipData] Completado')
+  console.log('📍 IIC Positions:', JSON.stringify(positions, null, 2))
+  console.log('📊 IIC Percentages:', JSON.stringify(percentages, null, 2))
 }
 
 // Cargar datos al montar (con delay de 2 segundos)

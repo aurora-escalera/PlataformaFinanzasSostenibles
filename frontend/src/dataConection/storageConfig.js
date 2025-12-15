@@ -1347,16 +1347,27 @@ export const storageConfig = {
       yearColumn: 'Año',
       variableColumns: [
         {
-          key: 'IIC Total',
-          column: 'IIC ($)',
-          label: 'IIC Total',
-          color: '#3B5A70',
-        },
-        {
           key: 'Ingreso Total',
           column: 'IT ($)',
           label: 'Ingreso Total',
-          color: '#0F3759'
+          color: '#9E9E9E'
+          // Sin percentageColumn ni positionColumn
+        },
+        {
+          key: 'IIC Total',
+          column: 'IIC ($)',
+          label: 'IIC Total',
+          color: '#DC143C',
+          percentageColumn: 'IIC (%)',
+          positionColumn: 'POS_IIC'
+        },
+        {
+          key: 'IS Total',
+          column: 'IS ($)',
+          label: 'IS Total',
+          color: '#7cb342',
+          percentageColumn: 'IS (%)',
+          positionColumn: 'POS_IS'
         }
       ]
     },
