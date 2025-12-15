@@ -163,7 +163,7 @@
                   class="dropdown-option"
                   :class="{ 'selected': selectedVariable === null }"
                 >
-                  <span>IFSS</span>
+                  <span>Todas las variables</span>
                 </div>
                 
                 <!-- Variables filtradas -->

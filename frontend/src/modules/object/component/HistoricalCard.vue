@@ -2,10 +2,10 @@
 <template>
   <div class="ifss-slider-container">
     <div class="historic-table">
-      <!-- ROW 1 -->
-      <div class="row-1">
-        <!-- IS Stacked Area Chart Card - CON porcentaje y posición en tooltip -->
-        <div class="chart-card IS-anual-linear-chart">
+      <!-- ROW 1 - Solo visible si: Todas las variables, IS o IIC -->
+      <div v-if="shouldShowRow('row1')" class="row-1">
+        <!-- IS Stacked Area Chart Card -->
+        <div v-if="shouldShowCard('IS')" class="chart-card IS-anual-linear-chart" :class="{ 'full-width': isOnlyCardInRow('IS', 'row1') }">
           <div class="chart-card-header">
             <h4 class="card-title">Análisis histórico de los Ingresos Sostenibles (IS)</h4>
           </div>
@@ -16,7 +16,7 @@
               :showCurrencySymbol="true"
               :decimalPlaces="2"
               :hideHeader="true"
-              :width="950"
+              :width="getChartWidth('IS', 'row1')"
               :height="350"
               :positionsByYear="isPositionsByYear"
               :percentagesByYear="isPercentagesByYear"
@@ -25,7 +25,7 @@
         </div>
         
         <!-- IIC Stacked Area Card -->
-        <div class="chart-card IIC-anual-linear-chart">
+        <div v-if="shouldShowCard('IIC')" class="chart-card IIC-anual-linear-chart" :class="{ 'full-width': isOnlyCardInRow('IIC', 'row1') }">
           <div class="chart-card-header">
             <h4 class="card-title">Análisis de IIC e Ingreso Total</h4>
           </div>
@@ -34,7 +34,7 @@
               :data="chartDataStackedArea"
               :xLabels="years"
               :hideHeader="true"
-              :width="950"
+              :width="getChartWidth('IIC', 'row1')"
               :height="350"
               :showCurrencySymbol="true"
               :decimalPlaces="2"
@@ -45,10 +45,10 @@
         </div>
       </div>
 
-      <!-- ROW 2 -->
-      <div class="row-2">
+      <!-- ROW 2 - Solo visible si: Todas las variables, IS o IIC -->
+      <div v-if="shouldShowRow('row2')" class="row-2">
         <!-- IIC Bar Chart Card -->
-        <div class="chart-card IIC-anual-bar-chart">
+        <div v-if="shouldShowCard('IIC')" class="chart-card IIC-anual-bar-chart" :class="{ 'full-width': isOnlyCardInRow('IIC', 'row2') }">
           <div class="chart-card-header">
             <h4 class="card-title">Ingresos de Inversión en Contribución (IIC)</h4>
           </div>
@@ -63,7 +63,7 @@
         </div>
         
         <!-- IS Bar Chart Card -->
-        <div class="chart-card IS-anual-bar-chart">
+        <div v-if="shouldShowCard('IS')" class="chart-card IS-anual-bar-chart" :class="{ 'full-width': isOnlyCardInRow('IS', 'row2') }">
           <div class="chart-card-header">
             <h4 class="card-title">Ingresos Sostenibles (IS) por Año</h4>
           </div>
@@ -78,8 +78,8 @@
         </div>
       </div>
 
-      <!-- ROW 3 -->
-      <div class="row-3">
+      <!-- ROW 3 - Solo visible si: Todas las variables, PS o PIC -->
+      <div v-if="shouldShowRow('row3')" class="row-3">
         <!-- PS-PIC Stacked Area Chart Card (Full Width) -->
         <div class="chart-card PS-PIC-anual-linear-chart">
           <div class="chart-card-header">
@@ -100,15 +100,16 @@
                 'Presupuestos Intensivos en Carbono': 'PIC',
                 'Presupuestos Sostenibles': 'PS'
               }"
+              :initialVisibleVariables="getInitialVariablesForPSPIC()"
             />
           </div>
         </div>
       </div>
 
-      <!-- ROW 4 -->
-      <div class="row-4">
+      <!-- ROW 4 - Solo visible si: Todas las variables, PS o PIC -->
+      <div v-if="shouldShowRow('row4')" class="row-4">
         <!-- PIC Bar Chart Card -->
-        <div class="chart-card PIC-anual-bar-chart">
+        <div v-if="shouldShowCard('PIC')" class="chart-card PIC-anual-bar-chart" :class="{ 'full-width': isOnlyCardInRow('PIC', 'row4') }">
           <div class="chart-card-header">
             <h4 class="card-title">Presupuestos Intensivos en Carbono (PIC)</h4>
           </div>
@@ -122,8 +123,8 @@
           </div>
         </div>
         
-        <!-- PS Bar Chart Card -->
-        <div class="chart-card PS-anual-bar-chart">
+        <!-- PS Bar Chart Card --> 
+        <div v-if="shouldShowCard('PS')" class="chart-card PS-anual-bar-chart" :class="{ 'full-width': isOnlyCardInRow('PS', 'row4') }">
           <div class="chart-card-header">
             <h4 class="card-title">Presupuestos Sostenibles (PS)</h4>
           </div>
@@ -142,7 +143,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import LinearChart from '../../charts/components/LinearChart.vue'
 import StackedArea from '../../charts/components/StackedArea.vue'
 import HistoricBarChart from '../../charts/components/HistoricBarChart.vue'
@@ -156,6 +157,19 @@ const props = defineProps({
   },
   selectedStateValue: {
     type: Number,
+    default: null
+  },
+  // ✅ NUEVAS PROPS: Recibir los 3 filtros desde HomePage
+  selectedEntity: {
+    type: [String, null],
+    default: null
+  },
+  selectedYear: {
+    type: [String, Number, null],
+    default: null
+  },
+  selectedVariable: {
+    type: [Object, null],
     default: null
   }
 })
@@ -172,19 +186,151 @@ const chartDataLinearPSPIC = ref({})
 const chartDataStackedArea = ref({})
 const years = ref(['2020', '2021', '2022', '2023', '2024'])
 
-// ✅ NUEVOS: Datos para tooltip extendido de IS
+// Datos para tooltip extendido
 const isPositionsByYear = ref({})
 const isPercentagesByYear = ref({})
-
-// ✅ NUEVOS: Datos para tooltip extendido de IIC (segunda gráfica StackedArea)
 const iicPositionsByYear = ref({})
 const iicPercentagesByYear = ref({})
-
-// ✅ NUEVOS: Datos para tooltip extendido de PS-PIC (LinearChart)
 const pspicPositionsByYear = ref({})
 const pspicPercentagesByYear = ref({})
 
-// Cargar datos de Google Sheets
+// ============================================================================
+// LÓGICA DE FILTRADO BASADA EN LOS 3 FILTROS
+// ============================================================================
+
+/**
+ * Verifica si estamos en el contexto correcto para aplicar filtrado de cards:
+ * - Entidad = "Datos Regionales" (null)
+ * - Año = "Todos los años" (null)
+ */
+const isInFilterableContext = computed(() => {
+  const entityIsTodas = props.selectedEntity === null
+  const yearIsTodos = props.selectedYear === null
+  
+  console.log('🔍 [HistoricalCard] isInFilterableContext:', {
+    entity: props.selectedEntity,
+    entityIsTodas,
+    year: props.selectedYear,
+    yearIsTodos,
+    result: entityIsTodas && yearIsTodos
+  })
+  
+  return entityIsTodas && yearIsTodos
+})
+
+/**
+ * Obtiene la key de la variable seleccionada (PS, IIC, PIC, IS o null)
+ */
+const selectedVariableKey = computed(() => {
+  if (!props.selectedVariable) return null
+  return props.selectedVariable.key || null
+})
+
+/**
+ * Mapeo de qué variables están en cada row
+ */
+const rowVariables = {
+  row1: ['IS', 'IIC'],    // Row 1 tiene IS StackedArea e IIC StackedArea
+  row2: ['IIC', 'IS'],    // Row 2 tiene IIC Bar e IS Bar
+  row3: ['PS', 'PIC'],    // Row 3 tiene PS-PIC StackedArea (ambas)
+  row4: ['PIC', 'PS']     // Row 4 tiene PIC Bar y PS Bar
+}
+
+/**
+ * Determina si una row debe mostrarse
+ * Solo aplica filtrado si estamos en el contexto correcto (Entidad=null, Año=null)
+ */
+const shouldShowRow = (rowName) => {
+  // Si NO estamos en contexto filtrable, mostrar todas las rows
+  if (!isInFilterableContext.value) return true
+  
+  // Si no hay variable seleccionada ("Todas las variables"), mostrar todas las rows
+  if (!selectedVariableKey.value) return true
+  
+  // Mostrar la row si contiene la variable seleccionada
+  const variablesInRow = rowVariables[rowName] || []
+  return variablesInRow.includes(selectedVariableKey.value)
+}
+
+/**
+ * Determina si una card específica debe mostrarse
+ * Solo aplica filtrado si estamos en el contexto correcto
+ */
+const shouldShowCard = (cardVariable) => {
+  // Si NO estamos en contexto filtrable, mostrar todas las cards
+  if (!isInFilterableContext.value) return true
+  
+  // Si no hay variable seleccionada ("Todas las variables"), mostrar todas las cards
+  if (!selectedVariableKey.value) return true
+  
+  // Mostrar solo si coincide con la variable seleccionada
+  return selectedVariableKey.value === cardVariable
+}
+
+/**
+ * Determina si una card es la única visible en su row (para aplicar full-width)
+ */
+const isOnlyCardInRow = (cardVariable, rowName) => {
+  // Si NO estamos en contexto filtrable, hay 2 cards por row
+  if (!isInFilterableContext.value) return false
+  
+  // Si no hay variable seleccionada, hay 2 cards por row
+  if (!selectedVariableKey.value) return false
+  
+  // Si hay variable seleccionada, la card es la única en su row
+  return selectedVariableKey.value === cardVariable
+}
+
+/**
+ * Obtiene el ancho del chart según si está solo o acompañado
+ */
+const getChartWidth = (cardVariable, rowName) => {
+  if (isOnlyCardInRow(cardVariable, rowName)) {
+    return 1900 // Ancho completo
+  }
+  return 950 // Mitad del ancho
+}
+
+/**
+ * Obtiene las variables iniciales para el gráfico PS-PIC según el filtro
+ */
+const getInitialVariablesForPSPIC = () => {
+  // Si NO estamos en contexto filtrable, mostrar ambas
+  if (!isInFilterableContext.value) {
+    return ['Presupuestos Intensivos en Carbono', 'Presupuestos Sostenibles']
+  }
+  
+  if (selectedVariableKey.value === 'PS') {
+    return ['Presupuestos Sostenibles']
+  }
+  if (selectedVariableKey.value === 'PIC') {
+    return ['Presupuestos Intensivos en Carbono']
+  }
+  
+  // Por defecto (Todas las variables), mostrar ambas
+  return ['Presupuestos Intensivos en Carbono', 'Presupuestos Sostenibles']
+}
+
+// ============================================================================
+// WATCH para debug
+// ============================================================================
+
+watch([() => props.selectedEntity, () => props.selectedYear, () => props.selectedVariable], 
+  ([entity, year, variable]) => {
+    console.log('🔄 [HistoricalCard] Filtros cambiaron:', {
+      entity: entity === null ? 'Datos Regionales' : entity,
+      year: year === null ? 'Todos los años' : year,
+      variable: variable?.key || 'Todas las variables',
+      isInFilterableContext: props.selectedEntity === null && props.selectedYear === null
+    })
+  }, 
+  { immediate: true }
+)
+
+// ============================================================================
+// CARGA DE DATOS (sin cambios)
+// ============================================================================
+
 const loadData = async () => {
   try {
     console.log('📊 Cargando datos de Google Sheets...')
@@ -202,13 +348,9 @@ const loadData = async () => {
       return
     }
     
-    // ✅ NUEVO: Extraer posiciones y porcentajes de IS
+    // Extraer posiciones y porcentajes
     extractISTooltipData(rawData)
-    
-    // ✅ NUEVO: Extraer posiciones y porcentajes de IIC
     extractIICTooltipData(rawData)
-    
-    // ✅ NUEVO: Extraer posiciones y porcentajes de PS-PIC
     extractPSPICTooltipData(rawData)
     
     // Transformar datos para IIC
@@ -255,8 +397,6 @@ const loadData = async () => {
     chartDataLinearPSPIC.value = formattedDataPSPIC
     
     console.log('✅ Datos transformados')
-    console.log('📍 isPositionsByYear:', isPositionsByYear.value)
-    console.log('📊 isPercentagesByYear:', isPercentagesByYear.value)
 
   } catch (err) {
     console.error('❌ Error cargando datos:', err)
@@ -276,29 +416,14 @@ const loadData = async () => {
   }
 }
 
-/**
- * ✅ NUEVA FUNCIÓN: Extrae posiciones y porcentajes de IS del rawData
- * Columnas esperadas: Año, IS ($), IS (%), POS_IS, FT ($)
- */
 const extractISTooltipData = (rawData) => {
-  console.log('🔧 [extractISTooltipData] Extrayendo datos de tooltip para IS...')
-  
   const positions = {}
   const percentages = {}
-  
-  // Nombres de columnas (ajustar si son diferentes en tu sheet)
   const yearColumn = 'Año'
   const percentageColumn = 'IS (%)'
   const positionColumn = 'POS_IS'
   
-  // Mapeo de variables del gráfico a columnas
-  // En isLinearChart tienes: 'IS Total' (de 'IS ($)') y 'Financiamiento Total' (de 'FT ($)')
-  const variableMapping = {
-    'IS Total': { percentageCol: percentageColumn, positionCol: positionColumn },
-    // Financiamiento Total no tiene porcentaje ni posición
-  }
-  
-  rawData.forEach((row, index) => {
+  rawData.forEach((row) => {
     const year = row[yearColumn]
     if (!year) return
     
@@ -306,47 +431,30 @@ const extractISTooltipData = (rawData) => {
     positions[yearStr] = {}
     percentages[yearStr] = {}
     
-    // Extraer porcentaje de IS
     const pctRaw = row[percentageColumn]
     if (pctRaw !== undefined && pctRaw !== null && pctRaw !== '') {
-      // Manejar formato europeo (coma como decimal)
       const pctValue = parseFloat(String(pctRaw).replace(',', '.'))
       if (!isNaN(pctValue)) {
         percentages[yearStr]['IS Total'] = pctValue
-        console.log(`📊 [DEBUG] Año ${yearStr} - IS (%): ${pctValue}`)
       }
     }
     
-    // Extraer posición de IS
     const posRaw = row[positionColumn]
     if (posRaw !== undefined && posRaw !== null && posRaw !== '') {
       const posValue = parseInt(posRaw)
       if (!isNaN(posValue)) {
         positions[yearStr]['IS Total'] = posValue
-        console.log(`📍 [DEBUG] Año ${yearStr} - POS_IS: ${posValue}`)
       }
     }
   })
   
   isPositionsByYear.value = positions
   isPercentagesByYear.value = percentages
-  
-  console.log('✅ [extractISTooltipData] Completado')
-  console.log('📍 Positions:', JSON.stringify(positions, null, 2))
-  console.log('📊 Percentages:', JSON.stringify(percentages, null, 2))
 }
 
-/**
- * ✅ NUEVA FUNCIÓN: Extrae posiciones y porcentajes de IIC del rawData
- * Para la gráfica "Análisis de IIC e Ingreso Total"
- * Variables: IS Total, IIC Total, Ingreso Total
- */
 const extractIICTooltipData = (rawData) => {
-  console.log('🔧 [extractIICTooltipData] Extrayendo datos de tooltip para IIC...')
-  
   const positions = {}
   const percentages = {}
-  
   const yearColumn = 'Año'
   
   rawData.forEach((row) => {
@@ -357,8 +465,7 @@ const extractIICTooltipData = (rawData) => {
     positions[yearStr] = {}
     percentages[yearStr] = {}
     
-    // ===== IS Total =====
-    // Porcentaje IS
+    // IS Total
     const isPctRaw = row['IS (%)']
     if (isPctRaw !== undefined && isPctRaw !== null && isPctRaw !== '') {
       const pctValue = parseFloat(String(isPctRaw).replace(',', '.'))
@@ -366,7 +473,6 @@ const extractIICTooltipData = (rawData) => {
         percentages[yearStr]['IS Total'] = pctValue
       }
     }
-    // Posición IS
     const isPosRaw = row['POS_IS']
     if (isPosRaw !== undefined && isPosRaw !== null && isPosRaw !== '') {
       const posValue = parseInt(isPosRaw)
@@ -375,8 +481,7 @@ const extractIICTooltipData = (rawData) => {
       }
     }
     
-    // ===== IIC Total =====
-    // Porcentaje IIC
+    // IIC Total
     const iicPctRaw = row['IIC (%)']
     if (iicPctRaw !== undefined && iicPctRaw !== null && iicPctRaw !== '') {
       const pctValue = parseFloat(String(iicPctRaw).replace(',', '.'))
@@ -384,7 +489,6 @@ const extractIICTooltipData = (rawData) => {
         percentages[yearStr]['IIC Total'] = pctValue
       }
     }
-    // Posición IIC
     const iicPosRaw = row['POS_IIC']
     if (iicPosRaw !== undefined && iicPosRaw !== null && iicPosRaw !== '') {
       const posValue = parseInt(iicPosRaw)
@@ -392,43 +496,22 @@ const extractIICTooltipData = (rawData) => {
         positions[yearStr]['IIC Total'] = posValue
       }
     }
-    
-    // ===== Ingreso Total (IT) =====
-    // No tiene porcentaje ni posición
   })
   
   iicPositionsByYear.value = positions
   iicPercentagesByYear.value = percentages
-  
-  console.log('✅ [extractIICTooltipData] Completado')
-  console.log('📍 IIC Positions:', JSON.stringify(positions, null, 2))
-  console.log('📊 IIC Percentages:', JSON.stringify(percentages, null, 2))
 }
 
-/**
- * ✅ FUNCIÓN GENÉRICA: Extrae posiciones y porcentajes desde un mapping de storageConfig
- * Lee las columnas percentageColumn y positionColumn definidas en el mapping
- */
 const extractTooltipDataFromMapping = (rawData, mappingName) => {
-  console.log(`🔧 [extractTooltipDataFromMapping] Extrayendo datos de tooltip para ${mappingName}...`)
-  
   const mapping = storageConfig.mappings[mappingName]
   if (!mapping) {
-    console.error(`❌ Mapping "${mappingName}" no encontrado en storageConfig`)
     return { positions: {}, percentages: {} }
   }
   
   const positions = {}
   const percentages = {}
-  
   const yearColumn = mapping.yearColumn || 'Año'
   const variableColumns = mapping.variableColumns || []
-  
-  console.log(`📋 [${mappingName}] Variables configuradas:`, variableColumns.map(v => ({
-    label: v.label,
-    percentageColumn: v.percentageColumn,
-    positionColumn: v.positionColumn
-  })))
   
   rawData.forEach((row) => {
     const year = row[yearColumn]
@@ -438,55 +521,48 @@ const extractTooltipDataFromMapping = (rawData, mappingName) => {
     positions[yearStr] = positions[yearStr] || {}
     percentages[yearStr] = percentages[yearStr] || {}
     
-    // Iterar sobre cada variable del mapping
     variableColumns.forEach((varConfig) => {
       const label = varConfig.label
       
-      // Extraer porcentaje si está definido
       if (varConfig.percentageColumn) {
         const pctRaw = row[varConfig.percentageColumn]
         if (pctRaw !== undefined && pctRaw !== null && pctRaw !== '') {
           const pctValue = parseFloat(String(pctRaw).replace(',', '.'))
           if (!isNaN(pctValue)) {
             percentages[yearStr][label] = pctValue
-            console.log(`📊 [${mappingName}] Año ${yearStr} - ${label} porcentaje: ${pctValue}`)
           }
         }
       }
       
-      // Extraer posición si está definida
       if (varConfig.positionColumn) {
         const posRaw = row[varConfig.positionColumn]
         if (posRaw !== undefined && posRaw !== null && posRaw !== '') {
           const posValue = parseInt(posRaw)
           if (!isNaN(posValue)) {
             positions[yearStr][label] = posValue
-            console.log(`📍 [${mappingName}] Año ${yearStr} - ${label} posición: ${posValue}`)
           }
         }
       }
     })
   })
   
-  console.log(`✅ [extractTooltipDataFromMapping] ${mappingName} completado`)
-  console.log('📍 Positions:', JSON.stringify(positions, null, 2))
-  console.log('📊 Percentages:', JSON.stringify(percentages, null, 2))
-  
   return { positions, percentages }
 }
 
-/**
- * ✅ Extrae posiciones y porcentajes de PS-PIC usando el mapping de storageConfig
- */
 const extractPSPICTooltipData = (rawData) => {
   const { positions, percentages } = extractTooltipDataFromMapping(rawData, 'pspicLinearChart')
   pspicPositionsByYear.value = positions
   pspicPercentagesByYear.value = percentages
 }
 
-// Cargar datos al montar (con delay de 2 segundos)
+// Cargar datos al montar
 onMounted(async () => {
   console.log('🎬 Componente HistoricalCard montado')
+  console.log('📊 Filtros iniciales:', {
+    entity: props.selectedEntity,
+    year: props.selectedYear,
+    variable: props.selectedVariable?.key || 'Todas'
+  })
   
   setTimeout(async () => {
     console.log('⏰ Iniciando carga después de 2 segundos...')
@@ -575,6 +651,7 @@ onMounted(async () => {
   height: 100%;
 }
 
+/* Anchos por defecto (50% cada card) */
 .IS-anual-linear-chart,
 .IIC-anual-linear-chart,
 .IIC-anual-bar-chart,
@@ -584,7 +661,13 @@ onMounted(async () => {
   width: 50%;
 }
 
+/* Ancho completo para row 3 */
 .PS-PIC-anual-linear-chart {
   width: 100%;
+}
+
+/* ✅ Clase para cuando una card está sola en su row */
+.chart-card.full-width {
+  width: 100% !important;
 }
 </style>

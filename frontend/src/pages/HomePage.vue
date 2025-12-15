@@ -213,13 +213,16 @@
         
         <div class="body-ranking-panel">
           <!-- Mostrar HistoricalCard cuando NO hay estado Y filtros están en "Todas..." -->
-          <HistoricalCard
-            v-if="showHistoricalCard"
-            :statesData="statesDataForSlider"
-            :selectedStateValue="selectedStateIFSS"
-            @range-change="handleRangeChange"
-            @filter-change="handleFilterChange"
-          />
+        <HistoricalCard
+          v-if="showHistoricalCard"
+          :statesData="statesDataForSlider"
+          :selectedStateValue="selectedStateIFSS"
+          :selectedEntity="selectedEntity"
+          :selectedYear="selectedYear"
+          :selectedVariable="selectedVariable"
+          @range-change="handleRangeChange"
+          @filter-change="handleFilterChange"
+        />
           
           <!-- RegionalChartsComponent - Ahora escucha @years-loaded -->
           <RegionalChartsComponent 
@@ -482,13 +485,21 @@ const hasSpecificVariable = computed(() => {
 // ============================================================================
 
 /**
- * Mostrar StackedArea cuando los 3 filtros están en "Todas..."
+ * Mostrar StackedArea cuando:
+ * - Entidad es "Datos Regionales" (null)
+ * - Año es "Todos los años" (null)
+ * - Variable puede ser cualquiera (null = Todas, o una específica)
  */
 const showStackedArea = computed(() => {
   if (isRetractableExpanded.value) {
     return false
   }
-  return areAllFiltersOnTodas.value
+  
+  const entityIsTodas = selectedEntity.value === null
+  const yearIsTodos = selectedYear.value === null
+  
+  // Mostrar si entidad y año están en "Todas" (variable puede ser cualquiera)
+  return entityIsTodas && yearIsTodos
 })
 
 /**
@@ -535,11 +546,19 @@ const shouldHidePanel = computed(() => {
  * Mostrar HistoricalCard cuando:
  * - No hay filtros en blanco
  * - No hay estado seleccionado en el mapa
- * - Los 3 filtros están en "Todas..." (null)
+ * - Entidad es "Datos Regionales" (null)
+ * - Año es "Todos los años" (null)
+ * - Variable puede ser cualquiera (null = Todas, o una específica)
  */
 const showHistoricalCard = computed(() => {
   if (shouldHidePanel.value) return false
-  return !selectedState.value && areAllFiltersOnTodas.value
+  if (selectedState.value) return false
+  
+  // Mostrar si entidad y año están en "Todas"
+  const entityIsTodas = selectedEntity.value === null
+  const yearIsTodos = selectedYear.value === null
+  
+  return entityIsTodas && yearIsTodos
 })
 
 /**
