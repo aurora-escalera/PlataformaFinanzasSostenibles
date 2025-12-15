@@ -71,9 +71,9 @@
                     backgroundColor: variable.color,
                     width: `${barWidth}px`
                   }"
-                  @mouseenter="(e) => { hoveredBar = { year: yearData.year, variable }; updateTooltipPosition(e) }"
+                  @mouseenter="(e) => { hoveredYear = yearData.year; updateTooltipPosition(e) }"
                   @mousemove="updateTooltipPosition"
-                  @mouseleave="hoveredBar = null"
+                  @mouseleave="hoveredYear = null"
                 >
                 </div>
                 
@@ -103,10 +103,10 @@
     </div>
 
 
-    <!-- Tooltip Global con position: fixed (estilo LinearChart) -->
+    <!-- Tooltip Global con TODAS las variables activas -->
     <Teleport to="body">
       <div 
-        v-if="hoveredBar"
+        v-if="hoveredYear && tooltipItems.length > 0"
         class="tooltip-container"
         :style="{
           left: `${tooltipPosition.x}px`,
@@ -114,14 +114,20 @@
         }"
       >
         <div class="tooltip-header">
-          <span class="tooltip-year-label">{{ hoveredBar.year }}</span>
+          <span class="tooltip-year-label">{{ hoveredYear }}</span>
         </div>
         <div class="tooltip-content">
-          <div class="tooltip-item">
-            <span class="tooltip-color-indicator" :style="{ backgroundColor: hoveredBar.variable.color }"></span>
-            <span class="tooltip-variable-name">{{ hoveredBar.variable.label }}:</span>
-            <span class="tooltip-variable-value">{{ formatCurrency(hoveredBar.variable.value) }}</span>
-          </div>
+          <template v-for="(item, idx) in tooltipItems" :key="item.key">
+            <!-- Separador entre variables -->
+            <div v-if="idx > 0" class="tooltip-separator"></div>
+            
+            <!-- Variable -->
+            <div class="tooltip-item">
+              <span class="tooltip-color-indicator" :style="{ backgroundColor: item.color }"></span>
+              <span class="tooltip-variable-name">{{ item.label }}:</span>
+              <span class="tooltip-variable-value">{{ formatCurrency(item.value) }}</span>
+            </div>
+          </template>
         </div>
       </div>
     </Teleport>
@@ -174,11 +180,33 @@ const props = defineProps({
   }
 })
 
-const hoveredBar = ref(null)
+// ✅ CAMBIADO: Ahora guardamos el año hovered, no la barra individual
+const hoveredYear = ref(null)
 const activeFilters = ref({})
 const tooltipPosition = ref({ x: 0, y: 0 })
 const barsContainerRef = ref(null)
 const barsContainerHeight = ref(200) // Altura por defecto
+
+// ✅ NUEVO: Computed para obtener todas las variables activas del año hovered
+const tooltipItems = computed(() => {
+  if (!hoveredYear.value || !props.data) return []
+  
+  // Encontrar los datos del año hovered
+  const yearData = props.data.find(d => d.year === hoveredYear.value)
+  if (!yearData || !yearData.variables) return []
+  
+  // Filtrar solo las variables activas
+  const filteredVars = getFilteredVariables(yearData)
+  
+  return filteredVars
+    .filter(v => activeFilters.value[v.key] !== false)
+    .map(v => ({
+      key: v.key,
+      label: v.label,
+      value: v.value,
+      color: v.color
+    }))
+})
 
 // ✅ Mapa de colores semánticos basados en el nombre/key de la variable
 const semanticColors = {
@@ -512,16 +540,16 @@ const toggleFilter = (key) => {
   activeFilters.value[key] = !activeFilters.value[key]
 }
 
-// ✅ Formatear moneda (billones, millones, miles)
+// ✅ Formatear moneda (billones, millones, miles) con espacio
 const formatCurrency = (value) => {
   if (Math.abs(value) >= 1000000000) {
-    return `$${(value / 1000000000).toFixed(1)}B`
+    return `$${(value / 1000000000).toFixed(2)} B`
   } else if (Math.abs(value) >= 1000000) {
-    return `$${(value / 1000000).toFixed(1)}M`
+    return `$${(value / 1000000).toFixed(2)} M`
   } else if (Math.abs(value) >= 1000) {
-    return `$${(value / 1000).toFixed(1)}K`
+    return `$${(value / 1000).toFixed(2)} K`
   }
-  return `$${value.toFixed(0)}`
+  return `$${value.toFixed(2)}`
 }
 
 // Actualizar altura del contenedor de barras
@@ -610,7 +638,7 @@ watch(() => props.data, () => {
   background: transparent;
   color: #666;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 500;
   transition: all 0.3s ease;
   display: flex;
@@ -754,18 +782,18 @@ display: none;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
-/* Tooltip con estilo LinearChart */
+/* ✅ Tooltip con estilo igual a StackedArea */
 .tooltip-container {
   position: fixed;
   transform: translate(-50%, calc(-100% - 15px));
   background: white;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
-  padding: 10px 12px;
+  padding: 12px 14px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   pointer-events: none;
   z-index: 99999;
-  min-width: 150px;
+  min-width: 200px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   transition: left 0.1s ease, top 0.1s ease;
 }
@@ -782,13 +810,13 @@ display: none;
 }
 
 .tooltip-header {
-  margin-bottom: 8px;
-  padding-bottom: 6px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
   border-bottom: 1px solid #f0f0f0;
 }
 
 .tooltip-year-label {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   color: #333;
 }
@@ -796,14 +824,14 @@ display: none;
 .tooltip-content {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 .tooltip-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .tooltip-color-indicator {
@@ -822,6 +850,12 @@ display: none;
   color: #333;
   font-weight: 600;
   margin-left: auto;
+}
+
+.tooltip-separator {
+  height: 1px;
+  background: #e0e0e0;
+  margin: 4px 0;
 }
 
 /* ✅ ETIQUETAS DE AÑOS DEBAJO DEL GRÁFICO */

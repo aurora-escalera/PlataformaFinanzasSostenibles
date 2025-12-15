@@ -65,7 +65,7 @@
         <!-- IS Bar Chart Card -->
         <div class="chart-card IS-anual-bar-chart">
           <div class="chart-card-header">
-            <h4 class="card-title">Ingresos Sostenibles (IS) por Año</h4>
+            <h4 class="card-title">Financiamiento total destinado al financiamiento para el desarrollo a cambio climático por Año (FTDCC)</h4>
           </div>
           <div class="chart-card-body">
             <HistoricBarChart

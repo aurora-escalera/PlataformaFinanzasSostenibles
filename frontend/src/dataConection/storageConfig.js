@@ -1389,10 +1389,10 @@ export const storageConfig = {
       yearColumn: 'Año',
       variableColumns: [
         {
-          key: 'IS',
-          column: 'IS ($)', 
-          label: 'IS',
-          color: '#0F3759',
+          key: 'FTDCC',
+          column: 'IS_FTDCC', 
+          label: 'FTDCC',
+          color: '#7cb342',
           order: 1
         }
       ]
