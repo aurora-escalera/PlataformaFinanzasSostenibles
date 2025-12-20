@@ -886,4 +886,248 @@ const formatValue = (value) => {
   opacity: 0.85;
   font-style: italic;
 }
+
+/* ============================================
+   RESPONSIVE - Media Queries
+   ============================================ */
+
+/* Tablets */
+@media (max-width: 768px) {
+  .horizontal-bar-chart {
+    padding: 6px;
+    border-radius: 10px;
+  }
+  
+  .chart-header {
+    height: 20px;
+    margin-bottom: 6px;
+  }
+  
+  .chart-title {
+    font-size: 14px;
+  }
+  
+  .bars-container {
+    gap: 2px;
+  }
+  
+  /* Reducir ancho del label de estado */
+  .bar-row {
+    grid-template-columns: 100px 1fr;
+    gap: 8px;
+    min-height: 10px;
+  }
+  
+  .state-label {
+    font-size: 11px;
+    padding-right: 4px;
+  }
+  
+  .state-label.selected-label {
+    font-size: 12px;
+  }
+  
+  .bar-chart-area {
+    min-height: 10px;
+  }
+  
+  .bar-wrapper-horizontal {
+    min-height: 10px;
+  }
+  
+  .bar-horizontal {
+    min-width: 30px;
+    padding-right: 4px;
+    padding-left: 3px;
+  }
+  
+  .bar-value {
+    font-size: 9px;
+  }
+  
+  /* Indicador flotante más pequeño */
+  .floating-classification {
+    font-size: 10px;
+    top: calc(100% + 6px);
+    letter-spacing: 0.4px;
+  }
+  
+  /* Leyenda más compacta */
+  .color-legend-strip {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding-top: 5px;
+    margin-top: 5px;
+  }
+
+  .legend-spacer {
+    display: none;  /* Solo en móvil */
+  }
+  
+  .legend-color-block {
+    height: 16px;
+  }
+  
+  .legend-indicator {
+    font-size: 8px;
+    padding: 0 2px;
+  }
+  
+  .legend-range-value {
+    font-size: 10px;
+  }
+  
+  /* Ocultar tooltip en móvil (usar touch) */
+  .tooltip {
+    display: none !important;
+  }
+}
+
+/* Móviles pequeños */
+@media (max-width: 480px) {
+  .horizontal-bar-chart {
+    padding: 5px;
+    border-radius: 8px;
+  }
+  
+  .chart-header {
+    height: 18px;
+    margin-bottom: 4px;
+  }
+  
+  .chart-title {
+    font-size: 12px;
+  }
+  
+  .bars-container {
+    gap: 1px;
+  }
+  
+  /* Label aún más pequeño */
+  .bar-row {
+    grid-template-columns: 70px 1fr;
+    gap: 6px;
+    min-height: 8px;
+  }
+  
+  .state-label {
+    font-size: 9px;
+    padding-right: 3px;
+  }
+  
+  .state-label.selected-label {
+    font-size: 10px;
+  }
+  
+  .bar-chart-area {
+    min-height: 8px;
+  }
+  
+  .bar-wrapper-horizontal {
+    min-height: 8px;
+    border-radius: 3px;
+  }
+  
+  .bar-horizontal {
+    min-width: 24px;
+    padding-right: 3px;
+    padding-left: 2px;
+    border-radius: 3px;
+  }
+  
+  .bar-value {
+    font-size: 8px;
+  }
+  
+  /* Indicador flotante */
+  .floating-classification {
+    font-size: 8px;
+    top: calc(100% + 4px);
+    letter-spacing: 0.3px;
+  }
+  
+  /* Leyenda más compacta */
+  .color-legend-strip {
+    grid-template-columns: 70px 1fr;
+    gap: 6px;
+    height: 32px;
+  }
+  
+  .legend-color-block {
+    height: 14px;
+  }
+  
+  .legend-indicator {
+    font-size: 6px;
+    padding: 0 1px;
+    letter-spacing: 0;
+  }
+  
+  .legend-range-value {
+    font-size: 8px;
+    margin-top: 1px;
+  }
+  
+  /* Grid lines más sutiles */
+  .grid-line {
+    background: #f0f0f0;
+  }
+  
+  /* Empty state */
+  .empty-state {
+    min-height: 150px;
+    font-size: 12px;
+  }
+}
+
+/* Landscape en móviles */
+@media (max-width: 768px) and (orientation: landscape) {
+  .horizontal-bar-chart {
+    padding: 4px;
+  }
+  
+  .chart-header {
+    height: 16px;
+    margin-bottom: 4px;
+  }
+  
+  .chart-title {
+    font-size: 11px;
+  }
+  
+  .bar-row {
+    grid-template-columns: 80px 1fr;
+    gap: 6px;
+    min-height: 6px;
+  }
+  
+  .state-label {
+    font-size: 9px;
+  }
+  
+  .bar-value {
+    font-size: 8px;
+  }
+  
+  .color-legend-strip {
+    grid-template-columns: 80px 1fr;
+    height: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  
+  .legend-color-block {
+    height: 12px;
+  }
+  
+  .legend-indicator {
+    font-size: 6px;
+  }
+  
+  .legend-range-value {
+    font-size: 7px;
+  }
+}
 </style>

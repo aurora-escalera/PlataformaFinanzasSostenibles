@@ -232,43 +232,202 @@
   color: #1e3a5f;
 }
 
-/* Responsive */
+/* ============================================
+   RESPONSIVE - Media Queries
+   ============================================ */
+
+/* Tablets */
 @media (max-width: 768px) {
   .default-info-card {
     padding: 0 12px;
-    margin-bottom: 40px;
+    margin: 16px auto 32px auto;
+  }
+  
+  .card-container {
+    border-radius: 12px;
+  }
+  
+  .card-sidebar {
+    width: 4px;
   }
   
   .card-content {
-    padding: 28px 24px;
+    padding: 24px 20px;
   }
   
+  /* Timeline que se extiende por todo el texto */
   .section-row {
-    gap: 20px;
+    gap: 16px;
+    align-items: stretch;
+  }
+  
+  .icon-wrapper {
+    align-self: stretch;
+    padding-bottom: 2px;
+  }
+  
+  .timeline-connector {
+    width: 2px;
+    min-height: unset;
+    flex: 1;
+    margin-top: 6px;
+    margin-bottom: 0;
   }
   
   .icon-box {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
   }
   
   .icon-box svg {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
   }
   
   .text-section {
-    gap: 12px;
-    padding-bottom: 24px;
+    gap: 10px;
+    padding-bottom: 20px;
   }
   
   .section-title {
-    font-size: 15px;
-    padding-top: 8px;
+    font-size: 14px;
+    padding-top: 6px;
+    line-height: 1.3;
   }
   
   .section-text {
-    font-size: 15px;
+    font-size: 13px;
+    line-height: 1.7;
+    text-align: left;
+  }
+}
+
+/* Móviles pequeños */
+@media (max-width: 480px) {
+  .default-info-card {
+    padding: 0 8px;
+    margin: 12px auto 24px auto;
+  }
+  
+  .card-container {
+    border-radius: 10px;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
+  }
+  
+  .card-sidebar {
+    width: 3px;
+  }
+  
+  .card-content {
+    padding: 18px 14px;
+  }
+  
+  /* Timeline que se extiende por todo el texto */
+  .section-row {
+    gap: 12px;
+    align-items: stretch;
+  }
+  
+  .icon-wrapper {
+    align-self: stretch;
+    padding-bottom: 4px;
+  }
+  
+  .timeline-connector {
+    width: 2px;
+    min-height: unset;
+    flex: 1;
+    margin-top: 4px;
+    margin-bottom: 0;
+  }
+  
+  .icon-box {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+  }
+  
+  .icon-box svg {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .text-section {
+    gap: 8px;
+    padding-bottom: 16px;
+  }
+  
+  .section-title {
+    font-size: 13px;
+    padding-top: 4px;
+    line-height: 1.3;
+  }
+  
+  .section-text {
+    font-size: 12px;
+    line-height: 1.6;
+    text-align: left;
+  }
+  
+  .highlight-primary,
+  .highlight-link {
+    font-weight: 500;
+  }
+}
+
+/* Landscape en móviles */
+@media (max-width: 768px) and (orientation: landscape) {
+  .default-info-card {
+    margin: 12px auto 20px auto;
+  }
+  
+  .card-content {
+    padding: 16px 18px;
+  }
+  
+  /* Timeline que se extiende por todo el texto */
+  .section-row {
+    gap: 14px;
+    align-items: stretch;
+  }
+  
+  .icon-wrapper {
+    align-self: stretch;
+    padding-bottom: 2px;
+  }
+  
+  .timeline-connector {
+    width: 2px;
+    min-height: unset;
+    flex: 1;
+    margin-top: 4px;
+    margin-bottom: 0;
+  }
+  
+  .icon-box {
+    width: 30px;
+    height: 30px;
+  }
+  
+  .icon-box svg {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .text-section {
+    gap: 6px;
+    padding-bottom: 14px;
+  }
+  
+  .section-title {
+    font-size: 12px;
+    padding-top: 4px;
+  }
+  
+  .section-text {
+    font-size: 11px;
+    line-height: 1.5;
   }
 }
 </style>
