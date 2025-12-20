@@ -84,6 +84,7 @@
           
         <!-- COMPONENTE: Panel Cualitativo - Escucha eventos de años y cierre -->
         <QualitativePanel
+        v-if="!isMobile"
           :isExpanded="isRetractableExpanded"
           :selectedEntity="selectedEntity"
           :selectedYear="selectedYear"
@@ -852,6 +853,8 @@ const handleYearsLoaded = async (years) => {
   }
 }
 
+const isMobile = computed(() => window.innerWidth <= 768)
+
 const handleRegionalYearsLoaded = async (years) => {
   console.log('📅 [HomePage] Años recibidos de RegionalChartsComponent:', years)
   
@@ -1532,6 +1535,139 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   color: #666;
+}
+
+/* ============================================
+   RESPONSIVE - Media Queries
+   ============================================ */
+
+/* Tablets y móviles */
+@media (max-width: 768px) {
+  .map-and-charts-wrapper {
+    /* Eliminar el contenedor visual - se vuelve transparente */
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+    border-radius: 0;
+  }
+  
+  .charts-section {
+    transform: translateX(0);
+    width: 100%;
+    height: auto;
+    min-height: 400px;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.182);
+    background: white;
+    padding: 10px;
+  }
+  
+  .charts-container {
+    width: 100%;
+    height: 100%;
+  }
+  
+  /* Cards dentro de charts */
+  .chart-card {
+    border-radius: 10px;
+  }
+  
+  .ranking-chart-section {
+    min-height: 380px;
+  }
+  
+  /* Filtros */
+  .filters-toggles-row {
+    height: auto;
+    padding: 10px 0;
+  }
+  
+  .filters-column {
+    min-width: unset;
+    width: 100%;
+  }
+  
+  /* Map container */
+  .map-container {
+    width: 100%;
+    padding: 0 10px 8px 10px;
+  }
+  
+  /* Overlay del mapa */
+  .map-overlay-filter {
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 15px;
+  }
+  
+  .overlay-message {
+    padding: 20px;
+    max-width: 90%;
+  }
+  
+  .overlay-text {
+    font-size: 14px;
+  }
+  
+  /* Ranking panel */
+  .ranking-panel {
+    width: 100%;
+    height: auto;
+  }
+  
+  .ranking-panel.historical-view,
+  .ranking-panel.regional-view,
+  .ranking-panel.variable-view {
+    width: 100%;
+    height: auto;
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+  }
+
+  .qualitative-panel,
+  .qualitative-panel-wrapper {
+    display: none !important;
+  }
+
+  :deep(.qualitative-panel),
+  :deep(.qualitative-panel-container) {
+    display: none !important;
+  }
+}
+
+/* Móviles pequeños */
+@media (max-width: 480px) {
+  .map-and-charts-wrapper {
+    gap: 12px;
+  }
+  
+  .charts-section {
+    min-height: 350px;
+    padding: 8px;
+    border-radius: 12px;
+  }
+  
+  .chart-card {
+    padding: 8px;
+    border-radius: 8px;
+  }
+  
+  .card-title {
+    font-size: 14px;
+  }
+  
+  .overlay-text {
+    font-size: 12px;
+  }
+  
+  .ranking-chart-section {
+    min-height: 320px;
+  }
 }
 </style>
 

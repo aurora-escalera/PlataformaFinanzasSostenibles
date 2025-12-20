@@ -28,13 +28,11 @@
             <span class="btn-text-short">Subnacionales</span>
           </button>
         </div>
-      </div>
-
-      <!-- Contenedor derecho: Moneda + Descargas + Filtros (móvil) -->
-      <div class="right-section">
-        <!-- Indicador Moneda -->
+        
+        <!-- Indicador Moneda (se muestra aquí en móvil) -->
         <div class="currency-section">
           <span class="currency-label">Moneda:</span>
+          <span class="currency-label-mobile">Currency:</span>
           <div 
             class="currency-badge"
             :class="{ 'currency-usd': isFederalActive, 'currency-mxn': isSubnacionalActive }"
@@ -43,6 +41,10 @@
             <span class="currency-code">({{ currencyCode }})</span>
           </div>
         </div>
+      </div>
+
+      <!-- Contenedor derecho: Descargas + Filtros (móvil) -->
+      <div class="right-section">
 
         <!-- SECCIÓN: Descargas -->
         <div class="downloads-section" ref="downloadsRef">
@@ -569,6 +571,12 @@ onUnmounted(() => {
 
 /* Texto responsive en botones toggle */
 .btn-text-short {
+  display: none;
+  font-size: 13px;
+}
+
+/* Label móvil de moneda - oculto por defecto */
+.currency-label-mobile {
   display: none;
 }
 
@@ -1182,8 +1190,9 @@ onUnmounted(() => {
   }
   
   .toggle-section {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
     gap: 8px;
   }
   
@@ -1211,35 +1220,45 @@ onUnmounted(() => {
     display: inline;
   }
   
-  .right-section {
-    width: 100%;
-    flex-direction: row;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-  
+  /* Currency en móvil - se queda en toggle-section */
   .currency-section {
-    flex: 1;
-    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
   }
   
   .currency-label {
     display: none;
   }
   
+  .currency-label-mobile {
+    display: inline;
+    font-size: 13px;
+    font-weight: 500;
+    color: #6b7280;
+  }
+  
   .currency-badge {
-    padding: 8px 12px;
-    width: 100%;
+    padding: 6px 10px;
+    width: auto;
     justify-content: center;
   }
   
   .currency-name {
-    font-size: 12px;
+    display: none;
   }
   
   .currency-code {
-    font-size: 12px;
+    font-size: 13px;
+  }
+  
+  .right-section {
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
   }
   
   .downloads-section {
@@ -1312,20 +1331,21 @@ onUnmounted(() => {
     height: 14px;
   }
   
-  .right-section {
-    gap: 8px;
+  /* Currency móvil */
+  .currency-label-mobile {
+    font-size: 13px;
   }
   
   .currency-badge {
-    padding: 6px 10px;
-  }
-  
-  .currency-name {
-    font-size: 11px;
+    padding: 5px 8px;
   }
   
   .currency-code {
-    font-size: 11px;
+    font-size: 12px;
+  }
+  
+  .right-section {
+    gap: 8px;
   }
   
   .downloads-btn {
@@ -1411,17 +1431,17 @@ onUnmounted(() => {
     height: 13px;
   }
   
-  .currency-badge {
-    padding: 5px 8px;
-    gap: 4px;
+  /* Currency móvil */
+  .currency-label-mobile {
+    font-size: 11px;
   }
   
-  .currency-name {
-    font-size: 10px;
+  .currency-badge {
+    padding: 4px 6px;
   }
   
   .currency-code {
-    font-size: 10px;
+    font-size: 11px;
   }
   
   .downloads-btn {
@@ -1475,20 +1495,21 @@ onUnmounted(() => {
     height: 12px;
   }
   
-  .right-section {
-    gap: 6px;
+  /* Currency móvil */
+  .currency-label-mobile {
+    font-size: 10px;
   }
   
   .currency-badge {
-    padding: 5px 6px;
-  }
-  
-  .currency-name {
-    font-size: 9px;
+    padding: 3px 5px;
   }
   
   .currency-code {
-    display: none;
+    font-size: 10px;
+  }
+  
+  .right-section {
+    gap: 6px;
   }
   
   .downloads-btn {
@@ -1556,12 +1577,17 @@ onUnmounted(() => {
     height: 11px;
   }
   
-  .currency-badge {
-    padding: 4px 5px;
+  /* Currency móvil */
+  .currency-label-mobile {
+    font-size: 9px;
   }
   
-  .currency-name {
-    font-size: 8px;
+  .currency-badge {
+    padding: 2px 4px;
+  }
+  
+  .currency-code {
+    font-size: 9px;
   }
   
   .downloads-btn {
