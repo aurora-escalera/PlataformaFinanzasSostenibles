@@ -1558,7 +1558,7 @@ onMounted(async () => {
     transform: translateX(0);
     width: 100%;
     height: auto;
-    min-height: 400px;
+    min-height: 500px;
     border-radius: 15px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.182);
     background: white;
@@ -1598,20 +1598,23 @@ onMounted(async () => {
   
   /* Overlay del mapa */
   .map-overlay-filter {
+    position: absolute;
     top: 0;
     left: 0;
     width: 100%;
-    height: 100%;
+    aspect-ratio: 16 / 9;
+    height: 330px;
     border-radius: 15px;
+    z-index: 200;
   }
   
   .overlay-message {
-    padding: 20px;
+    padding: 10px;
     max-width: 90%;
   }
   
   .overlay-text {
-    font-size: 14px;
+    font-size: 11px;
   }
   
   /* Ranking panel */
@@ -1660,9 +1663,19 @@ onMounted(async () => {
   .card-title {
     font-size: 14px;
   }
+
+  .map-overlay-filter {
+    max-height: 400px;
+    border-radius: 12px;
+  }
+  
+  .overlay-message {
+    padding: 12px;
+  }
   
   .overlay-text {
-    font-size: 12px;
+    font-size: 11px;
+    line-height: 1.4;
   }
   
   .ranking-chart-section {

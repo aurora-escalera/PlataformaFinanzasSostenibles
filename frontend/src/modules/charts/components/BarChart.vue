@@ -757,24 +757,398 @@ watch(() => props.data, () => { nextTick(() => updateBarsContainerHeight()) }, {
 .tooltip-variable-name { color: #666; font-size: 10px; }
 .tooltip-variable-value { color: #333; font-weight: 600; margin-left: auto; font-size: 10px; }
 
+/* ============================================
+   RESPONSIVE - Media Queries
+   ============================================ */
+
+/* Tablets */
 @media (max-width: 768px) {
-  .kpi-cards-row { grid-template-columns: 1fr; gap: 6px; }
-  .kpi-card { padding: 8px; }
-  .kpi-dot { top: 8px; right: 8px; }
-  .kpi-percentage, .kpi-position { font-size: 11px; }
+  .vertical-bar-chart {
+    border-radius: 10px;
+  }
+  
+  .bar-header-dark {
+    padding: 8px 10px;
+    gap: 6px;
+  }
+  
+  .bar-header-icon {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    border-radius: 5px;
+  }
+  
+  .bar-header-icon svg {
+    width: 10px;
+    height: 10px;
+  }
+  
+  .bar-header-title {
+    font-size: 11px;
+  }
+  
+  .bar-header-subtitle {
+    font-size: 9px;
+  }
+  
+  .export-btn-circle {
+    width: 26px;
+    height: 26px;
+  }
+  
+  .export-btn-circle svg {
+    width: 12px;
+    height: 12px;
+  }
+  
+  .export-dropdown-mini {
+    min-width: 90px;
+  }
+  
+  .export-option {
+    padding: 8px 10px;
+    font-size: 11px;
+    gap: 6px;
+  }
+  
+  .option-icon {
+    font-size: 8px;
+    padding: 2px 4px;
+  }
+  
+  /* KPI Cards - mantener 3 columnas en móvil */
+  .kpi-cards-row {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 6px;
+    padding: 10px 10px 0 10px;
+  }
+  
+  .kpi-card {
+    padding: 6px;
+    border-radius: 6px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .kpi-dot {
+    width: 8px;
+    height: 8px;
+    top: 6px;
+    right: 6px;
+  }
+  
+  .kpi-value {
+    font-size: 11px;
+  }
+  
+  .kpi-percentage,
+  .kpi-position {
+    font-size: 9px;
+  }
+  
+  .kpi-label {
+    font-size: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .currency-legend {
+    font-size: 9px;
+    padding: 4px 10px 0 10px;
+  }
+  
+  /* ✅ ALTURA FIJA para chart-area en móvil */
   .chart-area {
     padding: 15px 20px 20px 15px;
-    margin-left: 10px;
-    margin-right: 10px;
+    margin: 8px 10px 10px 10px;
     width: calc(100% - 20px);
+    border-radius: 6px;
+    height: 250px;
+    min-height: 250px;
+    flex: none;
   }
-  .bars-container { padding: 0 15px; gap: 10px; }
+  
+  .y-axis {
+    width: 50px;
+  }
+  
+  .tick-label {
+    font-size: 8px;
+    width: 45px;
+    padding-right: 5px;
+  }
+  
+  .grid-lines {
+    left: 65px;
+    right: 20px;
+  }
+  
+  .bars-container {
+    padding: 0 15px;
+    gap: 12px;
+    height: 100%;
+  }
+  
   .bars-container.bars-count-1 .bar-column,
   .bars-container.bars-count-2 .bar-column,
-  .bars-container.bars-count-3 .bar-column { width: 100%; max-width: none; }
-  .bar-value-label { font-size: 10px; }
-  .currency-legend { font-size: 8px; }
-  .export-btn-circle { width: 26px; height: 26px; }
-  .export-btn-circle svg { width: 12px; height: 12px; }
+  .bars-container.bars-count-3 .bar-column {
+    width: 100%;
+    max-width: none;
+  }
+  
+  .bar-value-label {
+    font-size: 10px;
+  }
+  
+  .bar-vertical {
+    border-radius: 8px 8px 0 0;
+    padding-bottom: 6px;
+  }
+  
+  .bar-percentage {
+    font-size: 10px;
+  }
+  
+  .empty-state {
+    font-size: 12px;
+  }
+  
+  /* Ocultar tooltip en móvil */
+  .tooltip-container {
+    display: none !important;
+  }
+}
+
+/* Móviles pequeños */
+@media (max-width: 480px) {
+  .vertical-bar-chart {
+    border-radius: 8px;
+  }
+  
+  .bar-header-dark {
+    padding: 6px 8px;
+    gap: 5px;
+  }
+  
+  .bar-header-icon {
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    border-radius: 4px;
+  }
+  
+  .bar-header-icon svg {
+    width: 9px;
+    height: 9px;
+  }
+  
+  .bar-header-title {
+    font-size: 10px;
+  }
+  
+  .bar-header-subtitle {
+    font-size: 8px;
+  }
+  
+  .export-btn-circle {
+    width: 22px;
+    height: 22px;
+  }
+  
+  .export-btn-circle svg {
+    width: 10px;
+    height: 10px;
+  }
+  
+  .export-dropdown-mini {
+    min-width: 85px;
+  }
+  
+  .export-option {
+    padding: 7px 8px;
+    font-size: 10px;
+    gap: 5px;
+  }
+  
+  .option-icon {
+    font-size: 7px;
+    padding: 2px 3px;
+  }
+  
+  /* KPI Cards - mantener 3 columnas en móvil pequeño */
+  .kpi-cards-row {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 4px;
+    padding: 8px 8px 0 8px;
+  }
+  
+  .kpi-card {
+    padding: 5px;
+    border-radius: 5px;
+    border-width: 1px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .kpi-dot {
+    width: 6px;
+    height: 6px;
+    top: 5px;
+    right: 5px;
+  }
+  
+  .kpi-value {
+    font-size: 10px;
+  }
+  
+  .kpi-percentage,
+  .kpi-position {
+    font-size: 8px;
+  }
+  
+  .kpi-label {
+    font-size: 7px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .currency-legend {
+    font-size: 8px;
+    padding: 3px 8px 0 8px;
+  }
+  
+  /* ✅ ALTURA FIJA para chart-area en móvil pequeño */
+  .chart-area {
+    padding: 12px 15px 15px 10px;
+    margin: 6px 8px 8px 8px;
+    width: calc(100% - 16px);
+    border-radius: 5px;
+    height: 220px;
+    min-height: 220px;
+    flex: none;
+  }
+  
+  .y-axis {
+    width: 40px;
+  }
+  
+  .tick-label {
+    font-size: 7px;
+    width: 38px;
+    padding-right: 3px;
+  }
+  
+  .grid-lines {
+    left: 50px;
+    right: 15px;
+    top: 12px;
+    bottom: 15px;
+  }
+  
+  .bars-container {
+    padding: 0 10px;
+    gap: 8px;
+    height: 100%;
+  }
+  
+  .bar-value-label {
+    font-size: 9px;
+    margin-bottom: 2px;
+  }
+  
+  .bar-vertical {
+    border-radius: 6px 6px 0 0;
+    padding-bottom: 4px;
+  }
+  
+  .bar-percentage {
+    font-size: 9px;
+  }
+  
+  .empty-state {
+    font-size: 11px;
+  }
+}
+
+/* Landscape en móviles */
+@media (max-width: 768px) and (orientation: landscape) {
+  .bar-header-dark {
+    padding: 6px 8px;
+  }
+  
+  .bar-header-icon {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .bar-header-title {
+    font-size: 10px;
+  }
+  
+  .bar-header-subtitle {
+    font-size: 8px;
+  }
+  
+  /* KPI Cards en fila en landscape */
+  .kpi-cards-row {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    padding: 8px;
+  }
+  
+  .kpi-card {
+    padding: 6px;
+  }
+  
+  .kpi-value {
+    font-size: 11px;
+  }
+  
+  .kpi-percentage,
+  .kpi-position {
+    font-size: 9px;
+  }
+  
+  .kpi-label {
+    font-size: 8px;
+  }
+  
+  .currency-legend {
+    font-size: 7px;
+  }
+  
+  /* ✅ ALTURA FIJA para chart-area en landscape */
+  .chart-area {
+    padding: 10px 15px 12px 10px;
+    margin: 5px 8px 8px 8px;
+    height: 180px;
+    min-height: 180px;
+    flex: none;
+  }
+  
+  .bars-container {
+    height: 100%;
+  }
+  
+  .y-axis {
+    width: 45px;
+  }
+  
+  .tick-label {
+    font-size: 7px;
+  }
+  
+  .bar-value-label {
+    font-size: 8px;
+  }
+  
+  .bar-percentage {
+    font-size: 8px;
+  }
 }
 </style>
