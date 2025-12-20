@@ -603,13 +603,221 @@ const variablesIngresosCarbono = computed(() => {
   font-size: 14px;
 }
 
+/* ============================================
+   RESPONSIVE - Media Queries
+   ============================================ */
+
 @media (max-width: 1200px) {
   .chart-card-body { flex-direction: column; }
   .chart-col-donuts { flex-direction: row; flex: 1; }
 }
 
+/* Tablets */
 @media (max-width: 768px) {
-  .chart-col-donuts { flex-direction: column; }
-  .donut-item { min-height: 300px; }
+  .charts-wrapper {
+    gap: 16px;
+    margin-top: 8px;
+  }
+  
+  .chart-card {
+    padding: 10px;
+    border-radius: 10px;
+  }
+  
+  .chart-card-header {
+    padding: 8px;
+    margin-bottom: 8px;
+  }
+  
+  .card-title {
+    font-size: 14px;
+    padding: 2px 0;
+  }
+  
+  .chart-card-body {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .chart-col-bar {
+    padding: 10px;
+    min-height: 300px;
+  }
+  
+  .chart-col-donuts {
+    flex-direction: column;
+    gap: 12px;
+    padding: 10px;
+  }
+  
+  .donut-item {
+    min-height: 280px;
+    border-radius: 10px;
+  }
+  
+  .donut-header-dark {
+    padding: 8px 10px;
+    gap: 6px;
+  }
+  
+  .donut-header-icon {
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+  }
+  
+  .donut-header-icon svg {
+    width: 10px;
+    height: 10px;
+  }
+  
+  .donut-header-title {
+    font-size: 11px;
+  }
+  
+  .loading-container,
+  .error-container {
+    min-height: 150px;
+  }
+  
+  .spinner {
+    width: 30px;
+    height: 30px;
+    border-width: 3px;
+  }
+  
+  .no-data-message {
+    min-height: 150px;
+    font-size: 12px;
+  }
+}
+
+/* Móviles pequeños */
+@media (max-width: 480px) {
+  .charts-wrapper {
+    gap: 12px;
+    margin-top: 6px;
+  }
+  
+  .chart-card {
+    padding: 8px;
+    border-radius: 8px;
+  }
+  
+  .chart-card-header {
+    padding: 6px;
+    margin-bottom: 6px;
+  }
+  
+  .card-title {
+    font-size: 12px;
+  }
+  
+  .chart-card-body {
+    gap: 10px;
+  }
+  
+  .chart-col-bar {
+    padding: 8px;
+    min-height: 260px;
+  }
+  
+  .chart-col-donuts {
+    gap: 10px;
+    padding: 8px;
+  }
+  
+  .donut-item {
+    min-height: 250px;
+    border-radius: 8px;
+    padding: 0 0 10px 0;
+  }
+  
+  .donut-header-dark {
+    padding: 6px 8px;
+    gap: 5px;
+    border-radius: 8px 8px 0 0;
+  }
+  
+  .donut-header-icon {
+    width: 16px;
+    height: 16px;
+    min-width: 16px;
+    border-radius: 3px;
+  }
+  
+  .donut-header-icon svg {
+    width: 9px;
+    height: 9px;
+  }
+  
+  .donut-header-title {
+    font-size: 10px;
+    letter-spacing: 0.1px;
+  }
+  
+  .loading-container,
+  .error-container {
+    min-height: 120px;
+    font-size: 12px;
+  }
+  
+  .spinner {
+    width: 24px;
+    height: 24px;
+    border-width: 2px;
+    margin-bottom: 8px;
+  }
+  
+  .no-data-message {
+    min-height: 120px;
+    font-size: 11px;
+  }
+}
+
+/* Landscape en móviles */
+@media (max-width: 768px) and (orientation: landscape) {
+  .charts-wrapper {
+    gap: 10px;
+  }
+  
+  .chart-card {
+    padding: 8px;
+  }
+  
+  .chart-card-header {
+    padding: 6px;
+    margin-bottom: 6px;
+  }
+  
+  .card-title {
+    font-size: 12px;
+  }
+  
+  .chart-card-body {
+    flex-direction: row;
+    gap: 10px;
+  }
+  
+  .chart-col-bar {
+    flex: 1;
+    min-height: 200px;
+    padding: 8px;
+  }
+  
+  .chart-col-donuts {
+    flex: 1;
+    flex-direction: row;
+    gap: 8px;
+    padding: 8px;
+  }
+  
+  .donut-item {
+    min-height: 180px;
+  }
+  
+  .donut-header-title {
+    font-size: 9px;
+  }
 }
 </style>

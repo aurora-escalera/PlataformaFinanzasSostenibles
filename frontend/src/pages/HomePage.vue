@@ -4,6 +4,7 @@
     <!-- Columna izquierda: Filtros -->
     <div class="filters-column">
       <RetractableFilterBar 
+        ref="filterBarRef"
         :key="filterBarKey"
         :entities="entitiesData"
         :loading="entitiesLoading"
@@ -83,6 +84,7 @@
           
         <!-- COMPONENTE: Panel Cualitativo - Escucha eventos de años y cierre -->
         <QualitativePanel
+        v-if="!isMobile"
           :isExpanded="isRetractableExpanded"
           :selectedEntity="selectedEntity"
           :selectedYear="selectedYear"
@@ -291,6 +293,26 @@ const props = defineProps({
   }
 })
 
+// AGREGAR: Ref para el FilterBar
+const filterBarRef = ref(null)
+
+// AGREGAR: Inject para recibir la acción de abrir filtros desde App.vue
+const openFiltersAction = inject('openFiltersAction', ref(null))
+
+// AGREGAR: Watch para abrir el drawer cuando llegue la acción
+watch(openFiltersAction, (action) => {
+  if (action && filterBarRef.value) {
+    console.log('📱 [HomePage] Abriendo drawer de filtros')
+    filterBarRef.value.openMobileDrawer()
+  }
+})
+
+// AGREGAR: Emitir contador de filtros activos
+const emitFiltersCount = () => {
+  const count = filterBarRef.value?.activeFiltersCount || 0
+ 
+  emit('filters-count-change', count)
+}
 // ============================================================================
 // EMITS - Incluyendo eventos para el toggle
 // ============================================================================
@@ -298,7 +320,8 @@ const emit = defineEmits([
   'region-selected', 
   'map-error',
   'filters-state-change',
-  'available-years-change'
+  'available-years-change',
+  'filters-count-change' 
 ])
 
 // ============================================================================
@@ -424,6 +447,12 @@ const emitFiltersState = () => {
   
   // También actualizar el composable directamente
   updateFiltersState(state)
+
+  // AGREGAR: Emitir contador de filtros para el badge móvil
+  nextTick(() => {
+    const count = filterBarRef.value?.activeFiltersCount || 0
+    emit('filters-count-change', count)
+  })
 }
 
 // ============================================================================
@@ -823,6 +852,8 @@ const handleYearsLoaded = async (years) => {
     emitFiltersState()
   }
 }
+
+const isMobile = computed(() => window.innerWidth <= 768)
 
 const handleRegionalYearsLoaded = async (years) => {
   console.log('📅 [HomePage] Años recibidos de RegionalChartsComponent:', years)
@@ -1504,6 +1535,152 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   color: #666;
+}
+
+/* ============================================
+   RESPONSIVE - Media Queries
+   ============================================ */
+
+/* Tablets y móviles */
+@media (max-width: 768px) {
+  .map-and-charts-wrapper {
+    /* Eliminar el contenedor visual - se vuelve transparente */
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+    border-radius: 0;
+  }
+  
+  .charts-section {
+    transform: translateX(0);
+    width: 100%;
+    height: auto;
+    min-height: 500px;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.182);
+    background: white;
+    padding: 10px;
+  }
+  
+  .charts-container {
+    width: 100%;
+    height: 100%;
+  }
+  
+  /* Cards dentro de charts */
+  .chart-card {
+    border-radius: 10px;
+  }
+  
+  .ranking-chart-section {
+    min-height: 380px;
+  }
+  
+  /* Filtros */
+  .filters-toggles-row {
+    height: auto;
+    padding: 10px 0;
+  }
+  
+  .filters-column {
+    min-width: unset;
+    width: 100%;
+  }
+  
+  /* Map container */
+  .map-container {
+    width: 100%;
+    padding: 0 10px 8px 10px;
+  }
+  
+  /* Overlay del mapa */
+  .map-overlay-filter {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    height: 330px;
+    border-radius: 15px;
+    z-index: 200;
+  }
+  
+  .overlay-message {
+    padding: 10px;
+    max-width: 90%;
+  }
+  
+  .overlay-text {
+    font-size: 11px;
+  }
+  
+  /* Ranking panel */
+  .ranking-panel {
+    width: 100%;
+    height: auto;
+  }
+  
+  .ranking-panel.historical-view,
+  .ranking-panel.regional-view,
+  .ranking-panel.variable-view {
+    width: 100%;
+    height: auto;
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+  }
+
+  .qualitative-panel,
+  .qualitative-panel-wrapper {
+    display: none !important;
+  }
+
+  :deep(.qualitative-panel),
+  :deep(.qualitative-panel-container) {
+    display: none !important;
+  }
+}
+
+/* Móviles pequeños */
+@media (max-width: 480px) {
+  .map-and-charts-wrapper {
+    gap: 12px;
+  }
+  
+  .charts-section {
+    min-height: 350px;
+    padding: 8px;
+    border-radius: 12px;
+  }
+  
+  .chart-card {
+    padding: 8px;
+    border-radius: 8px;
+  }
+  
+  .card-title {
+    font-size: 14px;
+  }
+
+  .map-overlay-filter {
+    max-height: 400px;
+    border-radius: 12px;
+  }
+  
+  .overlay-message {
+    padding: 12px;
+  }
+  
+  .overlay-text {
+    font-size: 11px;
+    line-height: 1.4;
+  }
+  
+  .ranking-chart-section {
+    min-height: 320px;
+  }
 }
 </style>
 

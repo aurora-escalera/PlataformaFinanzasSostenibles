@@ -754,33 +754,327 @@ const tooltipStyle = computed(() => {
   transform-origin: center;
 }
 
-@media (max-width: 1200px) {
+/* ============================================
+   RESPONSIVE - Media Queries
+   ============================================ */
+
+/* Tablets y móviles */
+@media (max-width: 768px) {
   .map-wrapper {
     width: 100%;
+    min-height: 350px;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.182);
   }
   
-  .map-info-card {
-    top: 20px;
-    right: 20px;
+  .mexico-map {
+    border-radius: 15px;
   }
-}
-
-@media (max-width: 768px) {
+  
+  /* Info card - más compacto para móvil */
+  .map-info-card {
+    top: 8px;
+    right: 8px;
+    width: 130px;
+    padding: 8px;
+    border-radius: 10px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  }
+  
+  .map-info-card.state-selected {
+    width: 130px;
+    padding: 8px;
+  }
+  
+  .card-content {
+    gap: 6px;
+  }
+  
+  .card-position-title {
+    font-size: 7px;
+    margin-bottom: 0;
+    line-height: 1.2;
+  }
+  
+  .card-top-row {
+    gap: 6px;
+    padding: 0;
+  }
+  
+  .card-position-number {
+    font-size: 24px;
+  }
+  
+  .card-ifss-info {
+    text-align: left;
+  }
+  
+  .ifss-value-text {
+    font-size: 9px;
+  }
+  
+  .ifss-classification {
+    font-size: 8px;
+    line-height: 1.1;
+  }
+  
+  .card-bottom-stack {
+    gap: 4px;
+  }
+  
+  .card-label-pill {
+    font-size: 7px;
+    padding: 4px 6px;
+    min-height: 28px;
+    border-radius: 6px;
+  }
+  
+  /* Hover info box - reposicionar */
+  .hover-info-box {
+    top: auto;
+    bottom: 80px;
+    left: 28%;
+    transform: translateX(-50%);
+    width: 180px;
+    height: 60px;
+  }
+  
+  .location-label {
+    font-size: 10px;
+    margin-bottom: 4px;
+  }
+  
+  .value-display {
+    font-size: 24px;
+    padding-bottom: 8px;
+  }
+  
+  /* Leyenda - reposicionar y redimensionar */
   .color-legend {
-    min-width: 140px;
+    bottom: 15px;
+    left: 28%;
+    transform: translateX(-50%);
   }
   
   .legend-items-horizontal {
-    width: 300px;
+    width: 260px;
   }
   
   .legend-selected-state {
-    width: 300px;
+    width: 260px;
+    height: 24px;
+  }
+  
+  .legend-item-horizontal {
+    min-width: 42px;
+  }
+  
+  .legend-label {
+    font-size: 7px;
+  }
+  
+  .legend-range {
+    font-size: 7px;
+  }
+  
+  .legend-color-horizontal {
+    height: 14px;
+  }
+  
+  .selected-state-label {
+    font-size: 8px;
+  }
+}
+
+/* Móviles pequeños */
+@media (max-width: 480px) {
+  .map-wrapper {
+    min-height: 280px;
+    border-radius: 12px;
+  }
+  
+  .mexico-map {
+    border-radius: 12px;
+  }
+  
+  /* Info card - aún más compacto */
+  .map-info-card {
+    top: 50px;
+    right: 50px;
+    width: 110px;
+    padding: 6px;
+    border-radius: 8px;
+  }
+  
+  .map-info-card.state-selected {
+    width: 110px;
+    padding: 6px;
+  }
+  
+  .card-content {
+    gap: 4px;
+  }
+  
+  .card-position-title {
+    font-size: 6px;
+    line-height: 1.1;
+  }
+  
+  .card-top-row {
+    gap: 4px;
+  }
+  
+  .card-position-number {
+    font-size: 20px;
+  }
+  
+  .ifss-value-text {
+    font-size: 8px;
+  }
+  
+  .ifss-classification {
+    font-size: 7px;
+  }
+  
+  .card-bottom-stack {
+    gap: 3px;
+  }
+  
+  .card-label-pill {
+    font-size: 6px;
+    padding: 3px 5px;
+    min-height: 24px;
+    border-radius: 5px;
+    line-height: 1.2;
+  }
+  
+  /* Hover info box */
+  .hover-info-box {
+    width: 100px;
+    height: 50px;
+    bottom: 55px;
+    left: 130px;
+  }
+  
+  .location-label {
+    font-size: 9px;
+    margin-bottom: 3px;
+  }
+  
+  .value-display {
+    font-size: 20px;
+    padding-bottom: 6px;
+    border-bottom-width: 1px;
+  }
+  
+  /* Leyenda */
+  .legend-items-horizontal {
+    width: 220px;
+  }
+  
+  .legend-selected-state {
+    width: 220px;
+    height: 20px;
+  }
+  
+  .legend-item-horizontal {
+    min-width: 35px;
+  }
+  
+  .legend-label {
+    font-size: 6px;
+  }
+  
+  .legend-range {
+    font-size: 6px;
+  }
+  
+  .legend-color-horizontal {
+    height: 12px;
+  }
+  
+  .selected-state-label {
+    font-size: 7px;
+  }
+}
+
+/* Landscape en móviles */
+@media (max-width: 768px) and (orientation: landscape) {
+  .map-wrapper {
+    min-height: 280px;
   }
   
   .map-info-card {
-    min-width: 180px;
-    padding: 18px;
+    top: 5px;
+    right: 5px;
+    width: 110px;
+    padding: 6px;
+  }
+  
+  .map-info-card.state-selected {
+    width: 110px;
+    padding: 6px;
+  }
+  
+  .card-position-title {
+    font-size: 6px;
+  }
+  
+  .card-position-number {
+    font-size: 18px;
+  }
+  
+  .ifss-value-text {
+    font-size: 8px;
+  }
+  
+  .ifss-classification {
+    font-size: 7px;
+  }
+  
+  .card-label-pill {
+    font-size: 6px;
+    min-height: 22px;
+    padding: 3px 4px;
+  }
+  
+  .hover-info-box {
+    bottom: 50px;
+    width: 140px;
+    height: 50px;
+  }
+  
+  .location-label {
+    font-size: 8px;
+  }
+  
+  .value-display {
+    font-size: 18px;
+  }
+  
+  .color-legend {
+    bottom: 8px;
+  }
+  
+  .legend-items-horizontal {
+    width: 200px;
+  }
+  
+  .legend-selected-state {
+    width: 200px;
+    height: 18px;
+  }
+  
+  .legend-label {
+    font-size: 6px;
+  }
+  
+  .legend-range {
+    font-size: 6px;
+  }
+  
+  .legend-color-horizontal {
+    height: 10px;
   }
 }
 </style>
@@ -878,5 +1172,12 @@ const tooltipStyle = computed(() => {
   text-transform: uppercase;
   letter-spacing: 0.3px;
   font-weight: 500;
+}
+
+/* Tooltip responsive - ocultar en móviles (usar tap en su lugar) */
+@media (max-width: 768px) {
+  .mexico-map-tooltip {
+    display: none !important;
+  }
 }
 </style>

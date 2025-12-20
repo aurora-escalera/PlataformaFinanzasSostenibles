@@ -1073,78 +1073,596 @@ watch([() => props.selectedYear, () => props.selectedVariable], () => {
   font-size: 9px;
   color: #94a3b8;
 }
+/* ============================================
+   RESPONSIVE - Media Queries para IFSRegionalCard.vue
+   (Reemplazar las media queries existentes)
+   ============================================ */
 
-/* ==================== RESPONSIVE ==================== */
+/* Tablets */
 @media (max-width: 768px) {
   .card-header {
-    padding: 12px 16px;
-    gap: 10px;
+    padding: 10px 14px;
+    gap: 8px;
   }
   
   .header-icon {
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+  }
+  
+  .header-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .icon-dollar {
+    font-size: 16px;
   }
   
   .header-title {
-    font-size: 15px;
+    font-size: 13px;
   }
   
   .header-subtitle {
-    font-size: 11px;
+    font-size: 0px;
   }
   
   .year-badge {
-    padding: 4px 12px;
-    font-size: 12px;
+    padding: 4px 10px;
+    font-size: 11px;
+    border-radius: 14px;
   }
   
   .export-btn-circle {
-    width: 28px;
-    height: 28px;
+    width: 26px;
+    height: 26px;
   }
   
   .export-btn-circle svg {
+    width: 11px;
+    height: 11px;
+  }
+  
+  .export-dropdown {
+    min-width: 100px;
+  }
+  
+  .export-option {
+    padding: 10px 12px;
+    font-size: 11px;
+    gap: 8px;
+  }
+  
+  .option-icon {
+    font-size: 8px;
+    padding: 2px 5px;
+  }
+  
+  /* IFS Mode - Gauge */
+  .content-ifs {
+    padding: 0px;
+    gap: 6px;
+  }
+  
+  .metrics-section {
+    gap: 14px;
+    padding: 14px 0;
+  }
+  
+  .title-main {
+    font-size: 14px;
+  }
+  
+  .title-sub {
+    font-size: 11px;
+  }
+  
+  /* ✅ Metrics en 2 columnas con divider vertical */
+  .metrics-row {
+    flex-direction: row;
+    gap: 20px;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .metrics-divider {
+    width: 1px;
+    height: 100px;
+  }
+  
+  .metric-gauge {
+    width: 110px;
+    height: 110px;
+  }
+  
+  .gauge-value {
+    font-size: 20px;
+  }
+  
+  .gauge-label {
+    font-size: 10px;
+  }
+  
+  .position-metric {
+    min-width: auto;
+  }
+  
+  .position-badge {
+    padding: 12px 20px;
+    border-radius: 12px;
+  }
+  
+  .position-label {
+    font-size: 9px;
+    letter-spacing: 0.8px;
+    margin-bottom: 6px;
+  }
+  
+  .position-hash {
+    font-size: 20px;
+  }
+  
+  .position-value {
+    font-size: 20px;
+  }
+  
+  /* Monetary Mode */
+  .content-monetary {
+    padding: 20px 16px 16px 16px;
+  }
+  
+  .content-center {
+    padding-bottom: 16px;
+  }
+  
+  .monetary-row {
+    flex-direction: row;
+    gap: 14px;
+    justify-content: center;
+    align-items: stretch;
+  }
+  
+  .monetary-main {
+    padding: 16px 20px;
+    border-radius: 12px;
+    width: auto;
+    flex: 1;
+    max-width: 180px;
+  }
+  
+  .monetary-label {
+    font-size: 9px;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+  
+  .monetary-currency {
+    font-size: 14px;
+  }
+  
+  .monetary-amount {
+    font-size: 22px;
+  }
+  
+  .monetary-unit {
+    font-size: 9px;
+    margin-top: 6px;
+  }
+  
+  .position-card {
+    padding: 16px 20px;
+    border-radius: 12px;
+    width: auto;
+    flex: 1;
+    max-width: 180px;
+  }
+  
+  .position-label-monetary {
+    font-size: 9px;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+  
+  .position-value-monetary {
+    font-size: 22px;
+  }
+  
+  /* Legend */
+  .legend-section {
+    padding: 12px 16px;
+    border-radius: 10px;
+  }
+  
+  .legend-header {
+    font-size: 12px;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  
+  .legend-header svg {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .legend-description {
+    font-size: 11px;
+    line-height: 1.4;
+  }
+  
+  .legend-scale {
+    margin-top: 12px;
+  }
+  
+  .scale-bar {
+    height: 6px;
+    margin-bottom: 10px;
+  }
+  
+  .scale-labels-6 {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+  }
+  
+  .scale-label {
+    padding: 5px 6px;
+    gap: 5px;
+    border-radius: 6px;
+  }
+  
+  .label-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+  }
+  
+  .label-name {
+    font-size: 9px;
+  }
+  
+  .label-range {
+    font-size: 8px;
+  }
+  
+  /* Loading/Error */
+  .spinner {
+    width: 26px;
+    height: 26px;
+    border-width: 2px;
+    margin-bottom: 10px;
+  }
+  
+  .loading-state p,
+  .error-state p {
+    font-size: 12px;
+  }
+}
+
+/* Móviles pequeños */
+@media (max-width: 480px) {
+  .card-header {
+    padding: 8px 12px;
+    gap: 6px;
+  }
+  
+  .header-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+  }
+  
+  .header-icon svg {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .icon-dollar {
+    font-size: 14px;
+  }
+  
+  .header-title {
+    font-size: 11px;
+  }
+  
+  .header-subtitle {
+    font-size: 9px;
+  }
+  
+  .year-badge {
+    padding: 3px 8px;
+    font-size: 10px;
+    border-radius: 12px;
+  }
+  
+  .export-btn-circle {
+    width: 22px;
+    height: 22px;
+  }
+  
+  .export-btn-circle svg {
+    width: 10px;
+    height: 10px;
+  }
+  
+  /* IFS Mode - Gauge */
+  .metrics-section {
+    gap: 5px;
+    padding: 10px 0 0 0 ;
+  }
+  
+  .title-main {
+    font-size: 12px;
+  }
+  
+  .title-sub {
+    font-size: 10px;
+  }
+  
+  /* ✅ Metrics en 2 columnas con divider vertical */
+  .metrics-row {
+    flex-direction: row;
+    gap: 12px;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .metrics-divider {
+    width: 1px;
+    height: 80px;
+  }
+  
+  .metric-gauge {
+    width: 90px;
+    height: 90px;
+  }
+  
+  .gauge-value {
+    font-size: 16px;
+  }
+  
+  .gauge-label {
+    font-size: 8px;
+  }
+  
+  .position-metric {
+    min-width: auto;
+  }
+  
+  .position-badge {
+    padding: 10px 14px;
+    border-radius: 10px;
+  }
+  
+  .position-label {
+    font-size: 7px;
+    margin-bottom: 4px;
+  }
+  
+  .position-hash {
+    font-size: 16px;
+  }
+  
+  .position-value {
+    font-size: 16px;
+  }
+  
+  /* Monetary Mode */
+  .content-monetary {
+    padding: 14px 12px 12px 12px;
+  }
+  
+  .content-center {
+    padding-bottom: 12px;
+  }
+  
+  .monetary-row {
+    flex-direction: row;
+    gap: 10px;
+    justify-content: center;
+    align-items: stretch;
+  }
+  
+  .monetary-main {
+    padding: 12px 14px;
+    border-radius: 10px;
+    flex: 1;
+    max-width: 150px;
+  }
+  
+  .monetary-label {
+    font-size: 8px;
+    margin-bottom: 6px;
+  }
+  
+  .monetary-currency {
+    font-size: 12px;
+  }
+  
+  .monetary-amount {
+    font-size: 18px;
+  }
+  
+  .monetary-unit {
+    font-size: 8px;
+    margin-top: 4px;
+  }
+  
+  .position-card {
+    padding: 12px 14px;
+    border-radius: 10px;
+    flex: 1;
+    max-width: 150px;
+  }
+  
+  .position-label-monetary {
+    font-size: 8px;
+    margin-bottom: 6px;
+  }
+  
+  .position-value-monetary {
+    font-size: 18px;
+  }
+  
+  /* Legend */
+  .legend-section {
+    padding: 10px 12px;
+    border-radius: 8px;
+  }
+  
+  .legend-header {
+    font-size: 11px;
+    gap: 6px;
+    margin-bottom: 5px;
+  }
+  
+  .legend-header svg {
     width: 12px;
     height: 12px;
   }
   
+  .legend-description {
+    font-size: 10px;
+  }
+  
+  .legend-scale {
+    margin-top: 10px;
+  }
+  
+  .scale-bar {
+    height: 5px;
+    margin-bottom: 8px;
+  }
+  
+  .scale-labels-6 {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px;
+  }
+  
+  .scale-label {
+    padding: 4px 5px;
+    gap: 4px;
+    border-radius: 5px;
+  }
+  
+  .label-indicator {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .label-name {
+    font-size: 8px;
+  }
+  
+  .label-range {
+    font-size: 7px;
+  }
+  
+  .spinner {
+    width: 22px;
+    height: 22px;
+  }
+  
+  .loading-state p,
+  .error-state p {
+    font-size: 11px;
+  }
+}
+
+/* Landscape en móviles */
+@media (max-width: 768px) and (orientation: landscape) {
+  .card-header {
+    padding: 8px 12px;
+  }
+  
+  .content-ifs {
+    padding: 1px 16px;
+    gap: 10px;
+    flex-direction: row;
+  }
+  
+  .metrics-section {
+    flex: 1;
+    padding: 8px 0;
+  }
+  
   .metrics-row {
-    flex-direction: column;
-    gap: 24px;
+    flex-direction: row;
+    gap: 16px;
   }
   
   .metrics-divider {
-    width: 80%;
-    height: 1px;
+    width: 1px;
+    height: 70px;
   }
   
-  /* ✅ Grid responsive para 6 niveles */
+  .metric-gauge {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .gauge-value {
+    font-size: 14px;
+  }
+  
+  .gauge-label {
+    font-size: 7px;
+  }
+  
+  .position-badge {
+    padding: 8px 12px;
+  }
+  
+  .position-hash,
+  .position-value {
+    font-size: 14px;
+  }
+  
+  .position-label {
+    font-size: 6px;
+  }
+  
+  .legend-section {
+    flex: 1;
+    margin-top: 0;
+  }
+  
   .scale-labels-6 {
     grid-template-columns: repeat(3, 1fr);
   }
   
+  /* Monetary landscape */
   .content-monetary {
-    padding: 30px 30px 20px 30px;
+    padding: 10px 16px;
+    flex-direction: row;
+  }
+  
+  .content-center {
+    flex: 1;
+    padding-bottom: 0;
   }
   
   .monetary-row {
-    flex-direction: column;
-    gap: 20px;
+    flex-direction: row;
+    gap: 12px;
   }
   
-  .monetary-amount {
-    font-size: 48px;
+  .monetary-main,
+  .position-card {
+    padding: 10px 16px;
+    max-width: 160px;
   }
   
+  .monetary-amount,
   .position-value-monetary {
-    font-size: 40px;
+    font-size: 16px;
   }
-}
-
-@media (max-width: 480px) {
-  .scale-labels-6 {
-    grid-template-columns: repeat(2, 1fr);
+  
+  .monetary-currency {
+    font-size: 12px;
+  }
+  
+  .monetary-unit {
+    font-size: 7px;
   }
 }
 </style>

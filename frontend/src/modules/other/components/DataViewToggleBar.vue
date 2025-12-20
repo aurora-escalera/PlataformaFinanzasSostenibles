@@ -1,5 +1,4 @@
 <!-- src/modules/other/components/DataViewToggleBar.vue -->
-<!-- ✅ CORREGIDO: Ahora usa useDownloadCenter directamente para ejecutar las descargas -->
 <template>
   <div class="toggle-bar">
     <div class="toggle-bar-content">
@@ -14,7 +13,8 @@
             <svg class="toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            Datos Regionales
+            <span class="btn-text-full">Datos Regionales</span>
+            <span class="btn-text-short">Regionales</span>
           </button>
           
           <button
@@ -24,16 +24,15 @@
             <svg class="toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
             </svg>
-            Datos Subnacionales
+            <span class="btn-text-full">Datos Subnacionales</span>
+            <span class="btn-text-short">Subnacionales</span>
           </button>
         </div>
-      </div>
-
-      <!-- Contenedor derecho: Moneda + Descargas -->
-      <div class="right-section">
-        <!-- Indicador Moneda (primero) -->
+        
+        <!-- Indicador Moneda (se muestra aquí en móvil) -->
         <div class="currency-section">
           <span class="currency-label">Moneda:</span>
+          <span class="currency-label-mobile">Currency:</span>
           <div 
             class="currency-badge"
             :class="{ 'currency-usd': isFederalActive, 'currency-mxn': isSubnacionalActive }"
@@ -42,8 +41,12 @@
             <span class="currency-code">({{ currencyCode }})</span>
           </div>
         </div>
+      </div>
 
-        <!-- SECCIÓN: Descargas (después de moneda) -->
+      <!-- Contenedor derecho: Descargas + Filtros (móvil) -->
+      <div class="right-section">
+
+        <!-- SECCIÓN: Descargas -->
         <div class="downloads-section" ref="downloadsRef">
           <button 
             class="downloads-btn"
@@ -53,7 +56,7 @@
             <svg class="downloads-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
-            <span>Descargas</span>
+            <span class="downloads-text">Descargas</span>
             <svg class="chevron-icon" :class="{ 'rotated': showDownloadsMenu }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
             </svg>
@@ -276,6 +279,18 @@
             </div>
           </transition>
         </div>
+
+        <!-- Botón Filtros (SOLO MÓVIL) -->
+        <button 
+          class="filter-btn-mobile"
+          @click="$emit('open-filters')"
+        >
+          <svg class="filter-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+          </svg>
+          <span class="filter-text">Filtros</span>
+          <span v-if="activeFiltersCount > 0" class="filter-badge">{{ activeFiltersCount }}</span>
+        </button>
       </div>
     </div>
   </div>
@@ -285,7 +300,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useDataToggle } from '@/composables/useDataToggle'
 import { useYearFilter } from '@/composables/useYearFilter'
-import { useDownloadCenter } from '@/composables/useDownloadCenter' // ✅ IMPORTAR
+import { useDownloadCenter } from '@/composables/useDownloadCenter'
 
 // ============================================================================
 // COMPOSABLES
@@ -305,7 +320,6 @@ const {
   fetchAvailableYears
 } = useYearFilter()
 
-// ✅ COMPOSABLE DE DESCARGAS
 const {
   handleDownload: executeDownload,
   isExporting: downloadExporting,
@@ -329,6 +343,10 @@ defineProps({
     type: String,
     default: 'subnacional',
     validator: (value) => ['regional', 'subnacional', 'federal'].includes(value)
+  },
+  activeFiltersCount: {
+    type: Number,
+    default: 0
   }
 })
 
@@ -336,7 +354,8 @@ const emit = defineEmits([
   'update:modelValue',
   'click-federal',
   'click-subnacional',
-  'download-request'
+  'download-request',
+  'open-filters'
 ])
 
 // ============================================================================
@@ -414,25 +433,21 @@ const handleSubnacionalMouseLeave = () => {
   }, 100)
 }
 
-// ✅ FUNCIÓN CORREGIDA: Ahora ejecuta la descarga real
 const handleDownload = async (viewType, format, options = {}) => {
   console.log(`📥 [Toggle] Iniciando descarga: ${viewType} - ${format}`, options)
   
-  // Resetear estados
   isExporting.value = true
   exportError.value = null
   exportProgress.value = 'Preparando descarga...'
   showSuccess.value = false
   
   try {
-    // ✅ EJECUTAR LA DESCARGA REAL usando el composable
     const success = await executeDownload(viewType, format, options)
     
     if (success) {
       console.log('✅ [Toggle] Descarga iniciada correctamente')
       showSuccess.value = true
       
-      // Ocultar mensaje de éxito después de 2 segundos
       setTimeout(() => {
         showSuccess.value = false
       }, 2000)
@@ -440,13 +455,11 @@ const handleDownload = async (viewType, format, options = {}) => {
       console.error('❌ [Toggle] Error en la descarga:', downloadError.value)
       exportError.value = downloadError.value || 'Error al iniciar la descarga'
       
-      // Ocultar error después de 4 segundos
       setTimeout(() => {
         exportError.value = null
       }, 4000)
     }
     
-    // Emitir evento por si el padre quiere saber (opcional)
     emit('download-request', { viewType, format, options, success })
     
   } catch (err) {
@@ -460,7 +473,6 @@ const handleDownload = async (viewType, format, options = {}) => {
     isExporting.value = false
     exportProgress.value = ''
     
-    // Cerrar menú después de un breve delay
     setTimeout(() => {
       showDownloadsMenu.value = false
       activeSubmenu.value = null
@@ -486,6 +498,9 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* ============================================
+   ESTILOS BASE - DESKTOP
+   ============================================ */
 .toggle-bar {
   width: 100%;
   background-color: #ffffff;
@@ -552,6 +567,17 @@ onUnmounted(() => {
 .toggle-icon {
   width: 18px;
   height: 18px;
+}
+
+/* Texto responsive en botones toggle */
+.btn-text-short {
+  display: none;
+  font-size: 13px;
+}
+
+/* Label móvil de moneda - oculto por defecto */
+.currency-label-mobile {
+  display: none;
 }
 
 /* Right Section */
@@ -660,6 +686,58 @@ onUnmounted(() => {
 
 .chevron-icon.rotated {
   transform: rotate(180deg);
+}
+
+/* ============================================
+   BOTÓN FILTROS MÓVIL - OCULTO POR DEFECTO
+   ============================================ */
+.filter-btn-mobile {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  font-size: 15px;
+  font-weight: 500;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: #ffffff;
+  color: #374151;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+
+.filter-btn-mobile:hover {
+  background-color: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.filter-btn-mobile:active {
+  background-color: #f3f4f6;
+}
+
+.filter-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.filter-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: #ef4444;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 600;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
 }
 
 /* Dropdown */
@@ -777,15 +855,13 @@ onUnmounted(() => {
   text-overflow: ellipsis;
 }
 
-.menu-badge { flex-shrink: 0; }
-
 .menu-divider {
   height: 1px;
   background: #e5e7eb;
   margin: 8px 16px;
 }
 
-/* Submenu - hacia la izquierda */
+/* Submenu */
 .submenu {
   position: absolute;
   top: 0;
@@ -940,7 +1016,7 @@ onUnmounted(() => {
 .format-badge.xlsx { background: #107c41; }
 .format-badge.csv { background: #6366f1; }
 
-/* Export Loading */
+/* Export States */
 .export-loading {
   display: flex;
   align-items: center;
@@ -954,7 +1030,6 @@ onUnmounted(() => {
   border-radius: 0 0 12px 12px;
 }
 
-/* Export Error */
 .export-error {
   display: flex;
   align-items: center;
@@ -968,7 +1043,6 @@ onUnmounted(() => {
   border-radius: 0 0 12px 12px;
 }
 
-/* Export Success */
 .export-success {
   display: flex;
   align-items: center;
@@ -1019,33 +1093,194 @@ onUnmounted(() => {
   transform: translateX(8px);
 }
 
-/* Responsive */
+/* ============================================
+   RESPONSIVE: LAPTOPS PEQUEÑAS (≤1200px)
+   ============================================ */
 @media (max-width: 1200px) {
-  .toggle-bar-content { flex-wrap: wrap; }
-  .right-section { margin-left: 0; }
+  .toggle-bar-content {
+    flex-wrap: wrap;
+  }
+  
+  .right-section {
+    margin-left: 0;
+  }
+  
+  .toggle-btn {
+    padding: 8px 16px;
+    font-size: 14px;
+  }
+  
+  .currency-name {
+    font-size: 14px;
+  }
+  
+  .currency-code {
+    font-size: 14px;
+  }
+  
+  .downloads-btn {
+    padding: 8px 14px;
+    font-size: 14px;
+  }
 }
 
-@media (max-width: 768px) {
-  .toggle-bar-content {
-    flex-direction: column;
-    gap: 12px;
-    align-items: flex-start;
+/* ============================================
+   RESPONSIVE: TABLETS LANDSCAPE (≤1024px)
+   ============================================ */
+@media (max-width: 1024px) {
+  .toggle-bar {
+    padding: 10px 20px;
   }
-  .toggle-buttons { width: 100%; }
+  
+  .toggle-bar-content {
+    gap: 16px;
+  }
+  
+  .toggle-label,
+  .currency-label {
+    font-size: 14px;
+  }
+  
   .toggle-btn {
-    flex: 1;
-    justify-content: center;
+    padding: 8px 14px;
+    font-size: 13px;
+    gap: 6px;
+  }
+  
+  .toggle-icon {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .currency-badge {
+    padding: 6px 12px;
+  }
+  
+  .currency-name {
+    font-size: 13px;
+  }
+  
+  .currency-code {
+    font-size: 13px;
+  }
+  
+  .downloads-btn {
     padding: 8px 12px;
     font-size: 13px;
   }
+  
+  .downloads-icon {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+/* ============================================
+   RESPONSIVE: TABLETS PORTRAIT (≤768px)
+   ============================================ */
+@media (max-width: 768px) {
+  .toggle-bar {
+    padding: 12px 16px;
+  }
+  
+  .toggle-bar-content {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+  
+  .toggle-section {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .toggle-label {
+    font-size: 13px;
+  }
+  
+  .toggle-buttons {
+    width: fit-content;
+  }
+  
+  .toggle-btn {
+    flex: none;
+    justify-content: center;
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+  
+  /* Cambiar texto de botones en móvil */
+  .btn-text-full {
+    display: none;
+  }
+  
+  .btn-text-short {
+    display: inline;
+  }
+  
+  /* Currency en móvil - se queda en toggle-section */
+  .currency-section {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+  }
+  
+  .currency-label {
+    display: none;
+  }
+  
+  .currency-label-mobile {
+    display: inline;
+    font-size: 13px;
+    font-weight: 500;
+    color: #6b7280;
+  }
+  
+  .currency-badge {
+    padding: 6px 10px;
+    width: auto;
+    justify-content: center;
+  }
+  
+  .currency-name {
+    display: none;
+  }
+  
+  .currency-code {
+    font-size: 13px;
+  }
+  
   .right-section {
     width: 100%;
+    flex-direction: row;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
   }
+  
+  .downloads-section {
+    flex: 1;
+  }
+  
+  .downloads-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+  
+  .downloads-text {
+    display: none;
+  }
+  
   .downloads-dropdown {
-    width: calc(100vw - 48px);
-    right: -12px;
+    width: calc(100vw - 32px);
+    right: -8px;
   }
+  
   .submenu,
   .submenu-formats {
     position: fixed;
@@ -1054,6 +1289,337 @@ onUnmounted(() => {
     transform: translate(-50%, -50%);
     margin-right: 0;
     right: auto;
+    width: 200px;
+  }
+  
+  /* MOSTRAR BOTÓN DE FILTROS EN MÓVIL */
+  .filter-btn-mobile {
+    display: flex;
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+/* ============================================
+   RESPONSIVE: MÓVILES GRANDES (≤480px)
+   ============================================ */
+@media (max-width: 480px) {
+  .toggle-bar {
+    padding: 10px 12px;
+  }
+  
+  .toggle-bar-content {
+    gap: 10px;
+  }
+  
+  .toggle-section {
+    gap: 6px;
+  }
+  
+  .toggle-label {
+    font-size: 12px;
+  }
+  
+  .toggle-btn {
+    padding: 8px 10px;
+    font-size: 12px;
+    gap: 5px;
+  }
+  
+  .toggle-icon {
+    width: 14px;
+    height: 14px;
+  }
+  
+  /* Currency móvil */
+  .currency-label-mobile {
+    font-size: 13px;
+  }
+  
+  .currency-badge {
+    padding: 5px 8px;
+  }
+  
+  .currency-code {
+    font-size: 12px;
+  }
+  
+  .right-section {
+    gap: 8px;
+  }
+  
+  .downloads-btn {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+  
+  .downloads-icon {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .chevron-icon {
+    display: none;
+  }
+  
+  .downloads-dropdown {
+    width: calc(100vw - 24px);
+    right: -6px;
+  }
+  
+  .dropdown-header {
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+  
+  .menu-item-content {
+    padding: 10px 14px;
+  }
+  
+  .menu-icon {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .menu-title {
+    font-size: 13px;
+  }
+  
+  .menu-desc {
+    font-size: 10px;
+  }
+  
+  /* Filtros móvil */
+  .filter-btn-mobile {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+  
+  .filter-text {
+    display: none;
+  }
+  
+  .filter-icon {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .filter-badge {
+    top: -4px;
+    right: -4px;
+    min-width: 16px;
+    height: 16px;
+    font-size: 10px;
+  }
+}
+
+/* ============================================
+   RESPONSIVE: MÓVILES MEDIANOS (≤400px)
+   ============================================ */
+@media (max-width: 400px) {
+  .toggle-bar {
+    padding: 8px 10px;
+  }
+  
+  .toggle-btn {
+    padding: 7px 8px;
+    font-size: 11px;
+  }
+  
+  .toggle-icon {
+    width: 13px;
+    height: 13px;
+  }
+  
+  /* Currency móvil */
+  .currency-label-mobile {
+    font-size: 11px;
+  }
+  
+  .currency-badge {
+    padding: 4px 6px;
+  }
+  
+  .currency-code {
+    font-size: 11px;
+  }
+  
+  .downloads-btn {
+    padding: 7px 10px;
+  }
+  
+  .downloads-icon {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .downloads-dropdown {
+    width: calc(100vw - 20px);
+  }
+  
+  .submenu,
+  .submenu-formats {
+    width: 180px;
+  }
+  
+  .filter-btn-mobile {
+    padding: 7px 10px;
+  }
+  
+  .filter-icon {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+/* ============================================
+   RESPONSIVE: MÓVILES PEQUEÑOS (≤360px)
+   ============================================ */
+@media (max-width: 360px) {
+  .toggle-bar {
+    padding: 8px;
+  }
+  
+  .toggle-bar-content {
+    gap: 8px;
+  }
+  
+  .toggle-btn {
+    padding: 6px 6px;
+    font-size: 10px;
+    gap: 4px;
+  }
+  
+  .toggle-icon {
+    width: 12px;
+    height: 12px;
+  }
+  
+  /* Currency móvil */
+  .currency-label-mobile {
+    font-size: 10px;
+  }
+  
+  .currency-badge {
+    padding: 3px 5px;
+  }
+  
+  .currency-code {
+    font-size: 10px;
+  }
+  
+  .right-section {
+    gap: 6px;
+  }
+  
+  .downloads-btn {
+    padding: 6px 8px;
+  }
+  
+  .downloads-dropdown {
+    width: calc(100vw - 16px);
+    right: -4px;
+  }
+  
+  .dropdown-header {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+  
+  .menu-item-content {
+    padding: 8px 12px;
+    gap: 10px;
+  }
+  
+  .menu-icon {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .menu-icon svg {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .menu-title {
+    font-size: 12px;
+  }
+  
+  .menu-desc {
+    font-size: 9px;
+  }
+  
+  .filter-btn-mobile {
+    padding: 6px 8px;
+  }
+  
+  .filter-icon {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+/* ============================================
+   RESPONSIVE: MÓVILES MUY PEQUEÑOS (≤320px)
+   ============================================ */
+@media (max-width: 320px) {
+  .toggle-bar {
+    padding: 6px;
+  }
+  
+  .toggle-btn {
+    padding: 5px 5px;
+    font-size: 9px;
+  }
+  
+  .toggle-icon {
+    width: 11px;
+    height: 11px;
+  }
+  
+  /* Currency móvil */
+  .currency-label-mobile {
+    font-size: 9px;
+  }
+  
+  .currency-badge {
+    padding: 2px 4px;
+  }
+  
+  .currency-code {
+    font-size: 9px;
+  }
+  
+  .downloads-btn {
+    padding: 5px 6px;
+  }
+  
+  .downloads-icon {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .downloads-dropdown {
+    width: calc(100vw - 12px);
+  }
+  
+  .submenu,
+  .submenu-formats {
+    width: 160px;
+  }
+  
+  .submenu-item {
+    padding: 8px 10px;
+    font-size: 11px;
+  }
+  
+  .filter-btn-mobile {
+    padding: 5px 6px;
+  }
+  
+  .filter-icon {
+    width: 12px;
+    height: 12px;
   }
 }
 </style>
