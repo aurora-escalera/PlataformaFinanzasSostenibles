@@ -4,6 +4,7 @@
     <!-- Columna izquierda: Filtros -->
     <div class="filters-column">
       <RetractableFilterBar 
+        ref="filterBarRef"
         :key="filterBarKey"
         :entities="entitiesData"
         :loading="entitiesLoading"
@@ -291,6 +292,26 @@ const props = defineProps({
   }
 })
 
+// AGREGAR: Ref para el FilterBar
+const filterBarRef = ref(null)
+
+// AGREGAR: Inject para recibir la acción de abrir filtros desde App.vue
+const openFiltersAction = inject('openFiltersAction', ref(null))
+
+// AGREGAR: Watch para abrir el drawer cuando llegue la acción
+watch(openFiltersAction, (action) => {
+  if (action && filterBarRef.value) {
+    console.log('📱 [HomePage] Abriendo drawer de filtros')
+    filterBarRef.value.openMobileDrawer()
+  }
+})
+
+// AGREGAR: Emitir contador de filtros activos
+const emitFiltersCount = () => {
+  const count = filterBarRef.value?.activeFiltersCount || 0
+ 
+  emit('filters-count-change', count)
+}
 // ============================================================================
 // EMITS - Incluyendo eventos para el toggle
 // ============================================================================
@@ -298,7 +319,8 @@ const emit = defineEmits([
   'region-selected', 
   'map-error',
   'filters-state-change',
-  'available-years-change'
+  'available-years-change',
+  'filters-count-change' 
 ])
 
 // ============================================================================
@@ -424,6 +446,12 @@ const emitFiltersState = () => {
   
   // También actualizar el composable directamente
   updateFiltersState(state)
+
+  // AGREGAR: Emitir contador de filtros para el badge móvil
+  nextTick(() => {
+    const count = filterBarRef.value?.activeFiltersCount || 0
+    emit('filters-count-change', count)
+  })
 }
 
 // ============================================================================

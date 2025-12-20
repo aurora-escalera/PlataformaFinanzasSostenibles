@@ -42,6 +42,15 @@
                 >
               </div>
               <div class="dropdown-options">
+                <!-- Default: Todas las entidades (IFS Regional) -->
+                <div 
+                  v-if="!entitySearch"
+                  @click="selectEntity(null)"
+                  class="dropdown-option"
+                  :class="{ 'selected': selectedEntity === null }"
+                >
+                  <span>Datos Regionales</span>
+                </div>
                 <!-- Entidades filtradas -->
                 <div 
                   v-for="entity in filteredEntities" 
@@ -51,15 +60,6 @@
                   :class="{ 'selected': selectedEntity === entity.name && selectedEntity !== '' && selectedEntity !== null }"
                 >
                   <span>{{ entity.name }}</span>
-                </div>
-                <!-- Datos Regionales (penúltima posición) -->
-                <div 
-                  v-if="!entitySearch"
-                  @click="selectEntity(null)"
-                  class="dropdown-option"
-                  :class="{ 'selected': selectedEntity === null }"
-                >
-                  <span>Datos Regionales</span>
                 </div>
                 <!-- Opción en blanco al FINAL (solo en Entidad) -->
                 <div 
@@ -163,7 +163,7 @@
                   class="dropdown-option"
                   :class="{ 'selected': selectedVariable === null }"
                 >
-                  <span>Todas las variables</span>
+                  <span>IFSS</span>
                 </div>
                 
                 <!-- Variables filtradas -->
@@ -187,6 +187,233 @@
         </div>
       </div>
     </div>
+
+    <!-- ========== MOBILE: Botón flotante de filtros ========== -->
+    <button 
+      class="mobile-filter-fab"
+      @click="openMobileDrawer"
+      aria-label="Abrir filtros"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+      </svg>
+      <span class="fab-badge" v-if="hasActiveFilters">{{ activeFiltersCount }}</span>
+    </button>
+
+    <!-- ========== MOBILE: Overlay ========== -->
+    <Transition name="overlay-fade">
+      <div 
+        v-if="isMobileDrawerOpen" 
+        class="mobile-overlay"
+        @click="closeMobileDrawer"
+      />
+    </Transition>
+
+    <!-- ========== MOBILE: Drawer ========== -->
+    <Transition name="drawer-slide">
+      <div v-if="isMobileDrawerOpen" class="mobile-drawer">
+        <!-- Header del drawer -->
+        <div class="drawer-header">
+          <h3 class="drawer-title">Filtros</h3>
+          <button class="drawer-close" @click="closeMobileDrawer" aria-label="Cerrar">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Contenido del drawer -->
+        <div class="drawer-content">
+          <!-- Filtro Entidad Mobile -->
+          <div class="drawer-filter-group">
+            <label class="drawer-filter-label">Entidad</label>
+            <div class="drawer-filter-dropdown">
+              <button 
+                @click="toggleMobileDropdown('entidad')"
+                class="drawer-dropdown-button"
+                :class="{ 'active': mobileActiveDropdown === 'entidad', 'has-selection': selectedEntity }"
+              >
+                <span class="drawer-dropdown-text">{{ getEntityLabel() }}</span>
+                <span class="drawer-dropdown-arrow" :class="{ 'rotated': mobileActiveDropdown === 'entidad' }">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </span>
+              </button>
+              
+              <Transition name="dropdown-expand">
+                <div v-if="mobileActiveDropdown === 'entidad'" class="drawer-dropdown-menu">
+                  <div class="drawer-dropdown-search">
+                    <input 
+                      v-model="entitySearch"
+                      placeholder="Buscar entidad..."
+                      class="drawer-search-input"
+                      @click.stop
+                    >
+                  </div>
+                  <div class="drawer-dropdown-options">
+                    <div 
+                      v-if="!entitySearch"
+                      @click="selectEntityMobile(null)"
+                      class="drawer-dropdown-option"
+                      :class="{ 'selected': selectedEntity === null }"
+                    >
+                      <span>Datos Regionales</span>
+                      <span v-if="selectedEntity === null" class="check-icon">✓</span>
+                    </div>
+                    <div 
+                      v-for="entity in filteredEntities" 
+                      :key="entity.name"
+                      @click="selectEntityMobile(entity.name)"
+                      class="drawer-dropdown-option"
+                      :class="{ 'selected': selectedEntity === entity.name && selectedEntity !== '' && selectedEntity !== null }"
+                    >
+                      <span>{{ entity.name }}</span>
+                      <span v-if="selectedEntity === entity.name" class="check-icon">✓</span>
+                    </div>
+                    <div 
+                      v-if="!entitySearch"
+                      @click="selectEntityMobile('')"
+                      class="drawer-dropdown-option blank-option-mobile"
+                      :class="{ 'selected': selectedEntity === '' }"
+                    >
+                      <span>Sin selección</span>
+                      <span v-if="selectedEntity === ''" class="check-icon">✓</span>
+                    </div>
+                  </div>
+                </div>
+              </Transition>
+            </div>
+          </div>
+
+          <!-- Filtro Año Mobile -->
+          <div class="drawer-filter-group">
+            <label class="drawer-filter-label">Año</label>
+            <div class="drawer-filter-dropdown">
+              <button 
+                @click="toggleMobileDropdown('año')"
+                class="drawer-dropdown-button"
+                :class="{ 'active': mobileActiveDropdown === 'año', 'has-selection': selectedYear !== null }"
+                :disabled="loadingYears"
+              >
+                <span class="drawer-dropdown-text">
+                  {{ loadingYears ? 'Cargando...' : getYearLabel() }}
+                </span>
+                <span class="drawer-dropdown-arrow" :class="{ 'rotated': mobileActiveDropdown === 'año' }">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </span>
+              </button>
+              
+              <Transition name="dropdown-expand">
+                <div v-if="mobileActiveDropdown === 'año'" class="drawer-dropdown-menu">
+                  <div class="drawer-dropdown-search">
+                    <input 
+                      v-model="yearSearch"
+                      placeholder="Buscar año..."
+                      class="drawer-search-input"
+                      @click.stop
+                    >
+                  </div>
+                  <div class="drawer-dropdown-options">
+                    <div 
+                      v-if="!yearSearch && selectedEntity !== ''"
+                      @click="selectYearMobile(null)"
+                      class="drawer-dropdown-option"
+                      :class="{ 'selected': selectedYear === null }"
+                    >
+                      <span>Todos los años</span>
+                      <span v-if="selectedYear === null" class="check-icon">✓</span>
+                    </div>
+                    <div 
+                      v-for="year in filteredYears" 
+                      :key="year"
+                      @click="selectYearMobile(year)"
+                      class="drawer-dropdown-option"
+                      :class="{ 'selected': selectedYear === year }"
+                    >
+                      <span>{{ year }}</span>
+                      <span v-if="selectedYear === year" class="check-icon">✓</span>
+                    </div>
+                    <div v-if="filteredYears.length === 0 && yearSearch" class="drawer-dropdown-no-results">
+                      No se encontraron años
+                    </div>
+                  </div>
+                </div>
+              </Transition>
+            </div>
+          </div>
+
+          <!-- Filtro Variable Mobile -->
+          <div class="drawer-filter-group">
+            <label class="drawer-filter-label">Variable</label>
+            <div class="drawer-filter-dropdown">
+              <button 
+                @click="toggleMobileDropdown('variable')"
+                class="drawer-dropdown-button"
+                :class="{ 'active': mobileActiveDropdown === 'variable', 'has-selection': selectedVariable !== null }"
+              >
+                <span class="drawer-dropdown-text">{{ getVariableLabel() }}</span>
+                <span class="drawer-dropdown-arrow" :class="{ 'rotated': mobileActiveDropdown === 'variable' }">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </span>
+              </button>
+              
+              <Transition name="dropdown-expand">
+                <div v-if="mobileActiveDropdown === 'variable'" class="drawer-dropdown-menu">
+                  <div class="drawer-dropdown-search">
+                    <input 
+                      v-model="variableSearch"
+                      placeholder="Buscar variable..."
+                      class="drawer-search-input"
+                      @click.stop
+                    >
+                  </div>
+                  <div class="drawer-dropdown-options">
+                    <div 
+                      v-if="!variableSearch"
+                      @click="selectVariableMobile(null)"
+                      class="drawer-dropdown-option"
+                      :class="{ 'selected': selectedVariable === null }"
+                    >
+                      <span>IFSS</span>
+                      <span v-if="selectedVariable === null" class="check-icon">✓</span>
+                    </div>
+                    <div 
+                      v-for="variable in filteredVariables" 
+                      :key="variable.key"
+                      @click="selectVariableMobile(variable)"
+                      class="drawer-dropdown-option"
+                      :class="{ 'selected': selectedVariable?.key === variable.key }"
+                    >
+                      <span>{{ variable.label }}</span>
+                      <span v-if="selectedVariable?.key === variable.key" class="check-icon">✓</span>
+                    </div>
+                    <div v-if="filteredVariables.length === 0 && variableSearch" class="drawer-dropdown-no-results">
+                      No se encontraron variables
+                    </div>
+                  </div>
+                </div>
+              </Transition>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer del drawer -->
+        <div class="drawer-footer">
+          <button class="drawer-btn-clear" @click="clearAllFilters">
+            Limpiar filtros
+          </button>
+          <button class="drawer-btn-apply" @click="closeMobileDrawer">
+            Aplicar
+          </button>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -273,15 +500,116 @@ const variableSearch = ref('')
 const selectedEntity = ref('')
 const selectedVariable = ref(null)
 
-// Definición de las 4 variables (orden: IS, IIC, PS, PIC)
+// ========== MOBILE STATES ==========
+const isMobileDrawerOpen = ref(false)
+const mobileActiveDropdown = ref(null)
+
+// Computed para contar filtros activos (para el badge)
+const hasActiveFilters = computed(() => {
+  return selectedEntity.value !== '' || selectedYear.value !== null || selectedVariable.value !== null
+})
+
+const activeFiltersCount = computed(() => {
+  let count = 0
+  if (selectedEntity.value !== '' && selectedEntity.value !== null) count++
+  if (selectedYear.value !== null) count++
+  if (selectedVariable.value !== null) count++
+  return count
+})
+
+// Funciones Mobile
+const openMobileDrawer = () => {
+  isMobileDrawerOpen.value = true
+  document.body.style.overflow = 'hidden'
+}
+
+const closeMobileDrawer = () => {
+  isMobileDrawerOpen.value = false
+  mobileActiveDropdown.value = null
+  document.body.style.overflow = ''
+  // Limpiar búsquedas
+  entitySearch.value = ''
+  yearSearch.value = ''
+  variableSearch.value = ''
+}
+
+const toggleMobileDropdown = (dropdownName) => {
+  if (mobileActiveDropdown.value === dropdownName) {
+    mobileActiveDropdown.value = null
+  } else {
+    mobileActiveDropdown.value = dropdownName
+    // Limpiar búsquedas al cambiar
+    entitySearch.value = ''
+    yearSearch.value = ''
+    variableSearch.value = ''
+  }
+}
+
+const selectEntityMobile = (entityName) => {
+  console.log('=== FILTRO MOBILE: Entidad seleccionada ===', entityName)
+  const previousEntity = selectedEntity.value
+  selectedEntity.value = entityName
+  emit('entity-change', entityName)
+  
+  if (previousEntity === null && entityName !== null && entityName !== '') {
+    if (selectedYear.value === null && years.value.length > 0) {
+      const firstYear = years.value[0]
+      setYear(firstYear)
+      setActiveYear(firstYear)
+      emit('year-change', firstYear)
+    }
+  }
+  
+  emitFiltersChange()
+  entitySearch.value = ''
+  mobileActiveDropdown.value = null
+}
+
+const selectYearMobile = (year) => {
+  console.log('=== FILTRO MOBILE: Año seleccionado ===', year)
+  setYear(year)
+  
+  if (year !== null) {
+    setActiveYear(year)
+  } else {
+    const yearToUse = years.value[0] || '2024'
+    setActiveYear(yearToUse)
+  }
+  
+  emit('year-change', year)
+  emitFiltersChange()
+  yearSearch.value = ''
+  mobileActiveDropdown.value = null
+}
+
+const selectVariableMobile = (variable) => {
+  console.log('=== FILTRO MOBILE: Variable seleccionada ===', variable)
+  selectedVariable.value = variable
+  emit('variable-change', variable)
+  emitFiltersChange()
+  variableSearch.value = ''
+  mobileActiveDropdown.value = null
+}
+
+const clearAllFilters = () => {
+  selectedEntity.value = ''
+  setYear(null)
+  selectedVariable.value = null
+  emit('entity-change', '')
+  emit('year-change', null)
+  emit('variable-change', null)
+  emitFiltersChange()
+}
+
+// Definición de las 4 variables
 const variables = {
-  IS: {
-    key: 'IS',
-    label: 'Ingresos Sostenibles (IS)',
-    description: 'Ingresos Sostenibles',
-    category: 'ingresos',
-    barVariables: ['IS', 'IT'],
-    donutType: 'IS'
+  PS: {
+    key: 'PS',
+    label: 'Presupuestos Sostenibles (PS)',
+    description: 'Presupuestos Sostenibles',
+    category: 'presupuestos',
+    barVariables: ['PS', 'PT'],
+    donutType: 'PS'
   },
   IIC: {
     key: 'IIC',
@@ -291,14 +619,6 @@ const variables = {
     barVariables: ['IIC', 'IT'],
     donutType: 'IIC'
   },
-  PS: {
-    key: 'PS',
-    label: 'Presupuestos Sostenibles (PS)',
-    description: 'Presupuestos Sostenibles',
-    category: 'presupuestos',
-    barVariables: ['PS', 'PT'],
-    donutType: 'PS'
-  },
   PIC: {
     key: 'PIC',
     label: 'Presupuestos Intensivos en Carbono (PIC)',
@@ -306,16 +626,19 @@ const variables = {
     category: 'presupuestos',
     barVariables: ['PIC', 'PT'],
     donutType: 'PIC'
+  },
+  IS: {
+    key: 'IS',
+    label: 'Ingresos Sostenibles (IS)',
+    description: 'Ingresos Sostenibles',
+    category: 'ingresos',
+    barVariables: ['IS', 'IT'],
+    donutType: 'IS'
   }
 }
 
-// Array de variables en el orden específico: IS, IIC, PS, PIC
-const variablesArray = computed(() => [
-  variables.IS,
-  variables.IIC,
-  variables.PS,
-  variables.PIC
-])
+// Array de variables para facilitar el filtrado
+const variablesArray = computed(() => Object.values(variables))
 
 // Computed: Entidades filtradas
 const filteredEntities = computed(() => {
@@ -361,7 +684,7 @@ const getYearLabel = () => {
 }
 
 const getVariableLabel = () => {
-  if (!selectedVariable.value || selectedVariable.value === null) return 'Todas las variables'
+  if (!selectedVariable.value || selectedVariable.value === null) return 'Todas las'
   return selectedVariable.value.key
 }
 
@@ -582,7 +905,7 @@ onMounted(async () => {
   await fetchAvailableYears()
   console.log('📅 Años del composable cargados:', composableYears.value)
   
- if (props.initialYear !== undefined) {
+  if (props.initialYear !== null && props.initialYear !== undefined) {
     setYear(props.initialYear)
     if (props.initialYear !== '') {
       setActiveYear(props.initialYear)
@@ -605,9 +928,18 @@ onMounted(async () => {
   document.addEventListener('click', handleClickOutside)
 })
 
+defineExpose({
+  openMobileDrawer,
+  closeMobileDrawer,
+  isMobileDrawerOpen,
+  hasActiveFilters,
+  activeFiltersCount
+})
+
 onBeforeUnmount(() => {
   console.log('👋 RetractableFilterBar desmontándose')
   document.removeEventListener('click', handleClickOutside)
+  document.body.style.overflow = ''
   
   if (slideTimeout.value) {
     clearTimeout(slideTimeout.value)
@@ -616,6 +948,9 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+/* ============================================
+   ESTILOS BASE (DESKTOP) - SIN CAMBIOS
+   ============================================ */
 .filter-bar-container {
   position: relative;
   left: 19.6px;
@@ -971,34 +1306,609 @@ onBeforeUnmount(() => {
   transform: translateX(-50%);
 }
 
-@media (max-width: 768px) {
+/* ============================================
+   ESTILOS MOBILE - BOTÓN FLOTANTE
+   ============================================ */
+.mobile-filter-fab {
+  display: none; /* Oculto por defecto en desktop */
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #053759 0%, #0a4d7a 100%);
+  border: none;
+  color: white;
+  cursor: pointer;
+  box-shadow: 
+    0 4px 20px rgba(5, 55, 89, 0.4),
+    0 0 0 0 rgba(5, 55, 89, 0.4);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mobile-filter-fab:hover {
+  transform: scale(1.05);
+  box-shadow: 
+    0 6px 28px rgba(5, 55, 89, 0.5),
+    0 0 0 0 rgba(5, 55, 89, 0.4);
+}
+
+.mobile-filter-fab:active {
+  transform: scale(0.95);
+}
+
+.fab-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  background: #ef4444;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+}
+/* ============================================
+   ESTILOS MOBILE - OVERLAY (agregar antes de los media queries)
+   ============================================ */
+.mobile-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 1001;
+}
+
+/* ============================================
+   ESTILOS MOBILE - DRAWER
+   ============================================ */
+.mobile-drawer {
+  display: none;
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 320px;
+  max-width: 85vw;
+  height: 100%;
+  background: #ffffff;
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.15);
+  z-index: 1002;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, #053759 0%, #0a4d7a 100%);
+  color: white;
+}
+
+.drawer-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.drawer-close {
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  color: white;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.drawer-close:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.drawer-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.drawer-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.drawer-filter-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.drawer-dropdown-button {
+  width: 100%;
+  padding: 14px 16px;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.2s ease;
+}
+
+.drawer-dropdown-button:hover {
+  border-color: #cbd5e0;
+  background: #f1f5f9;
+}
+
+.drawer-dropdown-button.active,
+.drawer-dropdown-button.has-selection {
+  border-color: #053759;
+  background: #f0f9ff;
+}
+
+.drawer-dropdown-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.drawer-dropdown-arrow {
+  color: #64748b;
+  transition: transform 0.3s ease;
+  display: flex;
+}
+
+.drawer-dropdown-arrow.rotated {
+  transform: rotate(180deg);
+}
+
+.drawer-dropdown-menu {
+  margin-top: 8px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.drawer-dropdown-search {
+  padding: 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.drawer-search-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.drawer-search-input:focus {
+  border-color: #053759;
+  box-shadow: 0 0 0 3px rgba(5, 55, 89, 0.1);
+}
+
+.drawer-dropdown-options {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.drawer-dropdown-option {
+  padding: 14px 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #334155;
+  font-size: 14px;
+  transition: background 0.15s ease;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.drawer-dropdown-option:last-child {
+  border-bottom: none;
+}
+
+.drawer-dropdown-option:hover {
+  background: #f8fafc;
+}
+
+.drawer-dropdown-option.selected {
+  background: #f0f9ff;
+  color: #053759;
+  font-weight: 600;
+}
+
+.check-icon {
+  color: #053759;
+  font-weight: 700;
+}
+
+.drawer-dropdown-no-results {
+  padding: 16px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.drawer-footer {
+  padding: 16px 24px;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  gap: 12px;
+}
+
+.drawer-btn-clear {
+  flex: 1;
+  padding: 14px 20px;
+  background: transparent;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.drawer-btn-clear:hover {
+  border-color: #cbd5e0;
+  background: #f1f5f9;
+}
+
+.drawer-btn-apply {
+  flex: 1;
+  padding: 14px 20px;
+  background: linear-gradient(135deg, #053759 0%, #0a4d7a 100%);
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.drawer-btn-apply:hover {
+  box-shadow: 0 4px 12px rgba(5, 55, 89, 0.3);
+}
+
+/* ============================================
+   TRANSICIONES VUE
+   ============================================ */
+.overlay-fade-enter-active,
+.overlay-fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.overlay-fade-enter-from,
+.overlay-fade-leave-to {
+  opacity: 0;
+}
+
+.drawer-slide-enter-active,
+.drawer-slide-leave-active {
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.drawer-slide-enter-from,
+.drawer-slide-leave-to {
+  transform: translateX(100%);
+}
+
+.dropdown-expand-enter-active,
+.dropdown-expand-leave-active {
+  transition: all 0.25s ease;
+}
+
+.dropdown-expand-enter-from,
+.dropdown-expand-leave-to {
+  opacity: 0;
+  max-height: 0;
+}
+
+/* ============================================
+   RESPONSIVE: LAPTOPS PEQUEÑAS (≤1200px)
+   ============================================ */
+@media (max-width: 1200px) {
   .filter-content {
-    flex-direction: column;
-    gap: 16px;
+    gap: 24px;
   }
   
-  .filter-group {
-    min-width: 100%;
+  .dropdown-button {
+    width: 160px;
+    padding: 7px 14px;
   }
   
-  .filter-bar-container {
-    height: 100px;
+  .filter-group::after {
+    right: -24px;
+  }
+}
+
+/* ============================================
+   RESPONSIVE: TABLETS LANDSCAPE (≤1024px)
+   ============================================ */
+@media (max-width: 1024px) {
+  .filter-content {
+    gap: 20px;
   }
   
-  .filter-bar {
-    transform: translateY(calc(100% - 60px));
+  .dropdown-button {
+    width: 150px;
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+  
+  .dropdown-text {
+    font-size: 12px;
+  }
+  
+  .filter-group::after {
+    right: -20px;
+    font-size: 11px;
+  }
+  
+  .filter-label {
+    font-size: 13px;
+    margin-bottom: 8px;
   }
   
   .variable-menu {
-    width: 180%;
-    left: -40%;
-    transform: none;
+    width: 240px;
+  }
+}
+
+/* ============================================
+   RESPONSIVE: TABLETS PORTRAIT (≤768px)
+   ============================================ */
+@media (max-width: 768px) {
+  .filter-bar-container {
+    height: 0;
+    overflow: hidden !important;
   }
   
-  .tooltip-select-entity {
-    bottom: -50px;
+  .filter-bar {
+    display: none;
+  }
+  
+  .mobile-overlay {
+    display: block;
+  }
+  
+  .mobile-drawer {
+    display: flex;
+  }
+}
+
+/* ============================================
+   RESPONSIVE: MÓVILES GRANDES (≤480px)
+   ============================================ */
+@media (max-width: 480px) {
+  .mobile-drawer {
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  .drawer-header {
+    padding: 18px 20px;
+  }
+  
+  .drawer-title {
+    font-size: 17px;
+  }
+  
+  .drawer-content {
+    padding: 20px;
+    gap: 18px;
+  }
+  
+  .drawer-dropdown-button {
+    padding: 12px 14px;
+  }
+  
+  .drawer-dropdown-text {
+    font-size: 13px;
+  }
+  
+  .drawer-footer {
+    padding: 14px 20px;
+  }
+  
+  .drawer-btn-clear,
+  .drawer-btn-apply {
+    padding: 12px 16px;
+    font-size: 13px;
+  }
+}
+
+/* ============================================
+   RESPONSIVE: MÓVILES MEDIANOS (≤400px)
+   ============================================ */
+@media (max-width: 400px) {
+  .drawer-header {
+    padding: 16px 18px;
+  }
+  
+  .drawer-title {
+    font-size: 16px;
+  }
+  
+  .drawer-close {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .drawer-content {
+    padding: 18px;
+    gap: 16px;
+  }
+  
+  .drawer-filter-label {
     font-size: 11px;
-    padding: 6px 12px;
+  }
+  
+  .drawer-dropdown-button {
+    padding: 11px 12px;
+    border-radius: 10px;
+  }
+  
+  .drawer-dropdown-text {
+    font-size: 12px;
+  }
+  
+  .drawer-dropdown-option {
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+  
+  .drawer-footer {
+    padding: 12px 18px;
+    gap: 10px;
+  }
+  
+  .drawer-btn-clear,
+  .drawer-btn-apply {
+    padding: 11px 14px;
+    font-size: 12px;
+  }
+}
+
+/* ============================================
+   RESPONSIVE: MÓVILES PEQUEÑOS (≤360px)
+   ============================================ */
+@media (max-width: 360px) {
+  .drawer-header {
+    padding: 14px 16px;
+  }
+  
+  .drawer-title {
+    font-size: 15px;
+  }
+  
+  .drawer-content {
+    padding: 16px;
+    gap: 14px;
+  }
+  
+  .drawer-search-input {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  
+  .drawer-dropdown-options {
+    max-height: 180px;
+  }
+  
+  .drawer-footer {
+    padding: 10px 16px;
+  }
+}
+
+/* ============================================
+   RESPONSIVE: MÓVILES MUY PEQUEÑOS (≤320px)
+   ============================================ */
+@media (max-width: 320px) {
+  .drawer-header {
+    padding: 12px 14px;
+  }
+  
+  .drawer-title {
+    font-size: 14px;
+  }
+  
+  .drawer-close {
+    width: 30px;
+    height: 30px;
+  }
+  
+  .drawer-content {
+    padding: 14px;
+    gap: 12px;
+  }
+  
+  .drawer-filter-label {
+    font-size: 10px;
+  }
+  
+  .drawer-dropdown-button {
+    padding: 10px 11px;
+  }
+  
+  .drawer-dropdown-text {
+    font-size: 11px;
+  }
+  
+  .drawer-dropdown-option {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+  
+  .drawer-dropdown-options {
+    max-height: 160px;
+  }
+  
+  .drawer-footer {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .drawer-btn-clear,
+  .drawer-btn-apply {
+    width: 100%;
+    padding: 12px;
+  }
+}
+
+/* ============================================
+   ALTURA REDUCIDA (landscape en móviles)
+   ============================================ */
+@media (max-height: 500px) and (max-width: 768px) {
+  .drawer-content {
+    padding: 12px 16px;
+    gap: 10px;
+  }
+  
+  .drawer-filter-group {
+    gap: 4px;
+  }
+  
+  .drawer-dropdown-button {
+    padding: 8px 12px;
+  }
+  
+  .drawer-dropdown-options {
+    max-height: 120px;
+  }
+  
+  .drawer-footer {
+    padding: 8px 16px;
   }
 }
 </style>
