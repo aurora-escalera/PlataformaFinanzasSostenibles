@@ -242,10 +242,8 @@ const props = defineProps({
   width: { type: Number, default: null },
   height: { type: Number, default: null },
   initialVisibleVariables: { type: Array, default: null },
-  // ✅ NUEVAS PROPS para tooltip extendido
   positionsByYear: { type: Object, default: () => ({}) },
   percentagesByYear: { type: Object, default: () => ({}) },
-  // ✅ NUEVA PROP: Labels cortos para tooltip (ej: { 'Presupuestos Sostenibles': 'PS' })
   tooltipLabels: { type: Object, default: () => ({}) }
 })
 
@@ -256,6 +254,13 @@ const svgRef = ref(null)
 const containerRef = ref(null)
 const dimensions = ref({ width: 800, height: 300 })
 let resizeObserver = null
+
+// ✅ NUEVO: Detectar si es móvil
+const isMobile = ref(false)
+
+const checkIsMobile = () => {
+  isMobile.value = window.innerWidth <= 768
+}
 
 const hoverState = ref({
   visible: false,
@@ -268,7 +273,6 @@ const hoverState = ref({
 })
 
 const animatingPoints = ref({})
-// ✅ PADDING AUMENTADO para más espacio
 const padding = { top: 20, right: 25, bottom: 35, left: 75 }
 
 const colorPalette = ['#7cb342', '#9E9E9E', '#DC143C', '#8b5cf6', '#f59e0b', '#ec4899', '#06b6d4', '#ef4444']
@@ -286,7 +290,6 @@ const availableVariables = computed(() => Object.keys(props.data))
 const visibleVariables = ref([])
 const animatedData = ref({})
 
-// ✅ COMPUTED: Items del tooltip con valor, porcentaje y posición
 const tooltipItems = computed(() => {
   if (!hoverState.value.visible || hoverState.value.index === -1) return []
   
@@ -298,10 +301,8 @@ const tooltipItems = computed(() => {
     const value = data[index]
     const color = getVariableColor(varName)
     
-    // ✅ Usar tooltipLabel si existe, sino usar varName
     const displayName = props.tooltipLabels[varName] || varName
     
-    // Obtener porcentaje
     let percentage = null
     if (props.percentagesByYear && props.percentagesByYear[year]) {
       const pct = props.percentagesByYear[year][varName]
@@ -310,7 +311,6 @@ const tooltipItems = computed(() => {
       }
     }
     
-    // Obtener posición
     let position = null
     if (props.positionsByYear && props.positionsByYear[year]) {
       position = props.positionsByYear[year][varName] ?? null
@@ -616,11 +616,28 @@ const formatValue = (value) => {
   return `${prefix}${value.toFixed(2)}${suffix}`
 }
 
+// ✅ FUNCIÓN ACTUALIZADA: Detecta móvil y usa width del contenedor
 const updateDimensions = () => {
+  checkIsMobile()
+  
+  // En móvil, siempre usar el ancho del contenedor
+  if (isMobile.value) {
+    if (chartWrapper.value) {
+      const rect = chartWrapper.value.getBoundingClientRect()
+      dimensions.value = {
+        width: rect.width > 0 ? Math.floor(rect.width) : 350,
+        height: props.height ?? (rect.height > 0 ? Math.floor(rect.height) : 300)
+      }
+    }
+    return
+  }
+  
+  // En desktop, usar props si están definidas
   if (props.width !== null && props.height !== null) {
     dimensions.value = { width: props.width, height: props.height }
     return
   }
+  
   if (chartWrapper.value) {
     const rect = chartWrapper.value.getBoundingClientRect()
     dimensions.value = {
@@ -632,6 +649,10 @@ const updateDimensions = () => {
 
 onMounted(async () => {
   await nextTick()
+  
+  // ✅ Agregar listener para resize
+  window.addEventListener('resize', updateDimensions)
+  
   setTimeout(() => {
     updateDimensions()
     const vars = Object.keys(props.data)
@@ -644,7 +665,6 @@ onMounted(async () => {
       resizeObserver.observe(chartWrapper.value)
     }
   }, 100)
-  window.addEventListener('resize', updateDimensions)
 })
 
 onUnmounted(() => {
@@ -834,4 +854,305 @@ onUnmounted(() => {
 .tooltip-separator { height: 1px; background: #e0e0e0; margin: 4px 0; }
 .tooltip-fade-enter-active, .tooltip-fade-leave-active { transition: all 0.2s ease; }
 .tooltip-fade-enter-from, .tooltip-fade-leave-to { opacity: 0; transform: translate(-50%, calc(-100% - 20px)); }
+/* ============================================
+   RESPONSIVE - Media Queries para StackedArea.vue
+   (Agregar al final del <style scoped>)
+   ============================================ */
+
+/* Tablets */
+@media (max-width: 768px) {
+  .area-chart-container {
+    padding: 0;
+    border-radius: 8px;
+  }
+  
+  /* ✅ Hacer el gráfico responsive */
+  .chart-wrapper {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .area-chart {
+  min-width: 100%;
+  width: 100% !important;
+  max-width: 100%;
+  }
+  
+  .chart-header {
+    margin-bottom: 6px;
+  }
+  
+  .chart-title {
+    font-size: 11px;
+  }
+  
+  .chart-subtitle {
+    font-size: 10px;
+  }
+  
+  /* Filtros de variables */
+  .variable-filters {
+    padding: 4px;
+    margin-bottom: 3px;
+    gap: 3px;
+    border-radius: 16px;
+  }
+  
+  .filter-btn {
+    padding: 4px 10px;
+    font-size: 11px;
+    border-radius: 12px;
+    gap: 4px;
+  }
+  
+  .btn-color-dot {
+    width: 6px;
+    height: 6px;
+  }
+  
+  /* Leyenda de moneda */
+  .currency-legend {
+    font-size: 10px;
+    margin-bottom: 8px;
+    padding-left: 6px;
+  }
+  
+  /* No data */
+  .no-data svg {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .no-data p {
+    font-size: 11px;
+  }
+  
+  /* Ejes */
+  .y-axis-label {
+    font-size: 9px;
+  }
+  
+  .x-axis-label-svg {
+    font-size: 9px;
+  }
+  
+  /* Tooltip */
+  .tooltip-container {
+    padding: 10px 12px;
+    min-width: 160px;
+    border-radius: 6px;
+  }
+  
+  .tooltip-header {
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+  }
+  
+  .tooltip-year-label {
+    font-size: 12px;
+  }
+  
+  .tooltip-content {
+    gap: 4px;
+  }
+  
+  .tooltip-item {
+    font-size: 11px;
+    gap: 6px;
+  }
+  
+  .tooltip-color-indicator {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .tooltip-sub-item {
+    padding-left: 14px;
+  }
+  
+  .tooltip-sub-item .tooltip-variable-name,
+  .tooltip-sub-item .tooltip-variable-value {
+    font-size: 10px;
+  }
+  
+  .tooltip-separator {
+    margin: 3px 0;
+  }
+}
+
+/* Móviles pequeños */
+@media (max-width: 480px) {
+  .area-chart-container {
+    border-radius: 6px;
+  }
+  
+  /* ✅ Gráfico responsive */
+  .chart-wrapper {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+  
+  .area-chart {
+    min-width: 100%;
+    width: 100% !important;
+    max-width: 100%;
+  }
+  
+  .chart-header {
+    margin-bottom: 4px;
+  }
+  
+  .chart-title {
+    font-size: 10px;
+  }
+  
+  .chart-subtitle {
+    font-size: 9px;
+  }
+  
+  /* Filtros de variables */
+  .variable-filters {
+    padding: 3px;
+    margin-bottom: 2px;
+    gap: 2px;
+    border-radius: 14px;
+  }
+  
+  .filter-btn {
+    padding: 3px 8px;
+    font-size: 9px;
+    border-radius: 10px;
+    gap: 3px;
+  }
+  
+  .btn-color-dot {
+    width: 5px;
+    height: 5px;
+  }
+  
+  /* Leyenda de moneda */
+  .currency-legend {
+    font-size: 8px;
+    margin-bottom: 6px;
+    padding-left: 4px;
+  }
+  
+  /* No data */
+  .no-data svg {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .no-data p {
+    font-size: 10px;
+  }
+  
+  /* Ejes */
+  .y-axis-label {
+    font-size: 7px;
+  }
+  
+  .x-axis-label-svg {
+    font-size: 7px;
+  }
+  
+  /* Tooltip */
+  .tooltip-container {
+    padding: 8px 10px;
+    min-width: 140px;
+    border-radius: 5px;
+  }
+  
+  .tooltip-header {
+    margin-bottom: 6px;
+    padding-bottom: 5px;
+  }
+  
+  .tooltip-year-label {
+    font-size: 11px;
+  }
+  
+  .tooltip-content {
+    gap: 3px;
+  }
+  
+  .tooltip-item {
+    font-size: 10px;
+    gap: 5px;
+  }
+  
+  .tooltip-color-indicator {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .tooltip-sub-item {
+    padding-left: 12px;
+  }
+  
+  .tooltip-sub-item .tooltip-variable-name,
+  .tooltip-sub-item .tooltip-variable-value {
+    font-size: 9px;
+  }
+  
+  .tooltip-separator {
+    margin: 2px 0;
+  }
+  
+  .tooltip-container::after {
+    border-width: 6px;
+  }
+}
+
+/* Landscape en móviles */
+@media (max-width: 768px) and (orientation: landscape) {
+  .chart-wrapper {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+  
+  .area-chart {
+    min-width: 100%;
+    width: 100% !important;
+    max-width: 100%;
+  }
+  
+  .variable-filters {
+    padding: 3px;
+    margin-bottom: 2px;
+  }
+  
+  .filter-btn {
+    padding: 3px 8px;
+    font-size: 9px;
+  }
+  
+  .currency-legend {
+    font-size: 8px;
+    margin-bottom: 4px;
+  }
+  
+  .y-axis-label {
+    font-size: 8px;
+  }
+  
+  .x-axis-label-svg {
+    font-size: 8px;
+  }
+  
+  .tooltip-container {
+    padding: 6px 8px;
+    min-width: 130px;
+  }
+  
+  .tooltip-year-label {
+    font-size: 10px;
+  }
+  
+  .tooltip-item {
+    font-size: 9px;
+  }
+}
+
 </style>
