@@ -1,6 +1,6 @@
 <!-- src/modules/maps/components/RetractableFilterBar.vue -->
 <template>
-  <div class="filter-bar-container" :style="{ overflow: activeDropdown !== null ? 'visible' : 'hidden' }">
+  <div class="filter-bar-container">
     <!-- Barra de filtros principal (DESKTOP) -->
     <div ref="filterBarRef" class="filter-bar" :class="{ 'expanded': isSlideUp || activeDropdown, 'has-entity-selected': selectedEntity, 'locked-expanded': props.isLocked, 'animating-down': isAnimatingDown }" @mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave">
       <div class="filter-content">
@@ -12,6 +12,7 @@
               <span class="dropdown-text">{{ getEntityLabel() }}</span>
               <span class="dropdown-arrow">▼</span>
             </button>
+            <span class="filter-tooltip">Elige una entidad específica o los 'Datos Regionales' para ver las gráficas correspondientes</span>
             <div v-if="activeDropdown === 'entidad'" class="dropdown-menu">
               <div class="dropdown-search">
                 <input v-model="entitySearch" placeholder="Buscar entidad..." class="search-input" @click.stop>
@@ -39,6 +40,7 @@
               <span class="dropdown-text">{{ loadingYears ? 'Cargando...' : getYearLabel() }}</span>
               <span class="dropdown-arrow">▼</span>
             </button>
+            <span class="filter-tooltip">Elige uno de los años para ver los datos</span>
             <div v-if="activeDropdown === 'año'" class="dropdown-menu">
               <div class="dropdown-search">
                 <input v-model="yearSearch" placeholder="Buscar año..." class="search-input" @click.stop>
@@ -57,23 +59,30 @@
         </div>
 
         <!-- Filtro Variable -->
-        <div class="filter-group">
+        <div class="filter-group filter-group-last">
           <label class="filter-label">Variable</label>
           <div class="filter-dropdown">
             <button @click="toggleDropdown('variable')" class="dropdown-button" :class="{ 'active': activeDropdown === 'variable', 'has-selection': selectedVariable !== null }">
               <span class="dropdown-text">{{ getVariableLabel() }}</span>
               <span class="dropdown-arrow">▼</span>
             </button>
+            <span class="filter-tooltip">Selecciona una variable para ver los datos correspondientes</span>
             <div v-if="activeDropdown === 'variable'" class="dropdown-menu variable-menu">
               <div class="dropdown-search">
                 <input v-model="variableSearch" placeholder="Buscar variable..." class="search-input" @click.stop>
               </div>
               <div class="dropdown-options">
-                <div v-if="!variableSearch" @click="selectVariable(null)" class="dropdown-option" :class="{ 'selected': selectedVariable === null }">
-                  <span>IFSS</span>
+                <div v-if="!variableSearch" class="dropdown-option-wrapper">
+                  <div @click="selectVariable(null)" class="dropdown-option" :class="{ 'selected': selectedVariable === null }">
+                    <span>Todas las variables</span>
+                  </div>
+                  <span class="option-tooltip">Vista integral de Ingresos Sostenibles, Ingresos Intensivos en Carbono, Presupuestos Sostenibles y Presupuestos Intensivos en Carbono</span>
                 </div>
-                <div v-for="variable in filteredVariables" :key="variable.key" @click="selectVariable(variable)" class="dropdown-option" :class="{ 'selected': selectedVariable?.key === variable.key }">
-                  <span>{{ variable.label }}</span>
+                <div v-for="variable in filteredVariables" :key="variable.key" class="dropdown-option-wrapper">
+                  <div @click="selectVariable(variable)" class="dropdown-option" :class="{ 'selected': selectedVariable?.key === variable.key }">
+                    <span>{{ variable.label }}</span>
+                  </div>
+                  <span class="option-tooltip">{{ tooltips.variables[variable.key] }}</span>
                 </div>
                 <div v-if="filteredVariables.length === 0 && variableSearch" class="dropdown-no-results">No se encontraron variables</div>
               </div>
@@ -104,6 +113,7 @@
           <!-- Filtro Entidad Mobile -->
           <div class="drawer-filter-group">
             <label class="drawer-filter-label">Entidad</label>
+            <p class="drawer-filter-hint">{{ tooltips.entity }}</p>
             <div class="drawer-filter-dropdown">
               <button @click="toggleMobileDropdown('entidad')" class="drawer-dropdown-button" :class="{ 'active': mobileActiveDropdown === 'entidad', 'has-selection': selectedEntity }">
                 <span class="drawer-dropdown-text">{{ getEntityLabel() }}</span>
@@ -138,6 +148,7 @@
           <!-- Filtro Año Mobile -->
           <div class="drawer-filter-group">
             <label class="drawer-filter-label">Año</label>
+            <p class="drawer-filter-hint">{{ tooltips.year }}</p>
             <div class="drawer-filter-dropdown">
               <button @click="toggleMobileDropdown('año')" class="drawer-dropdown-button" :class="{ 'active': mobileActiveDropdown === 'año', 'has-selection': selectedYear !== null }" :disabled="loadingYears">
                 <span class="drawer-dropdown-text">{{ loadingYears ? 'Cargando...' : getYearLabel() }}</span>
@@ -169,6 +180,7 @@
           <!-- Filtro Variable Mobile -->
           <div class="drawer-filter-group">
             <label class="drawer-filter-label">Variable</label>
+            <p class="drawer-filter-hint">{{ getVariableTooltip() }}</p>
             <div class="drawer-filter-dropdown">
               <button @click="toggleMobileDropdown('variable')" class="drawer-dropdown-button" :class="{ 'active': mobileActiveDropdown === 'variable', 'has-selection': selectedVariable !== null }">
                 <span class="drawer-dropdown-text">{{ getVariableLabel() }}</span>
@@ -183,11 +195,17 @@
                   </div>
                   <div class="drawer-dropdown-options">
                     <div v-if="!variableSearch" @click="selectVariableMobile(null)" class="drawer-dropdown-option" :class="{ 'selected': selectedVariable === null }">
-                      <span>IFSS</span>
+                      <div class="option-with-desc">
+                        <span>Todas las variables</span>
+                        <span class="option-desc">{{ tooltips.variables.all }}</span>
+                      </div>
                       <span v-if="selectedVariable === null" class="check-icon">✓</span>
                     </div>
                     <div v-for="variable in filteredVariables" :key="variable.key" @click="selectVariableMobile(variable)" class="drawer-dropdown-option" :class="{ 'selected': selectedVariable?.key === variable.key }">
-                      <span>{{ variable.label }}</span>
+                      <div class="option-with-desc">
+                        <span>{{ variable.label }}</span>
+                        <span class="option-desc">{{ tooltips.variables[variable.key] }}</span>
+                      </div>
                       <span v-if="selectedVariable?.key === variable.key" class="check-icon">✓</span>
                     </div>
                     <div v-if="filteredVariables.length === 0 && variableSearch" class="drawer-dropdown-no-results">No se encontraron variables</div>
@@ -228,6 +246,29 @@ const emit = defineEmits(['entity-change', 'year-change', 'variable-change', 'fi
 const { selectedYear, availableYears: composableYears, loadingYears, fetchAvailableYears, setSelectedYear: setYear, activeYear } = useYearFilter()
 
 const years = computed(() => props.availableYears?.length > 0 ? props.availableYears : composableYears.value)
+
+// ============================================================================
+// TOOLTIPS - Mensajes de descripción
+// ============================================================================
+const tooltips = {
+  entity: "Elige una entidad específica o los 'Datos Regionales' para ver las gráficas correspondientes",
+  year: "Elige uno de los años para ver los datos",
+  variables: {
+    all: "Vista integral de Ingresos Sostenibles, Ingresos Intensivos en Carbono, Presupuestos Sostenibles y Presupuestos Intensivos en Carbono",
+    IS: "Ingresos provenientes de fuentes renovables y actividades económicas de bajo impacto ambiental",
+    IIC: "Ingresos derivados de actividades con alta emisión de carbono como hidrocarburos y minería",
+    PS: "Gasto público destinado a programas ambientales, energías limpias y desarrollo sustentable",
+    PIC: "Gasto público asignado a sectores con alta huella de carbono"
+  }
+}
+
+// Función para obtener el tooltip de la variable actual
+const getVariableTooltip = () => {
+  if (!selectedVariable.value) {
+    return tooltips.variables.all
+  }
+  return tooltips.variables[selectedVariable.value.key] || ''
+}
 
 const isSlideUp = ref(false)
 const activeDropdown = ref(null)
@@ -283,7 +324,7 @@ const filteredVariables = computed(() => { if (!variableSearch.value) return var
 
 const getEntityLabel = () => { if (selectedEntity.value === '') return '-'; if (!selectedEntity.value || selectedEntity.value === null) return 'Datos regionales'; return selectedEntity.value }
 const getYearLabel = () => selectedYear.value === null ? 'Todos los años' : selectedYear.value
-const getVariableLabel = () => !selectedVariable.value ? 'Todas las' : selectedVariable.value.key
+const getVariableLabel = () => !selectedVariable.value ? 'Todas las variables' : selectedVariable.value.key
 
 const handleMouseEnter = () => { if (slideTimeout.value) { clearTimeout(slideTimeout.value); slideTimeout.value = null }; isSlideUp.value = true }
 const handleMouseLeave = () => { if (props.isLocked) return; if (!activeDropdown.value && !selectedEntity.value) slideTimeout.value = setTimeout(() => { isSlideUp.value = false }, 300) }
@@ -330,8 +371,57 @@ onBeforeUnmount(() => { document.removeEventListener('click', handleClickOutside
 .filter-content { display: flex; top: 100px; gap: 32px; flex-wrap: wrap; justify-content: center; }
 .filter-group { position: relative; min-width: 140px; flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; }
 .filter-group::after { content: '|'; position: absolute; right: -32px; top: 50%; transform: translateY(-50%); color: rgba(255,255,255,0.6); font-size: 12px; font-weight: 300; z-index: 100; }
+.filter-group-last::after { display: none; }
 .filter-label { display: block; font-size: 14px; font-weight: 200; margin-bottom: 10px; color: #e2e8f0; letter-spacing: 0.5px; font-family: system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; width: 100%; text-align: center; height: 20px; line-height: 20px; }
-.filter-dropdown { position: relative; display: flex; justify-content: center; width: 100%; }
+.filter-dropdown { position: relative; display: flex; justify-content: center; width: 100%; flex-direction: column; align-items: center; }
+
+/* ========== TOOLTIP PERSONALIZADO ========== */
+.filter-tooltip {
+  position: absolute;
+  top: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1e3a5f;
+  color: white;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 400;
+  white-space: normal;
+  width: 220px;
+  text-align: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  z-index: 9999;
+  box-shadow: 0 4px 12px rgba(30, 58, 95, 0.4);
+  pointer-events: none;
+  line-height: 1.4;
+}
+
+/* Flecha apuntando hacia arriba */
+.filter-tooltip::after {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-bottom-color: #1e3a5f;
+}
+
+/* Mostrar tooltip en hover del dropdown-button */
+.dropdown-button:hover + .filter-tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Ocultar tooltip cuando el dropdown está abierto */
+.dropdown-button.active + .filter-tooltip {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
 .dropdown-button { opacity: 80%; width: 180px; background: rgba(255,255,255,0.95); border: 2px solid rgba(255,255,255,0.3); color: hsl(218,23%,23%); padding: 8px 16px; border-radius: 25px; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: all 0.2s ease; font-size: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
 .dropdown-button:disabled { opacity: 0.5; cursor: not-allowed; }
 .dropdown-button:hover:not(:disabled), .dropdown-button.active, .dropdown-button.has-selection { background: rgba(255,255,255,1); border-color: rgba(255,255,255,0.6); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
@@ -353,13 +443,57 @@ onBeforeUnmount(() => { document.removeEventListener('click', handleClickOutside
 .dropdown-option:last-child { border-bottom: none; }
 .blank-option { color: #cbd5e0; font-size: 14px; text-align: center; width: 100%; display: block; }
 .blank-option-row { border-top: 1px solid #e2e8f0; margin-top: 4px; padding-top: 10px; border-bottom: none; }
+
+/* ========== WRAPPER Y TOOLTIP PARA OPCIONES DEL DROPDOWN ========== */
+.dropdown-option-wrapper {
+  position: relative;
+}
+
+.option-tooltip {
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: #1e3a5f;
+  color: white;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 400;
+  white-space: normal;
+  width: 200px;
+  text-align: left;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  z-index: 10000;
+  box-shadow: 0 4px 12px rgba(30, 58, 95, 0.4);
+  pointer-events: none;
+  line-height: 1.4;
+}
+
+.option-tooltip::after {
+  content: '';
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 6px solid transparent;
+  border-right-color: #1e3a5f;
+}
+
+.dropdown-option-wrapper:hover .option-tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
 .dropdown-no-results { padding: 12px; text-align: center; color: #a0aec0; font-size: 13px; font-style: italic; }
 .variable-menu { width: 280px; left: 50%; transform: translateX(-50%); }
 
 /* ========== MOBILE OVERLAY ========== */
 .mobile-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); z-index: 1001; }
 
-/* ========== MOBILE DRAWER - 80% ancho, 100% altura ========== */
+/* ========== MOBILE DRAWER ========== */
 .mobile-drawer { display: none; position: fixed; top: 0; right: 0; width: 120vw; height: 100%; height: 100dvh; background: #fff; box-shadow: -8px 0 32px rgba(0,0,0,0.15); z-index: 1002; flex-direction: column; overflow: hidden; overflow-y: auto; overscroll-behavior: contain; }
 .drawer-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; background: linear-gradient(135deg,#053759 0%,#0a4d7a 100%); color: white; flex-shrink: 0; }
 .drawer-title { margin: 0; font-size: 18px; font-weight: 600; font-family: system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; }
@@ -368,6 +502,15 @@ onBeforeUnmount(() => { document.removeEventListener('click', handleClickOutside
 .drawer-content { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 24px; display: flex; flex-direction: column; gap: 20px; -webkit-overflow-scrolling: touch; }
 .drawer-filter-group { display: flex; flex-direction: column; gap: 8px; }
 .drawer-filter-label { font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* NUEVO: Hint/descripción en móvil */
+.drawer-filter-hint {
+  font-size: 12px;
+  color: #94a3b8;
+  margin: 0 0 4px 0;
+  line-height: 1.4;
+}
+
 .drawer-dropdown-button { width: 100%; padding: 14px 16px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: all 0.2s ease; box-sizing: border-box; }
 .drawer-dropdown-button:hover { border-color: #cbd5e0; background: #f1f5f9; }
 .drawer-dropdown-button.active, .drawer-dropdown-button.has-selection { border-color: #053759; background: #f0f9ff; }
@@ -386,6 +529,22 @@ onBeforeUnmount(() => { document.removeEventListener('click', handleClickOutside
 .check-icon { color: #053759; font-weight: 700; flex-shrink: 0; }
 .drawer-dropdown-no-results { padding: 16px; text-align: center; color: #94a3b8; font-size: 13px; }
 .blank-option-mobile { border-top: 1px solid #e2e8f0; margin-top: 4px; }
+
+/* NUEVO: Opción con descripción en móvil */
+.option-with-desc {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.option-desc {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 400;
+  line-height: 1.3;
+}
+
 .drawer-footer { padding: 16px 24px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; gap: 12px; flex-shrink: 0; }
 .drawer-btn-clear { flex: 1; padding: 14px 20px; background: transparent; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 14px; font-weight: 500; color: #64748b; cursor: pointer; transition: all 0.2s ease; }
 .drawer-btn-clear:hover { border-color: #cbd5e0; background: #f1f5f9; }
@@ -402,7 +561,7 @@ onBeforeUnmount(() => { document.removeEventListener('click', handleClickOutside
 
 /* ========== RESPONSIVE ========== */
 @media (max-width: 1200px) { .filter-content { gap: 24px; } .dropdown-button { width: 160px; padding: 7px 14px; } .filter-group::after { right: -24px; } }
-@media (max-width: 1024px) { .filter-content { gap: 20px; } .dropdown-button { width: 150px; padding: 6px 12px; font-size: 11px; } .dropdown-text { font-size: 12px; } .filter-group::after { right: -20px; font-size: 11px; } .filter-label { font-size: 13px; margin-bottom: 8px; } .variable-menu { width: 240px; } }
+@media (max-width: 1024px) { .filter-content { gap: 20px; } .dropdown-button { width: 150px; padding: 6px 12px; font-size: 11px; } .dropdown-text { font-size: 12px; } .filter-group::after { right: -20px; font-size: 11px; } .filter-label { font-size: 13px; margin-bottom: 8px; } .variable-menu { width: 240px; } .filter-tooltip { font-size: 11px; width: 200px; padding: 8px 12px; } }
 @media (max-width: 768px) { .filter-bar-container { height: 0; overflow: hidden !important; left: 0; width: 100%; } .filter-bar { display: none; } .mobile-overlay { display: block; } .mobile-drawer { display: flex; width: 105vw; height: 278vw;} }
 @media (max-width: 480px) { .drawer-header { padding: 18px 20px; } .drawer-title { font-size: 17px; } .drawer-content { padding: 20px; gap: 18px; } .drawer-dropdown-button { padding: 12px 14px; } .drawer-dropdown-text { font-size: 13px; } .drawer-footer { padding: 14px 20px; } .drawer-btn-clear, .drawer-btn-apply { padding: 12px 16px; font-size: 13px; } }
 @media (max-width: 400px) { .drawer-header { padding: 16px 18px; } .drawer-title { font-size: 16px; } .drawer-close { width: 32px; height: 32px; } .drawer-content { padding: 18px; gap: 16px; } .drawer-filter-label { font-size: 11px; } .drawer-dropdown-button { padding: 11px 12px; border-radius: 10px; } .drawer-dropdown-text { font-size: 12px; } .drawer-dropdown-option { padding: 12px 14px; font-size: 13px; } .drawer-footer { padding: 12px 18px; gap: 10px; } .drawer-btn-clear, .drawer-btn-apply { padding: 11px 14px; font-size: 12px; } }
