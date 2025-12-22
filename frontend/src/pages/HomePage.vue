@@ -1556,7 +1556,8 @@ onMounted(async () => {
   
   .charts-section {
     transform: translateX(0);
-    width: 100%;
+    width: 100% !important;
+    min-width: unset !important;
     height: auto;
     min-height: 500px;
     border-radius: 15px;
@@ -1566,8 +1567,8 @@ onMounted(async () => {
   }
   
   .charts-container {
-    width: 100%;
-    height: 100%;
+    width: 100% !important;
+    min-width: unset !important;
   }
   
   /* Cards dentro de charts */

@@ -255,7 +255,7 @@ const containerRef = ref(null)
 const dimensions = ref({ width: 800, height: 300 })
 let resizeObserver = null
 
-// ✅ NUEVO: Detectar si es móvil
+// ✅ Detectar si es móvil
 const isMobile = ref(false)
 
 const checkIsMobile = () => {
@@ -273,7 +273,7 @@ const hoverState = ref({
 })
 
 const animatingPoints = ref({})
-const padding = { top: 20, right: 25, bottom: 35, left: 75 }
+const padding = { top: 20, right: 25, bottom: 35, left: 55 }
 
 const colorPalette = ['#7cb342', '#9E9E9E', '#DC143C', '#8b5cf6', '#f59e0b', '#ec4899', '#06b6d4', '#ef4444']
 
@@ -616,18 +616,15 @@ const formatValue = (value) => {
   return `${prefix}${value.toFixed(2)}${suffix}`
 }
 
-// ✅ FUNCIÓN ACTUALIZADA: Detecta móvil y usa width del contenedor
+// ✅ FUNCIÓN ACTUALIZADA: Fuerza width del viewport en móvil
 const updateDimensions = () => {
   checkIsMobile()
-  
-  // En móvil, siempre usar el ancho del contenedor
+  // En móvil, forzar width basado en viewport
   if (isMobile.value) {
-    if (chartWrapper.value) {
-      const rect = chartWrapper.value.getBoundingClientRect()
-      dimensions.value = {
-        width: rect.width > 0 ? Math.floor(rect.width) : 350,
-        height: props.height ?? (rect.height > 0 ? Math.floor(rect.height) : 300)
-      }
+    const mobileWidth = window.innerWidth + 70 // Viewport menos márgenes
+    dimensions.value = {
+      width: mobileWidth,
+      height: props.height ?? 300
     }
     return
   }
@@ -650,7 +647,7 @@ const updateDimensions = () => {
 onMounted(async () => {
   await nextTick()
   
-  // ✅ Agregar listener para resize
+  // Listener para resize
   window.addEventListener('resize', updateDimensions)
   
   setTimeout(() => {
@@ -1107,9 +1104,16 @@ onUnmounted(() => {
 
 /* Landscape en móviles */
 @media (max-width: 768px) and (orientation: landscape) {
+  .area-chart-container {
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow: hidden !important;
+  }
+  
   .chart-wrapper {
-    overflow-x: auto;
-    overflow-y: hidden;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
   }
   
   .area-chart {
