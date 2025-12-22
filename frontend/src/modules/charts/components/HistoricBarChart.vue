@@ -140,7 +140,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 
 const props = defineProps({
   title: {
@@ -150,7 +150,6 @@ const props = defineProps({
   data: {
     type: Array,
     required: true,
-    // Estructura: [{ year: '2020', variables: [{ key, label, value, color }] }]
   },
   showFilters: {
     type: Boolean,
@@ -160,47 +159,43 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
-  // ✅ NUEVA PROP: Ocultar el header/título
   hideHeader: {
     type: Boolean,
     default: false
   },
-  // ✅ NUEVA PROP: Array de keys de variables que queremos mostrar
   visibleVariableKeys: {
     type: Array,
     default: null,
-    // Ejemplo: ['ingresos', 'gastos'] - si es null, muestra todas
   },
-  // ✅ NUEVA PROP: Configuración de variables desde archivo externo
   variablesConfig: {
     type: Object,
     default: null,
-    // Estructura: { key: { label, color, order } }
   },
-  // ✅ NUEVA PROP: Variables inicialmente activas
   initialActiveVariables: {
     type: Array,
     default: null,
-    // Ejemplo: ['ingresos', 'utilidad'] - si es null, todas activas
   }
 })
 
-// ✅ CAMBIADO: Ahora guardamos el año hovered, no la barra individual
 const hoveredYear = ref(null)
 const activeFilters = ref({})
 const tooltipPosition = ref({ x: 0, y: 0 })
 const barsContainerRef = ref(null)
-const barsContainerHeight = ref(200) // Altura por defecto
+const barsContainerHeight = ref(200)
 
-// ✅ NUEVO: Computed para obtener todas las variables activas del año hovered
+// ✅ Detectar si es móvil
+const isMobile = ref(false)
+
+const checkIsMobile = () => {
+  isMobile.value = window.innerWidth <= 768
+}
+
 const tooltipItems = computed(() => {
   if (!hoveredYear.value || !props.data) return []
   
-  // Encontrar los datos del año hovered
   const yearData = props.data.find(d => d.year === hoveredYear.value)
   if (!yearData || !yearData.variables) return []
   
-  // Filtrar solo las variables activas
   const filteredVars = getFilteredVariables(yearData)
   
   return filteredVars
@@ -213,28 +208,20 @@ const tooltipItems = computed(() => {
     }))
 })
 
-// ✅ Mapa de colores semánticos basados en el nombre/key de la variable
 const semanticColors = {
-  // Verdes - Sostenibles
   'IS': '#7cb342',
   'IS Total': '#7cb342',
   'Ingresos Sostenibles': '#7cb342',
   'PS': '#7cb342',
   'Presupuestos Sostenibles': '#7cb342',
-  
-  // Rojos - Intensivos en Carbono (principal)
   'IIC': '#DC143C',
   'IIC Total': '#DC143C',
   'PIC': '#DC143C',
   'Presupuestos Intensivos en Carbono': '#DC143C',
   'Ingresos Intensivos en Carbono': '#DC143C',
-  
-  // Variantes de rojo para IIC (como en DonutChart)
-  'IIC_H': '#8B0000',      // dark-red - Hidrocarburos
-  'IIC_M': '#DC143C',      // red - Minería
-  'IIC_T': '#FF6B6B',      // light-red - Transporte
-  
-  // Grises - Totales
+  'IIC_H': '#8B0000',
+  'IIC_M': '#DC143C',
+  'IIC_T': '#FF6B6B',
   'Financiamiento Total': '#9E9E9E',
   'Gasto Total': '#9E9E9E',
   'Ingreso Total': '#9E9E9E',
@@ -243,42 +230,33 @@ const semanticColors = {
   'PT ($)': '#9E9E9E',
 }
 
-// ✅ Función para obtener color semántico de una variable
 const getSemanticColor = (key, label, originalColor) => {
-  // Primero buscar por key exacta
   if (semanticColors[key]) {
     return semanticColors[key]
   }
   
-  // Luego buscar por label exacta
   if (semanticColors[label]) {
     return semanticColors[label]
   }
   
-  // Buscar coincidencias parciales por key
   const lowerKey = (key || '').toLowerCase()
   
-  // Patrones para verde (sostenible)
   if (lowerKey === 'is' || lowerKey.includes('is_') || lowerKey.includes('sostenible') || lowerKey === 'ps') {
     return '#7cb342'
   }
   
-  // Patrones para rojo (carbono) - variantes específicas
-  if (lowerKey === 'iic_h') return '#8B0000'      // dark-red
-  if (lowerKey === 'iic_m') return '#DC143C'      // red
-  if (lowerKey === 'iic_t') return '#FF6B6B'      // light-red
+  if (lowerKey === 'iic_h') return '#8B0000'
+  if (lowerKey === 'iic_m') return '#DC143C'
+  if (lowerKey === 'iic_t') return '#FF6B6B'
   
-  // Patrones para rojo (carbono) - general
   if (lowerKey === 'iic' || lowerKey.includes('iic') || lowerKey === 'pic' || lowerKey.includes('carbono')) {
     return '#DC143C'
   }
   
-  // Patrones para gris (totales)
   if (lowerKey.includes('total') || lowerKey.includes('gt') || lowerKey.includes('it') || lowerKey.includes('pt')) {
     return '#9E9E9E'
   }
   
-  // Buscar coincidencias parciales por label
   const lowerLabel = (label || '').toLowerCase()
   
   if (lowerLabel.includes('sostenible') || lowerLabel.includes(' is')) {
@@ -293,20 +271,17 @@ const getSemanticColor = (key, label, originalColor) => {
     return '#9E9E9E'
   }
   
-  // Fallback al color original
   return originalColor
 }
 
-// Función para actualizar posición del tooltip
 const updateTooltipPosition = (event) => {
   const rect = event.target.getBoundingClientRect()
   tooltipPosition.value = {
     x: rect.left + rect.width / 2,
-    y: rect.top - 10 // 10px arriba de la barra
+    y: rect.top - 10
   }
 }
 
-// Extraer variables únicas con configuración externa si existe
 const uniqueVariables = computed(() => {
   if (!props.data || props.data.length === 0) return []
   
@@ -315,23 +290,19 @@ const uniqueVariables = computed(() => {
     if (yearData.variables && Array.isArray(yearData.variables)) {
       yearData.variables.forEach(variable => {
         if (!variablesMap.has(variable.key)) {
-          // Si hay configuración externa, usarla
           if (props.variablesConfig && props.variablesConfig[variable.key]) {
             const config = props.variablesConfig[variable.key]
             const baseColor = config.color || variable.color
             variablesMap.set(variable.key, {
               key: variable.key,
               label: config.label || variable.label,
-              // ✅ Aplicar color semántico
               color: getSemanticColor(variable.key, config.label || variable.label, baseColor),
               order: config.order || 0
             })
           } else {
-            // Usar configuración del dato con color semántico
             variablesMap.set(variable.key, {
               key: variable.key,
               label: variable.label,
-              // ✅ Aplicar color semántico
               color: getSemanticColor(variable.key, variable.label, variable.color),
               order: 0
             })
@@ -342,36 +313,29 @@ const uniqueVariables = computed(() => {
   })
   
   const variables = Array.from(variablesMap.values())
-  
-  // Ordenar por el campo 'order' si existe
   variables.sort((a, b) => (a.order || 0) - (b.order || 0))
   
   return variables
 })
 
-// ✅ NUEVO: Variables visibles después de aplicar filtro de visibleVariableKeys
 const visibleVariables = computed(() => {
   if (!props.visibleVariableKeys || props.visibleVariableKeys.length === 0) {
     return uniqueVariables.value
   }
   
-  // Filtrar solo las variables especificadas en visibleVariableKeys
   return uniqueVariables.value.filter(variable => 
     props.visibleVariableKeys.includes(variable.key)
   )
 })
 
-// ✅ NUEVO: Función para obtener variables filtradas de un año específico
 const getFilteredVariables = (yearData) => {
   if (!yearData.variables || !Array.isArray(yearData.variables)) return []
   
-  // Si hay visibleVariableKeys, filtrar
   if (props.visibleVariableKeys && props.visibleVariableKeys.length > 0) {
     const filtered = yearData.variables.filter(v => 
       props.visibleVariableKeys.includes(v.key)
     )
     
-    // Aplicar configuración y colores semánticos
     if (props.variablesConfig) {
       return filtered.map(v => {
         const configLabel = props.variablesConfig[v.key]?.label || v.label
@@ -379,21 +343,18 @@ const getFilteredVariables = (yearData) => {
         return {
           ...v,
           label: configLabel,
-          // ✅ Aplicar color semántico
           color: getSemanticColor(v.key, configLabel, configColor),
           order: props.variablesConfig[v.key]?.order || 0
         }
       }).sort((a, b) => (a.order || 0) - (b.order || 0))
     }
     
-    // Sin configuración externa, igual aplicar colores semánticos
     return filtered.map(v => ({
       ...v,
       color: getSemanticColor(v.key, v.label, v.color)
     }))
   }
   
-  // Si no hay filtro, devolver todas aplicando configuración y colores semánticos
   if (props.variablesConfig) {
     return yearData.variables.map(v => {
       const configLabel = props.variablesConfig[v.key]?.label || v.label
@@ -401,57 +362,48 @@ const getFilteredVariables = (yearData) => {
       return {
         ...v,
         label: configLabel,
-        // ✅ Aplicar color semántico
         color: getSemanticColor(v.key, configLabel, configColor),
         order: props.variablesConfig[v.key]?.order || 0
       }
     }).sort((a, b) => (a.order || 0) - (b.order || 0))
   }
   
-  // Sin configuración, aplicar colores semánticos directamente
   return yearData.variables.map(v => ({
     ...v,
     color: getSemanticColor(v.key, v.label, v.color)
   }))
 }
 
-// ✅ MODIFICADO: Inicializar filtros con activación automática secuencial
 const autoActivationDone = ref(false)
 
 watch(visibleVariables, (newVars) => {
   newVars.forEach(variable => {
     if (!(variable.key in activeFilters.value)) {
-      // Si hay initialActiveVariables, usar ese valor
       if (props.initialActiveVariables && Array.isArray(props.initialActiveVariables)) {
         activeFilters.value[variable.key] = props.initialActiveVariables.includes(variable.key)
       } else {
-        // ✅ NUEVO: Por defecto, todas INACTIVAS
         activeFilters.value[variable.key] = false
       }
     }
   })
   
-  // ✅ NUEVO: Activar automáticamente las primeras dos variables en secuencia
   if (!autoActivationDone.value && newVars.length > 0) {
     autoActivationDone.value = true
     
-    // Activar la primera variable inmediatamente
     if (newVars[0]) {
       setTimeout(() => {
         activeFilters.value[newVars[0].key] = true
       }, 100)
     }
     
-    // Activar la segunda variable con delay
     if (newVars[1]) {
       setTimeout(() => {
         activeFilters.value[newVars[1].key] = true
-      }, 400) // 400ms después
+      }, 400)
     }
   }
 }, { immediate: true })
 
-// ✅ CÁLCULO DINÁMICO DEL MÁXIMO (barra más alta = 80% del espacio)
 const maxVisibleValue = computed(() => {
   if (!props.data || props.data.length === 0) return 100
   
@@ -469,20 +421,16 @@ const maxVisibleValue = computed(() => {
     }
   })
   
-  // Multiplicar por 1.25 para que la barra más alta ocupe 80% (100/80 = 1.25)
   return maxValue > 0 ? maxValue * 0.8 : 100
 })
 
-// ✅ CALCULAR ALTURA DE BARRA (en píxeles absolutos)
 const getBarHeight = (value) => {
   if (maxVisibleValue.value === 0) return 0
   const percentage = (value / maxVisibleValue.value) * 100
-  // Calcular píxeles basados en la altura del contenedor
   const heightInPixels = (barsContainerHeight.value * percentage) / 100
   return heightInPixels
 }
 
-// Calcular ticks del eje Y
 const yAxisTicks = computed(() => {
   const max = maxVisibleValue.value
   const step = max / 4
@@ -495,29 +443,23 @@ const yAxisTicks = computed(() => {
   ]
 })
 
-// ✅ ANCHO DINÁMICO DE BARRAS - BARRAS MÁS GRUESAS
 const barWidth = computed(() => {
   const activeCount = Object.values(activeFilters.value).filter(v => v !== false).length  
-  const totalYears = props.data?.length || 5
+  
+  // ✅ En móvil, barras más delgadas
+  if (isMobile.value) {
+    if (activeCount === 0) return 30
+    if (activeCount === 1) return 60
+    if (activeCount === 2) return 35
+    if (activeCount === 3) return 25
+    return Math.max(8, 30 / Math.sqrt(activeCount * 0.6))
+  }
   
   if (activeCount === 0) return 50
-  
-  // Caso especial: 1 sola barra activa
-  if (activeCount === 1) {
-    return 140
-  }
-  
-  // Caso especial: 2 barras activas
-  if (activeCount === 2) {
-    return 75
-  }
+  if (activeCount === 1) return 140
+  if (activeCount === 2) return 75
+  if (activeCount === 3) return 50
 
-  // Caso especial: 3 barras activas
-  if (activeCount === 3) {
-    return 50
-  }
-
-  // Para más de 3 barras, escalar proporcionalmente
   const baseWidth = 50
   const minWidth = 10
   const maxWidth = 100
@@ -527,12 +469,10 @@ const barWidth = computed(() => {
   return Math.max(minWidth, Math.min(maxWidth, calculatedWidth))
 })
 
-// Gap dinámico entre grupos de años - REDUCIDO
 const yearGroupGap = computed(() => {
   const activeCount = Object.values(activeFilters.value).filter(v => v !== false).length
   const totalVariables = visibleVariables.value.length
   
-  // Gap mínimo entre años
   if (activeCount === totalVariables && totalVariables > 0) {
     return '1px'
   }
@@ -540,12 +480,10 @@ const yearGroupGap = computed(() => {
   return '1px'
 })
 
-// Toggle filtro
 const toggleFilter = (key) => {
   activeFilters.value[key] = !activeFilters.value[key]
 }
 
-// ✅ Formatear moneda (billones, millones, miles) con espacio
 const formatCurrency = (value) => {
   if (Math.abs(value) >= 1000000000) {
     return `$${(value / 1000000000).toFixed(2)} B`
@@ -557,31 +495,54 @@ const formatCurrency = (value) => {
   return `$${value.toFixed(2)}`
 }
 
-// Actualizar altura del contenedor de barras
+// ✅ FUNCIÓN ACTUALIZADA: Altura fija en móvil para evitar loop infinito
 const updateBarsContainerHeight = () => {
+  checkIsMobile()
+  
+  // En móvil, usar altura fija para evitar loop del ResizeObserver
+  if (isMobile.value) {
+    barsContainerHeight.value = 150
+    return
+  }
+  
+  // En desktop, calcular dinámicamente
   if (barsContainerRef.value) {
-    const height = barsContainerRef.value.clientHeight - 30 // Restar padding-bottom
+    const height = barsContainerRef.value.clientHeight - 30
     if (height > 0) {
       barsContainerHeight.value = height
     }
   }
 }
 
-// Observar cambios de tamaño
+let resizeObserver = null
+
 onMounted(async () => {
   await nextTick()
+  
+  // Listener para resize
+  window.addEventListener('resize', updateBarsContainerHeight)
+  
   updateBarsContainerHeight()
   
-  // Observer para cambios de tamaño
   if (barsContainerRef.value) {
-    const resizeObserver = new ResizeObserver(() => {
-      updateBarsContainerHeight()
+    resizeObserver = new ResizeObserver(() => {
+      // Solo actualizar si NO es móvil (evita loop)
+      if (!isMobile.value) {
+        updateBarsContainerHeight()
+      }
     })
     resizeObserver.observe(barsContainerRef.value)
   }
 })
 
-// Actualizar cuando cambien los datos
+onUnmounted(() => {
+  window.removeEventListener('resize', updateBarsContainerHeight)
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+    resizeObserver = null
+  }
+})
+
 watch(() => props.data, () => {
   nextTick(() => {
     updateBarsContainerHeight()
@@ -675,7 +636,7 @@ watch(() => props.data, () => {
   transform: scale(1.05);
 }
 
-/* ✅ LEYENDA EN GRIS */
+/* LEYENDA EN GRIS */
 .currency-legend {
   font-size: 11px;
   font-style: italic;
@@ -686,7 +647,7 @@ watch(() => props.data, () => {
   padding-left: 8px;
 }
 
-/* ✅ ÁREA DEL GRÁFICO CON MÁS ESPACIO */
+/* ÁREA DEL GRÁFICO */
 .chart-area {
   margin-top: 8px;
   padding-top: 20px;
@@ -700,7 +661,7 @@ watch(() => props.data, () => {
   align-self: stretch;
 }
 
-/* ✅ EJE Y CON MÁS ESPACIO */
+/* EJE Y */
 .y-axis {
   width: 70px;
   position: relative;
@@ -729,12 +690,12 @@ watch(() => props.data, () => {
   display: none; 
 }
 
-/* ✅ CONTENEDOR DE BARRAS */
+/* CONTENEDOR DE BARRAS */
 .bars-container {
   flex: 1;
   max-width: 100%;
   display: flex;
-  align-items: stretch;
+  align-items: flex-end;
   overflow-x: visible;
   overflow-y: visible;
   position: relative;
@@ -742,7 +703,7 @@ watch(() => props.data, () => {
   z-index: 2;
 }
 
-/* ✅ GRUPO DE AÑO */
+/* GRUPO DE AÑO */
 .year-group {
   display: flex;
   flex-direction: column;
@@ -755,7 +716,7 @@ watch(() => props.data, () => {
   min-width: 0;
 }
 
-/* ✅ WRAPPER DE BARRAS - CRÍTICO */
+/* WRAPPER DE BARRAS */
 .bars-wrapper {
   display: flex;
   gap: 1px;
@@ -767,7 +728,7 @@ watch(() => props.data, () => {
   min-width: 0;
 }
 
-/* ✅ ITEM DE BARRA */
+/* ITEM DE BARRA */
 .bar-item {
   display: flex;
   flex-direction: column;
@@ -778,7 +739,7 @@ watch(() => props.data, () => {
   overflow: visible;
 }
 
-/* ✅ BARRA CON ANIMACIÓN */
+/* BARRA CON ANIMACIÓN */
 .bar {
   min-height: 2px;
   border-radius: 4px 4px 0 0;
@@ -798,7 +759,7 @@ watch(() => props.data, () => {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
-/* ✅ Tooltip con estilo igual a StackedArea */
+/* Tooltip */
 .tooltip-container {
   position: fixed;
   transform: translate(-50%, calc(-100% - 15px));
@@ -874,7 +835,7 @@ watch(() => props.data, () => {
   margin: 4px 0;
 }
 
-/* ✅ ETIQUETAS DE AÑOS DEBAJO DEL GRÁFICO */
+/* ETIQUETAS DE AÑOS */
 .x-axis-labels-container {
   width: 100%;
   display: flex;
@@ -922,5 +883,381 @@ watch(() => props.data, () => {
   right: 0;
   height: 1px;
   background-color: #e0e0e0;
+}
+
+/* ============================================
+   RESPONSIVE - Media Queries
+   ============================================ */
+
+/* Tablets */
+@media (max-width: 768px) {
+  .bar-chart-container {
+    padding: 10px;
+    border-radius: 6px;
+  }
+  
+  .chart-title-section {
+    margin-bottom: 8px;
+  }
+  
+  .chart-title {
+    font-size: 12px;
+  }
+  
+  .filters-wrapper {
+    padding: 4px;
+    margin-bottom: 3px;
+    border-radius: 16px;
+  }
+  
+  .filters-section {
+    gap: 3px;
+  }
+  
+  .filter-btn {
+    padding: 4px 10px;
+    font-size: 10px;
+    border-radius: 12px;
+    gap: 4px;
+  }
+  
+  .btn-color-dot {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .currency-legend {
+    font-size: 9px;
+    margin-bottom: 8px;
+    padding-left: 6px;
+  }
+  
+  .chart-area {
+    margin-top: 6px;
+    padding-top: 15px;
+    height: 200px;
+    min-height: 200px;
+    max-height: 200px;
+    flex: none;
+  }
+  
+  .bars-container {
+    height: 100%;
+    max-height: 180px;
+    align-items: flex-end !important;
+  }
+  
+  .bars-wrapper {
+    align-items: flex-end !important;
+    justify-content: center;
+  }
+  
+  .bar-item {
+    justify-content: flex-end !important;
+    align-items: center;
+  }
+  
+  .year-group {
+    justify-content: flex-end !important;
+  }
+  
+  .y-axis {
+    width: 50px;
+  }
+  
+  .tick-label {
+    font-size: 9px;
+    width: 45px;
+    padding-right: 6px;
+  }
+  
+  .grid-lines {
+    left: 50px;
+  }
+  
+  .bar {
+    border-radius: 3px 3px 0 0;
+  }
+  
+  .x-axis-labels-container {
+    height: 25px;
+    margin-top: 6px;
+  }
+  
+  .x-axis-spacer {
+    width: 50px;
+  }
+  
+  .year-label {
+    font-size: 9px;
+  }
+  
+  .tooltip-container {
+    padding: 10px 12px;
+    min-width: 160px;
+    border-radius: 6px;
+  }
+  
+  .tooltip-header {
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+  }
+  
+  .tooltip-year-label {
+    font-size: 12px;
+  }
+  
+  .tooltip-content {
+    gap: 4px;
+  }
+  
+  .tooltip-item {
+    font-size: 11px;
+    gap: 6px;
+  }
+  
+  .tooltip-color-indicator {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .tooltip-separator {
+    margin: 3px 0;
+  }
+  
+  .tooltip-container::after {
+    border-width: 6px;
+  }
+}
+
+/* Móviles pequeños */
+@media (max-width: 480px) {
+  .bar-chart-container {
+    padding: 8px;
+    border-radius: 5px;
+  }
+  
+  .chart-title-section {
+    margin-bottom: 6px;
+  }
+  
+  .chart-title {
+    font-size: 10px;
+  }
+  
+  .filters-wrapper {
+    padding: 3px;
+    margin-bottom: 2px;
+    border-radius: 14px;
+  }
+  
+  .filters-section {
+    gap: 2px;
+  }
+  
+  .filter-btn {
+    padding: 3px 7px;
+    font-size: 8px;
+    border-radius: 10px;
+    gap: 3px;
+  }
+  
+  .btn-color-dot {
+    width: 5px;
+    height: 5px;
+  }
+  
+  .currency-legend {
+    font-size: 7px;
+    margin-bottom: 6px;
+    padding-left: 4px;
+  }
+  
+  .chart-area {
+    margin-top: 4px;
+    padding-top: 10px;
+    height: 180px;
+    min-height: 180px;
+    max-height: 180px;
+    flex: none;
+  }
+  
+  .bars-container {
+    height: 100%;
+    max-height: 160px;
+    align-items: flex-end !important;
+  }
+  
+  .bars-wrapper {
+    align-items: flex-end !important;
+    justify-content: center;
+  }
+  
+  .bar-item {
+    justify-content: flex-end !important;
+    align-items: center;
+  }
+  
+  .year-group {
+    justify-content: flex-end !important;
+  }
+  
+  .y-axis {
+    width: 40px;
+  }
+  
+  .tick-label {
+    font-size: 7px;
+    width: 36px;
+    padding-right: 4px;
+  }
+  
+  .grid-lines {
+    left: 40px;
+  }
+  
+  .bar {
+    border-radius: 2px 2px 0 0;
+  }
+  
+  .x-axis-labels-container {
+    height: 20px;
+    margin-top: 4px;
+  }
+  
+  .x-axis-spacer {
+    width: 40px;
+  }
+  
+  .year-label {
+    font-size: 7px;
+  }
+  
+  .tooltip-container {
+    padding: 8px 10px;
+    min-width: 130px;
+    border-radius: 5px;
+  }
+  
+  .tooltip-header {
+    margin-bottom: 6px;
+    padding-bottom: 5px;
+  }
+  
+  .tooltip-year-label {
+    font-size: 10px;
+  }
+  
+  .tooltip-content {
+    gap: 3px;
+  }
+  
+  .tooltip-item {
+    font-size: 9px;
+    gap: 5px;
+  }
+  
+  .tooltip-color-indicator {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .tooltip-separator {
+    margin: 2px 0;
+  }
+  
+  .tooltip-container::after {
+    border-width: 5px;
+  }
+}
+
+/* Landscape en móviles */
+@media (max-width: 768px) and (orientation: landscape) {
+  .bar-chart-container {
+    padding: 6px;
+  }
+  
+  .chart-title {
+    font-size: 10px;
+  }
+  
+  .filters-wrapper {
+    padding: 3px;
+    margin-bottom: 2px;
+  }
+  
+  .filter-btn {
+    padding: 3px 8px;
+    font-size: 8px;
+  }
+  
+  .currency-legend {
+    font-size: 7px;
+    margin-bottom: 4px;
+  }
+  
+  .chart-area {
+    margin-top: 4px;
+    padding-top: 8px;
+    height: 150px;
+    min-height: 150px;
+    max-height: 150px;
+  }
+  
+  .bars-container {
+    max-height: 130px;
+    align-items: flex-end !important;
+  }
+  
+  .bars-wrapper {
+    align-items: flex-end !important;
+  }
+  
+  .bar-item {
+    justify-content: flex-end !important;
+  }
+  
+  .year-group {
+    justify-content: flex-end !important;
+  }
+  
+  .y-axis {
+    width: 45px;
+  }
+  
+  .tick-label {
+    font-size: 7px;
+    width: 40px;
+  }
+  
+  .grid-lines {
+    left: 45px;
+  }
+  
+  .x-axis-labels-container {
+    height: 18px;
+    margin-top: 4px;
+  }
+  
+  .x-axis-spacer {
+    width: 45px;
+  }
+  
+  .year-label {
+    font-size: 7px;
+  }
+  
+  .tooltip-container {
+    padding: 6px 8px;
+    min-width: 120px;
+  }
+  
+  .tooltip-year-label {
+    font-size: 9px;
+  }
+  
+  .tooltip-item {
+    font-size: 8px;
+  }
 }
 </style>
