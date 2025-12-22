@@ -126,7 +126,7 @@
         <!-- PS Bar Chart Card --> 
         <div v-if="shouldShowCard('PS')" class="chart-card PS-anual-bar-chart" :class="{ 'full-width': isOnlyCardInRow('PS', 'row4') }">
           <div class="chart-card-header">
-            <h4 class="card-title">Análisis histórico de componentes de Presupuestos Sostenibles</h4>
+            <h4 class="card-title">Análisis histórico de componentes de Presupuestos Sostenibles (PS)</h4>
           </div>
           <div class="chart-card-body">
             <HistoricBarChart
@@ -669,5 +669,169 @@ onMounted(async () => {
 /* ✅ Clase para cuando una card está sola en su row */
 .chart-card.full-width {
   width: 100% !important;
+}
+/* ============================================
+   RESPONSIVE - Media Queries para HistoricalCard.vue
+   (Agregar al final del <style scoped>)
+   ============================================ */
+
+/* Tablets */
+@media (max-width: 768px) {
+  .ifss-slider-container {
+    padding: 8px;
+    border-radius: 10px;
+    gap: 6px;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+  
+  .historic-table {
+    gap: 6px;
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  /* Rows pasan a columna */
+  .row-1, .row-2, .row-3, .row-4 {
+    flex-direction: column;
+    height: auto;
+    gap: 6px;
+    width: 100%;
+  }
+  
+  /* Cards ocupan todo el ancho */
+  .IS-anual-linear-chart,
+  .IIC-anual-linear-chart,
+  .IIC-anual-bar-chart,
+  .IS-anual-bar-chart,
+  .PIC-anual-bar-chart,
+  .PS-anual-bar-chart,
+  .PS-PIC-anual-linear-chart {
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  /* Altura mínima para cada card */
+  .chart-card {
+    min-height: 280px;
+    padding: 6px;
+    border-radius: 10px;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+  
+  .chart-card-header {
+    padding: 3px 6px;
+    margin-bottom: 4px;
+  }
+  
+  .card-title {
+    font-size: 11px;
+    line-height: 1.3;
+  }
+  
+  .chart-card-body {
+    border-radius: 5px;
+    min-height: 220px;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+  }
+}
+
+/* Móviles pequeños */
+@media (max-width: 480px) {
+  .ifss-slider-container {
+    padding: 6px;
+    border-radius: 8px;
+    gap: 5px;
+  }
+  
+  .historic-table {
+    gap: 5px;
+  }
+  
+  .row-1, .row-2, .row-3, .row-4 {
+    gap: 5px;
+  }
+  
+  .chart-card {
+    min-height: 250px;
+    padding: 5px;
+    border-radius: 8px;
+  }
+  
+  .chart-card-header {
+    padding: 2px 5px;
+    margin-bottom: 3px;
+    border-bottom-width: 1px;
+  }
+  
+  .card-title {
+    font-size: 10px;
+    line-height: 1.2;
+  }
+  
+  .chart-card-body {
+    border-radius: 4px;
+    min-height: 200px;
+  }
+}
+
+/* Landscape en móviles */
+@media (max-width: 768px) and (orientation: landscape) {
+  .ifss-slider-container {
+    padding: 5px;
+  }
+  
+  .historic-table {
+    gap: 4px;
+  }
+  
+  /* En landscape, volver a poner 2 cards por fila si hay espacio */
+  .row-1, .row-2, .row-4 {
+    flex-direction: row;
+    gap: 4px;
+  }
+  
+  .IS-anual-linear-chart,
+  .IIC-anual-linear-chart,
+  .IIC-anual-bar-chart,
+  .IS-anual-bar-chart,
+  .PIC-anual-bar-chart,
+  .PS-anual-bar-chart {
+    width: 50%;
+  }
+  
+  /* Excepto cuando está sola (full-width) */
+  .chart-card.full-width {
+    width: 100% !important;
+  }
+  
+  /* Row 3 siempre full width */
+  .row-3 {
+    flex-direction: column;
+  }
+  
+  .PS-PIC-anual-linear-chart {
+    width: 100%;
+  }
+  
+  .chart-card {
+    min-height: 200px;
+    padding: 4px;
+  }
+  
+  .card-title {
+    font-size: 9px;
+  }
+  
+  .chart-card-body {
+    min-height: 160px;
+  }
 }
 </style>
