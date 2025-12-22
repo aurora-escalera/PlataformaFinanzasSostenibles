@@ -6,30 +6,40 @@
       <div class="toggle-section">
         <span class="toggle-label">Vista:</span>
         <div class="toggle-buttons">
-          <button
-            :class="['toggle-btn', { active: isFederalActive }]"
-            @click="handleFederalClick"
-          >
-            <svg class="toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span class="btn-text-full">Datos Regionales</span>
-            <span class="btn-text-short">Regionales</span>
-          </button>
+          <div class="toggle-btn-wrapper">
+            <button
+              :class="['toggle-btn', { active: isFederalActive }]"
+              @click="handleFederalClick"
+            >
+              <svg class="toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span class="btn-text-full">Datos Regionales</span>
+              <span class="btn-text-short">Regionales</span>
+            </button>
+            <span class="custom-tooltip">Da clic aquí para ver la vista de datos regionales</span>
+          </div>
           
-          <button
-            :class="['toggle-btn', { active: isSubnacionalActive }]"
-            @click="handleSubnacionalClick"
-          >
-            <svg class="toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-            </svg>
-            <span class="btn-text-full">Datos Subnacionales</span>
-            <span class="btn-text-short">Subnacionales</span>
-          </button>
+          <div class="toggle-btn-wrapper">
+            <button
+              :class="['toggle-btn', { active: isSubnacionalActive }]"
+              @click="handleSubnacionalClick"
+            >
+              <svg class="toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+              </svg>
+              <span class="btn-text-full">Datos Subnacionales</span>
+              <span class="btn-text-short">Subnacionales</span>
+            </button>
+            <span class="custom-tooltip">Da clic aquí para ver la vista de datos subnacionales</span>
+          </div>
         </div>
+      </div>
+
+      <!-- Contenedor derecho: Moneda + Descargas + Filtros (móvil) -->
+      <div class="right-section">
         
-        <!-- Indicador Moneda (se muestra aquí en móvil) -->
+        <!-- Indicador Moneda - MOVIDO AQUÍ -->
         <div class="currency-section">
           <span class="currency-label">Moneda:</span>
           <span class="currency-label-mobile">Currency:</span>
@@ -41,10 +51,6 @@
             <span class="currency-code">({{ currencyCode }})</span>
           </div>
         </div>
-      </div>
-
-      <!-- Contenedor derecho: Descargas + Filtros (móvil) -->
-      <div class="right-section">
 
         <!-- SECCIÓN: Descargas -->
         <div class="downloads-section" ref="downloadsRef">
@@ -74,11 +80,7 @@
 
               <div class="dropdown-menu-items">
                 <!-- 1. Datos Regionales -->
-                <div 
-                  class="menu-item"
-                  @mouseenter="activeSubmenu = 'regional'"
-                  @mouseleave="activeSubmenu = null"
-                >
+                <div class="menu-item" @mouseenter="activeSubmenu = 'regional'" @mouseleave="activeSubmenu = null">
                   <div class="menu-item-content">
                     <svg class="menu-arrow-left" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -93,23 +95,13 @@
                       <span class="menu-desc">IFS, Ingresos y Presupuestos por año</span>
                     </div>
                   </div>
-                  
-                  <!-- Submenú Regional -->
                   <transition name="submenu-fade">
                     <div v-if="activeSubmenu === 'regional'" class="submenu submenu-left">
-                      <button 
-                        class="submenu-item" 
-                        @click="handleDownload('regional', 'xlsx')" 
-                        :disabled="isExporting"
-                      >
+                      <button class="submenu-item" @click="handleDownload('regional', 'xlsx')" :disabled="isExporting">
                         <span class="format-badge xlsx">XLS</span>
                         <span>Descargar Excel</span>
                       </button>
-                      <button 
-                        class="submenu-item" 
-                        @click="handleDownload('regional', 'csv')" 
-                        :disabled="isExporting"
-                      >
+                      <button class="submenu-item" @click="handleDownload('regional', 'csv')" :disabled="isExporting">
                         <span class="format-badge csv">CSV</span>
                         <span>Descargar CSV</span>
                       </button>
@@ -117,12 +109,8 @@
                   </transition>
                 </div>
 
-                <!-- 2. Datos Subnacionales (con años dinámicos) -->
-                <div 
-                  class="menu-item"
-                  @mouseenter="activeSubmenu = 'subnacional'"
-                  @mouseleave="handleSubnacionalMouseLeave"
-                >
+                <!-- 2. Datos Subnacionales -->
+                <div class="menu-item" @mouseenter="activeSubmenu = 'subnacional'" @mouseleave="handleSubnacionalMouseLeave">
                   <div class="menu-item-content">
                     <svg class="menu-arrow-left" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -134,37 +122,18 @@
                     </div>
                     <div class="menu-text">
                       <span class="menu-title">Datos Subnacionales</span>
-                      <span class="menu-desc">
-                        {{ loadingYears ? 'Cargando años...' : `${availableYears.length} año(s) disponible(s)` }}
-                      </span>
+                      <span class="menu-desc">{{ loadingYears ? 'Cargando años...' : `${availableYears.length} año(s) disponible(s)` }}</span>
                     </div>
                   </div>
-                  
-                  <!-- Submenú Subnacional: Lista de años dinámicos -->
                   <transition name="submenu-fade">
-                    <div 
-                      v-if="activeSubmenu === 'subnacional'" 
-                      class="submenu submenu-left submenu-years"
-                      @mouseenter="keepSubnacionalOpen = true"
-                      @mouseleave="keepSubnacionalOpen = false"
-                    >
+                    <div v-if="activeSubmenu === 'subnacional'" class="submenu submenu-left submenu-years" @mouseenter="keepSubnacionalOpen = true" @mouseleave="keepSubnacionalOpen = false">
                       <div class="submenu-header">Seleccionar año</div>
-                      
-                      <!-- Loading state -->
                       <div v-if="loadingYears" class="submenu-loading">
                         <div class="spinner-tiny"></div>
                         <span>Cargando años...</span>
                       </div>
-                      
-                      <!-- Lista de años -->
                       <template v-else>
-                        <div 
-                          v-for="year in availableYears" 
-                          :key="year"
-                          class="year-item"
-                          @mouseenter="activeYearSubmenu = year"
-                          @mouseleave="activeYearSubmenu = null"
-                        >
+                        <div v-for="year in availableYears" :key="year" class="year-item" @mouseenter="activeYearSubmenu = year" @mouseleave="activeYearSubmenu = null">
                           <div class="year-item-content">
                             <svg class="year-arrow-left" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -174,48 +143,29 @@
                             </svg>
                             <span>{{ year }}</span>
                           </div>
-
-                          <!-- Sub-submenú: Formatos -->
                           <transition name="submenu-fade">
                             <div v-if="activeYearSubmenu === year" class="submenu-formats submenu-formats-left">
-                              <button 
-                                class="submenu-item" 
-                                @click="handleDownload('subnacional', 'xlsx', { year })" 
-                                :disabled="isExporting"
-                              >
+                              <button class="submenu-item" @click="handleDownload('subnacional', 'xlsx', { year })" :disabled="isExporting">
                                 <span class="format-badge xlsx">XLS</span>
                                 <span>Descargar Excel</span>
                               </button>
-                              <button 
-                                class="submenu-item" 
-                                @click="handleDownload('subnacional', 'csv', { year })" 
-                                :disabled="isExporting"
-                              >
+                              <button class="submenu-item" @click="handleDownload('subnacional', 'csv', { year })" :disabled="isExporting">
                                 <span class="format-badge csv">CSV</span>
                                 <span>Descargar CSV</span>
                               </button>
                             </div>
                           </transition>
                         </div>
-                        
-                        <!-- Mensaje si no hay años -->
-                        <div v-if="availableYears.length === 0" class="submenu-empty">
-                          No hay años disponibles
-                        </div>
+                        <div v-if="availableYears.length === 0" class="submenu-empty">No hay años disponibles</div>
                       </template>
                     </div>
                   </transition>
                 </div>
 
-                <!-- Separador -->
                 <div class="menu-divider"></div>
 
-                <!-- 3. Reporte Completo (con submenú para formato) -->
-                <div 
-                  class="menu-item menu-item-highlight"
-                  @mouseenter="activeSubmenu = 'completo'"
-                  @mouseleave="activeSubmenu = null"
-                >
+                <!-- 3. Reporte Completo -->
+                <div class="menu-item menu-item-highlight" @mouseenter="activeSubmenu = 'completo'" @mouseleave="activeSubmenu = null">
                   <div class="menu-item-content">
                     <svg class="menu-arrow-left" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -230,23 +180,13 @@
                       <span class="menu-desc">Regional + Subnacional (todos los años)</span>
                     </div>
                   </div>
-
-                  <!-- Submenú Reporte Completo -->
                   <transition name="submenu-fade">
                     <div v-if="activeSubmenu === 'completo'" class="submenu submenu-left">
-                      <button 
-                        class="submenu-item" 
-                        @click="handleDownload('completo', 'xlsx')" 
-                        :disabled="isExporting"
-                      >
+                      <button class="submenu-item" @click="handleDownload('completo', 'xlsx')" :disabled="isExporting">
                         <span class="format-badge xlsx">XLS</span>
                         <span>Descargar Excel</span>
                       </button>
-                      <button 
-                        class="submenu-item" 
-                        @click="handleDownload('completo', 'csv')" 
-                        :disabled="isExporting"
-                      >
+                      <button class="submenu-item" @click="handleDownload('completo', 'csv')" :disabled="isExporting">
                         <span class="format-badge csv">CSV</span>
                         <span>Descargar CSV</span>
                       </button>
@@ -255,21 +195,16 @@
                 </div>
               </div>
 
-              <!-- Loading indicator -->
               <div v-if="isExporting" class="export-loading">
                 <div class="spinner-small"></div>
                 <span>{{ exportProgress || 'Generando archivo...' }}</span>
               </div>
-
-              <!-- Error indicator -->
               <div v-if="exportError" class="export-error">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <span>{{ exportError }}</span>
               </div>
-
-              <!-- Success indicator -->
               <div v-if="showSuccess" class="export-success">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
@@ -281,10 +216,7 @@
         </div>
 
         <!-- Botón Filtros (SOLO MÓVIL) -->
-        <button 
-          class="filter-btn-mobile"
-          @click="$emit('open-filters')"
-        >
+        <button class="filter-btn-mobile" @click="$emit('open-filters')">
           <svg class="filter-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
           </svg>
@@ -302,65 +234,22 @@ import { useDataToggle } from '@/composables/useDataToggle'
 import { useYearFilter } from '@/composables/useYearFilter'
 import { useDownloadCenter } from '@/composables/useDownloadCenter'
 
-// ============================================================================
-// COMPOSABLES
-// ============================================================================
-const { 
-  isSubnacionalActive, 
-  isFederalActive,
-  setDataType,
-  setCurrency,
-  getSubnacionalClickFilters,
-  getFederalClickFilters
-} = useDataToggle()
+const { isSubnacionalActive, isFederalActive, setDataType, setCurrency, getSubnacionalClickFilters, getFederalClickFilters } = useDataToggle()
+const { availableYears: yearsFromComposable, loadingYears, fetchAvailableYears } = useYearFilter()
+const { handleDownload: executeDownload, isExporting: downloadExporting, exportError: downloadError, exportProgress: downloadProgress } = useDownloadCenter()
 
-const {
-  availableYears: yearsFromComposable,
-  loadingYears,
-  fetchAvailableYears
-} = useYearFilter()
-
-const {
-  handleDownload: executeDownload,
-  isExporting: downloadExporting,
-  exportError: downloadError,
-  exportProgress: downloadProgress
-} = useDownloadCenter()
-
-// ============================================================================
-// COMPUTED: Años disponibles
-// ============================================================================
 const availableYears = computed(() => {
   const years = yearsFromComposable.value || []
   return [...years].sort((a, b) => Number(b) - Number(a))
 })
 
-// ============================================================================
-// PROPS & EMITS
-// ============================================================================
 defineProps({
-  modelValue: {
-    type: String,
-    default: 'subnacional',
-    validator: (value) => ['regional', 'subnacional', 'federal'].includes(value)
-  },
-  activeFiltersCount: {
-    type: Number,
-    default: 0
-  }
+  modelValue: { type: String, default: 'subnacional', validator: (value) => ['regional', 'subnacional', 'federal'].includes(value) },
+  activeFiltersCount: { type: Number, default: 0 }
 })
 
-const emit = defineEmits([
-  'update:modelValue',
-  'click-federal',
-  'click-subnacional',
-  'download-request',
-  'open-filters'
-])
+const emit = defineEmits(['update:modelValue', 'click-federal', 'click-subnacional', 'download-request', 'open-filters'])
 
-// ============================================================================
-// STATE
-// ============================================================================
 const showDownloadsMenu = ref(false)
 const activeSubmenu = ref(null)
 const activeYearSubmenu = ref(null)
@@ -371,17 +260,10 @@ const exportError = ref(null)
 const exportProgress = ref('')
 const showSuccess = ref(false)
 
-// ============================================================================
-// COMPUTED
-// ============================================================================
 const currencyCode = computed(() => isFederalActive.value ? 'USD' : 'MXN')
 const currencyName = computed(() => isFederalActive.value ? 'Dólares estadounidenses' : 'Pesos mexicanos')
 
-// ============================================================================
-// HANDLERS - Toggle
-// ============================================================================
 const handleFederalClick = () => {
-  console.log('🔘 [Toggle] Click en "Datos Regionales"')
   const filters = getFederalClickFilters()
   setDataType('federal')
   setCurrency('usd')
@@ -390,7 +272,6 @@ const handleFederalClick = () => {
 }
 
 const handleSubnacionalClick = () => {
-  console.log('🔘 [Toggle] Click en "Datos Subnacionales"')
   const filters = getSubnacionalClickFilters()
   setDataType('subnacional')
   setCurrency('mxn')
@@ -398,17 +279,11 @@ const handleSubnacionalClick = () => {
   emit('click-subnacional', filters)
 }
 
-// ============================================================================
-// HANDLERS - Descargas
-// ============================================================================
 const toggleDownloadsMenu = async () => {
   showDownloadsMenu.value = !showDownloadsMenu.value
-  
   if (showDownloadsMenu.value) {
     if (availableYears.value.length === 0 && !loadingYears.value) {
-      console.log('📥 [Downloads] Cargando años disponibles...')
       await fetchAvailableYears()
-      console.log('📥 [Downloads] Años cargados:', availableYears.value)
     }
   } else {
     activeSubmenu.value = null
@@ -434,8 +309,6 @@ const handleSubnacionalMouseLeave = () => {
 }
 
 const handleDownload = async (viewType, format, options = {}) => {
-  console.log(`📥 [Toggle] Iniciando descarga: ${viewType} - ${format}`, options)
-  
   isExporting.value = true
   exportError.value = null
   exportProgress.value = 'Preparando descarga...'
@@ -443,36 +316,20 @@ const handleDownload = async (viewType, format, options = {}) => {
   
   try {
     const success = await executeDownload(viewType, format, options)
-    
     if (success) {
-      console.log('✅ [Toggle] Descarga iniciada correctamente')
       showSuccess.value = true
-      
-      setTimeout(() => {
-        showSuccess.value = false
-      }, 2000)
+      setTimeout(() => { showSuccess.value = false }, 2000)
     } else {
-      console.error('❌ [Toggle] Error en la descarga:', downloadError.value)
       exportError.value = downloadError.value || 'Error al iniciar la descarga'
-      
-      setTimeout(() => {
-        exportError.value = null
-      }, 4000)
+      setTimeout(() => { exportError.value = null }, 4000)
     }
-    
     emit('download-request', { viewType, format, options, success })
-    
   } catch (err) {
-    console.error('❌ [Toggle] Error inesperado:', err)
     exportError.value = err.message || 'Error inesperado'
-    
-    setTimeout(() => {
-      exportError.value = null
-    }, 4000)
+    setTimeout(() => { exportError.value = null }, 4000)
   } finally {
     isExporting.value = false
     exportProgress.value = ''
-    
     setTimeout(() => {
       showDownloadsMenu.value = false
       activeSubmenu.value = null
@@ -481,15 +338,9 @@ const handleDownload = async (viewType, format, options = {}) => {
   }
 }
 
-// ============================================================================
-// LIFECYCLE
-// ============================================================================
 onMounted(async () => {
   document.addEventListener('click', handleClickOutside)
-  
-  console.log('📅 [DataViewToggleBar] Cargando años disponibles...')
   await fetchAvailableYears()
-  console.log('📅 [DataViewToggleBar] Años cargados:', availableYears.value)
 })
 
 onUnmounted(() => {
@@ -533,8 +384,64 @@ onUnmounted(() => {
   display: flex;
   border: 1px solid #d1d5db;
   border-radius: 8px;
-  overflow: hidden;
+  overflow: visible;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* ============================================
+   WRAPPER PARA TOOLTIP PERSONALIZADO
+   ============================================ */
+.toggle-btn-wrapper {
+  position: relative;
+  display: inline-flex;
+}
+
+.toggle-btn-wrapper:first-child .toggle-btn {
+  border-right: 1px solid #d1d5db;
+  border-radius: 8px 0 0 8px;
+}
+
+.toggle-btn-wrapper:last-child .toggle-btn {
+  border-radius: 0 8px 8px 0;
+}
+
+/* ============================================
+   TOOLTIP PERSONALIZADO
+   ============================================ */
+.custom-tooltip {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1e3a5f;
+  color: white;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(30, 58, 95, 0.3);
+  pointer-events: none;
+}
+
+.custom-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #1e3a5f;
+}
+
+.toggle-btn-wrapper:hover .custom-tooltip {
+  opacity: 1;
+  visibility: visible;
+  bottom: calc(100% + 12px);
 }
 
 .toggle-btn {
@@ -558,10 +465,6 @@ onUnmounted(() => {
 .toggle-btn.active {
   background-color: #1e3a5f;
   color: #ffffff;
-}
-
-.toggle-btn:first-child {
-  border-right: 1px solid #d1d5db;
 }
 
 .toggle-icon {
@@ -588,7 +491,7 @@ onUnmounted(() => {
   margin-left: auto;
 }
 
-/* Currency */
+/* Currency - AHORA EN RIGHT-SECTION */
 .currency-section {
   display: flex;
   align-items: center;
@@ -1122,6 +1025,11 @@ onUnmounted(() => {
     padding: 8px 14px;
     font-size: 14px;
   }
+  
+  .custom-tooltip {
+    font-size: 12px;
+    padding: 8px 12px;
+  }
 }
 
 /* ============================================
@@ -1173,6 +1081,11 @@ onUnmounted(() => {
     width: 16px;
     height: 16px;
   }
+  
+  .custom-tooltip {
+    font-size: 11px;
+    padding: 7px 10px;
+  }
 }
 
 /* ============================================
@@ -1181,6 +1094,7 @@ onUnmounted(() => {
 @media (max-width: 768px) {
   .toggle-bar {
     padding: 12px 16px;
+    position: relative;
   }
   
   .toggle-bar-content {
@@ -1220,12 +1134,19 @@ onUnmounted(() => {
     display: inline;
   }
   
-  /* Currency en móvil - se queda en toggle-section */
+  /* Ocultar tooltip en móvil */
+  .custom-tooltip {
+    display: none;
+  }
+  
+  /* Currency en móvil - posición absoluta arriba a la derecha */
   .currency-section {
+    position: absolute;
+    top: 12px;
+    right: 16px;
     display: flex;
     align-items: center;
     gap: 6px;
-    margin-left: auto;
   }
   
   .currency-label {
