@@ -126,7 +126,7 @@
         <!-- PS Bar Chart Card --> 
         <div v-if="shouldShowCard('PS')" class="chart-card PS-anual-bar-chart" :class="{ 'full-width': isOnlyCardInRow('PS', 'row4') }">
           <div class="chart-card-header">
-            <h4 class="card-title">Análisis histórico de componentes de Presupuestos Sostenibles</h4>
+            <h4 class="card-title">Análisis histórico de componentes de Presupuestos Sostenibles (PS)</h4>
           </div>
           <div class="chart-card-body">
             <HistoricBarChart
@@ -681,10 +681,16 @@ onMounted(async () => {
     padding: 8px;
     border-radius: 10px;
     gap: 6px;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
   }
   
   .historic-table {
     gap: 6px;
+    width: 100%;
+    max-width: 100%;
   }
   
   /* Rows pasan a columna */
@@ -692,6 +698,7 @@ onMounted(async () => {
     flex-direction: column;
     height: auto;
     gap: 6px;
+    width: 100%;
   }
   
   /* Cards ocupan todo el ancho */
@@ -700,8 +707,10 @@ onMounted(async () => {
   .IIC-anual-bar-chart,
   .IS-anual-bar-chart,
   .PIC-anual-bar-chart,
-  .PS-anual-bar-chart {
+  .PS-anual-bar-chart,
+  .PS-PIC-anual-linear-chart {
     width: 100%;
+    max-width: 100%;
   }
   
   /* Altura mínima para cada card */
@@ -709,6 +718,10 @@ onMounted(async () => {
     min-height: 280px;
     padding: 6px;
     border-radius: 10px;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
   }
   
   .chart-card-header {
@@ -724,6 +737,9 @@ onMounted(async () => {
   .chart-card-body {
     border-radius: 5px;
     min-height: 220px;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
   }
 }
 
@@ -818,5 +834,4 @@ onMounted(async () => {
     min-height: 160px;
   }
 }
-
 </style>
