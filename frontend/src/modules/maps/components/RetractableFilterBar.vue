@@ -429,11 +429,13 @@ onBeforeUnmount(() => { document.removeEventListener('click', handleClickOutside
 .dropdown-arrow { font-size: 12px; transition: transform 0.2s ease; color: #718096; }
 .dropdown-button.active .dropdown-arrow { transform: rotate(180deg); }
 .dropdown-menu { position: absolute; top: 100%; left: 0; width: 100%; background: white; border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.15); margin-top: 8px; overflow: hidden; animation: dropdownFadeIn 0.2s ease; z-index: 1000; }
+.variable-menu { overflow: visible !important; }
 @keyframes dropdownFadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 .dropdown-search { padding: 8px; border-bottom: 1px solid #e2e8f0; }
 .search-input { width: 100%; padding: 6px 10px; border: 1px solid #e2e8f0; border-radius: 6px; outline: none; font-size: 14px; font-family: system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; font-weight: 200; box-sizing: border-box; }
 .search-input:focus { border-color: #4299e1; box-shadow: 0 0 0 3px rgba(66,153,225,0.1); }
 .dropdown-options { max-height: 200px; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+.variable-menu .dropdown-options { overflow: visible; max-height: none; }
 .dropdown-options::-webkit-scrollbar { width: 6px; }
 .dropdown-options::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
 .dropdown-options::-webkit-scrollbar-thumb { background: #cbd5e0; border-radius: 4px; }
