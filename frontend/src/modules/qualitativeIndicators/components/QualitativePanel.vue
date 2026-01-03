@@ -1,5 +1,5 @@
 <!-- src/modules/qualitativeIndicators/components/QualitativePanel.vue -->
-<!-- ✅ ACTUALIZADO: Carga de años dinámicos para TODAS las categorías -->
+<!-- ✅ ACTUALIZADO: Carga de años dinámicos para TODAS las categorías + Tooltip dinámico con Teleport -->
 <template>
   <div 
     class="qualitative-panel"
@@ -7,8 +7,15 @@
   >
     <!-- Vista colapsada (solo botón +) -->
     <div v-if="!isExpanded" class="collapsed-view">
-      <div class="expand-btn" @click="togglePanel">
-        +
+      <div 
+        class="expand-btn-wrapper"
+        @mouseenter="handleTooltipEnter"
+        @mouseleave="handleTooltipLeave"
+        ref="expandBtnRef"
+      >
+        <div class="expand-btn" @click="togglePanel">
+          +
+        </div>
       </div>
     </div>
     
@@ -19,8 +26,15 @@
           <img src="/public/icons/white-hamburger.png" alt="hamburger-menu" class="hamburger-icon">
         </div>
         <h1 class="header-title">Indicadores Cualitativos</h1>
-        <div class="expand-btn" @click="togglePanel">
-          −
+        <div 
+          class="expand-btn-wrapper expanded-wrapper"
+          @mouseenter="handleCollapseTooltipEnter"
+          @mouseleave="handleCollapseTooltipLeave"
+          ref="collapseBtnRef"
+        >
+          <div class="expand-btn" @click="togglePanel">
+            −
+          </div>
         </div>
       </div>
 
@@ -107,11 +121,33 @@
         </div>
       </div>
     </div>
+
+    <!-- ✅ TELEPORT: Tooltip del botón expandir (renderizado en body, a la derecha) -->
+    <Teleport to="body">
+      <div 
+        v-if="showExpandTooltip"
+        class="qualitative-tooltip"
+        :style="expandTooltipStyle"
+      >
+        {{ expandTooltipMessage }}
+      </div>
+    </Teleport>
+
+    <!-- ✅ TELEPORT: Tooltip del botón colapsar (renderizado en body) -->
+    <Teleport to="body">
+      <div 
+        v-if="showCollapseTooltip"
+        class="qualitative-tooltip"
+        :style="collapseTooltipStyle"
+      >
+        Cerrar panel de indicadores cualitativos
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import AmbientalesView from './AmbientalesView.vue'
 import { useStorageData } from '@/dataConection/useStorageData'
 import EconomicosView from './EconomicosView.vue'
@@ -131,6 +167,11 @@ const props = defineProps({
   selectedYear: {
     type: [String, Number],
     default: null
+  },
+  // ✅ NUEVO: Recibir el estado actual del toggle
+  currentDataView: {
+    type: String,
+    default: 'subnacional' // 'subnacional' o 'regional'
   }
 })
 
@@ -142,9 +183,78 @@ const selectedCategory = ref(null)
 // ✅ Composable para obtener datos
 const { fetchSheetNames } = useStorageData()
 
-// ============================================
+// ============================================================================
+// ✅ TOOLTIP CON TELEPORT
+// ============================================================================
+const expandBtnRef = ref(null)
+const collapseBtnRef = ref(null)
+const showExpandTooltip = ref(false)
+const showCollapseTooltip = ref(false)
+const tooltipPosition = ref({ x: 0, y: 0 })
+const collapseTooltipPosition = ref({ x: 0, y: 0 })
+
+const handleTooltipEnter = () => {
+  if (expandBtnRef.value) {
+    const rect = expandBtnRef.value.getBoundingClientRect()
+    // Posicionar a la derecha del botón, centrado verticalmente
+    tooltipPosition.value = {
+      x: rect.right + 82,
+      y: (rect.top + rect.height / 2) +20
+    }
+  }
+  showExpandTooltip.value = true
+}
+
+const handleTooltipLeave = () => {
+  showExpandTooltip.value = false
+}
+
+const handleCollapseTooltipEnter = () => {
+  if (collapseBtnRef.value) {
+    const rect = collapseBtnRef.value.getBoundingClientRect()
+    // Posicionar debajo del botón para el collapse
+    collapseTooltipPosition.value = {
+      x: rect.left + rect.width / 2,
+      y: rect.bottom + 12
+    }
+  }
+  showCollapseTooltip.value = true
+}
+
+const handleCollapseTooltipLeave = () => {
+  showCollapseTooltip.value = false
+}
+
+const expandTooltipStyle = computed(() => ({
+  position: 'fixed',
+  left: `${tooltipPosition.value.x}px`,
+  top: `${tooltipPosition.value.y}px`,
+  transform: 'translateY(-50%)',
+  zIndex: 99999
+}))
+
+const collapseTooltipStyle = computed(() => ({
+  position: 'fixed',
+  left: `${collapseTooltipPosition.value.x}px`,
+  top: `${collapseTooltipPosition.value.y}px`,
+  transform: 'translateX(-50%)',
+  zIndex: 99999
+}))
+
+// ============================================================================
+// ✅ COMPUTED: Mensaje dinámico del tooltip
+// ============================================================================
+const expandTooltipMessage = computed(() => {
+  const viewLabel = props.currentDataView === 'regional' 
+    ? 'Datos Regionales' 
+    : 'Datos Subnacionales'
+  
+  return `Da clic aquí para ver los indicadores cualitativos de ${viewLabel}`
+})
+
+// ============================================================================
 // ✅ FUNCIONES DE CARGA DE AÑOS POR CATEGORÍA
-// ============================================
+// ============================================================================
 
 /**
  * ✅ Cargar años desde el sheet de AMBIENTALES (incendiosForestales)
@@ -296,6 +406,10 @@ watch(() => props.selectedYear, (newYear, oldYear) => {
 
 // ✅ Toggle del panel con manejo de cierre
 const togglePanel = () => {
+  // Ocultar tooltips al hacer click
+  showExpandTooltip.value = false
+  showCollapseTooltip.value = false
+  
   console.log('🔄 [QualitativePanel] Toggle panel')
   console.log('  - isExpanded:', props.isExpanded)
   console.log('  - selectedCategory:', selectedCategory.value)
@@ -378,6 +492,7 @@ const getCategoryTitle = (category) => {
   width: 1020px;
   left: 0px;
   border-radius: 0px 15px 15px 0px;
+  overflow: hidden;
 }
 
 .collapsed-view {
@@ -421,12 +536,24 @@ const getCategoryTitle = (category) => {
   height: 20.9px;
 }
 
-.expand-btn {
+/* ========== WRAPPER PARA BOTÓN EXPAND ========== */
+.expand-btn-wrapper {
   position: absolute;
-  font-size: 20px;
-  color: white;
   left: 42px;
   top: 2px;
+  z-index: 10;
+}
+
+.expand-btn-wrapper.expanded-wrapper {
+  position: relative;
+  left: auto;
+  top: auto;
+  margin-left: auto;
+}
+
+.expand-btn {
+  font-size: 20px;
+  color: white;
   width: 25px;
   height: 25px;
   border-radius: 50%;
@@ -439,12 +566,6 @@ const getCategoryTitle = (category) => {
     inset 0 -2px 4px rgba(255, 255, 255, 0.1),
     0 1px 2px rgba(242, 241, 241, 0.369); 
   transition: all 0.3s ease;
-  z-index: 10;
-}
-
-.qualitative-panel.expanded .expand-btn {
-  left: 990px;
-  top: 3px;
 }
 
 .expand-btn:hover {
@@ -582,5 +703,36 @@ const getCategoryTitle = (category) => {
   color: #999;
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+</style>
+
+<!-- ✅ ESTILOS GLOBALES PARA TOOLTIP CON TELEPORT (SIN FLECHA) -->
+<style>
+.qualitative-tooltip {
+  background: #1e3a5f;
+  color: white;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 400;
+  white-space: normal;
+  width: 220px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(30, 58, 95, 0.4);
+  pointer-events: none;
+  line-height: 1.4;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  animation: qualitativeTooltipFadeIn 0.15s ease-out;
+}
+
+@keyframes qualitativeTooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+  }
 }
 </style>

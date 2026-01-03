@@ -84,10 +84,11 @@
           
         <!-- COMPONENTE: Panel Cualitativo - Escucha eventos de años y cierre -->
         <QualitativePanel
-        v-if="!isMobile"
+          v-if="!isMobile"
           :isExpanded="isRetractableExpanded"
           :selectedEntity="selectedEntity"
           :selectedYear="selectedYear"
+          :currentDataView="currentDataView"
           @toggle="handleDatosCualitativosClick"
           @years-loaded="handleYearsLoaded"
           @panel-closed="handlePanelClosed"
@@ -1278,6 +1279,7 @@ onMounted(async () => {
   position: relative;
   transition: gap 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
   height: 100%;
+  overflow: visible; 
 }
 
 .map-and-charts-wrapper.no-gap {
