@@ -1,5 +1,5 @@
 // src/dataConection/storageConfig.js
-// ✅ ACTUALIZADO con búsqueda en PRESUPUESTOS en getSheetIdForFile y getSheetName
+// ✅ ACTUALIZADO con búsqueda en CUALITATIVOS REGIONALES en getSheetIdForFile y getSheetName
 
 console.log('API Key:', import.meta.env.VITE_GOOGLE_SHEETS_API_KEY)
 console.log('Sheet ID Principal:', import.meta.env.VITE_GOOGLE_SHEET_ID)
@@ -48,7 +48,40 @@ export const storageConfig = {
           cardIFSRegional: 'Hoja 1'
         }
       },
-      // Configuración modular para cada componente ambiental
+      // ✅ CUALITATIVOS REGIONALES
+      cualitativoRegional: {
+        estatusDelPais: {
+          sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_REGIONALES_ESTATUSDELPAIS,
+          files: {
+            estatusDelPais: '2024'
+          }
+        },
+        ambientalesRegional: {
+          sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_REGIONALES_AMBIENTALES,
+          files: {
+            ambientalesRegional: '2024'
+          }
+        },
+        socialesRegional: {
+          sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_REGIONALES_SOCIALES,
+          files: {
+            socialesRegional: '2024'
+          }
+        },
+        economicosRegional: {
+          sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_REGIONALES_ECONOMICOS,
+          files: {
+            economicosRegional: '2024'
+          }
+        },
+        financiamientoRegional: {
+          sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_REGIONALES_FINANCIAMIENTO,
+          files: {
+            financiamientoRegional: '2024'
+          }
+        }
+      },
+      // Configuración modular para cada componente cualitativos
       ambientales: {
         incendiosForestales: {
           sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_AMBIENTALES_INCENDIOS_FORESTALES,
@@ -251,11 +284,267 @@ export const storageConfig = {
       programas: '2024',
       chartsPresupuestosRegional: 'Hoja 1',
       chartsIngresosRegional: 'Hoja 1',
-      cardIFS: 'Hoja 1'
+      cardIFS: 'Hoja 1',
+      // ✅ Archivos regionales
+      estatusDelPais: '2024',
+      ambientalesRegional: '2024',
+      socialesRegional: '2024',
+      economicosRegional: '2024',
+      financiamientoRegional: '2024'
     }
   },
   
   mappings: {
+    // ✅ CUALITATIVOS REGIONALES - Estatus del país
+    estatusDelPais: {
+      categoryColumn: 'País',
+      variables: [
+        {
+          key: 'NDC',
+          column: 'NDC',
+          label: 'Contribuciones Nacionalmente Determinadas',
+          color: '#9ca3af',
+          order: 1
+        },
+        {
+          key: 'TIPO_METAS',
+          column: 'TIPO_METAS',
+          label: 'Metas en NDC',
+          color: '#7cb342',
+          order: 2
+        },
+        {
+          key: 'METAS_ADP',
+          column: 'METAS_ADP',
+          label: 'Metas de adaptación',
+          color: '#DC143C',
+          order: 3
+        },
+        {
+          key: 'C_NDC',
+          column: 'C_NDC',
+          label: 'Costo estimado de las NDC',
+          color: '#0F3759',
+          order: 4
+        },
+        {
+          key: 'LEGCC',
+          column: 'LEGCC',
+          label: 'Legislación en Cambio Climático',
+          color: '#3B5A70',
+          order: 5
+        },
+        {
+          key: 'AICC',
+          column: 'AICC',
+          label: 'Arreglos institucionales para Cambio Climático',
+          color: '#4E6D82',
+          order: 6
+        },
+        {
+          key: 'TP',
+          column: 'TP',
+          label: 'Índice de transparencia presupuestaria',
+          color: '#6B8FA3',
+          order: 7
+        },
+        {
+          key: 'POS_ETCO2',
+          column: 'POS_ETCO2',
+          label: 'Posición por emisiones de CO2',
+          color: '#DC143C',
+          order: 8
+        },
+        {
+          key: 'POS_ETGEI',
+          column: 'POS_ETGEI',
+          label: 'Posición por emisiones de GEI',
+          color: '#b71c1c',
+          order: 9
+        }
+      ]
+    },
+
+        // ✅ CUALITATIVOS REGIONALES - Ambientales
+    ambientalesRegional: {
+      categoryColumn: 'País',
+      variables: [
+        {
+          key: 'IRC',
+          column: 'IRC',
+          label: 'Índice de Riesgo Climático',
+          color: '#9ca3af',
+          order: 1
+        },
+        {
+          key: 'TARN',
+          column: 'TARN',
+          label: 'Tasa de Agotamiento de los Recursos Naturales',
+          color: '#7cb342',
+          order: 2
+        },
+        {
+          key: 'GEI_EN',
+          column: 'GEI_EN',
+          label: 'Emisiones GEI en el sector energía',
+          color: '#DC143C',
+          order: 3
+        },
+        {
+          key: 'GEI_AGUT',
+          column: 'GEI_AGUT',
+          label: 'Emisiones GEI en el sector agricultura, ganadería y sus de la tierra.',
+          color: '#0F3759',
+          order: 4
+        },
+        {
+          key: 'GEI_PI',
+          column: 'GEI_PI',
+          label: 'Emisiones GEI en el sector procesos industriales',
+          color: '#3B5A70',
+          order: 5
+        },
+        {
+          key: 'GEI_RE',
+          column: 'GEI_RE',
+          label: 'Emisiones GEI en el sector residuos',
+          color: '#4E6D82',
+          order: 6
+        },
+        {
+          key: 'CTE',
+          column: 'CTE',
+          label: 'Consumo total de energía en MWh/per cápita',
+          color: '#6B8FA3',
+          order: 7
+        },
+        {
+          key: 'CCF',
+          column: 'CCF',
+          label: 'Consumo de energía por combustibles fósiles',
+          color: '#DC143C',
+          order: 8
+        },
+        {
+          key: 'CER',
+          column: 'CER',
+          label: 'Consumo de energía por energía renovable',
+          color: '#b71c1c',
+          order: 9
+        },
+        {
+          key: 'ECO2',
+          column: 'ECO2',
+          label: 'Emisiones anuales de CO2 en toneladas',
+          color: '#b71c1c',
+          order: 10
+        },
+        {
+          key: 'ECO2PC',
+          column: 'ECO2PC',
+          label: 'Emisiones per cápita de CO2',
+          color: '#b71c1c',
+          order: 11
+        }
+      ]
+    },
+    // ✅ CUALITATIVOS REGIONALES - Sociales
+    socialesRegional: {
+      categoryColumn: 'País',
+      variables: [
+        {
+          key: 'POB',
+          column: 'POB',
+          label: 'Número de habitantes',
+          color: '#9ca3af',
+          order: 1
+        },
+        {
+          key: 'TD',
+          column: 'TD',
+          label: 'Tasa de Desempleo',
+          color: '#7cb342',
+          order: 2
+        },
+        {
+          key: 'MCA',
+          column: 'MCA',
+          label: 'Mortalidad por Contaminación Atmosférica (muertes anuales por cada 100,000 habitantes) ',
+          color: '#DC143C',
+          order: 3
+        },
+        {
+          key: 'IDH',
+          column: 'IDH',
+          label: 'Posición final en el Índice de Desarrollo Humano',
+          color: '#0F3759',
+          order: 4
+        },
+        {
+          key: 'IBG',
+          column: 'IBG',
+          label: 'Posición final en el Índice de Brechas de Género',
+          color: '#3B5A70',
+          order: 5
+        },
+        {
+          key: 'IPM',
+          column: 'IPM',
+          label: 'Posición final en el Índice de Pobreza Multidimensional ',
+          color: '#4E6D82',
+          order: 6
+        }
+      ]
+    },
+     // ✅ CUALITATIVOS REGIONALES - Economicos
+    economicosRegional: {
+      categoryColumn: 'País',
+      variables: [
+        {
+          key: 'PIB',
+          column: 'PIB',
+          label: 'Producto Interno Bruto en dólares',
+          color: '#9ca3af',
+          order: 1
+        },
+        {
+          key: 'PIBPC',
+          column: 'PIBPC',
+          label: 'Producto Interno Bruto per cápita en dólares',
+          color: '#7cb342',
+          order: 2
+        },
+        {
+          key: 'IT',
+          column: 'IT',
+          label: 'Ingreso total en dólares',
+          color: '#DC143C',
+          order: 3
+        },
+        {
+          key: 'ITPC',
+          column: 'ITPC',
+          label: 'Ingreso per cápita en dólares',
+          color: '#0F3759',
+          order: 4
+        },
+        {
+          key: 'PT',
+          column: 'PT',
+          label: 'Presupuesto total en dólares ',
+          color: '#3B5A70',
+          order: 5
+        },
+        {
+          key: 'PTPC',
+          column: 'PTPC',
+          label: 'Presupuesto total per cápita en dólares ',
+          color: '#4E6D82',
+          order: 6
+        }
+      ]
+    },
+
     // CUALITATIVOS - PRESUPUESTO
     presupuestoEstatal: {
       categoryColumn: 'Entidad Federativa',
@@ -1315,6 +1604,7 @@ export const storageConfig = {
         }
       ]
     },
+
  //Historicos  
     iicBarChart: {
       yearColumn: 'Año',
@@ -1351,7 +1641,6 @@ export const storageConfig = {
           column: 'IT ($)',
           label: 'Ingreso Total',
           color: '#9E9E9E'
-          // Sin percentageColumn ni positionColumn
         },
         {
           key: 'IIC Total',
@@ -1470,7 +1759,6 @@ export const storageConfig = {
           label: 'Gasto Total',
           tooltipLabel: 'Gasto Total',
           color: '#9E9E9E'
-          // Sin percentageColumn ni positionColumn
         },
         {
           key: 'PIC',
@@ -1626,11 +1914,21 @@ export function getCurrentConfig() {
   }
 }
 
-// ✅ ACTUALIZADO: Ahora busca en TODAS las secciones incluyendo PRESUPUESTOS
+// ✅ ACTUALIZADO: Ahora busca en TODAS las secciones incluyendo CUALITATIVOS REGIONALES
 export function getSheetIdForFile(fileKey) {
   const config = storageConfig.googlesheets
   
-  // ✅ PRIMERO: Buscar en sheets modulares de PRESUPUESTOS
+  // ✅ PRIMERO: Buscar en sheets de CUALITATIVOS REGIONALES
+  if (config.sheets && config.sheets.cualitativoRegional) {
+    for (const [componentKey, componentConfig] of Object.entries(config.sheets.cualitativoRegional)) {
+      if (componentConfig.files && componentConfig.files[fileKey]) {
+        console.log(`📄 Archivo "${fileKey}" encontrado en cualitativoRegional.${componentKey}`)
+        return componentConfig.sheetId
+      }
+    }
+  }
+  
+  // Buscar en sheets modulares de PRESUPUESTOS
   if (config.sheets && config.sheets.presupuestos) {
     for (const [componentKey, componentConfig] of Object.entries(config.sheets.presupuestos)) {
       if (componentConfig.files && componentConfig.files[fileKey]) {
@@ -1701,7 +1999,7 @@ export function getSheetIdForFile(fileKey) {
   return config.sheetId
 }
 
-// ✅ ACTUALIZADO: Retornar año dinámico para TODOS los sheets incluyendo PRESUPUESTOS
+// ✅ ACTUALIZADO: Retornar año dinámico para TODOS los sheets incluyendo CUALITATIVOS REGIONALES
 export function getSheetName(fileKey) {
   const config = storageConfig.googlesheets
   
@@ -1729,15 +2027,38 @@ export function getSheetName(fileKey) {
     'rezagoSocial',
     'indiceGini',
     'poblacion',
-    // ✅ NUEVO: Archivos de presupuestos
+    // Archivos gobernabilidad
+    'satisfaccionFederal',
+    'satisfaccionEstatal',
+    'IGOPP',
+    'BIPE',
+    'ITDIF',
+    'ICI',
+    'PBRSED',
+    // Archivos de presupuestos
     'presupuestoEstatal',
     'financiamientos',
-    'programas'
+    'programas',
+    // ✅ NUEVO: Archivos de cualitativos regionales
+    'estatusDelPais',
+    'ambientalesRegional',
+    'socialesRegional',
+    'economicosRegional',
+    'financiamientoRegional'
   ]
   
   if (dynamicYearFiles.includes(fileKey)) {
     console.log(`📅 Nombre de hoja dinámico para "${fileKey}": ${currentActiveYear}`)
     return currentActiveYear
+  }
+  
+  // Buscar en configuración modular de cualitativos regionales
+  if (config.sheets && config.sheets.cualitativoRegional) {
+    for (const [componentKey, componentConfig] of Object.entries(config.sheets.cualitativoRegional)) {
+      if (componentConfig.files && componentConfig.files[fileKey]) {
+        return componentConfig.files[fileKey]
+      }
+    }
   }
   
   // Buscar en configuración modular de presupuestos
@@ -1770,6 +2091,15 @@ export function getSheetName(fileKey) {
   // Buscar en configuración modular de ambientales
   if (config.sheets && config.sheets.ambientales) {
     for (const [componentKey, componentConfig] of Object.entries(config.sheets.ambientales)) {
+      if (componentConfig.files && componentConfig.files[fileKey]) {
+        return componentConfig.files[fileKey]
+      }
+    }
+  }
+  
+  // Buscar en configuración de gobernabilidad
+  if (config.sheets && config.sheets.gobernabilidad) {
+    for (const [componentKey, componentConfig] of Object.entries(config.sheets.gobernabilidad)) {
       if (componentConfig.files && componentConfig.files[fileKey]) {
         return componentConfig.files[fileKey]
       }
