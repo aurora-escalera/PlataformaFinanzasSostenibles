@@ -437,14 +437,14 @@ export const storageConfig = {
           column: 'ECO2',
           label: 'Emisiones anuales de CO2 en toneladas',
           color: '#b71c1c',
-          order: 9
+          order: 10
         },
         {
           key: 'ECO2PC',
           column: 'ECO2PC',
           label: 'Emisiones per cápita de CO2',
           color: '#b71c1c',
-          order: 9
+          order: 11
         }
       ]
     },
@@ -496,6 +496,55 @@ export const storageConfig = {
         }
       ]
     },
+     // ✅ CUALITATIVOS REGIONALES - Economicos
+    socialesRegional: {
+      categoryColumn: 'País',
+      variables: [
+        {
+          key: 'POB',
+          column: 'POB',
+          label: 'Número de habitantes',
+          color: '#9ca3af',
+          order: 1
+        },
+        {
+          key: 'TD',
+          column: 'TD',
+          label: 'Tasa de Desempleo',
+          color: '#7cb342',
+          order: 2
+        },
+        {
+          key: 'MCA',
+          column: 'MCA',
+          label: 'Mortalidad por Contaminación Atmosférica (muertes anuales por cada 100,000 habitantes) ',
+          color: '#DC143C',
+          order: 3
+        },
+        {
+          key: 'IDH',
+          column: 'IDH',
+          label: 'Posición final en el Índice de Desarrollo Humano',
+          color: '#0F3759',
+          order: 4
+        },
+        {
+          key: 'IBG',
+          column: 'IBG',
+          label: 'Posición final en el Índice de Brechas de Género',
+          color: '#3B5A70',
+          order: 5
+        },
+        {
+          key: 'IPM',
+          column: 'IPM',
+          label: 'Posición final en el Índice de Pobreza Multidimensional ',
+          color: '#4E6D82',
+          order: 6
+        }
+      ]
+    },
+
     // CUALITATIVOS - PRESUPUESTO
     presupuestoEstatal: {
       categoryColumn: 'Entidad Federativa',

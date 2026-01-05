@@ -1,260 +1,226 @@
+<!-- src/modules/qualitativeIndicators/components/AmbientalesRegionalView.vue -->
 <template>
   <div class="ambientales-container">
-    <!-- ✅ EMPTY STATE cuando no hay año seleccionado -->
+    <!-- EMPTY STATE -->
     <div v-if="!selectedYear" class="global-empty-state">
       <div class="empty-state-content">
         <div class="empty-state-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#718096" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"/>
-            <line x1="2" y1="12" x2="22" y2="12"/>
+          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#718096" stroke-width="1.5">
+            <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
             <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
           </svg>
         </div>
         <h2 class="empty-state-title">Selecciona un año</h2>
-        <p class="empty-state-description">
-          Selecciona un año en el filtro superior para visualizar los indicadores ambientales.
-        </p>
+        <p class="empty-state-description">Selecciona un año en el filtro superior para visualizar los indicadores ambientales.</p>
       </div>
     </div>
 
-    <!-- ✅ CONTENIDO cuando hay año seleccionado -->
+    <!-- CONTENIDO -->
     <div v-else class="card-body">
-      
-      <!-- Header estilo barra azul compacta -->
-      <div class="header-bar">
-        <div class="header-icon-wrapper">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"/>
+      <!-- HEADER PRINCIPAL -->
+      <div class="main-header">
+        <div class="header-icon-badge">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
             <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-            <line x1="2" y1="12" x2="22" y2="12"/>
           </svg>
         </div>
-        <span class="header-title">Indicadores Ambientales ({{ countryData?.País || 'México' }} · {{ selectedYear }})</span>
-        <div class="header-info-btn">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"/>
-            <path d="M12 16v-4M12 8h.01"/>
-          </svg>
+        <span class="header-title">Indicadores Ambientales {{ selectedYear }}</span>
+        <span class="header-subtitle">{{ countryData?.País || 'México' }}</span>
+      </div>
+
+      <!-- FILA SUPERIOR -->
+      <div class="top-row">
+        <!-- RIESGO CLIMÁTICO -->
+        <div class="section-card">
+          <div class="section-header">
+            <div class="section-header-left">
+              <div class="section-icon-badge">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                  <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+                  <circle cx="12" cy="12" r="4"/>
+                </svg>
+              </div>
+              <span class="section-title">Riesgo Climático</span>
+            </div>
+          </div>
+          <div v-if="loading" class="section-content loading-state"><div class="spinner"></div></div>
+          <div v-else class="section-content irc-content">
+            <div class="irc-main">
+              <div class="irc-value-container">
+                <span class="irc-big-value">{{ countryData?.IRC || '—' }}</span>
+                <span class="irc-label">Índice IRC</span>
+              </div>
+            </div>
+            <div class="irc-source">Germanwatch, 2022</div>
+          </div>
+        </div>
+
+        <!-- RECURSOS NATURALES -->
+        <div class="section-card">
+          <div class="section-header">
+            <div class="section-header-left">
+              <div class="section-icon-badge">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+              </div>
+              <span class="section-title">Recursos Naturales</span>
+            </div>
+          </div>
+          <div v-if="loading" class="section-content loading-state"><div class="spinner"></div></div>
+          <div v-else class="section-content recursos-content">
+            <div class="recursos-row">
+              <div class="recursos-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0F3759" stroke-width="1.5">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+              </div>
+              <div class="recursos-data">
+                <div class="recursos-header">
+                  <span class="recursos-label">TARN</span>
+                  <span class="recursos-value">{{ countryData?.TARN || '—' }}%</span>
+                </div>
+                <div class="recursos-bar"><div class="recursos-bar-fill" :style="{ width: Math.min(countryData?.TARN || 0, 100) + '%' }"></div></div>
+              </div>
+            </div>
+            <div class="recursos-row">
+              <div class="recursos-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0F3759" stroke-width="1.5">
+                  <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                </svg>
+              </div>
+              <div class="recursos-data">
+                <div class="recursos-header">
+                  <span class="recursos-label">CTE</span>
+                  <span class="recursos-value">{{ countryData?.CTE || '—' }} MWh</span>
+                </div>
+                <div class="recursos-bar"><div class="recursos-bar-fill cte" :style="{ width: Math.min((countryData?.CTE || 0) / 10, 100) + '%' }"></div></div>
+              </div>
+            </div>
+            <div class="recursos-source">Banco Mundial / IEA, 2021-2022</div>
+          </div>
+        </div>
+
+        <!-- EMISIONES CO2 -->
+        <div class="section-card">
+          <div class="section-header">
+            <div class="section-header-left">
+              <div class="section-icon-badge">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+                  <path d="M8 12h8M12 8v8"/>
+                </svg>
+              </div>
+              <span class="section-title">Emisiones CO₂</span>
+            </div>
+          </div>
+          <div v-if="loading" class="section-content loading-state"><div class="spinner"></div></div>
+          <div v-else class="section-content co2-content">
+            <div class="co2-grid">
+              <div class="co2-card">
+                <div class="co2-icon-bg">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0F3759" stroke-width="2">
+                    <path d="M18 20V10M12 20V4M6 20v-6"/>
+                  </svg>
+                </div>
+                <span class="co2-value">{{ formatNumber(countryData?.ECO2) }}</span>
+                <span class="co2-unit">Mt CO₂</span>
+              </div>
+              <div class="co2-card">
+                <div class="co2-icon-bg">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0F3759" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                  </svg>
+                </div>
+                <span class="co2-value">{{ countryData?.ECO2PC || '—' }}</span>
+                <span class="co2-unit">t CO₂/hab</span>
+              </div>
+            </div>
+            <div class="co2-source">IEA, 2022</div>
+          </div>
         </div>
       </div>
 
-      <!-- Grid Principal -->
-      <div class="main-grid">
-        
-        <!-- ===== COLUMNA 1: Métricas Clave ===== -->
-        <div class="metrics-column">
-          
-          <!-- IRC Card -->
-          <div class="metric-card metric-card-blue">
-            <div v-if="loading" class="loading-mini"><div class="spinner-small"></div></div>
-            <template v-else>
-              <div class="metric-label blue">Índice Riesgo Climático</div>
-              <div class="metric-value-row">
-                <span class="metric-number blue">{{ countryData?.IRC || '—' }}</span>
-                <span class="metric-badge blue">#{{ countryData?.IRC_POS || '—' }}/20</span>
-              </div>
-              <div class="metric-source">Germanwatch, 2022</div>
-            </template>
-          </div>
-
-          <!-- TARN Card -->
-          <div class="metric-card metric-card-green">
-            <div v-if="loading" class="loading-mini"><div class="spinner-small"></div></div>
-            <template v-else>
-              <div class="metric-label green">Agotamiento Recursos Naturales</div>
-              <div class="metric-value-row">
-                <span class="metric-number green">{{ countryData?.TARN || '—' }}</span>
-                <span class="metric-unit">%</span>
-                <span class="metric-badge green">#{{ countryData?.TARN_POS || '—' }}/20</span>
-              </div>
-              <div class="metric-source">Banco Mundial, 2021</div>
-            </template>
-          </div>
-
-          <!-- CTE Card -->
-          <div class="metric-card metric-card-slate">
-            <div v-if="loading" class="loading-mini"><div class="spinner-small"></div></div>
-            <template v-else>
-              <div class="metric-label slate">Consumo Total de Energía</div>
-              <div class="metric-value-row">
-                <span class="metric-number slate">{{ countryData?.CTE || '—' }}</span>
-                <span class="metric-unit">MWh/pc</span>
-              </div>
-              <div class="metric-source">IEA, 2022</div>
-            </template>
-          </div>
-        </div>
-
-        <!-- ===== COLUMNA 2: CO2 + GEI ===== -->
-        <div class="center-column">
-          
-          <!-- Card Grande CO2 -->
-          <div class="co2-card">
-            <div class="co2-decoration"></div>
-            <div v-if="loading" class="loading-state"><div class="spinner-small"></div></div>
-            <template v-else>
-              <div class="co2-content">
-                <div class="co2-left">
-                  <div class="co2-label">Emisiones CO₂ Anuales</div>
-                  <div class="co2-value-row">
-                    <span class="co2-number">{{ formatNumber(countryData?.ECO2) }}</span>
-                    <span class="co2-unit">Mt</span>
-                  </div>
-                </div>
-                <div class="co2-position">
-                  <div class="co2-pos-label">Posición</div>
-                  <div class="co2-pos-number">#{{ countryData?.ECO2_POS || '—' }}</div>
-                  <div class="co2-pos-total">de 20</div>
-                </div>
-              </div>
-              <div class="co2-divider"></div>
-              <div class="co2-footer">
-                <div class="co2-percapita">
-                  <span class="percapita-label">CO₂ per cápita:</span>
-                  <span class="percapita-value">#{{ countryData?.ECO2PC_POS || '—' }}/20</span>
-                </div>
-                <div class="co2-source">IEA, 2022</div>
-              </div>
-            </template>
-          </div>
-
-          <!-- GEI por Sector -->
-          <div class="gei-card">
-            <div class="gei-header">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2">
-                <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                <path d="M9 12l2 2 4-4"/>
-              </svg>
-              <span>Emisiones GEI por Sector</span>
-            </div>
-            <div v-if="loading" class="loading-state"><div class="spinner-small"></div></div>
-            <div v-else class="gei-content">
-              <div class="donut-container">
-                <svg :width="donutSize" :height="donutSize" :viewBox="`0 0 ${donutSize} ${donutSize}`">
-                  <circle
-                    :cx="donutSize/2"
-                    :cy="donutSize/2"
-                    :r="donutRadius"
-                    fill="none"
-                    stroke="#e2e8f0"
-                    :stroke-width="strokeWidth"
-                  />
-                  <circle
-                    v-for="(segment, index) in geiSegments"
-                    :key="index"
-                    :cx="donutSize/2"
-                    :cy="donutSize/2"
-                    :r="donutRadius"
-                    fill="none"
-                    :stroke="segment.color"
-                    :stroke-width="strokeWidth"
-                    :stroke-dasharray="segment.dashArray"
-                    :stroke-dashoffset="segment.dashOffset"
-                    stroke-linecap="round"
-                    :transform="`rotate(-90 ${donutSize/2} ${donutSize/2})`"
-                  />
+      <!-- FILA INFERIOR -->
+      <div class="bottom-row">
+        <!-- GEI POR SECTOR -->
+        <div class="section-card gei-card">
+          <div class="section-header">
+            <div class="section-header-left">
+              <div class="section-icon-badge">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                  <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path d="M9 12l2 2 4-4"/>
                 </svg>
-                <div class="donut-center">
-                  <span class="donut-center-text">GEI</span>
-                </div>
               </div>
-              <div class="gei-legend">
-                <div v-for="item in geiLegend" :key="item.label" class="gei-legend-item">
-                  <div class="legend-color" :style="{ background: item.color }"></div>
-                  <div class="legend-info">
-                    <span class="legend-label">{{ item.label }}</span>
-                    <span class="legend-value">{{ item.value }}%</span>
-                  </div>
+              <span class="section-title">Emisiones GEI por Sector</span>
+            </div>
+          </div>
+          <div v-if="loading" class="section-content loading-state"><div class="spinner"></div></div>
+          <div v-else class="section-content gei-content">
+            <div class="gei-donut-container">
+              <svg :width="donutSize" :height="donutSize" :viewBox="`0 0 ${donutSize} ${donutSize}`">
+                <circle :cx="donutSize/2" :cy="donutSize/2" :r="donutRadius" fill="none" stroke="#e2e8f0" :stroke-width="strokeWidth"/>
+                <path v-for="(segment, index) in geiArcs" :key="index" :d="segment.path" fill="none" :stroke="segment.color" :stroke-width="strokeWidth"/>
+              </svg>
+              <div class="gei-donut-center"><span class="gei-center-text">GEI</span></div>
+            </div>
+            <div class="gei-bars">
+              <div v-for="item in geiLegend" :key="item.label" class="gei-bar-row">
+                <div class="gei-bar-icon" :style="{ background: item.color }"></div>
+                <span class="gei-bar-label">{{ item.label }}</span>
+                <div class="gei-bar-track">
+                  <div class="gei-bar-fill" :style="{ width: item.value + '%', background: item.color }"></div>
                 </div>
+                <span class="gei-bar-value">{{ item.value }}%</span>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- ===== COLUMNA 3: Matriz Energética ===== -->
-        <div class="energy-column">
-          <div class="energy-card">
-            <div class="energy-header">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2">
-                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-              </svg>
-              <span>Matriz Energética</span>
+        <!-- MATRIZ ENERGÉTICA -->
+        <div class="section-card energy-card">
+          <div class="section-header">
+            <div class="section-header-left">
+              <div class="section-icon-badge">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                  <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                </svg>
+              </div>
+              <span class="section-title">Matriz Energética</span>
             </div>
-            
-            <div v-if="loading" class="loading-state"><div class="spinner-small"></div></div>
-            <template v-else>
-              <!-- Donut Energía -->
-              <div class="energy-donut-container">
-                <svg :width="energyDonutSize" :height="energyDonutSize" :viewBox="`0 0 ${energyDonutSize} ${energyDonutSize}`">
-                  <circle
-                    :cx="energyDonutSize/2"
-                    :cy="energyDonutSize/2"
-                    :r="energyDonutRadius"
-                    fill="none"
-                    stroke="#e2e8f0"
-                    :stroke-width="energyStrokeWidth"
-                  />
-                  <circle
-                    v-for="(segment, index) in energySegments"
-                    :key="index"
-                    :cx="energyDonutSize/2"
-                    :cy="energyDonutSize/2"
-                    :r="energyDonutRadius"
-                    fill="none"
-                    :stroke="segment.color"
-                    :stroke-width="energyStrokeWidth"
-                    :stroke-dasharray="segment.dashArray"
-                    :stroke-dashoffset="segment.dashOffset"
-                    stroke-linecap="round"
-                    :transform="`rotate(-90 ${energyDonutSize/2} ${energyDonutSize/2})`"
-                  />
-                </svg>
-                <div class="energy-donut-center">
-                  <span class="energy-center-value">{{ countryData?.CCF || '—' }}%</span>
-                  <span class="energy-center-label">Fósil</span>
-                </div>
+          </div>
+          <div v-if="loading" class="section-content loading-state"><div class="spinner"></div></div>
+          <div v-else class="section-content energy-content">
+            <div class="energy-donut-wrapper">
+              <svg :width="energyDonutSize" :height="energyDonutSize" :viewBox="`0 0 ${energyDonutSize} ${energyDonutSize}`">
+                <circle :cx="energyDonutSize/2" :cy="energyDonutSize/2" :r="energyDonutRadius" fill="none" stroke="#e2e8f0" :stroke-width="energyStrokeWidth"/>
+                <path v-for="(segment, index) in energyArcs" :key="index" :d="segment.path" fill="none" :stroke="segment.color" :stroke-width="energyStrokeWidth"/>
+              </svg>
+              <div class="energy-donut-center">
+                <span class="energy-center-value">{{ countryData?.CCF || '—' }}%</span>
+                <span class="energy-center-label">Fósil</span>
               </div>
-
-              <!-- Barras -->
-              <div class="energy-bars">
-                <!-- Fósiles -->
-                <div class="energy-bar-item fossil">
-                  <div class="bar-header">
-                    <div class="bar-label-row">
-                      <div class="bar-color fossil"></div>
-                      <span class="bar-label">Combustibles fósiles</span>
-                    </div>
-                    <span class="bar-value fossil">{{ countryData?.CCF || '—' }}%</span>
-                  </div>
-                  <div class="bar-track fossil">
-                    <div class="bar-fill fossil" :style="{ width: (countryData?.CCF || 0) + '%' }"></div>
-                  </div>
-                </div>
-
-                <!-- Renovables -->
-                <div class="energy-bar-item renewable">
-                  <div class="bar-header">
-                    <div class="bar-label-row">
-                      <div class="bar-color renewable"></div>
-                      <span class="bar-label">Energías renovables</span>
-                    </div>
-                    <span class="bar-value renewable">{{ countryData?.CER || '—' }}%</span>
-                  </div>
-                  <div class="bar-track renewable">
-                    <div class="bar-fill renewable" :style="{ width: (countryData?.CER || 0) + '%' }"></div>
-                  </div>
-                </div>
+            </div>
+            <div class="energy-bars-container">
+              <div class="energy-bar-row">
+                <div class="energy-bar-dot fossil"></div>
+                <span class="energy-bar-label">Combustibles fósiles</span>
+                <span class="energy-bar-value fossil">{{ countryData?.CCF || '—' }}%</span>
               </div>
-
-              <!-- Nota al pie -->
-              <div class="energy-footer">
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2">
-                  <circle cx="12" cy="12" r="10"/>
-                  <path d="M12 16v-4M12 8h.01"/>
-                </svg>
-                <span>Fuente: IEA, 2022</span>
+              <div class="energy-bar-track-full fossil">
+                <div class="energy-bar-fill-full fossil" :style="{ width: (countryData?.CCF || 0) + '%' }"></div>
               </div>
-            </template>
+              <div class="energy-bar-row">
+                <div class="energy-bar-dot renewable"></div>
+                <span class="energy-bar-label">Energías renovables</span>
+                <span class="energy-bar-value renewable">{{ countryData?.CER || '—' }}%</span>
+              </div>
+              <div class="energy-bar-track-full renewable">
+                <div class="energy-bar-fill-full renewable" :style="{ width: (countryData?.CER || 0) + '%' }"></div>
+              </div>
+            </div>
+            <div class="energy-source">IEA, 2022</div>
           </div>
         </div>
       </div>
@@ -265,109 +231,113 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useStorageData } from '@/dataConection/useStorageData'
-import { setActiveYear } from '@/dataConection/storageConfig'
 
 const props = defineProps({
-  selectedYear: {
-    type: [String, Number],
-    default: null
-  },
-  selectedCountry: {
-    type: String,
-    default: 'México'
-  }
+  selectedYear: { type: [String, Number], default: null },
+  selectedCountry: { type: String, default: 'México' }
 })
 
-// ✅ CORREGIDO: Usar fetchRegionalData en lugar de fetchData
 const { fetchRegionalData, fetchRegionalSheetNames } = useStorageData()
 const rawData = ref([])
 const loading = ref(false)
 const error = ref(null)
-const showInfo = ref(false)
 const availableYears = ref([])
 
 // Donut config GEI
-const donutSize = 80
-const strokeWidth = 12
+const donutSize = 100
+const strokeWidth = 14
 const donutRadius = (donutSize - strokeWidth) / 2
-const circumference = 2 * Math.PI * donutRadius
 
 // Donut config Energía
-const energyDonutSize = 90
-const energyStrokeWidth = 14
+const energyDonutSize = 80
+const energyStrokeWidth = 12
 const energyDonutRadius = (energyDonutSize - energyStrokeWidth) / 2
-const energyCircumference = 2 * Math.PI * energyDonutRadius
 
-// Paleta de azules para GEI
-const blueColors = {
-  energy: '#0F3759',      // Azul oscuro - Energía (mayor %)
-  agriculture: '#1e5a8a', // Azul medio-oscuro - Agricultura
-  industrial: '#3b82f6',  // Azul medio - Industrial
-  waste: '#60a5fa'        // Azul claro - Residuos (menor %)
+// Colores GEI - VARIACIONES DE AZUL
+const geiColors = {
+  energy: '#0F3759',      // Azul muy oscuro
+  agriculture: '#2563eb', // Azul medio
+  industrial: '#60a5fa',  // Azul claro
+  waste: '#93c5fd'        // Azul muy claro
 }
 
-// Computed: Obtener datos del país
 const countryData = computed(() => {
   if (rawData.value.length === 0) return null
-  const found = rawData.value.find(row => 
-    row['País']?.toLowerCase() === props.selectedCountry?.toLowerCase()
-  )
+  const found = rawData.value.find(row => row['País']?.toLowerCase() === props.selectedCountry?.toLowerCase())
   return found || rawData.value[0]
 })
 
-// Datos GEI con colores azules
 const geiLegend = computed(() => [
-  { label: 'Energía', value: countryData.value?.GEI_EN || 0, color: blueColors.energy },
-  { label: 'Agricultura', value: countryData.value?.GEI_AGUT || 0, color: blueColors.agriculture },
-  { label: 'Industrial', value: countryData.value?.GEI_PI || 0, color: blueColors.industrial },
-  { label: 'Residuos', value: countryData.value?.GEI_RE || 0, color: blueColors.waste }
+  { label: 'Energía', value: countryData.value?.GEI_EN || 0, color: geiColors.energy },
+  { label: 'Agricultura', value: countryData.value?.GEI_AGUT || 0, color: geiColors.agriculture },
+  { label: 'Industrial', value: countryData.value?.GEI_PI || 0, color: geiColors.industrial },
+  { label: 'Residuos', value: countryData.value?.GEI_RE || 0, color: geiColors.waste }
 ])
 
-const geiSegments = computed(() => {
-  const data = geiLegend.value
+// Función para crear arcos SVG
+const describeArc = (x, y, radius, startAngle, endAngle) => {
+  const start = polarToCartesian(x, y, radius, endAngle)
+  const end = polarToCartesian(x, y, radius, startAngle)
+  const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1"
+  return `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`
+}
+
+const polarToCartesian = (centerX, centerY, radius, angleInDegrees) => {
+  const angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0
+  return {
+    x: centerX + (radius * Math.cos(angleInRadians)),
+    y: centerY + (radius * Math.sin(angleInRadians))
+  }
+}
+
+const geiArcs = computed(() => {
+  const data = geiLegend.value.filter(item => Number(item.value) > 0)
   const total = data.reduce((sum, item) => sum + Number(item.value), 0)
   if (total === 0) return []
   
-  let currentOffset = 0
+  const cx = donutSize / 2
+  const cy = donutSize / 2
+  let currentAngle = 0
   
-  return data.map(item => {
+  return data.map((item) => {
     const percentage = Number(item.value) / total
-    const dashArray = `${percentage * circumference} ${circumference}`
-    const dashOffset = -currentOffset * circumference
-    currentOffset += percentage
+    const sweepAngle = percentage * 360
+    const startAngle = currentAngle
+    const endAngle = startAngle + sweepAngle
+    currentAngle = endAngle
     
     return {
-      color: item.color,
-      dashArray,
-      dashOffset
+      path: describeArc(cx, cy, donutRadius, startAngle, endAngle),
+      color: item.color
     }
   })
 })
 
-// Datos Energía
-const energySegments = computed(() => {
+const energyArcs = computed(() => {
   const ccf = Number(countryData.value?.CCF) || 0
   const cer = Number(countryData.value?.CER) || 0
   const total = ccf + cer
   if (total === 0) return []
   
-  let currentOffset = 0
-  
+  const cx = energyDonutSize / 2
+  const cy = energyDonutSize / 2
   const data = [
-    { value: ccf, color: '#ef4444' },  // Rojo para fósiles
-    { value: cer, color: '#22c55e' }   // Verde para renovables
-  ]
+    { value: ccf, color: '#ef4444' },
+    { value: cer, color: '#22c55e' }
+  ].filter(item => item.value > 0)
   
-  return data.map(item => {
+  let currentAngle = 0
+  
+  return data.map((item) => {
     const percentage = item.value / total
-    const dashArray = `${percentage * energyCircumference} ${energyCircumference}`
-    const dashOffset = -currentOffset * energyCircumference
-    currentOffset += percentage
+    const sweepAngle = percentage * 360
+    const startAngle = currentAngle
+    const endAngle = startAngle + sweepAngle
+    currentAngle = endAngle
     
     return {
-      color: item.color,
-      dashArray,
-      dashOffset
+      path: describeArc(cx, cy, energyDonutRadius, startAngle, endAngle),
+      color: item.color
     }
   })
 })
@@ -376,491 +346,420 @@ const formatNumber = (value) => {
   if (!value || value === '—') return '—'
   const num = Number(value)
   if (isNaN(num)) return value
-  if (num >= 1000000000) {
-    return (num / 1000000000).toFixed(1)
-  } else if (num >= 1000000) {
-    return (num / 1000000).toFixed(1)
-  }
+  if (num >= 1000000000) return (num / 1000000000).toFixed(1)
+  if (num >= 1000000) return (num / 1000000).toFixed(1)
   return num.toLocaleString()
 }
 
-// ✅ Variables para control de carga
 const isDataLoaded = ref(false)
 const currentLoadedYear = ref(null)
 
-// ✅ Cargar años disponibles del sheet
 const loadAvailableYears = async () => {
   try {
-    console.log('📅 [AmbientalesRegional] Cargando años disponibles...')
     const sheetNames = await fetchRegionalSheetNames('ambientalesRegional')
-    
-    // Filtrar solo los que son años (4 dígitos)
-    const years = sheetNames
-      .filter(name => /^\d{4}$/.test(name))
-      .sort((a, b) => Number(b) - Number(a))
-    
+    const years = sheetNames.filter(name => /^\d{4}$/.test(name)).sort((a, b) => Number(b) - Number(a))
     availableYears.value = years
-    console.log('📅 [AmbientalesRegional] Años disponibles:', years)
-    
     return years
-  } catch (err) {
-    console.error('❌ [AmbientalesRegional] Error cargando años:', err)
-    return []
-  }
+  } catch (err) { return [] }
 }
 
-// ✅ Cargar datos - USANDO fetchRegionalData
 const loadData = async (forceReload = false) => {
-  if (!props.selectedYear) {
-    console.log('⚠️ [AmbientalesRegional] No hay año seleccionado, saltando carga')
-    return
-  }
-  
+  if (!props.selectedYear) return
   const yearStr = String(props.selectedYear)
-  
-  // ✅ Verificar si el año existe en los años disponibles
-  if (availableYears.value.length > 0 && !availableYears.value.includes(yearStr)) {
-    console.warn(`⚠️ [AmbientalesRegional] El año ${yearStr} no existe en el sheet. Años disponibles:`, availableYears.value)
-    // No intentar cargar si el año no existe
-    return
-  }
-  
-  // Evitar recargas si ya tenemos datos para este año (a menos que sea forzado)
-  if (!forceReload && isDataLoaded.value && currentLoadedYear.value === yearStr) {
-    console.log('ℹ️ [AmbientalesRegional] Ya hay datos cargados para', yearStr, ', saltando recarga')
-    return
-  }
-  
-  // Evitar cargas concurrentes
-  if (loading.value) {
-    console.log('⏳ [AmbientalesRegional] Ya hay una carga en progreso, saltando')
-    return
-  }
-  
+  if (availableYears.value.length > 0 && !availableYears.value.includes(yearStr)) return
+  if (!forceReload && isDataLoaded.value && currentLoadedYear.value === yearStr) return
+  if (loading.value) return
   loading.value = true
-  error.value = null
-  
   try {
-    console.log('🌍 [AmbientalesRegional] Cargando datos para año:', yearStr)
-    
-    // ✅ CORREGIDO: Usar fetchRegionalData con el año como nombre de hoja
     const data = await fetchRegionalData('ambientalesRegional', yearStr)
-    
-    console.log('📊 [AmbientalesRegional] Datos obtenidos:', data)
-    console.log('📊 [AmbientalesRegional] Total filas:', data?.length)
-    
     if (data && data.length > 0) {
       rawData.value = data
       isDataLoaded.value = true
       currentLoadedYear.value = yearStr
-      console.log('📊 [AmbientalesRegional] Primera fila:', data[0])
-      console.log('📊 [AmbientalesRegional] Columnas:', Object.keys(data[0]))
-    } else {
-      console.warn('⚠️ [AmbientalesRegional] No se obtuvieron datos')
-      // NO limpiar rawData si ya teníamos datos válidos
-      if (!isDataLoaded.value) {
-        rawData.value = []
-      }
     }
-    
-    console.log('✅ [AmbientalesRegional] Datos cargados correctamente')
-  } catch (err) {
-    console.error('❌ [AmbientalesRegional] Error cargando datos:', err)
-    error.value = err.message
-    // NO limpiar rawData en caso de error si ya teníamos datos válidos
-    if (!isDataLoaded.value) {
-      rawData.value = []
-    }
-  } finally {
-    loading.value = false
-  }
+  } catch (err) { console.error(err) }
+  finally { loading.value = false }
 }
 
-// Watchers - Solo recargar si el año realmente cambió
-watch(() => props.selectedYear, async (newYear, oldYear) => {
-  console.log('👀 [AmbientalesRegional] Watch selectedYear:', { newYear, oldYear, currentLoadedYear: currentLoadedYear.value })
-  
+watch(() => props.selectedYear, async (newYear) => {
   if (newYear) {
     const yearStr = String(newYear)
-    
     if (yearStr !== currentLoadedYear.value) {
-      // Limpiar datos solo cuando realmente cambia el año
       rawData.value = []
       isDataLoaded.value = false
-      
-      // Cargar años disponibles si no los tenemos
-      if (availableYears.value.length === 0) {
-        await loadAvailableYears()
-      }
-      
+      if (availableYears.value.length === 0) await loadAvailableYears()
       await loadData()
     }
   }
 }, { immediate: true })
 
-// Lifecycle
 onMounted(async () => {
-  console.log('🚀 [AmbientalesRegional] Mounted con año:', props.selectedYear)
-  
-  // Cargar años disponibles al montar
   await loadAvailableYears()
-  
-  // Cargar datos si hay año
-  if (props.selectedYear) {
-    await loadData()
-  }
+  if (props.selectedYear) await loadData()
 })
 </script>
 
 <style scoped>
-/* ========== VARIABLES ========== */
 .ambientales-container {
-  --primary-900: #0F3759;
-  --primary-800: #163C5F;
-  --primary-700: #1e4a6f;
-  --primary-600: #2563eb;
-  --primary-500: #3b82f6;
-  --primary-400: #60a5fa;
-  --primary-100: #dbeafe;
-  --primary-50: #eff6ff;
-  
-  --green-700: #15803d;
-  --green-600: #16a34a;
-  --green-500: #22c55e;
-  --green-400: #4ade80;
-  --green-100: #dcfce7;
-  --green-50: #f0fdf4;
-  
-  --red-700: #b91c1c;
-  --red-600: #dc2626;
-  --red-500: #ef4444;
-  --red-400: #f87171;
-  --red-200: #fecaca;
-  --red-100: #fee2e2;
-  --red-50: #fef2f2;
-  
-  --slate-900: #0f172a;
-  --slate-800: #1e293b;
-  --slate-700: #334155;
-  --slate-600: #475569;
-  --slate-500: #64748b;
-  --slate-400: #94a3b8;
-  --slate-300: #cbd5e1;
-  --slate-200: #e2e8f0;
-  --slate-100: #f1f5f9;
-  --slate-50: #f8fafc;
-  
-  width: 100%;
+  background-color: white;
+  border-radius: 15px;
   height: 100%;
-  background: #f3f4f6;
-  border-radius: 8px;
-  padding: 12px;
+  width: 100%;
+  padding: 8px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  box-sizing: border-box;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
-/* ========== HEADER BAR (estilo ITAEE) ========== */
-.header-bar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: linear-gradient(135deg, var(--primary-800) 0%, var(--primary-900) 100%);
-  padding: 10px 14px;
-  border-radius: 8px;
-  flex-shrink: 0;
-}
-
-.header-icon-wrapper {
-  width: 28px;
-  height: 28px;
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 6px;
+.global-empty-state {
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  color: white;
+  height: 100%;
 }
 
-.header-title {
-  flex: 1;
-  font-size: 13px;
-  font-weight: 500;
-  color: white;
-  letter-spacing: -0.01em;
+.empty-state-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 280px;
 }
 
-.header-info-btn {
-  width: 26px;
-  height: 26px;
+.empty-state-icon {
+  width: 70px;
+  height: 70px;
+  margin-bottom: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  color: rgba(255, 255, 255, 0.7);
-  transition: all 0.2s;
+  background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
   border-radius: 50%;
 }
 
-.header-info-btn:hover {
-  color: white;
-  background: rgba(255, 255, 255, 0.1);
+.empty-state-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2d3748;
+  margin: 0 0 6px 0;
 }
 
-/* ========== MAIN GRID ========== */
-.main-grid {
-  display: grid;
-  grid-template-columns: 1fr 1.3fr 1fr;
-  gap: 12px;
+.empty-state-description {
+  font-size: 13px;
+  color: #718096;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.card-body {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow: hidden;
+}
+
+.main-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #0F3759 0%, #1a4d7a 100%);
+  flex-shrink: 0;
+}
+
+.header-icon-badge {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.header-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+}
+
+.header-subtitle {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-left: auto;
+}
+
+.top-row {
+  display: flex;
+  gap: 6px;
+  height: 36%;
+  min-height: 0;
+}
+
+.bottom-row {
+  display: flex;
+  gap: 6px;
   flex: 1;
   min-height: 0;
 }
 
-/* ========== COLUMNA 1: MÉTRICAS ========== */
-.metrics-column {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.metric-card {
-  border-radius: 8px;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
+.section-card {
   flex: 1;
-  background: white;
-}
-
-.metric-card-blue {
-  border-left: 3px solid var(--primary-600);
-}
-
-.metric-card-green {
-  border-left: 3px solid var(--green-500);
-}
-
-.metric-card-slate {
-  border-left: 3px solid var(--slate-400);
-}
-
-.metric-label {
-  font-size: 9px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 6px;
-}
-
-.metric-label.blue { color: var(--primary-600); }
-.metric-label.green { color: var(--green-600); }
-.metric-label.slate { color: var(--slate-600); }
-
-.metric-value-row {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
   display: flex;
-  align-items: baseline;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.gei-card {
+  flex: 1.2;
+}
+
+.energy-card {
+  flex: 0.8;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, #0F3759 0%, #1a4d7a 100%);
+  flex-shrink: 0;
+}
+
+.section-header-left {
+  display: flex;
+  align-items: center;
   gap: 6px;
 }
 
-.metric-number {
-  font-size: 24px;
-  font-weight: 800;
-  line-height: 1;
+.section-icon-badge {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.metric-number.blue { color: var(--primary-900); }
-.metric-number.green { color: var(--green-700); }
-.metric-number.slate { color: var(--slate-800); }
-
-.metric-unit {
+.section-title {
   font-size: 12px;
-  color: var(--slate-500);
+  font-weight: 600;
+  color: white;
 }
 
-.metric-badge {
-  padding: 3px 8px;
-  border-radius: 6px;
-  font-size: 10px;
+.section-value {
+  font-size: 13px;
   font-weight: 700;
   color: white;
-  margin-left: 4px;
 }
 
-.metric-badge.blue { background: var(--primary-600); }
-.metric-badge.green { background: var(--green-500); }
-
-.metric-source {
-  font-size: 9px;
-  color: var(--slate-400);
-  margin-top: auto;
-  padding-top: 6px;
-}
-
-/* ========== COLUMNA 2: CO2 + GEI ========== */
-.center-column {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-/* CO2 Card */
-.co2-card {
-  background: white;
-  border-radius: 8px;
-  padding: 14px;
-  border-left: 3px solid var(--red-500);
-  position: relative;
+.section-content {
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 
-.co2-decoration {
-  position: absolute;
-  top: -15px;
-  right: -15px;
-  width: 60px;
-  height: 60px;
-  background: var(--red-100);
-  border-radius: 50%;
-  opacity: 0.5;
-}
-
-.co2-content {
+.irc-content {
+  background: #f8fafc;
+  padding: 10px;
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  position: relative;
-  z-index: 1;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
 }
 
-.co2-label {
-  font-size: 10px;
-  color: var(--red-600);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 4px;
-}
-
-.co2-value-row {
+.irc-main {
   display: flex;
-  align-items: baseline;
-  gap: 6px;
+  align-items: center;
+  gap: 20px;
 }
 
-.co2-number {
-  font-size: 30px;
+.irc-value-container {
+  text-align: center;
+}
+
+.irc-big-value {
+  font-size: 36px;
   font-weight: 800;
-  color: var(--red-700);
+  color: #0F3759;
+  display: block;
   line-height: 1;
 }
 
-.co2-unit {
-  font-size: 12px;
-  color: var(--red-500);
+.irc-label {
+  font-size: 11px;
+  color: #64748b;
+  text-transform: uppercase;
   font-weight: 500;
 }
 
-.co2-position {
-  text-align: center;
-  background: var(--red-50);
-  padding: 8px 12px;
-  border-radius: 8px;
+.irc-source {
+  font-size: 10px;
+  color: #94a3b8;
 }
 
-.co2-pos-label {
-  font-size: 8px;
-  color: var(--slate-500);
-  margin-bottom: 2px;
-}
-
-.co2-pos-number {
-  font-size: 22px;
-  font-weight: 800;
-  color: var(--red-600);
-  line-height: 1;
-}
-
-.co2-pos-total {
-  font-size: 8px;
-  color: var(--slate-400);
-}
-
-.co2-divider {
-  height: 1px;
-  background: var(--slate-200);
-  margin: 10px 0;
-}
-
-.co2-footer {
+.recursos-content {
+  background: #f8fafc;
+  padding: 8px;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  position: relative;
-  z-index: 1;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.co2-percapita {
+.recursos-row {
   display: flex;
   align-items: center;
   gap: 8px;
   background: white;
-  padding: 6px 10px;
   border-radius: 6px;
+  padding: 8px 10px;
+  border: 1px solid #f1f5f9;
 }
 
-.percapita-label {
-  font-size: 10px;
-  color: var(--slate-600);
+.recursos-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: #f8fafc;
+  border: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
-.percapita-value {
+.recursos-data {
+  flex: 1;
+  min-width: 0;
+}
+
+.recursos-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.recursos-label {
   font-size: 12px;
+  font-weight: 600;
+  color: #0F3759;
+}
+
+.recursos-value {
+  font-size: 13px;
   font-weight: 700;
-  color: var(--red-600);
+  color: #0F3759;
+}
+
+.recursos-bar {
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.recursos-bar-fill {
+  height: 100%;
+  background: #0F3759;
+  border-radius: 3px;
+  transition: width 0.8s ease-out;
+}
+
+.recursos-bar-fill.cte {
+  background: #2563eb;
+}
+
+.recursos-source {
+  font-size: 9px;
+  color: #94a3b8;
+  text-align: center;
+  margin-top: auto;
+}
+
+.co2-content {
+  background: #f8fafc;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.co2-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  width: 100%;
+  flex: 1;
+}
+
+.co2-card {
+  background: white;
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.co2-icon-bg {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #e8f4fc 0%, #d1e9f6 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.co2-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0F3759;
+}
+
+.co2-unit {
+  font-size: 10px;
+  color: #64748b;
+  text-transform: uppercase;
+  font-weight: 500;
 }
 
 .co2-source {
   font-size: 9px;
-  color: var(--slate-400);
-}
-
-/* GEI Card */
-.gei-card {
-  background: white;
-  border-radius: 8px;
-  padding: 12px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.gei-header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--slate-800);
-  margin-bottom: 12px;
+  color: #94a3b8;
+  margin-top: 4px;
 }
 
 .gei-content {
+  background: white;
+  padding: 10px 12px;
   display: flex;
   align-items: center;
   gap: 16px;
-  flex: 1;
+  height: 100%;
 }
 
-.donut-container {
+.gei-donut-container {
   position: relative;
   flex-shrink: 0;
 }
 
-.donut-center {
+.gei-donut-center {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -868,82 +767,77 @@ onMounted(async () => {
   text-align: center;
 }
 
-.donut-center-text {
-  font-size: 14px;
+.gei-center-text {
+  font-size: 16px;
   font-weight: 700;
-  color: var(--slate-700);
+  color: #0F3759;
 }
 
-.gei-legend {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
+.gei-bars {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
 }
 
-.gei-legend-item {
+.gei-bar-row {
   display: flex;
   align-items: center;
-  gap: 6px;
-  background: var(--slate-50);
-  padding: 6px 8px;
-  border-radius: 6px;
+  gap: 8px;
 }
 
-.legend-color {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
+.gei-bar-icon {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
   flex-shrink: 0;
 }
 
-.legend-info {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-width: 0;
-}
-
-.legend-label {
-  font-size: 9px;
-  color: var(--slate-500);
-}
-
-.legend-value {
+.gei-bar-label {
+  width: 80px;
   font-size: 12px;
-  font-weight: 700;
-  color: var(--slate-800);
+  color: #475569;
+  flex-shrink: 0;
+  font-weight: 500;
 }
 
-/* ========== COLUMNA 3: ENERGÍA ========== */
-.energy-column {
-  display: flex;
-}
-
-.energy-card {
-  background: white;
-  border-radius: 8px;
-  padding: 12px;
+.gei-bar-track {
   flex: 1;
+  height: 10px;
+  background: #f1f5f9;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.gei-bar-fill {
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.8s ease-out;
+}
+
+.gei-bar-value {
+  width: 45px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0F3759;
+  text-align: right;
+}
+
+.energy-content {
+  background: white;
+  padding: 8px;
   display: flex;
   flex-direction: column;
-}
-
-.energy-header {
-  display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--slate-800);
-  margin-bottom: 14px;
+  height: 100%;
+  overflow: hidden;
 }
 
-.energy-donut-container {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 12px;
+.energy-donut-wrapper {
   position: relative;
+  flex-shrink: 0;
 }
 
 .energy-donut-center {
@@ -955,199 +849,110 @@ onMounted(async () => {
 }
 
 .energy-center-value {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 800;
-  color: var(--red-600);
+  color: #dc2626;
   display: block;
-  line-height: 1.1;
+  line-height: 1;
 }
 
 .energy-center-label {
-  font-size: 8px;
-  color: var(--slate-500);
-}
-
-.energy-bars {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  flex: 1;
-}
-
-.energy-bar-item {
-  border-radius: 6px;
-  padding: 8px 10px;
-}
-
-.energy-bar-item.fossil {
-  background: var(--red-50);
-}
-
-.energy-bar-item.renewable {
-  background: var(--green-50);
-}
-
-.bar-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 6px;
-}
-
-.bar-label-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.bar-color {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-}
-
-.bar-color.fossil { background: var(--red-500); }
-.bar-color.renewable { background: var(--green-500); }
-
-.bar-label {
-  font-size: 10px;
-  color: var(--slate-700);
+  font-size: 9px;
+  color: #64748b;
   font-weight: 500;
 }
 
-.bar-value {
-  font-size: 14px;
-  font-weight: 800;
-}
-
-.bar-value.fossil { color: var(--red-600); }
-.bar-value.renewable { color: var(--green-600); }
-
-.bar-track {
-  height: 8px;
-  border-radius: 4px;
+.energy-bars-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 
-.bar-track.fossil { background: var(--red-100); }
-.bar-track.renewable { background: var(--green-100); }
-
-.bar-fill {
-  height: 100%;
-  border-radius: 4px;
-  transition: width 0.5s ease;
-}
-
-.bar-fill.fossil { 
-  background: linear-gradient(90deg, var(--red-500) 0%, var(--red-400) 100%); 
-}
-.bar-fill.renewable { 
-  background: linear-gradient(90deg, var(--green-500) 0%, var(--green-400) 100%); 
-}
-
-.energy-footer {
-  margin-top: auto;
-  padding: 6px 8px;
-  background: var(--slate-50);
-  border-radius: 4px;
+.energy-bar-row {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.energy-footer span {
-  font-size: 8px;
-  color: var(--slate-500);
-}
-
-/* ========== EMPTY STATE ========== */
-.global-empty-state {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  width: 100%;
-  background: white;
-  border-radius: 8px;
-}
-
-.empty-state-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  max-width: 350px;
-  padding: 30px;
-}
-
-.empty-state-icon {
-  width: 100px;
-  height: 100px;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+.energy-bar-dot {
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
 }
 
-.empty-state-icon svg {
-  opacity: 0.7;
+.energy-bar-dot.fossil {
+  background: #ef4444;
 }
 
-.empty-state-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #2d3748;
-  margin: 0 0 10px 0;
+.energy-bar-dot.renewable {
+  background: #22c55e;
 }
 
-.empty-state-description {
-  font-size: 13px;
-  color: #718096;
-  margin: 0;
-  line-height: 1.5;
+.energy-bar-label {
+  flex: 1;
+  font-size: 11px;
+  color: #475569;
+  font-weight: 500;
 }
 
-/* ========== CARD BODY ========== */
-.card-body {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.energy-bar-value {
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.energy-bar-value.fossil { color: #dc2626; }
+.energy-bar-value.renewable { color: #16a34a; }
+
+.energy-bar-track-full {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
   overflow: hidden;
+  margin-bottom: 4px;
 }
 
-/* ========== LOADING STATES ========== */
+.energy-bar-track-full.fossil { background: #fee2e2; }
+.energy-bar-track-full.renewable { background: #dcfce7; }
+
+.energy-bar-fill-full {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.8s ease-out;
+}
+
+.energy-bar-fill-full.fossil { background: #ef4444; }
+.energy-bar-fill-full.renewable { background: #22c55e; }
+
+.energy-source {
+  font-size: 8px;
+  color: #94a3b8;
+  margin-top: auto;
+  flex-shrink: 0;
+}
+
 .loading-state {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100%;
-  width: 100%;
-  flex: 1;
+  background: #f8fafc;
 }
 
-.loading-mini {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: 1;
-}
-
-.spinner-small {
-  width: 20px;
-  height: 20px;
-  border: 2px solid var(--slate-200);
-  border-top: 2px solid var(--primary-500);
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #e2e8f0;
+  border-top-color: #0F3759;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  to { transform: rotate(360deg); }
 }
 </style>
