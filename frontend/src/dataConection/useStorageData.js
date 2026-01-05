@@ -1,7 +1,7 @@
 // src/dataConection/useStorageData.js
-// ✅ ACTUALIZADO con CACHÉ, RETRY, COLA y FAIL SILENCIOSO (sin errores visibles)
+// ✅ ACTUALIZADO con CACHÉ, RETRY, COLA, FAIL SILENCIOSO y fetchRegionalSheetNames
 // ✅ parseNumericValue actualizado para manejar formatos mixtos (europeo y americano)
-import { getCurrentConfig, getSheetIdForFile, getSheetName } from './storageConfig'
+import { getCurrentConfig, getSheetIdForFile, getSheetName, storageConfig } from './storageConfig'
 
 // ============================================
 // ✅ SISTEMA DE CACHÉ GLOBAL
@@ -194,6 +194,98 @@ export function useStorageData() {
       return []
     }
   }
+
+  /**
+   * ✅ NUEVO: Obtener nombres de hojas (pestañas) de un Google Sheet REGIONAL
+   * @param {string} regionalKey - Clave del sheet regional: 'estatusDelPais', 'ambientalesRegional', etc.
+   * @returns {Promise<string[]>} - Array con nombres de las hojas/pestañas
+   */
+  const fetchRegionalSheetNames = async (regionalKey) => {
+    try {
+      const gsConfig = storageConfig.googlesheets
+      
+      // Mapeo de claves a la configuración de cualitativoRegional
+      const regionalConfig = gsConfig.sheets?.cualitativoRegional?.[regionalKey]
+      
+      if (!regionalConfig) {
+        console.error(`❌ [fetchRegionalSheetNames] No se encontró configuración para regional: ${regionalKey}`)
+        return []
+      }
+      
+      const sheetId = regionalConfig.sheetId
+      
+      if (!sheetId) {
+        console.error(`❌ [fetchRegionalSheetNames] No se encontró sheetId para regional: ${regionalKey}`)
+        return []
+      }
+      
+      const apiKey = gsConfig.apiKey
+      
+      if (!apiKey) {
+        console.error(`❌ [fetchRegionalSheetNames] No se encontró apiKey`)
+        return []
+      }
+      
+      // ✅ CACHÉ: Usar clave especial para nombres de hojas regionales
+      const cacheKey = `__regionalSheetNames__${regionalKey}__${sheetId}`
+      const cachedEntry = dataCache.get(cacheKey)
+      
+      if (isCacheValid(cachedEntry)) {
+        console.log(`✅ [Cache HIT] Usando nombres de hojas regionales en caché para: ${regionalKey}`)
+        return cachedEntry.data
+      }
+      
+      // Verificar solicitud pendiente
+      if (pendingRequests.has(cacheKey)) {
+        console.log(`⏳ [Pending] Esperando solicitud de nombres regionales existente para: ${regionalKey}`)
+        return await pendingRequests.get(cacheKey)
+      }
+      
+      console.log(`📊 [fetchRegionalSheetNames] Obteniendo hojas de sheet regional: ${regionalKey}`)
+      console.log(`  - Sheet ID: ${sheetId}`)
+      
+      const fetchPromise = enqueueRequest(async () => {
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}?key=${apiKey}&fields=sheets.properties.title`
+        const response = await fetchWithRetry(url)
+        
+        if (!response) {
+          console.warn(`⚠️ [fetchRegionalSheetNames] No se pudo obtener hojas para: ${regionalKey}`)
+          return []
+        }
+        
+        if (!response.ok) {
+          console.warn(`⚠️ [fetchRegionalSheetNames] Error HTTP ${response.status} para: ${regionalKey}`)
+          return []
+        }
+        
+        const data = await response.json()
+        const sheetNames = data.sheets?.map(sheet => sheet.properties.title) || []
+        
+        console.log(`✅ [fetchRegionalSheetNames] Hojas encontradas para ${regionalKey}:`, sheetNames)
+        
+        // Guardar en caché
+        dataCache.set(cacheKey, {
+          data: sheetNames,
+          timestamp: Date.now()
+        })
+        console.log(`💾 [Cache SAVE] Nombres de hojas regionales guardados: ${cacheKey}`)
+        
+        return sheetNames
+      })
+      
+      pendingRequests.set(cacheKey, fetchPromise)
+      
+      try {
+        return await fetchPromise
+      } finally {
+        pendingRequests.delete(cacheKey)
+      }
+      
+    } catch (error) {
+      console.warn(`⚠️ [fetchRegionalSheetNames] Error silencioso para ${regionalKey}:`, error.message)
+      return []
+    }
+  }
   
   /**
    * Obtener datos de una hoja específica de Google Sheets
@@ -299,6 +391,117 @@ export function useStorageData() {
     } catch (err) {
       // ✅ CAMBIO: Nunca lanzar excepción, solo log y retornar array vacío
       console.warn(`⚠️ [fetchData] Error silencioso para ${fileKey}:`, err.message)
+      return []
+    }
+  }
+
+  /**
+   * ✅ NUEVO: Obtener datos de una hoja específica de Google Sheets REGIONAL
+   * @param {string} regionalKey - Clave del sheet regional: 'estatusDelPais', 'ambientalesRegional', etc.
+   * @param {string} sheetName - Nombre de la hoja/pestaña (ej: '2024')
+   * @returns {Promise<Array>} - Array con los datos de la hoja
+   */
+  const fetchRegionalData = async (regionalKey, sheetName = '2024') => {
+    try {
+      const gsConfig = storageConfig.googlesheets
+      
+      // Obtener configuración regional
+      const regionalConfig = gsConfig.sheets?.cualitativoRegional?.[regionalKey]
+      
+      if (!regionalConfig) {
+        console.error(`❌ [fetchRegionalData] No se encontró configuración para regional: ${regionalKey}`)
+        return []
+      }
+      
+      const sheetId = regionalConfig.sheetId
+      const apiKey = gsConfig.apiKey
+      
+      if (!sheetId || !apiKey) {
+        console.warn('⚠️ [fetchRegionalData] Falta configuración de API Key o Sheet ID')
+        return []
+      }
+      
+      // ✅ CACHÉ
+      const cacheKey = `__regionalData__${regionalKey}__${sheetName}`
+      const cachedEntry = dataCache.get(cacheKey)
+      
+      if (isCacheValid(cachedEntry)) {
+        console.log(`✅ [Cache HIT] Usando datos regionales en caché para: ${regionalKey} - ${sheetName}`)
+        return cachedEntry.data
+      }
+      
+      // Verificar solicitud pendiente
+      if (pendingRequests.has(cacheKey)) {
+        console.log(`⏳ [Pending] Esperando solicitud de datos regionales existente para: ${regionalKey}`)
+        return await pendingRequests.get(cacheKey)
+      }
+      
+      console.log(`📊 [fetchRegionalData] Obteniendo datos regionales: ${regionalKey}`)
+      console.log(`  - Hoja: ${sheetName}`)
+      console.log(`  - Sheet ID: ${sheetId}`)
+      
+      // Formatear nombre de hoja si es un número
+      let formattedSheetName = sheetName
+      if (/^\d+$/.test(String(sheetName).trim())) {
+        formattedSheetName = `'${sheetName}'`
+      }
+      
+      const range = `${formattedSheetName}!A:ZZ`
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(range)}?key=${apiKey}`
+      
+      const fetchPromise = enqueueRequest(async () => {
+        const response = await fetchWithRetry(url)
+        
+        if (!response) {
+          console.warn(`⚠️ [fetchRegionalData] Max retries alcanzado para: ${regionalKey}. Retornando vacío.`)
+          return []
+        }
+        
+        if (!response.ok) {
+          console.warn(`⚠️ [fetchRegionalData] Error HTTP ${response.status} para: ${regionalKey}. Retornando vacío.`)
+          return []
+        }
+        
+        const data = await response.json()
+        const rows = data.values || []
+        
+        if (rows.length === 0) {
+          console.warn('⚠️ [fetchRegionalData] No se encontraron datos')
+          return []
+        }
+        
+        // Convertir a objetos con headers
+        const headers = rows[0]
+        const dataRows = rows.slice(1).map(row => {
+          const obj = {}
+          headers.forEach((header, index) => {
+            obj[header] = row[index] || null
+          })
+          return obj
+        })
+        
+        console.log(`✅ [fetchRegionalData] Datos obtenidos: ${dataRows.length} filas`)
+        
+        // Guardar en caché
+        dataCache.set(cacheKey, {
+          data: dataRows,
+          timestamp: Date.now()
+        })
+        console.log(`💾 [Cache SAVE] Datos regionales guardados en caché: ${cacheKey}`)
+        
+        return dataRows
+      })
+      
+      pendingRequests.set(cacheKey, fetchPromise)
+      
+      try {
+        return await fetchPromise
+      } finally {
+        pendingRequests.delete(cacheKey)
+      }
+      
+    } catch (err) {
+      console.warn(`⚠️ [fetchRegionalData] Error silencioso para ${regionalKey}:`, err.message)
       return []
     }
   }
@@ -605,6 +808,8 @@ export function useStorageData() {
   return {
     fetchData,
     fetchSheetNames,
+    fetchRegionalSheetNames,  // ✅ NUEVO: Para obtener hojas de sheets regionales
+    fetchRegionalData,        // ✅ NUEVO: Para obtener datos de sheets regionales
     transform,
     transformToBarChartData,
     transformToLinearChartData,

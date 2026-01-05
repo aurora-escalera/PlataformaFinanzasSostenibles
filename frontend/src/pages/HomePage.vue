@@ -627,6 +627,12 @@ const isDefaultState = computed(() => {
 // ============================================================================
 
 const loadEntitiesFromSheet = async () => {
+  // ✅ AGREGAR: No cargar si panel cualitativo está expandido
+  if (isRetractableExpanded.value) {
+    console.log('⏸️ [HomePage] Panel cualitativo activo, saltando carga de entidades')
+    return
+  }
+  
   try {
     entitiesLoading.value = true
     entitiesError.value = null
@@ -694,6 +700,8 @@ const handleEntityChange = (entity) => {
   
   if (entity === null) {
     resetSelection()
+    
+    // ✅ CORREGIDO: No cargar ranking si panel cualitativo está expandido
     if (!isRetractableExpanded.value && !areAllFiltersOnTodas.value) {
       if (selectedVariable.value && selectedVariable.value !== '' && selectedVariable.value !== null) {
         updateRankingByVariable(selectedVariable.value)
@@ -721,7 +729,8 @@ const handleYearChange = async (year) => {
     setActiveYear(year)
   }
   
-  if (areAllFiltersOnTodas.value) {
+  // ✅ CORREGIDO: Solo cargar datos si NO está el panel cualitativo activo
+  if (!isRetractableExpanded.value && areAllFiltersOnTodas.value) {
     await loadIFSSData()
   }
   
@@ -734,6 +743,13 @@ const handleVariableChange = (variable) => {
   selectedVariable.value = variable
   
   if (variable === '') {
+    emitFiltersState()
+    return
+  }
+  
+  // ✅ CORREGIDO: No cargar ranking si panel cualitativo está expandido
+  if (isRetractableExpanded.value) {
+    console.log('⏸️ [HomePage] Panel cualitativo activo, saltando carga de ranking')
     emitFiltersState()
     return
   }
@@ -767,6 +783,7 @@ const handleStateClickWithEmit = async (stateName) => {
     
     restoreInitialYears()
     
+    // ✅ CORREGIDO: No cargar ranking si panel cualitativo está expandido
     if (!isRetractableExpanded.value) {
       if (selectedVariable.value && selectedVariable.value !== '' && selectedVariable.value !== null) {
         updateRankingByVariable(selectedVariable.value)
@@ -1068,6 +1085,13 @@ watch(toggleAction, async (newAction) => {
  */
 watch(areAllFiltersOnTodas, async (newValue, oldValue) => {
   console.log('👀 [areAllFiltersOnTodas] cambió de', oldValue, 'a', newValue)
+  
+  // ✅ CORREGIDO: No cargar si panel cualitativo está activo
+  if (isRetractableExpanded.value) {
+    console.log('⏸️ [HomePage] Panel cualitativo activo, saltando carga de StackedArea')
+    return
+  }
+  
   if (newValue && !oldValue) {
     console.log('🌎 [HomePage] Filtros en "Todas...", cargando StackedArea')
     await loadIFSSData()
@@ -1094,6 +1118,12 @@ watch(selectedVariable, (newVariable) => {
   if (newVariable === '') return
   if (areAllFiltersOnTodas.value) return
   
+  // ✅ CORREGIDO: No cargar ranking si panel cualitativo está expandido
+  if (isRetractableExpanded.value) {
+    console.log('⏸️ [HomePage] Panel cualitativo activo, saltando actualización de ranking')
+    return
+  }
+  
   if (!selectedState.value) {
     if (newVariable === null) {
       loadAllStatesRanking(null)
@@ -1108,6 +1138,12 @@ watch(selectedVariable, (newVariable) => {
  */
 watch(selectedYear, async (newYear, oldYear) => {
   if (newYear !== oldYear) {
+    // ✅ CORREGIDO: No cargar datos si panel cualitativo está expandido
+    if (isRetractableExpanded.value) {
+      console.log('⏸️ [HomePage] Panel cualitativo activo, saltando carga de datos cuantitativos')
+      return
+    }
+    
     await loadEntitiesFromSheet()
     
     if (!areAllFiltersOnTodas.value) {
@@ -1147,6 +1183,7 @@ watch(selectedState, (newState, oldState) => {
     }
     emit('region-selected', null)
     
+    // ✅ CORREGIDO: No cargar ranking si panel cualitativo está expandido
     if (!isRetractableExpanded.value && !areAllFiltersOnTodas.value) {
       if (selectedVariable.value && selectedVariable.value !== '' && selectedVariable.value !== null) {
         updateRankingByVariable(selectedVariable.value)
@@ -1172,6 +1209,22 @@ watch(availableYears, (newYears) => {
   emit('available-years-change', newYears)
   updateAvailableYears(newYears)
 }, { deep: true })
+
+/**
+ * ✅ NUEVO: Watch para cuando isRetractableExpanded cambia
+ * Controla la pausa/reanudación de cargas de datos
+ */
+watch(isRetractableExpanded, async (isExpanded, wasExpanded) => {
+  console.log('👀 [HomePage] isRetractableExpanded cambió:', { isExpanded, wasExpanded })
+  
+  if (isExpanded) {
+    // Panel cualitativo se abrió - pausar cargas de ranking
+    console.log('⏸️ [HomePage] Panel cualitativo abierto, ranking y datos cuantitativos pausados')
+  } else if (!isExpanded && wasExpanded) {
+    // Panel cualitativo se cerró - handlePanelClosed ya maneja esto
+    console.log('▶️ [HomePage] Panel cualitativo cerrado, handlePanelClosed manejará la recarga')
+  }
+})
 
 // ============================================================================
 // INICIALIZACIÓN

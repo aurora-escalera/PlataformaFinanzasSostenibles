@@ -1,5 +1,5 @@
 <!-- src/modules/qualitativeIndicators/components/QualitativePanel.vue -->
-<!-- ✅ ACTUALIZADO: Carga de años dinámicos para TODAS las categorías + Tooltip dinámico con Teleport -->
+<!-- ✅ CORREGIDO: v-else-if encadenados para evitar montaje múltiple de componentes -->
 <template>
   <div 
     class="qualitative-panel"
@@ -21,11 +21,29 @@
     
     <!-- Vista expandida (contenido completo) -->
     <div v-else class="expanded-view">
+      <!-- ============================================ -->
+      <!-- HEADER DINÁMICO -->
+      <!-- ============================================ -->
       <div class="header-panel">
-        <div class="hamburger-menu">
-          <img src="/public/icons/white-hamburger.png" alt="hamburger-menu" class="hamburger-icon">
-        </div>
-        <h1 class="header-title">Indicadores Cualitativos</h1>
+        <!-- NIVEL 1: Header original con hamburguesa y título -->
+        <template v-if="!selectedDataType">
+          <div class="hamburger-menu">
+            <img src="/public/icons/white-hamburger.png" alt="hamburger-menu" class="hamburger-icon">
+          </div>
+          <h1 class="header-title">Indicadores Cualitativos</h1>
+        </template>
+
+        <!-- NIVEL 2+: Header con Volver e indicador -->
+        <template v-else>
+          <button class="header-back-btn" @click="handleBackToDataType">
+            ← Volver
+          </button>
+          <div class="header-data-type-indicator">
+            {{ selectedDataType === 'subnacional' ? 'DATOS SUBNACIONALES' : 'DATOS REGIONALES' }}
+          </div>
+        </template>
+
+        <!-- Botón cerrar (siempre visible) -->
         <div 
           class="expand-btn-wrapper expanded-wrapper"
           @mouseenter="handleCollapseTooltipEnter"
@@ -38,8 +56,25 @@
         </div>
       </div>
 
-      <!-- Mostrar botones solo si no hay categoría seleccionada -->
-      <div v-if="!selectedCategory" class="buttons-container">
+      <!-- ============================================ -->
+      <!-- NIVEL 1: Selección de tipo de datos -->
+      <!-- ============================================ -->
+      <div v-if="!selectedDataType" class="buttons-container">
+        <div class="data-type-title">Selecciona el tipo de datos</div>
+        <div class="qualitative-btn data-type-btn" @click.stop="selectDataType('subnacional')">
+          <span class="title-btn">Datos Subnacionales</span>
+          <span class="plus-btn">+</span>
+        </div>
+        <div class="qualitative-btn data-type-btn" @click.stop="selectDataType('regional')">
+          <span class="title-btn">Datos Regionales</span>
+          <span class="plus-btn">+</span>
+        </div>
+      </div>
+
+      <!-- ============================================ -->
+      <!-- NIVEL 2: Categorías SUBNACIONALES -->
+      <!-- ============================================ -->
+      <div v-else-if="selectedDataType === 'subnacional' && !selectedCategory" class="buttons-container">
         <div class="qualitative-btn" @click.stop="handleCategoryClick('ambientales')">
           <span class="title-btn">Ambientales</span>
           <span class="plus-btn">+</span>
@@ -62,67 +97,133 @@
         </div>
       </div>
 
-      <!-- ✅ Mostrar componente AmbientalesView cuando se selecciona "Ambientales" -->
-      <div v-else-if="selectedCategory === 'ambientales'" class="inner-card">
+      <!-- ============================================ -->
+      <!-- NIVEL 2: Categorías REGIONALES -->
+      <!-- ============================================ -->
+      <div v-else-if="selectedDataType === 'regional' && !selectedCategory" class="buttons-container">
+        <div class="qualitative-btn" @click.stop="handleCategoryClick('estatus-pais')">
+          <span class="title-btn">Estatus del país</span>
+          <span class="plus-btn">+</span>
+        </div>
+        <div class="qualitative-btn" @click.stop="handleCategoryClick('ambientales-regional')">
+          <span class="title-btn">Indicadores ambientales</span>
+          <span class="plus-btn">+</span>
+        </div>
+        <div class="qualitative-btn" @click.stop="handleCategoryClick('sociales-regional')">
+          <span class="title-btn">Indicadores sociales</span>
+          <span class="plus-btn">+</span>                  
+        </div>
+        <div class="qualitative-btn" @click.stop="handleCategoryClick('economicos-regional')">
+          <span class="title-btn">Indicadores económicos</span>
+          <span class="plus-btn">+</span>  
+        </div>
+        <div class="qualitative-btn" @click.stop="handleCategoryClick('financiamiento-sostenible')">
+          <span class="title-btn">Financiamiento sostenible internacional</span>
+          <span class="plus-btn">+</span>  
+        </div>
+      </div>
+
+      <!-- ============================================ -->
+      <!-- NIVEL 3: Componentes SUBNACIONALES -->
+      <!-- ============================================ -->
+      
+      <!-- Ambientales Subnacional -->
+      <div v-else-if="selectedDataType === 'subnacional' && selectedCategory === 'ambientales'" class="inner-card">
         <AmbientalesView 
           :selectedEntity="props.selectedEntity"
           :selectedYear="props.selectedYear"
-          @back="handleBack" 
+          @back="handleBackToCategories" 
         />
       </div>
 
-      <!-- ✅ Mostrar componente EconomicosView cuando se selecciona "Económicos" -->
-      <div v-else-if="selectedCategory === 'economicos'" class="inner-card">
+      <!-- Económicos Subnacional -->
+      <div v-else-if="selectedDataType === 'subnacional' && selectedCategory === 'economicos'" class="inner-card">
         <EconomicosView
           :selectedEntity="props.selectedEntity"
           :selectedYear="props.selectedYear"
-          @back="handleBack" 
+          @back="handleBackToCategories" 
         />
       </div>
 
-      <!-- ✅ Mostrar componente SocialesView cuando se selecciona "Sociales" -->
-      <div v-else-if="selectedCategory === 'sociales'" class="inner-card">
+      <!-- Sociales Subnacional -->
+      <div v-else-if="selectedDataType === 'subnacional' && selectedCategory === 'sociales'" class="inner-card">
         <SocialesView
           :selectedEntity="props.selectedEntity"
           :selectedYear="props.selectedYear"
-          @back="handleBack" 
+          @back="handleBackToCategories" 
         />
       </div>
 
-      <!-- ✅ Mostrar componente PresupuestosView cuando se selecciona "Presupuestos" -->
-      <div v-else-if="selectedCategory === 'presupuestos'" class="inner-card">
+      <!-- Presupuestos Subnacional -->
+      <div v-else-if="selectedDataType === 'subnacional' && selectedCategory === 'presupuestos'" class="inner-card">
         <PresupuestosView
           :selectedEntity="props.selectedEntity"
           :selectedYear="props.selectedYear"
-          @back="handleBack" 
+          @back="handleBackToCategories" 
         />
       </div>
 
-      <!-- ✅ Mostrar componente GobernabilidadView cuando se selecciona "Gobernabilidad" -->
-      <div v-else-if="selectedCategory === 'gobernabilidad'" class="inner-card">
+      <!-- Gobernabilidad Subnacional -->
+      <div v-else-if="selectedDataType === 'subnacional' && selectedCategory === 'gobernabilidad'" class="inner-card">
         <GobernabilidadView
           :selectedEntity="props.selectedEntity"
           :selectedYear="props.selectedYear"
-          @back="handleBack" 
+          @back="handleBackToCategories" 
         />
       </div>
 
-      <!-- Mensaje para otras categorías -->
-      <div v-else class="inner-card">
-        <div class="card-header">
-          <button class="back-btn" @click="handleBack">← Volver</button>
-          <h1 class="card-header-title">{{ getCategoryTitle(selectedCategory) }}</h1>
-        </div>
-        
-        <div class="empty-state">
-          <div class="empty-icon">📊</div>
-          <h3>Próximamente</h3>
-          <p>Los indicadores de {{ getCategoryTitle(selectedCategory).toLowerCase() }} estarán disponibles pronto.</p>
-        </div>
+      <!-- ============================================ -->
+      <!-- NIVEL 3: Componentes REGIONALES -->
+      <!-- ============================================ -->
+
+      <!-- Estatus del país -->
+      <div v-else-if="selectedDataType === 'regional' && selectedCategory === 'estatus-pais'" class="inner-card">
+        <EstatusPaisView 
+          :selectedEntity="props.selectedEntity"
+          :selectedYear="props.selectedYear"
+          @back="handleBackToCategories" 
+        />
       </div>
+
+      <!-- Indicadores ambientales Regional -->
+      <div v-else-if="selectedDataType === 'regional' && selectedCategory === 'ambientales-regional'" class="inner-card">
+        <AmbientalesRegionalView
+          :selectedEntity="props.selectedEntity"
+          :selectedYear="props.selectedYear"
+          @back="handleBackToCategories" 
+        />
+      </div>
+
+      <!-- Indicadores sociales Regional -->
+      <div v-else-if="selectedDataType === 'regional' && selectedCategory === 'sociales-regional'" class="inner-card">
+        <SocialesRegionalView
+          :selectedEntity="props.selectedEntity"
+          :selectedYear="props.selectedYear"
+          @back="handleBackToCategories" 
+        />
+      </div>
+
+      <!-- Indicadores económicos Regional -->
+      <div v-else-if="selectedDataType === 'regional' && selectedCategory === 'economicos-regional'" class="inner-card">
+        <EconomicosRegionalView
+          :selectedEntity="props.selectedEntity"
+          :selectedYear="props.selectedYear"
+          @back="handleBackToCategories" 
+        />
+      </div>
+
+      <!-- Financiamiento sostenible internacional -->
+      <div v-else-if="selectedDataType === 'regional' && selectedCategory === 'financiamiento-sostenible'" class="inner-card">
+        <FinanciamientoSostenibleView
+          :selectedEntity="props.selectedEntity"
+          :selectedYear="props.selectedYear"
+          @back="handleBackToCategories" 
+        />
+      </div>
+
     </div>
 
-    <!-- ✅ TELEPORT: Tooltip del botón expandir (renderizado en body, a la derecha) -->
+    <!-- ✅ TELEPORT: Tooltip del botón expandir -->
     <Teleport to="body">
       <div 
         v-if="showExpandTooltip"
@@ -133,7 +234,7 @@
       </div>
     </Teleport>
 
-    <!-- ✅ TELEPORT: Tooltip del botón colapsar (renderizado en body) -->
+    <!-- ✅ TELEPORT: Tooltip del botón colapsar -->
     <Teleport to="body">
       <div 
         v-if="showCollapseTooltip"
@@ -148,12 +249,25 @@
 
 <script setup>
 import { ref, watch, computed } from 'vue'
-import AmbientalesView from './AmbientalesView.vue'
 import { useStorageData } from '@/dataConection/useStorageData'
+
+// ============================================
+// COMPONENTES SUBNACIONALES (existentes)
+// ============================================
+import AmbientalesView from './AmbientalesView.vue'
 import EconomicosView from './EconomicosView.vue'
 import SocialesView from './SocialesView.vue'
 import GobernabilidadView from './GobernabilidadView.vue'
 import PresupuestosView from './PresupuestosView.vue'
+
+// ============================================
+// COMPONENTES REGIONALES
+// ============================================
+import EstatusPaisView from '../../qualitativeRegionalIndicators/EstatusPaisView.vue'
+import AmbientalesRegionalView from '../../qualitativeRegionalIndicators/AmbientalesRegionalView.vue'
+import SocialesRegionalView from './SocialesView.vue' // TODO: Crear SocialesRegionalView.vue
+import EconomicosRegionalView from './EconomicosView.vue' // TODO: Crear EconomicosRegionalView.vue
+import FinanciamientoSostenibleView from './PresupuestosView.vue' // TODO: Crear FinanciamientoSostenibleView.vue
 
 const props = defineProps({
   isExpanded: {
@@ -168,24 +282,26 @@ const props = defineProps({
     type: [String, Number],
     default: null
   },
-  // ✅ NUEVO: Recibir el estado actual del toggle
   currentDataView: {
     type: String,
-    default: 'subnacional' // 'subnacional' o 'regional'
+    default: 'subnacional'
   }
 })
 
-const emit = defineEmits(['toggle', 'category-click', 'years-loaded', 'panel-closed'])
+const emit = defineEmits(['toggle', 'category-click', 'years-loaded', 'panel-closed', 'data-type-change'])
 
-// Estado local para categoría seleccionada
+// ============================================
+// ESTADO LOCAL
+// ============================================
+const selectedDataType = ref(null) // 'subnacional' | 'regional' | null
 const selectedCategory = ref(null)
 
 // ✅ Composable para obtener datos
 const { fetchSheetNames } = useStorageData()
 
-// ============================================================================
-// ✅ TOOLTIP CON TELEPORT
-// ============================================================================
+// ============================================
+// TOOLTIP CON TELEPORT
+// ============================================
 const expandBtnRef = ref(null)
 const collapseBtnRef = ref(null)
 const showExpandTooltip = ref(false)
@@ -196,10 +312,9 @@ const collapseTooltipPosition = ref({ x: 0, y: 0 })
 const handleTooltipEnter = () => {
   if (expandBtnRef.value) {
     const rect = expandBtnRef.value.getBoundingClientRect()
-    // Posicionar a la derecha del botón, centrado verticalmente
     tooltipPosition.value = {
-      x: rect.right + 82,
-      y: (rect.top + rect.height / 2) +20
+      x: rect.right + 12,
+      y: rect.top + rect.height / 2
     }
   }
   showExpandTooltip.value = true
@@ -212,7 +327,6 @@ const handleTooltipLeave = () => {
 const handleCollapseTooltipEnter = () => {
   if (collapseBtnRef.value) {
     const rect = collapseBtnRef.value.getBoundingClientRect()
-    // Posicionar debajo del botón para el collapse
     collapseTooltipPosition.value = {
       x: rect.left + rect.width / 2,
       y: rect.bottom + 12
@@ -241,138 +355,170 @@ const collapseTooltipStyle = computed(() => ({
   zIndex: 99999
 }))
 
-// ============================================================================
-// ✅ COMPUTED: Mensaje dinámico del tooltip
-// ============================================================================
+// ============================================
+// COMPUTED: Mensaje dinámico del tooltip
+// ============================================
 const expandTooltipMessage = computed(() => {
-  const viewLabel = props.currentDataView === 'regional' 
-    ? 'Datos Regionales' 
-    : 'Datos Subnacionales'
-  
-  return `Da clic aquí para ver los indicadores cualitativos de ${viewLabel}`
+  return 'Da clic aquí para ver los indicadores cualitativos'
 })
 
-// ============================================================================
-// ✅ FUNCIONES DE CARGA DE AÑOS POR CATEGORÍA
-// ============================================================================
-
-/**
- * ✅ Cargar años desde el sheet de AMBIENTALES (incendiosForestales)
- */
+// ============================================
+// FUNCIONES DE CARGA DE AÑOS - SUBNACIONALES
+// ============================================
 const loadAmbientalesYears = async () => {
   try {
     console.log('📅 [QualitativePanel] Cargando años de sheet AMBIENTALES...')
-    
     const sheetNames = await fetchSheetNames('incendiosForestales')
-    
     const years = sheetNames
       .filter(name => /^\d{4}$/.test(name))
       .sort((a, b) => b - a)
-    
     console.log('✅ [QualitativePanel] Años AMBIENTALES encontrados:', years)
-    
     emit('years-loaded', years)
-    
   } catch (err) {
     console.error('❌ [QualitativePanel] Error cargando años ambientales:', err)
   }
 }
 
-/**
- * ✅ Cargar años desde el sheet de ECONÓMICOS (ingresoTotal)
- */
 const loadEconomicosYears = async () => {
   try {
     console.log('📅 [QualitativePanel] Cargando años de sheet ECONÓMICOS...')
-    
-    // Usar ingresoTotal como referencia principal para económicos
     const sheetNames = await fetchSheetNames('ingresoTotal')
-    
     const years = sheetNames
       .filter(name => /^\d{4}$/.test(name))
       .sort((a, b) => b - a)
-    
     console.log('✅ [QualitativePanel] Años ECONÓMICOS encontrados:', years)
-    
     emit('years-loaded', years)
-    
   } catch (err) {
     console.error('❌ [QualitativePanel] Error cargando años económicos:', err)
   }
 }
 
-/**
- * ✅ Cargar años desde el sheet de SOCIALES (desocupacion)
- */
 const loadSocialesYears = async () => {
   try {
     console.log('📅 [QualitativePanel] Cargando años de sheet SOCIALES...')
-    
-    // Usar desocupacion como referencia principal para sociales
     const sheetNames = await fetchSheetNames('desocupacion')
-    
     const years = sheetNames
       .filter(name => /^\d{4}$/.test(name))
       .sort((a, b) => b - a)
-    
     console.log('✅ [QualitativePanel] Años SOCIALES encontrados:', years)
-    
     emit('years-loaded', years)
-    
   } catch (err) {
     console.error('❌ [QualitativePanel] Error cargando años sociales:', err)
   }
 }
 
-/**
- * ✅ Cargar años desde el sheet de PRESUPUESTOS (presupuestoEstatal)
- */
 const loadPresupuestosYears = async () => {
   try {
     console.log('📅 [QualitativePanel] Cargando años de sheet PRESUPUESTOS...')
-    
     const sheetNames = await fetchSheetNames('presupuestoEstatal')
-    
     const years = sheetNames
       .filter(name => /^\d{4}$/.test(name))
       .sort((a, b) => b - a)
-    
     console.log('✅ [QualitativePanel] Años PRESUPUESTOS encontrados:', years)
-    
     emit('years-loaded', years)
-    
   } catch (err) {
     console.error('❌ [QualitativePanel] Error cargando años presupuestos:', err)
   }
 }
 
-/**
- * ✅ Cargar años desde el sheet de GOBERNABILIDAD (satisfaccionFederal)
- */
 const loadGobernabilidadYears = async () => {
   try {
     console.log('📅 [QualitativePanel] Cargando años de sheet GOBERNABILIDAD...')
-    
-    // Usar satisfaccionFederal como referencia principal para gobernabilidad
     const sheetNames = await fetchSheetNames('satisfaccionFederal')
-    
     const years = sheetNames
       .filter(name => /^\d{4}$/.test(name))
       .sort((a, b) => b - a)
-    
     console.log('✅ [QualitativePanel] Años GOBERNABILIDAD encontrados:', years)
-    
     emit('years-loaded', years)
-    
   } catch (err) {
     console.error('❌ [QualitativePanel] Error cargando años gobernabilidad:', err)
   }
 }
 
 // ============================================
-// ✅ MAPEO DE CATEGORÍAS A FUNCIONES DE CARGA
+// FUNCIONES DE CARGA DE AÑOS - REGIONALES
 // ============================================
-const categoryYearLoaders = {
+const loadEstatusPaisYears = async () => {
+  try {
+    console.log('📅 [QualitativePanel] Cargando años de sheet ESTATUS DEL PAÍS...')
+    const sheetNames = await fetchSheetNames('estatusDelPais')
+    const years = sheetNames
+      .filter(name => /^\d{4}$/.test(name))
+      .sort((a, b) => b - a)
+    console.log('✅ [QualitativePanel] Años ESTATUS DEL PAÍS encontrados:', years)
+    emit('years-loaded', years)
+  } catch (err) {
+    console.error('❌ [QualitativePanel] Error cargando años estatus del país:', err)
+    emit('years-loaded', ['2024', '2023', '2022'])
+  }
+}
+
+const loadAmbientalesRegionalYears = async () => {
+  try {
+    console.log('📅 [QualitativePanel] Cargando años de sheet AMBIENTALES REGIONAL...')
+    const sheetNames = await fetchSheetNames('ambientalesRegional')
+    const years = sheetNames
+      .filter(name => /^\d{4}$/.test(name))
+      .sort((a, b) => b - a)
+    console.log('✅ [QualitativePanel] Años AMBIENTALES REGIONAL encontrados:', years)
+    emit('years-loaded', years)
+  } catch (err) {
+    console.error('❌ [QualitativePanel] Error cargando años ambientales regional:', err)
+    emit('years-loaded', ['2024', '2023', '2022'])
+  }
+}
+
+const loadSocialesRegionalYears = async () => {
+  try {
+    console.log('📅 [QualitativePanel] Cargando años de sheet SOCIALES REGIONAL...')
+    const sheetNames = await fetchSheetNames('socialesRegional')
+    const years = sheetNames
+      .filter(name => /^\d{4}$/.test(name))
+      .sort((a, b) => b - a)
+    console.log('✅ [QualitativePanel] Años SOCIALES REGIONAL encontrados:', years)
+    emit('years-loaded', years)
+  } catch (err) {
+    console.error('❌ [QualitativePanel] Error cargando años sociales regional:', err)
+    emit('years-loaded', ['2024', '2023', '2022'])
+  }
+}
+
+const loadEconomicosRegionalYears = async () => {
+  try {
+    console.log('📅 [QualitativePanel] Cargando años de sheet ECONÓMICOS REGIONAL...')
+    const sheetNames = await fetchSheetNames('economicosRegional')
+    const years = sheetNames
+      .filter(name => /^\d{4}$/.test(name))
+      .sort((a, b) => b - a)
+    console.log('✅ [QualitativePanel] Años ECONÓMICOS REGIONAL encontrados:', years)
+    emit('years-loaded', years)
+  } catch (err) {
+    console.error('❌ [QualitativePanel] Error cargando años económicos regional:', err)
+    emit('years-loaded', ['2024', '2023', '2022'])
+  }
+}
+
+const loadFinanciamientoSostenibleYears = async () => {
+  try {
+    console.log('📅 [QualitativePanel] Cargando años de sheet FINANCIAMIENTO SOSTENIBLE...')
+    const sheetNames = await fetchSheetNames('financiamientoRegional')
+    const years = sheetNames
+      .filter(name => /^\d{4}$/.test(name))
+      .sort((a, b) => b - a)
+    console.log('✅ [QualitativePanel] Años FINANCIAMIENTO SOSTENIBLE encontrados:', years)
+    emit('years-loaded', years)
+  } catch (err) {
+    console.error('❌ [QualitativePanel] Error cargando años financiamiento sostenible:', err)
+    emit('years-loaded', ['2024', '2023', '2022'])
+  }
+}
+
+// ============================================
+// MAPEO DE CATEGORÍAS A FUNCIONES DE CARGA
+// ============================================
+
+// Mapeo SUBNACIONALES
+const subnacionalYearLoaders = {
   'ambientales': loadAmbientalesYears,
   'economicos': loadEconomicosYears,
   'sociales': loadSocialesYears,
@@ -380,93 +526,112 @@ const categoryYearLoaders = {
   'gobernabilidad': loadGobernabilidadYears
 }
 
+// Mapeo REGIONALES
+const regionalYearLoaders = {
+  'estatus-pais': loadEstatusPaisYears,
+  'ambientales-regional': loadAmbientalesRegionalYears,
+  'sociales-regional': loadSocialesRegionalYears,
+  'economicos-regional': loadEconomicosRegionalYears,
+  'financiamiento-sostenible': loadFinanciamientoSostenibleYears
+}
+
 // ============================================
 // WATCHERS
 // ============================================
-
-// ✅ Watch para debugging de entidad
 watch(() => props.selectedEntity, (newEntity, oldEntity) => {
-  console.log('🔄 [QualitativePanel] Entidad cambió')
-  console.log('  - Anterior:', oldEntity)
-  console.log('  - Nueva:', newEntity)
-  console.log('  - Categoría activa:', selectedCategory.value)
+  console.log('🔄 [QualitativePanel] Entidad cambió:', oldEntity, '→', newEntity)
 }, { immediate: true })
 
-// ✅ Watch para debugging de año
 watch(() => props.selectedYear, (newYear, oldYear) => {
-  console.log('🔄 [QualitativePanel] Año cambió')
-  console.log('  - Anterior:', oldYear)
-  console.log('  - Nuevo:', newYear)
-  console.log('  - Categoría activa:', selectedCategory.value)
+  console.log('🔄 [QualitativePanel] Año cambió:', oldYear, '→', newYear)
 }, { immediate: true })
 
 // ============================================
 // HANDLERS
 // ============================================
 
-// ✅ Toggle del panel con manejo de cierre
+// Seleccionar tipo de datos (Nivel 1)
+const selectDataType = (type) => {
+  console.log('📊 [QualitativePanel] Tipo de datos seleccionado:', type)
+  selectedDataType.value = type
+  emit('data-type-change', type)
+}
+
+// Volver al nivel 1 (selección de tipo de datos)
+const handleBackToDataType = () => {
+  console.log('⬅️ [QualitativePanel] Volviendo a selección de tipo de datos...')
+  selectedDataType.value = null
+  selectedCategory.value = null
+  emit('panel-closed')
+}
+
+// Volver al nivel 2 (categorías)
+const handleBackToCategories = () => {
+  console.log('⬅️ [QualitativePanel] Volviendo a categorías...')
+  selectedCategory.value = null
+  emit('panel-closed')
+}
+
+// Toggle del panel
 const togglePanel = () => {
-  // Ocultar tooltips al hacer click
   showExpandTooltip.value = false
   showCollapseTooltip.value = false
   
   console.log('🔄 [QualitativePanel] Toggle panel')
-  console.log('  - isExpanded:', props.isExpanded)
-  console.log('  - selectedCategory:', selectedCategory.value)
   
   if (props.isExpanded && selectedCategory.value) {
-    // Si está expandido y hay categoría, primero volver a botones
-    console.log('📂 Volviendo a menú de categorías...')
-    selectedCategory.value = null
-    // ✅ CRÍTICO: Emitir panel-closed para restaurar años
-    emit('panel-closed')
-  } else if (props.isExpanded && !selectedCategory.value) {
-    // Si está en el menú principal, cerrar completamente
+    // Si hay categoría seleccionada, volver a categorías
+    handleBackToCategories()
+  } else if (props.isExpanded && selectedDataType.value) {
+    // Si hay tipo de datos seleccionado, volver a tipo de datos
+    handleBackToDataType()
+  } else if (props.isExpanded) {
+    // Si está expandido sin selección, cerrar
     console.log('❌ Cerrando panel completamente...')
     emit('toggle')
-    // ✅ CRÍTICO: Emitir panel-closed para restaurar años
     emit('panel-closed')
   } else {
-    // Si está cerrado, solo abrir
+    // Si está cerrado, abrir
     console.log('✅ Abriendo panel...')
     emit('toggle')
   }
 }
 
-// ✅ Manejar click en categoría con carga de años DINÁMICA
+// Manejar click en categoría (Nivel 2 → Nivel 3)
 const handleCategoryClick = async (category) => {
   console.log('📂 [QualitativePanel] Categoría seleccionada:', category)
-  console.log('📍 Entidad actual:', props.selectedEntity)
-  console.log('📅 Año actual:', props.selectedYear)
+  console.log('📊 Tipo de datos:', selectedDataType.value)
   
   selectedCategory.value = category
   
-  // ✅ NUEVO: Cargar años dinámicos según la categoría
-  const yearLoader = categoryYearLoaders[category]
+  // Cargar años dinámicos según la categoría y tipo de datos
+  const yearLoaders = selectedDataType.value === 'subnacional' 
+    ? subnacionalYearLoaders 
+    : regionalYearLoaders
   
+  const yearLoader = yearLoaders[category]
   if (yearLoader) {
-    console.log(`🔄 Cargando años para categoría: ${category}...`)
+    console.log(`🔄 Ejecutando cargador de años para: ${category}`)
     await yearLoader()
   } else {
     console.warn(`⚠️ No hay cargador de años definido para: ${category}`)
   }
 }
 
-// ✅ Manejar botón "Volver" con restauración
-const handleBack = () => {
-  console.log('⬅️ [QualitativePanel] Volviendo al menú principal...')
-  selectedCategory.value = null
-  // ✅ CRÍTICO: Emitir panel-closed para restaurar años
-  emit('panel-closed')
-}
-
 const getCategoryTitle = (category) => {
   const titles = {
+    // Subnacionales
     'ambientales': 'Ambientales',
     'economicos': 'Económicos',
     'sociales': 'Sociales',
     'presupuestos': 'Presupuestos y financiamiento',
-    'gobernabilidad': 'Gobernabilidad y transparencia'
+    'gobernabilidad': 'Gobernabilidad y transparencia',
+    // Regionales
+    'estatus-pais': 'Estatus del país',
+    'ambientales-regional': 'Indicadores ambientales',
+    'sociales-regional': 'Indicadores sociales',
+    'economicos-regional': 'Indicadores económicos',
+    'financiamiento-sostenible': 'Financiamiento sostenible internacional'
   }
   return titles[category] || category
 }
@@ -511,7 +676,9 @@ const getCategoryTitle = (category) => {
   gap: 20px;
 }
 
-/* Header elements */
+/* ============================================ */
+/* HEADER DINÁMICO */
+/* ============================================ */
 .header-panel { 
   display: flex;
   flex-direction: row;
@@ -530,10 +697,48 @@ const getCategoryTitle = (category) => {
   margin: 0;
 }
 
+.hamburger-menu {
+  display: flex;
+  align-items: center;
+}
+
 .hamburger-icon {
   color: white;
   width: 20.9px;
   height: 20.9px;
+}
+
+/* Botón Volver en el header */
+.header-back-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: white;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 8px;
+  transition: all 0.2s;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.header-back-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Indicador de tipo de datos en el header */
+.header-data-type-indicator {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  padding: 6px 14px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
 }
 
 /* ========== WRAPPER PARA BOTÓN EXPAND ========== */
@@ -576,7 +781,28 @@ const getCategoryTitle = (category) => {
   transform: translateY(1px);
 }
 
-/* Buttons Container (cuando no hay categoría seleccionada) */
+/* ========== NIVEL 1: Tipo de datos ========== */
+.data-type-title {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  font-weight: 300;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.data-type-btn {
+  height: 80px !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: 2px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+.data-type-btn:hover {
+  background: rgba(255, 255, 255, 0.25) !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Buttons Container */
 .buttons-container {
   display: flex;
   flex-direction: column;
@@ -706,7 +932,7 @@ const getCategoryTitle = (category) => {
 }
 </style>
 
-<!-- ✅ ESTILOS GLOBALES PARA TOOLTIP CON TELEPORT (SIN FLECHA) -->
+<!-- ✅ ESTILOS GLOBALES PARA TOOLTIP CON TELEPORT -->
 <style>
 .qualitative-tooltip {
   background: #1e3a5f;
