@@ -265,7 +265,7 @@ import PresupuestosView from './PresupuestosView.vue'
 // ============================================
 import EstatusPaisView from '../../qualitativeRegionalIndicators/EstatusPaisView.vue'
 import AmbientalesRegionalView from '../../qualitativeRegionalIndicators/AmbientalesRegionalView.vue'
-import SocialesRegionalView from './SocialesView.vue' // TODO: Crear SocialesRegionalView.vue
+import SocialesRegionalView from '../../qualitativeRegionalIndicators/SocialesRegionalView.vue'
 import EconomicosRegionalView from './EconomicosView.vue' // TODO: Crear EconomicosRegionalView.vue
 import FinanciamientoSostenibleView from './PresupuestosView.vue' // TODO: Crear FinanciamientoSostenibleView.vue
 
