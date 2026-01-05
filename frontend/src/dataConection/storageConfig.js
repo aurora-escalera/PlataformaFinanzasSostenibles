@@ -497,48 +497,48 @@ export const storageConfig = {
       ]
     },
      // ✅ CUALITATIVOS REGIONALES - Economicos
-    socialesRegional: {
+    economicosRegional: {
       categoryColumn: 'País',
       variables: [
         {
-          key: 'POB',
-          column: 'POB',
-          label: 'Número de habitantes',
+          key: 'PIB',
+          column: 'PIB',
+          label: 'Producto Interno Bruto en dólares',
           color: '#9ca3af',
           order: 1
         },
         {
-          key: 'TD',
-          column: 'TD',
-          label: 'Tasa de Desempleo',
+          key: 'PIBPC',
+          column: 'PIBPC',
+          label: 'Producto Interno Bruto per cápita en dólares',
           color: '#7cb342',
           order: 2
         },
         {
-          key: 'MCA',
-          column: 'MCA',
-          label: 'Mortalidad por Contaminación Atmosférica (muertes anuales por cada 100,000 habitantes) ',
+          key: 'IT',
+          column: 'IT',
+          label: 'Ingreso total en dólares',
           color: '#DC143C',
           order: 3
         },
         {
-          key: 'IDH',
-          column: 'IDH',
-          label: 'Posición final en el Índice de Desarrollo Humano',
+          key: 'ITPC',
+          column: 'ITPC',
+          label: 'Ingreso per cápita en dólares',
           color: '#0F3759',
           order: 4
         },
         {
-          key: 'IBG',
-          column: 'IBG',
-          label: 'Posición final en el Índice de Brechas de Género',
+          key: 'PT',
+          column: 'PT',
+          label: 'Presupuesto total en dólares ',
           color: '#3B5A70',
           order: 5
         },
         {
-          key: 'IPM',
-          column: 'IPM',
-          label: 'Posición final en el Índice de Pobreza Multidimensional ',
+          key: 'PTPC',
+          column: 'PTPC',
+          label: 'Presupuesto total per cápita en dólares ',
           color: '#4E6D82',
           order: 6
         }
