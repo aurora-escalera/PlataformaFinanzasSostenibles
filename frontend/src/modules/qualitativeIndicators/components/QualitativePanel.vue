@@ -214,7 +214,7 @@
 
       <!-- Financiamiento sostenible internacional -->
       <div v-else-if="selectedDataType === 'regional' && selectedCategory === 'financiamiento-sostenible'" class="inner-card">
-        <FinanciamientoSostenibleView
+        <FinanciamientoRegionalView
           :selectedEntity="props.selectedEntity"
           :selectedYear="props.selectedYear"
           @back="handleBackToCategories" 
@@ -267,7 +267,7 @@ import EstatusPaisView from '../../qualitativeRegionalIndicators/EstatusPaisView
 import AmbientalesRegionalView from '../../qualitativeRegionalIndicators/AmbientalesRegionalView.vue'
 import SocialesRegionalView from '../../qualitativeRegionalIndicators/SocialesRegionalView.vue'
 import EconomicosRegionalView from '../../qualitativeRegionalIndicators/EconomicosRegionalView.vue'
-import FinanciamientoSostenibleView from './PresupuestosView.vue' // TODO: Crear FinanciamientoSostenibleView.vue
+import FinanciamientoRegionalView from '../../qualitativeRegionalIndicators/FinanciamientoRegionalView.vue'
 
 const props = defineProps({
   isExpanded: {

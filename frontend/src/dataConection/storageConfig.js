@@ -545,6 +545,41 @@ export const storageConfig = {
       ]
     },
 
+    // ✅ CUALITATIVOS REGIONALES - Financiamiento
+    financiamientoRegional: {
+      categoryColumn: 'País',
+      variables: [
+        {
+          key: 'FVC',
+          column: 'FVC',
+          label: 'Fondo Verde del Clima en dólares',
+          color: '#9ca3af',
+          order: 1
+        },
+        {
+          key: 'FMAM',
+          column: 'FMAM',
+          label: 'Facilidad para el Medio Ambiente Mundial en dólares',
+          color: '#7cb342',
+          order: 2
+        },
+        {
+          key: 'FIC',
+          column: 'FIC',
+          label: 'Fondo de Inversión Climática en dólares',
+          color: '#DC143C',
+          order: 3
+        },
+        {
+          key: 'BID',
+          column: 'BID',
+          label: 'Banco Interamericano de Desarrollo en dólares',
+          color: '#0F3759',
+          order: 4
+        }
+      ]
+    },
+
     // CUALITATIVOS - PRESUPUESTO
     presupuestoEstatal: {
       categoryColumn: 'Entidad Federativa',
