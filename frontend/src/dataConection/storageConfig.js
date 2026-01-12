@@ -285,7 +285,6 @@ export const storageConfig = {
       chartsPresupuestosRegional: 'Hoja 1',
       chartsIngresosRegional: 'Hoja 1',
       cardIFS: 'Hoja 1',
-      // ✅ Archivos regionales
       estatusDelPais: '2024',
       ambientalesRegional: '2024',
       socialesRegional: '2024',
@@ -1407,12 +1406,20 @@ export const storageConfig = {
       stateColumn: 'Año',
       variableColumns: [
         {
-          key: 'presupuesto_total_reg',
-          column: 'PT',
-          label: 'Presupuesto Total',
+          key: 'gasto_total_reg',
+          column: 'GT ($)',
+          label: 'Gasto Total',
           colorClass: 'gray',
           color: '#9ca3af',
           order: 1
+        },
+        {
+          key: 'presupuesto_total_reg',
+          column: 'PT ($)',
+          label: 'Presupuesto Total',
+          colorClass: 'gray',
+          color: '#6b7280',
+          order: 2
         },
         {
           key: 'presupuesto_sostenible_reg',
@@ -1420,7 +1427,7 @@ export const storageConfig = {
           label: 'Presupuesto Sostenible',
           colorClass: 'green',
           color: '#7cb342',
-          order: 2
+          order: 3
         },
         {
           key: 'presupuesto_carbono_reg',
@@ -1428,7 +1435,7 @@ export const storageConfig = {
           label: 'Presupuestos Intensivos en Carbono',
           colorClass: 'red',
           color: '#DC143C',
-          order: 3
+          order: 4
         }
       ],
       donutSectorsPSRegional: [
