@@ -285,7 +285,6 @@ export const storageConfig = {
       chartsPresupuestosRegional: 'Hoja 1',
       chartsIngresosRegional: 'Hoja 1',
       cardIFS: 'Hoja 1',
-      // ✅ Archivos regionales
       estatusDelPais: '2024',
       ambientalesRegional: '2024',
       socialesRegional: '2024',
@@ -541,6 +540,41 @@ export const storageConfig = {
           label: 'Presupuesto total per cápita en dólares ',
           color: '#4E6D82',
           order: 6
+        }
+      ]
+    },
+
+    // ✅ CUALITATIVOS REGIONALES - Financiamiento
+    financiamientoRegional: {
+      categoryColumn: 'País',
+      variables: [
+        {
+          key: 'FVC',
+          column: 'FVC',
+          label: 'Fondo Verde del Clima en dólares',
+          color: '#9ca3af',
+          order: 1
+        },
+        {
+          key: 'FMAM',
+          column: 'FMAM',
+          label: 'Facilidad para el Medio Ambiente Mundial en dólares',
+          color: '#7cb342',
+          order: 2
+        },
+        {
+          key: 'FIC',
+          column: 'FIC',
+          label: 'Fondo de Inversión Climática en dólares',
+          color: '#DC143C',
+          order: 3
+        },
+        {
+          key: 'BID',
+          column: 'BID',
+          label: 'Banco Interamericano de Desarrollo en dólares',
+          color: '#0F3759',
+          order: 4
         }
       ]
     },
@@ -1372,12 +1406,20 @@ export const storageConfig = {
       stateColumn: 'Año',
       variableColumns: [
         {
-          key: 'presupuesto_total_reg',
-          column: 'PT',
-          label: 'Presupuesto Total',
+          key: 'gasto_total_reg',
+          column: 'GT ($)',
+          label: 'Gasto Total',
           colorClass: 'gray',
           color: '#9ca3af',
           order: 1
+        },
+        {
+          key: 'presupuesto_total_reg',
+          column: 'PT ($)',
+          label: 'Presupuesto Total',
+          colorClass: 'gray',
+          color: '#6b7280',
+          order: 2
         },
         {
           key: 'presupuesto_sostenible_reg',
@@ -1385,7 +1427,7 @@ export const storageConfig = {
           label: 'Presupuesto Sostenible',
           colorClass: 'green',
           color: '#7cb342',
-          order: 2
+          order: 3
         },
         {
           key: 'presupuesto_carbono_reg',
@@ -1393,7 +1435,7 @@ export const storageConfig = {
           label: 'Presupuestos Intensivos en Carbono',
           colorClass: 'red',
           color: '#DC143C',
-          order: 3
+          order: 4
         }
       ],
       donutSectorsPSRegional: [

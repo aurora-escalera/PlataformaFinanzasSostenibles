@@ -372,10 +372,10 @@ const clearAllFilters = () => {
 // VARIABLES CONFIG
 // ============================================================================
 const variables = {
-  PS: { key: 'PS', label: 'Presupuestos Sostenibles (PS)', description: 'Presupuestos Sostenibles', category: 'presupuestos', barVariables: ['PS', 'PT'], donutType: 'PS' },
+  IS: { key: 'IS', label: 'Ingresos Sostenibles (IS)', description: 'Ingresos Sostenibles', category: 'ingresos', barVariables: ['IS', 'IT'], donutType: 'IS' },
   IIC: { key: 'IIC', label: 'Ingresos Intensivos en Carbono (IIC)', description: 'Ingresos Intensivos en Carbono', category: 'ingresos', barVariables: ['IIC', 'IT'], donutType: 'IIC' },
-  PIC: { key: 'PIC', label: 'Presupuestos Intensivos en Carbono (PIC)', description: 'Presupuestos Intensivos en Carbono', category: 'presupuestos', barVariables: ['PIC', 'PT'], donutType: 'PIC' },
-  IS: { key: 'IS', label: 'Ingresos Sostenibles (IS)', description: 'Ingresos Sostenibles', category: 'ingresos', barVariables: ['IS', 'IT'], donutType: 'IS' }
+  PS: { key: 'PS', label: 'Presupuestos Sostenibles (PS)', description: 'Presupuestos Sostenibles', category: 'presupuestos', barVariables: ['PS', 'PT'], donutType: 'PS' },
+  PIC: { key: 'PIC', label: 'Presupuestos Intensivos en Carbono (PIC)', description: 'Presupuestos Intensivos en Carbono', category: 'presupuestos', barVariables: ['PIC', 'PT'], donutType: 'PIC' }
 }
 const variablesArray = computed(() => Object.values(variables))
 

@@ -1,5 +1,5 @@
 <!-- src/modules/maps/components/MexicoMapSVG.vue --> 
-<!-- ✅ ACTUALIZADO: Leyenda con 6 categorías de IFSS + rangos numéricos + hover -->
+<!-- ✅ ACTUALIZADO: Leyenda sincronizada con variable seleccionada del filtro -->
 <template>
   <div class="map-wrapper" @click="handleBackgroundClick">
     <!-- CARD FLOTANTE CON INFO DEL ESTADO/NACIONAL -->
@@ -9,7 +9,6 @@
       :class="{ 'state-selected': selectedState }"
     >
       <div class="card-content">
-        <!-- Título de la posición del país-->
         <div class="card-position-title">
           {{ selectedState 
             ? `Estado: ${selectedState}` 
@@ -17,13 +16,10 @@
           }}
         </div>
         
-        <!-- FLEX 1: Dos columnas en una fila (15 | IFS + Clasificación) -->
         <div class="card-top-row">
-          <!-- Columna izquierda: Número de posición -->
           <div class="card-position-number">
             {{ getCurrentPosition() }}
           </div>
-          <!-- Columna derecha: IFS y clasificación -->
           <div class="card-ifss-info">
             <div class="ifss-value-text">{{ selectedState ? 'IFSS' : 'IFS' }}: {{ getDisplayIFSS() }}</div>
             <div 
@@ -35,7 +31,6 @@
           </div>
         </div>
 
-        <!-- FLEX 2: Dos filas (IFS Regional + Datos federales) -->
         <div 
           v-if="showNavigation"
           class="card-bottom-stack"
@@ -60,7 +55,11 @@
 
     <!-- Información de hover/estado seleccionado/nacional -->
     <div class="hover-info-box">
-      <div v-if="selectedState" class="info-content">
+      <div v-if="activeLegendFilter" class="info-content legend-filter-info">
+        <div class="location-label">{{ activeLegendFilter.label }} (IFSS)</div>
+        <div class="value-display">{{ activeLegendFilter.states?.length || 0 }} estados</div>
+      </div>
+      <div v-else-if="selectedState" class="info-content">
         <div class="location-label">{{ selectedState }}</div>
         <div class="value-display">IFSS: {{ getStateInfo(selectedState).value || 0 }}</div>
       </div>
@@ -74,43 +73,28 @@
       </div>
     </div>
 
-    <!-- ✅ ACTUALIZADO: Leyenda de colores IFSS con rangos numéricos -->
+    <!-- Leyenda de colores IFSS (siempre basada en IFSS) -->
     <div class="color-legend">
-      <!-- Leyenda completa: solo cuando NO hay estado seleccionado NI hover -->
       <div v-if="!selectedState && !hoveredState" class="legend-items-horizontal">
-        <div class="legend-item-horizontal">
-          <div class="legend-color-horizontal" style="background-color: #6ac952"></div>
-          <span class="legend-label">Alto</span>
-          <span class="legend-range">4-3.5</span>
-        </div>
-        <div class="legend-item-horizontal">
-          <div class="legend-color-horizontal" style="background-color: #94d351"></div>
-          <span class="legend-label">Medio Alto</span>
-          <span class="legend-range">3.5 - 2.3</span>
-        </div>
-        <div class="legend-item-horizontal">
-          <div class="legend-color-horizontal" style="background-color: #bddc50"></div>
-          <span class="legend-label">Medio</span>
-          <span class="legend-range">2.2 - 1.9</span>
-        </div>
-        <div class="legend-item-horizontal">
-          <div class="legend-color-horizontal" style="background-color: #e6a74c"></div>
-          <span class="legend-label">Medio Bajo</span>
-          <span class="legend-range">1.8 - 1.5</span>
-        </div>
-        <div class="legend-item-horizontal">
-          <div class="legend-color-horizontal" style="background-color: #e67849"></div>
-          <span class="legend-label">Bajo</span>
-          <span class="legend-range">1.5 - 0.6</span>
-        </div>
-        <div class="legend-item-horizontal">
-          <div class="legend-color-horizontal" style="background-color: #e52845"></div>
-          <span class="legend-label">Muy Bajo</span>
-          <span class="legend-range">0.5 - 0</span>
+        <div 
+          v-for="item in legendItems" 
+          :key="item.level"
+          class="legend-item-horizontal"
+          :class="{ 
+            'legend-item-active': activeLegendFilter?.level === item.level,
+            'legend-item-dimmed': activeLegendFilter && activeLegendFilter.level !== item.level
+          }"
+          @click.stop="handleLegendClick(item)"
+        >
+          <div 
+            class="legend-color-horizontal" 
+            :style="{ backgroundColor: item.color }"
+          ></div>
+          <span class="legend-label">{{ item.label }}</span>
+          <span class="legend-range">{{ item.range }}</span>
         </div>
       </div>
       
-      <!-- Barra única: cuando hay estado seleccionado O hover -->
       <div v-else class="legend-selected-state">
         <div 
           class="selected-state-bar"
@@ -191,50 +175,18 @@ import { ref, computed } from 'vue'
 import { geoPath, geoMercator } from 'd3-geo'
 
 const props = defineProps({
-  geoData: {
-    type: Object,
-    required: true
-  },
-  selectedState: {
-    type: String,
-    default: null
-  },
-  hoveredState: {
-    type: String,
-    default: null
-  },
-  mapConfig: {
-    type: Object,
-    required: true
-  },
-  nationalIFSS: {
-    type: Object,
-    default: null
-  },
-  getStateColor: {
-    type: Function,
-    required: true
-  },
-  getStateInfo: {
-    type: Function,
-    required: true
-  },
-  getIFSSLabel: {
-    type: Function,
-    required: true
-  },
-  showNavigation: {
-    type: Boolean,
-    default: true
-  },
-  showInfoCard: {
-    type: Boolean,
-    default: true
-  },
-  activeView: {
-    type: String,
-    default: null
-  }
+  geoData: { type: Object, required: true },
+  selectedState: { type: String, default: null },
+  hoveredState: { type: String, default: null },
+  mapConfig: { type: Object, required: true },
+  nationalIFSS: { type: Object, default: null },
+  getStateColor: { type: Function, required: true },
+  getStateInfo: { type: Function, required: true },
+  getIFSSLabel: { type: Function, required: true },
+  showNavigation: { type: Boolean, default: true },
+  showInfoCard: { type: Boolean, default: true },
+  activeView: { type: String, default: null },
+  selectedVariable: { type: [Object, String, null], default: null }
 })
 
 const emit = defineEmits([
@@ -242,11 +194,103 @@ const emit = defineEmits([
   'state-hover',
   'state-leave',
   'navigate-regional',
-  'view-change'
+  'view-change',
+  'legend-filter-change'
 ])
 
 const mousePosition = ref({ x: 0, y: 0 })
 
+// ============================================================================
+// ESTADO PARA FILTRO DE LEYENDA
+// ✅ AHORA GUARDA LOS NOMBRES DE LOS ESTADOS
+// ============================================================================
+const activeLegendFilter = ref(null)
+
+// ============================================================================
+// LEYENDA IFSS (7 categorías) - SIEMPRE BASADA EN IFSS
+// ============================================================================
+const legendItems = [
+  { level: 'muy-alto', label: 'Muy Alto', range: '3.5-4.0', color: '#22c55e', min: 3.5, max: 4.0 },
+  { level: 'alto', label: 'Alto', range: '2.9-3.4', color: '#94d351', min: 2.9, max: 3.49 },
+  { level: 'medio-alto', label: 'Medio Alto', range: '2.3-2.8', color: '#bddc50', min: 2.3, max: 2.89 },
+  { level: 'medio', label: 'Medio', range: '1.8-2.2', color: '#facc15', min: 1.8, max: 2.29 },
+  { level: 'medio-bajo', label: 'Medio Bajo', range: '1.2-1.7', color: '#e6a74c', min: 1.2, max: 1.79 },
+  { level: 'bajo', label: 'Bajo', range: '0.6-1.1', color: '#ef4444', min: 0.6, max: 1.19 },
+  { level: 'muy-bajo', label: 'Muy Bajo', range: '0.0-0.5', color: '#dc2626', min: 0, max: 0.59 }
+]
+
+// ============================================================================
+// FUNCIÓN: Obtener nivel IFSS de un estado (SIEMPRE basado en IFSS)
+// ============================================================================
+const getStateLevelIFSS = (stateName) => {
+  const stateInfo = props.getStateInfo(stateName)
+  const value = stateInfo?.value || 0
+  
+  if (value >= 3.5) return 'muy-alto'
+  if (value >= 2.9) return 'alto'
+  if (value >= 2.3) return 'medio-alto'
+  if (value >= 1.8) return 'medio'
+  if (value >= 1.2) return 'medio-bajo'
+  if (value >= 0.6) return 'bajo'
+  return 'muy-bajo'
+}
+
+// ============================================================================
+// FUNCIÓN: Obtener todos los estados de un nivel IFSS
+// ============================================================================
+const getStatesByLevel = (level) => {
+  if (!props.geoData?.features) return []
+  
+  return props.geoData.features
+    .filter(feature => getStateLevelIFSS(feature.properties.state_name) === level)
+    .map(feature => feature.properties.state_name)
+}
+
+// ============================================================================
+// FUNCIÓN: Verificar si un estado está en el filtro activo
+// ✅ AHORA VERIFICA POR NOMBRE DE ESTADO
+// ============================================================================
+const stateMatchesFilter = (stateName) => {
+  if (!activeLegendFilter.value?.states) return true
+  return activeLegendFilter.value.states.includes(stateName)
+}
+
+// ============================================================================
+// HANDLER: Click en item de leyenda
+// ✅ GUARDA LOS NOMBRES DE LOS ESTADOS AL HACER CLICK
+// ============================================================================
+const handleLegendClick = (item) => {
+  // Toggle si ya está activo
+  if (activeLegendFilter.value?.level === item.level) {
+    activeLegendFilter.value = null
+    emit('legend-filter-change', null)
+    return
+  }
+  
+  // Obtener los estados que pertenecen a este nivel IFSS
+  const statesInLevel = getStatesByLevel(item.level)
+  
+  console.log(`🎨 [MexicoMapSVG] Nivel "${item.label}" seleccionado`)
+  console.log(`🎨 [MexicoMapSVG] Estados:`, statesInLevel)
+  
+  // Guardar filtro CON los estados
+  activeLegendFilter.value = {
+    ...item,
+    states: statesInLevel
+  }
+  
+  // Emitir con la lista de estados
+  emit('legend-filter-change', {
+    level: item.level,
+    label: item.label,
+    color: item.color,
+    states: statesInLevel  // ✅ Lista de nombres de estados
+  })
+}
+
+// ============================================================================
+// PROYECCIÓN Y PATH
+// ============================================================================
 const projection = computed(() => {
   return geoMercator()
     .scale(props.mapConfig.scale)
@@ -254,103 +298,83 @@ const projection = computed(() => {
     .translate([props.mapConfig.width / 2, props.mapConfig.height / 2])
 })
 
-const pathGenerator = computed(() => {
-  return geoPath().projection(projection.value)
-})
+const pathGenerator = computed(() => geoPath().projection(projection.value))
 
-const getPathData = (feature) => {
-  return pathGenerator.value(feature)
-}
+const getPathData = (feature) => pathGenerator.value(feature)
 
+// ============================================================================
+// CLASES Y ESTILOS DE ESTADO
+// ============================================================================
 const getStateClass = (stateName) => {
   const classes = ['state-path']
-  if (props.selectedState === stateName) {
-    classes.push('state-selected')
-  } else if (props.hoveredState === stateName) {
-    classes.push('state-hovered')
+  
+  if (activeLegendFilter.value) {
+    if (stateMatchesFilter(stateName)) {
+      classes.push('state-legend-highlighted')
+    } else {
+      classes.push('state-legend-dimmed')
+    }
+  } else {
+    if (props.selectedState === stateName) {
+      classes.push('state-selected')
+    } else if (props.hoveredState === stateName) {
+      classes.push('state-hovered')
+    }
+    if (props.selectedState && props.selectedState !== stateName) {
+      classes.push('state-dimmed')
+    }
   }
-  if (props.selectedState && props.selectedState !== stateName) {
-    classes.push('state-dimmed')
-  }
+  
   return classes.join(' ')
 }
 
 const getStrokeColor = (stateName) => {
+  if (activeLegendFilter.value && stateMatchesFilter(stateName)) return '#1a202c'
   if (props.selectedState === stateName) return '#1a202c'
   if (props.hoveredState === stateName) return '#555555'
   return '#555555'
 }
 
 const getStrokeWidth = (stateName) => {
+  if (activeLegendFilter.value && stateMatchesFilter(stateName)) return 2
   if (props.selectedState === stateName) return 3
   if (props.hoveredState === stateName) return 2
   return 1
 }
 
+// ============================================================================
+// FUNCIONES DE DISPLAY
+// ============================================================================
 const getDisplayIFSS = () => {
   if (props.selectedState) {
-    const stateInfo = props.getStateInfo(props.selectedState)
-    return stateInfo.value || 0
+    return props.getStateInfo(props.selectedState).value || 0
   }
   return props.nationalIFSS?.value || 0
 }
 
-const getCurrentClassification = () => {
-  const value = getDisplayIFSS()
-  return props.getIFSSLabel(value).label
-}
+const getCurrentClassification = () => props.getIFSSLabel(getDisplayIFSS()).label
+const getCurrentClassificationColor = () => props.getIFSSLabel(getDisplayIFSS()).color || '#ddb891'
+const getCurrentPosition = () => props.selectedState ? '--' : '15'
 
-const getCurrentClassificationColor = () => {
-  const value = getDisplayIFSS()
-  return props.getIFSSLabel(value).color || '#ddb891'
-}
-
-const getCurrentPosition = () => {
-  if (props.selectedState) {
-    return '--'
-  }
-  return '15'
-}
-
-// ✅ NUEVAS FUNCIONES para estado activo (seleccionado o hover)
 const getActiveStateColor = () => {
   const activeState = props.selectedState || props.hoveredState
-  if (!activeState) return '#cccccc'
-  return props.getStateColor(activeState)
+  return activeState ? props.getStateColor(activeState) : '#cccccc'
 }
 
 const getActiveStateClassification = () => {
   const activeState = props.selectedState || props.hoveredState
   if (!activeState) return ''
-  const stateInfo = props.getStateInfo(activeState)
-  const value = stateInfo.value || 0
-  return props.getIFSSLabel(value).label
+  return props.getIFSSLabel(props.getStateInfo(activeState).value || 0).label
 }
 
 const getActiveStateValue = () => {
   const activeState = props.selectedState || props.hoveredState
-  if (!activeState) return '0'
-  const stateInfo = props.getStateInfo(activeState)
-  return stateInfo.value || 0
-}
-
-const getSelectedStateColor = () => {
-  if (!props.selectedState) return '#cccccc'
-  return props.getStateColor(props.selectedState)
-}
-
-const getSelectedStateClassification = () => {
-  if (!props.selectedState) return ''
-  const stateInfo = props.getStateInfo(props.selectedState)
-  const value = stateInfo.value || 0
-  return props.getIFSSLabel(value).label
+  return activeState ? props.getStateInfo(activeState).value || 0 : '0'
 }
 
 const getTooltipColor = () => {
   if (!props.hoveredState) return '#718096'
-  const stateInfo = props.getStateInfo(props.hoveredState)
-  const value = stateInfo.value || 0
-  return props.getIFSSLabel(value).color || '#718096'
+  return props.getIFSSLabel(props.getStateInfo(props.hoveredState).value || 0).color || '#718096'
 }
 
 const getTooltipIconGradient = () => {
@@ -366,30 +390,40 @@ const adjustColor = (color, amount) => {
   return `rgb(${r}, ${g}, ${b})`
 }
 
+// ============================================================================
+// EVENT HANDLERS
+// ============================================================================
 const handleMouseHover = (stateName, event) => {
-  mousePosition.value = {
-    x: event.clientX,
-    y: event.clientY
-  }
+  mousePosition.value = { x: event.clientX, y: event.clientY }
   emit('state-hover', stateName)
 }
 
-const handleMouseLeave = () => {
-  emit('state-leave')
-}
+const handleMouseLeave = () => emit('state-leave')
 
 const handleStateClick = (stateName) => {
+  if (activeLegendFilter.value) {
+    activeLegendFilter.value = null
+    emit('legend-filter-change', null)
+  }
   emit('state-click', stateName)
 }
 
 const handleBackgroundClick = (event) => {
   if (event.target.classList.contains('map-wrapper')) {
+    if (activeLegendFilter.value) {
+      activeLegendFilter.value = null
+      emit('legend-filter-change', null)
+    }
     emit('state-click', null)
   }
 }
 
 const handleSvgClick = (event) => {
   if (event.target.tagName === 'svg' || event.target.tagName === 'g') {
+    if (activeLegendFilter.value) {
+      activeLegendFilter.value = null
+      emit('legend-filter-change', null)
+    }
     emit('state-click', null)
   }
 }
@@ -411,8 +445,7 @@ const tooltipStyle = computed(() => {
     left: `${mousePosition.value.x + 28}px`,
     top: `${mousePosition.value.y - 75}px`,
     pointerEvents: 'none',
-    zIndex: 99999,
-    transform: 'translate(0, 0)'
+    zIndex: 99999
   }
 })
 </script>
@@ -508,7 +541,6 @@ const tooltipStyle = computed(() => {
   gap: 8px;
 }
 
-/* BOTONES - Se ajustan al texto */
 .card-label-pill {
   background: rgba(5, 55, 89, 0.06);
   border: 1px solid rgba(5, 55, 89, 0.12);
@@ -567,11 +599,24 @@ const tooltipStyle = computed(() => {
   transition: all 0.3s ease;
 }
 
-/* ✅ LEYENDA - Posición original mantenida */
+.legend-filter-info {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.variable-indicator {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+/* ✅ LEYENDA INTERACTIVA - 7 CATEGORÍAS */
 .color-legend {
   position: absolute;
-  bottom: 60px;
-  left: 24%;
+  bottom: 40px;
+  left: 28%;
   transform: translateX(-50%);
   background: rgba(255, 255, 255, 0.95);
   border: none;
@@ -585,12 +630,13 @@ const tooltipStyle = computed(() => {
 .legend-items-horizontal {
   display: flex;
   gap: 0;
+  padding-top: 5px;
   align-items: stretch;
   justify-content: center;
   border-radius: 4px;
   overflow: hidden;
   border: 0px solid rgba(0,0,0,0.1);
-  width: 390px;
+  width: 455px;
 }
 
 .legend-item-horizontal {
@@ -600,13 +646,50 @@ const tooltipStyle = computed(() => {
   color: #333;
   flex: 1;
   text-align: center;
-  min-width: 60px;
+  min-width: 50px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.legend-item-horizontal:hover {
+  transform: translateY(-2px);
+}
+
+.legend-item-horizontal:hover .legend-color-horizontal {
+  filter: brightness(1.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.legend-item-horizontal.legend-item-active {
+  transform: translateY(-3px);
+}
+
+.legend-item-horizontal.legend-item-active .legend-color-horizontal {
+  filter: brightness(1.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border: 2px solid #1a202c;
+}
+
+.legend-item-horizontal.legend-item-active .legend-label,
+.legend-item-horizontal.legend-item-active .legend-range {
+  font-weight: 700;
+  color: #1a202c;
+}
+
+.legend-item-horizontal.legend-item-dimmed {
+  opacity: 0.4;
+}
+
+.legend-item-horizontal.legend-item-dimmed:hover {
+  opacity: 0.7;
 }
 
 .legend-color-horizontal {
   width: 100%;
   height: 22px;
   border: none;
+  transition: all 0.3s ease;
 }
 
 .legend-item-horizontal:first-child .legend-color-horizontal {
@@ -617,25 +700,24 @@ const tooltipStyle = computed(() => {
   border-radius: 0 4px 4px 0;
 }
 
-/* ✅ Etiquetas con letra más grande */
 .legend-label {
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 500;
   color: #374151;
   margin-top: 4px;
   line-height: 1.2;
+  transition: all 0.3s ease;
 }
 
-/* ✅ Rangos numéricos */
 .legend-range {
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 200;
   color: #6b7280;
   margin-top: 1px;
   line-height: 1.2;
+  transition: all 0.3s ease;
 }
 
-/* Barra única para estado seleccionado o hover */
 .legend-selected-state {
   display: flex;
   gap: 0;
@@ -645,7 +727,7 @@ const tooltipStyle = computed(() => {
   overflow: hidden;
   border: 0px solid rgba(0,0,0,0.1);
   height: 30px;
-  width: 390px;
+  width: 455px;
   animation: legendFadeIn 0.4s ease;
 }
 
@@ -754,11 +836,26 @@ const tooltipStyle = computed(() => {
   transform-origin: center;
 }
 
+.state-path.state-legend-highlighted {
+  opacity: 1;
+  filter: saturate(1) contrast(1.2);
+  stroke-width: 0.5;
+}
+
+.state-path.state-legend-dimmed {
+  opacity: 0.25;
+  filter: grayscale(60%) brightness(0.9);
+}
+
+.state-path.state-legend-dimmed:hover {
+  opacity: 0.5;
+  filter: grayscale(30%) brightness(1);
+}
+
 /* ============================================
    RESPONSIVE - Media Queries
    ============================================ */
 
-/* Tablets y móviles */
 @media (max-width: 768px) {
   .map-wrapper {
     width: 100%;
@@ -771,7 +868,6 @@ const tooltipStyle = computed(() => {
     border-radius: 15px;
   }
   
-  /* Info card - más compacto para móvil */
   .map-info-card {
     top: 8px;
     right: 8px;
@@ -829,7 +925,6 @@ const tooltipStyle = computed(() => {
     border-radius: 6px;
   }
   
-  /* Hover info box - reposicionar */
   .hover-info-box {
     top: auto;
     bottom: 80px;
@@ -849,32 +944,31 @@ const tooltipStyle = computed(() => {
     padding-bottom: 8px;
   }
   
-  /* Leyenda - reposicionar y redimensionar */
   .color-legend {
     bottom: 15px;
-    left: 28%;
+    left: 50%;
     transform: translateX(-50%);
   }
   
   .legend-items-horizontal {
-    width: 260px;
+    width: 300px;
   }
   
   .legend-selected-state {
-    width: 260px;
+    width: 300px;
     height: 24px;
   }
   
   .legend-item-horizontal {
-    min-width: 42px;
+    min-width: 35px;
   }
   
   .legend-label {
-    font-size: 7px;
+    font-size: 6px;
   }
   
   .legend-range {
-    font-size: 7px;
+    font-size: 6px;
   }
   
   .legend-color-horizontal {
@@ -886,7 +980,6 @@ const tooltipStyle = computed(() => {
   }
 }
 
-/* Móviles pequeños */
 @media (max-width: 480px) {
   .map-wrapper {
     min-height: 280px;
@@ -897,7 +990,6 @@ const tooltipStyle = computed(() => {
     border-radius: 12px;
   }
   
-  /* Info card - aún más compacto */
   .map-info-card {
     top: 50px;
     right: 50px;
@@ -948,7 +1040,6 @@ const tooltipStyle = computed(() => {
     line-height: 1.2;
   }
   
-  /* Hover info box */
   .hover-info-box {
     width: 100px;
     height: 50px;
@@ -967,26 +1058,25 @@ const tooltipStyle = computed(() => {
     border-bottom-width: 1px;
   }
   
-  /* Leyenda */
   .legend-items-horizontal {
-    width: 220px;
+    width: 245px;
   }
   
   .legend-selected-state {
-    width: 220px;
+    width: 245px;
     height: 20px;
   }
   
   .legend-item-horizontal {
-    min-width: 35px;
+    min-width: 28px;
   }
   
   .legend-label {
-    font-size: 6px;
+    font-size: 5px;
   }
   
   .legend-range {
-    font-size: 6px;
+    font-size: 5px;
   }
   
   .legend-color-horizontal {
@@ -998,7 +1088,6 @@ const tooltipStyle = computed(() => {
   }
 }
 
-/* Landscape en móviles */
 @media (max-width: 768px) and (orientation: landscape) {
   .map-wrapper {
     min-height: 280px;
@@ -1057,20 +1146,20 @@ const tooltipStyle = computed(() => {
   }
   
   .legend-items-horizontal {
-    width: 200px;
+    width: 230px;
   }
   
   .legend-selected-state {
-    width: 200px;
+    width: 230px;
     height: 18px;
   }
   
   .legend-label {
-    font-size: 6px;
+    font-size: 5px;
   }
   
   .legend-range {
-    font-size: 6px;
+    font-size: 5px;
   }
   
   .legend-color-horizontal {
@@ -1174,7 +1263,6 @@ const tooltipStyle = computed(() => {
   font-weight: 500;
 }
 
-/* Tooltip responsive - ocultar en móviles (usar tap en su lugar) */
 @media (max-width: 768px) {
   .mexico-map-tooltip {
     display: none !important;

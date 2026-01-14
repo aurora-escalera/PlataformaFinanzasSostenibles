@@ -16,36 +16,6 @@
         <span class="bar-header-title">{{ headerTitle }}</span>
         <span class="bar-header-subtitle">{{ selectedState }} • {{ selectedYear }}</span>
       </div>
-      
-      <!-- ✅ NUEVO: Botón de exportación circular -->
-      <div class="export-button-wrapper" ref="exportWrapperRef">
-        <button 
-          class="export-btn-circle"
-          :class="{ 'is-open': showExportMenu }"
-          @click.stop="toggleExportMenu"
-          title="Exportar datos"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="7 10 12 15 17 10"/>
-            <line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-        </button>
-        
-        <!-- Dropdown menu -->
-        <transition name="dropdown-fade">
-          <div v-if="showExportMenu" class="export-dropdown-mini">
-            <button class="export-option" @click="handleExport('xlsx')">
-              <span class="option-icon xlsx">XLS</span>
-              <span class="option-text">Excel</span>
-            </button>
-            <button class="export-option" @click="handleExport('csv')">
-              <span class="option-icon csv">CSV</span>
-              <span class="option-text">CSV</span>
-            </button>
-          </div>
-        </transition>
-      </div>
     </div>
 
     <!-- KPI Cards -->
@@ -434,61 +404,6 @@ watch(() => props.data, () => { nextTick(() => updateBarsContainerHeight()) }, {
   color: rgba(255, 255, 255, 0.6);
 }
 
-/* Botón de exportación circular */
-.export-button-wrapper { position: relative; }
-
-.export-btn-circle {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.export-btn-circle:hover {
-  background: rgba(255, 255, 255, 0.25);
-  transform: scale(1.05);
-}
-
-.export-btn-circle.is-open { background: rgba(255, 255, 255, 0.3); }
-.export-btn-circle svg { width: 14px; height: 14px; }
-
-.export-dropdown-mini {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  border: 1px solid #e5e7eb;
-  overflow: hidden;
-  z-index: 1000;
-  min-width: 100px;
-}
-
-.export-option {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 10px 12px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  transition: background 0.15s ease;
-  font-size: 12px;
-  color: #374151;
-}
-
-.export-option:hover { background: #f3f4f6; }
-.export-option:first-child { border-bottom: 1px solid #e5e7eb; }
-
 .option-icon {
   font-size: 9px;
   font-weight: 700;
@@ -671,8 +586,8 @@ watch(() => props.data, () => { nextTick(() => updateBarsContainerHeight()) }, {
   justify-content: center;
 }
 
-.bars-container.bars-count-1 .bar-column { width: 100%; max-width: 500px; }
-.bars-container.bars-count-2 .bar-column { width: 40%; max-width: 300px; }
+.bars-container.bars-count-1 .bar-column { width: 100%; max-width: 700px; }
+.bars-container.bars-count-2 .bar-column { width: 60%; max-width: 400px; }
 .bars-container.bars-count-3 .bar-column { width: 28%; max-width: 220px; }
 
 @keyframes slideUp {

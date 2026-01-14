@@ -1,4 +1,6 @@
-<!-- HorizontalRankingChart.vue - Con colores dinámicos por variable y tarjeta de estado seleccionado -->
+<!-- HorizontalRankingChart.vue - Con colores dinámicos por variable y filtro de leyenda -->
+<!-- ✅ ACTUALIZADO: Soporte para filtro de leyenda desde el mapa -->
+<!-- ✅ ACTUALIZADO: Valores 0 se muestran en gris con "Sin datos" -->
 <template>
   <div class="horizontal-bar-chart" :style="{ width: width, height: height }">
     <!-- Título -->
@@ -15,17 +17,23 @@
           :key="variable.key"
           class="bar-row"
           :class="{ 
-            'is-hovered': hoveredBarKey === variable.key,
-            'is-selected': isSelected(variable),
-            'is-dimmed': (hoveredBarKey !== null && hoveredBarKey !== variable.key && !isSelected(variable)) || 
-                         (selectedState !== null && isSelectionActive && !isSelected(variable) && hoveredBarKey === null)
+            'is-hovered': hoveredBarKey === variable.key && !legendFilter,
+            'is-selected': isSelected(variable) && !legendFilter,
+            'is-dimmed': !legendFilter && ((hoveredBarKey !== null && hoveredBarKey !== variable.key && !isSelected(variable)) || 
+                         (selectedState !== null && isSelectionActive && !isSelected(variable) && hoveredBarKey === null)),
+            'is-legend-highlighted': legendFilter && barMatchesLegendFilter(variable),
+            'is-legend-dimmed': legendFilter && !barMatchesLegendFilter(variable),
+            'is-no-data': isNoData(variable.value)
           }"
           @mouseenter="handleMouseEnter(variable, $event)"
           @mousemove="handleMouseMove($event)"
           @mouseleave="handleMouseLeave"
         >
           <!-- Label del estado (izquierda) -->
-          <div class="state-label" :class="{ 'selected-label': isSelected(variable) }">
+          <div class="state-label" :class="{ 
+            'selected-label': isSelected(variable) && !legendFilter,
+            'legend-highlighted-label': legendFilter && barMatchesLegendFilter(variable)
+          }">
             {{ variable.label }}
           </div>
           
@@ -43,23 +51,37 @@
             
             <!-- Barra -->
             <div class="bar-wrapper-horizontal">
+              <!-- Barra con valor (solo si hay datos) -->
               <div 
+                v-if="!isNoData(variable.value)"
                 class="bar-horizontal"
-                :class="[variable.colorClass, { 'selected-bar': isSelected(variable) }]"
+                :class="[
+                  variable.colorClass, 
+                  { 
+                    'selected-bar': isSelected(variable) && !legendFilter,
+                    'legend-highlighted-bar': legendFilter && barMatchesLegendFilter(variable)
+                  }
+                ]"
                 :style="{ 
                   width: getBarWidth(variable.value) + '%',
                   background: variable.color
                 }"
               >
-                <!-- Valor dentro de la barra -->
-                <span class="bar-value">{{ formatValue(variable.value) }}</span>
+                <span class="bar-value">
+                  {{ formatValue(variable.value) }}
+                </span>
               </div>
+              
+              <!-- Texto "Sin datos" cuando no hay datos -->
+              <span v-else class="no-data-text">
+                Sin datos
+              </span>
             </div>
 
             <!-- ✅ Indicador flotante debajo de la barra -->
             <transition name="floating-indicator">
               <span 
-                v-if="isSelected(variable)" 
+                v-if="isSelected(variable) && !legendFilter && !isNoData(variable.value)" 
                 class="floating-classification"
                 :style="{ 
                   color: variable.color,
@@ -77,7 +99,7 @@
         </div>
       </div>
 
-      <!-- ✅ LEYENDA DE COLORES AL FONDO (REEMPLAZA EJE X) -->
+      <!-- ✅ LEYENDA DE COLORES AL FONDO (7 CATEGORÍAS) -->
       <div class="color-legend-strip">
         <div class="legend-spacer"></div>
         <div class="legend-bar-container">
@@ -104,12 +126,14 @@
 
     <!-- Tooltip (para hover, no para selección) -->
     <Teleport to="body">
-      <div v-if="tooltip.visible && !isTooltipForSelectedState" class="tooltip" :style="tooltipStyle">
+      <div v-if="tooltip.visible && !isTooltipForSelectedState && !legendFilter" class="tooltip" :style="tooltipStyle">
         <div class="tooltip-content">
           <div class="tooltip-color" :style="{ backgroundColor: tooltip.color }"></div>
           <div class="tooltip-info">
             <div class="tooltip-label">{{ tooltip.label }}</div>
-            <div class="tooltip-value">{{ currentVariableKey || 'IFSS' }}: {{ formatValue(tooltip.value) }}</div>
+            <div class="tooltip-value">
+              {{ tooltip.isNoData ? 'Sin datos disponibles' : `${currentVariableKey || 'IFSS'}: ${formatValue(tooltip.value)}` }}
+            </div>
             <div class="tooltip-classification">{{ tooltip.classification }}</div>
           </div>
         </div>
@@ -137,14 +161,30 @@ const props = defineProps({
   selectedVariable: { 
     type: [Object, String, null], 
     default: null 
+  },
+  // ✅ NUEVO: Filtro de leyenda desde el mapa
+  legendFilter: {
+    type: Object,
+    default: null
   }
 })
 
 const hoveredBarKey = ref(null)
-const tooltip = ref({ visible: false, x: 0, y: 0, label: '', value: '', color: '', classification: '' })
+const tooltip = ref({ visible: false, x: 0, y: 0, label: '', value: '', color: '', classification: '', isNoData: false })
 const internalVariables = ref([])
-const isAnimated = ref(false) // ✅ Control para animación de llenado
-const isSelectionActive = ref(true) // ✅ Control para mostrar/ocultar selección durante animación
+const isAnimated = ref(false)
+const isSelectionActive = ref(true)
+
+// ============================================================================
+// ✅ NUEVO: Función para detectar si un valor es "sin datos"
+// ============================================================================
+const isNoData = (value) => {
+  if (value === null || value === undefined || value === '') return true
+  
+  // Convertir a número y verificar si es 0 o muy cercano a 0
+  const numValue = parseFloat(value)
+  return isNaN(numValue) || numValue === 0 || Math.abs(numValue) < 0.005
+}
 
 // Obtener la key de la variable actual
 const currentVariableKey = computed(() => {
@@ -160,7 +200,21 @@ const isTooltipForSelectedState = computed(() => {
 })
 
 // ============================================================================
-// RANGOS DE COLORES POR VARIABLE
+// COLORES BASE (7 categorías)
+// ============================================================================
+const COLORS = {
+  VERDE_FUERTE: '#22c55e',
+  VERDE: '#94d351',
+  VERDE_BAJO: '#bddc50',
+  AMARILLO: '#facc15',
+  ANARANJADO: '#e6a74c',
+  ROJO: '#ef4444',
+  ROJO_FUERTE: '#dc2626',
+  GRIS: '#9ca3af'  // ✅ Color para "sin datos"
+}
+
+// ============================================================================
+// RANGOS DE COLORES POR VARIABLE (7 categorías cada una)
 // ============================================================================
 
 /**
@@ -168,12 +222,17 @@ const isTooltipForSelectedState = computed(() => {
  */
 const getIFSSColor = (value) => {
   const numValue = parseFloat(value) || 0
-  if (numValue >= 4) return { color: '#6ac952', label: 'Alto' }
-  if (numValue >= 2.3) return { color: '#94d351', label: 'Medio Alto' }
-  if (numValue >= 1.9) return { color: '#bddc50', label: 'Medio' }
-  if (numValue >= 1.5) return { color: '#e6a74c', label: 'Medio Bajo' }
-  if (numValue > 0.5) return { color: '#e67849', label: 'Bajo' }
-  return { color: '#e52845', label: 'Muy Bajo' }
+  
+  // ✅ Sin datos
+  if (isNoData(value)) return { color: COLORS.GRIS, label: 'Sin datos' }
+  
+  if (numValue >= 3.5) return { color: COLORS.VERDE_FUERTE, label: 'Muy Alto' }
+  if (numValue >= 2.9) return { color: COLORS.VERDE, label: 'Alto' }
+  if (numValue >= 2.3) return { color: COLORS.VERDE_BAJO, label: 'Medio Alto' }
+  if (numValue >= 1.8) return { color: COLORS.AMARILLO, label: 'Medio' }
+  if (numValue >= 1.2) return { color: COLORS.ANARANJADO, label: 'Medio Bajo' }
+  if (numValue >= 0.6) return { color: COLORS.ROJO, label: 'Bajo' }
+  return { color: COLORS.ROJO_FUERTE, label: 'Muy Bajo' }
 }
 
 /**
@@ -181,12 +240,17 @@ const getIFSSColor = (value) => {
  */
 const getISColor = (value) => {
   const numValue = parseFloat(value) || 0
-  if (numValue >= 10) return { color: '#6ac952', label: 'Alto' }
-  if (numValue >= 3.29) return { color: '#94d351', label: 'Medio Alto' }
-  if (numValue >= 1.25) return { color: '#bddc50', label: 'Medio' }
-  if (numValue >= 0.51) return { color: '#e6a74c', label: 'Medio Bajo' }
-  if (numValue >= 0.11) return { color: '#e67849', label: 'Bajo' }
-  return { color: '#e52845', label: 'Muy Bajo' }
+  
+  // ✅ Sin datos
+  if (isNoData(value)) return { color: COLORS.GRIS, label: 'Sin datos' }
+  
+  if (numValue > 5.5) return { color: COLORS.VERDE_FUERTE, label: 'Muy Alto' }
+  if (numValue >= 4.10) return { color: COLORS.VERDE, label: 'Alto' }
+  if (numValue >= 2.51) return { color: COLORS.VERDE_BAJO, label: 'Medio Alto' }
+  if (numValue >= 1.10) return { color: COLORS.AMARILLO, label: 'Medio' }
+  if (numValue >= 0.51) return { color: COLORS.ANARANJADO, label: 'Medio Bajo' }
+  if (numValue >= 0.10) return { color: COLORS.ROJO, label: 'Bajo' }
+  return { color: COLORS.ROJO_FUERTE, label: 'Muy Bajo' }
 }
 
 /**
@@ -194,11 +258,17 @@ const getISColor = (value) => {
  */
 const getIICColor = (value) => {
   const numValue = parseFloat(value) || 0
-  if (numValue < 2.1) return { color: '#6ac952', label: 'Bajo' }
-  if (numValue < 4.32) return { color: '#94d351', label: 'Medio Bajo' }
-  if (numValue < 6.19) return { color: '#bddc50', label: 'Medio' }
-  if (numValue < 11.08) return { color: '#e6a74c', label: 'Medio Alto' }
-  return { color: '#e52845', label: 'Muy Alto' }
+  
+  // ✅ Sin datos
+  if (isNoData(value)) return { color: COLORS.GRIS, label: 'Sin datos' }
+  
+  if (numValue > 10.0) return { color: COLORS.ROJO_FUERTE, label: 'Muy Alto' }
+  if (numValue >= 8.1) return { color: COLORS.ROJO, label: 'Alto' }
+  if (numValue >= 6.1) return { color: COLORS.ANARANJADO, label: 'Medio Alto' }
+  if (numValue >= 4.1) return { color: COLORS.AMARILLO, label: 'Medio' }
+  if (numValue >= 2.1) return { color: COLORS.VERDE_BAJO, label: 'Medio Bajo' }
+  if (numValue >= 0.1) return { color: COLORS.VERDE, label: 'Bajo' }
+  return { color: COLORS.VERDE_FUERTE, label: 'Muy Bajo' }
 }
 
 /**
@@ -206,11 +276,17 @@ const getIICColor = (value) => {
  */
 const getPSColor = (value) => {
   const numValue = parseFloat(value) || 0
-  if (numValue >= 4.59) return { color: '#6ac952', label: 'Alto' }
-  if (numValue >= 1.50) return { color: '#bddc50', label: 'Medio' }
-  if (numValue >= 0.54) return { color: '#e6a74c', label: 'Medio Bajo' }
-  if (numValue >= 0.13) return { color: '#e67849', label: 'Bajo' }
-  return { color: '#e52845', label: 'Muy Bajo' }
+  
+  // ✅ Sin datos
+  if (isNoData(value)) return { color: COLORS.GRIS, label: 'Sin datos' }
+  
+  if (numValue > 5.5) return { color: COLORS.VERDE_FUERTE, label: 'Muy Alto' }
+  if (numValue >= 4.10) return { color: COLORS.VERDE, label: 'Alto' }
+  if (numValue >= 2.51) return { color: COLORS.VERDE_BAJO, label: 'Medio Alto' }
+  if (numValue >= 1.10) return { color: COLORS.AMARILLO, label: 'Medio' }
+  if (numValue >= 0.51) return { color: COLORS.ANARANJADO, label: 'Medio Bajo' }
+  if (numValue >= 0.10) return { color: COLORS.ROJO, label: 'Bajo' }
+  return { color: COLORS.ROJO_FUERTE, label: 'Muy Bajo' }
 }
 
 /**
@@ -218,12 +294,17 @@ const getPSColor = (value) => {
  */
 const getPICColor = (value) => {
   const numValue = parseFloat(value) || 0
-  if (numValue < 0.11) return { color: '#94d351', label: 'Muy Bajo' }
-  if (numValue < 2.18) return { color: '#6ac952', label: 'Bajo' }
-  if (numValue < 4.13) return { color: '#f0d648', label: 'Medio Bajo' }
-  if (numValue < 6.22) return { color: '#e6a74c', label: 'Medio' }
-  if (numValue < 15.53) return { color: '#e67849', label: 'Medio Alto' }
-  return { color: '#e52845', label: 'Muy Alto' }
+  
+  // ✅ Sin datos
+  if (isNoData(value)) return { color: COLORS.GRIS, label: 'Sin datos' }
+  
+  if (numValue > 10.0) return { color: COLORS.ROJO_FUERTE, label: 'Muy Alto' }
+  if (numValue >= 8.10) return { color: COLORS.ROJO, label: 'Alto' }
+  if (numValue >= 6.10) return { color: COLORS.ANARANJADO, label: 'Medio Alto' }
+  if (numValue >= 4.10) return { color: COLORS.AMARILLO, label: 'Medio' }
+  if (numValue >= 2.10) return { color: COLORS.VERDE_BAJO, label: 'Medio Bajo' }
+  if (numValue >= 0.10) return { color: COLORS.VERDE, label: 'Bajo' }
+  return { color: COLORS.VERDE_FUERTE, label: 'Muy Bajo' }
 }
 
 // ============================================================================
@@ -231,6 +312,11 @@ const getPICColor = (value) => {
 // ============================================================================
 
 const getColorByVariable = (value) => {
+  // ✅ Verificar primero si es sin datos
+  if (isNoData(value)) {
+    return { color: COLORS.GRIS, label: 'Sin datos' }
+  }
+  
   const variableKey = currentVariableKey.value
   
   switch (variableKey) {
@@ -249,7 +335,72 @@ const getColorByVariable = (value) => {
 }
 
 // ============================================================================
-// LEYENDA DE COLORES DINÁMICA CON LABELS
+// ✅ NUEVO: Funciones para filtro de leyenda
+// ============================================================================
+
+/**
+ * Obtener el nivel de clasificación de un valor (para IFSS por defecto)
+ */
+const getValueLevel = (value) => {
+  // ✅ Sin datos no tiene nivel
+  if (isNoData(value)) return 'sin-datos'
+  
+  const numValue = parseFloat(value) || 0
+  
+  // Usar los rangos según la variable seleccionada
+  const variableKey = currentVariableKey.value
+  
+  if (variableKey === 'IS' || variableKey === 'PS') {
+    if (numValue > 5.5) return 'muy-alto'
+    if (numValue >= 4.10) return 'alto'
+    if (numValue >= 2.51) return 'medio-alto'
+    if (numValue >= 1.10) return 'medio'
+    if (numValue >= 0.51) return 'medio-bajo'
+    if (numValue >= 0.10) return 'bajo'
+    return 'muy-bajo'
+  }
+  
+  if (variableKey === 'IIC' || variableKey === 'PIC') {
+    // Invertido
+    if (numValue > 10.0) return 'muy-alto'
+    if (numValue >= 8.1) return 'alto'
+    if (numValue >= 6.1) return 'medio-alto'
+    if (numValue >= 4.1) return 'medio'
+    if (numValue >= 2.1) return 'medio-bajo'
+    if (numValue >= 0.1) return 'bajo'
+    return 'muy-bajo'
+  }
+  
+  // IFSS por defecto
+  if (numValue >= 3.5) return 'muy-alto'
+  if (numValue >= 2.9) return 'alto'
+  if (numValue >= 2.3) return 'medio-alto'
+  if (numValue >= 1.8) return 'medio'
+  if (numValue >= 1.2) return 'medio-bajo'
+  if (numValue >= 0.6) return 'bajo'
+  return 'muy-bajo'
+}
+
+/**
+ * Verificar si una barra coincide con el filtro de leyenda activo
+ */
+const barMatchesLegendFilter = (variable) => {
+  if (!props.legendFilter) return true
+  
+  // ✅ NUEVO: Si el filtro contiene una lista de estados, filtrar por nombre
+  if (props.legendFilter.states && Array.isArray(props.legendFilter.states)) {
+    // variable.label contiene el nombre del estado (ej: "Jalisco", "CDMX")
+    // variable.key también puede contener el nombre
+    return props.legendFilter.states.includes(variable.label) || 
+           props.legendFilter.states.includes(variable.key)
+  }
+  
+  // Fallback: filtrar por nivel (compatibilidad con código anterior)
+  return getValueLevel(variable.value) === props.legendFilter.level
+}
+
+// ============================================================================
+// LEYENDA DE COLORES DINÁMICA CON 7 CATEGORÍAS
 // ============================================================================
 
 const legendItems = computed(() => {
@@ -258,47 +409,54 @@ const legendItems = computed(() => {
   switch (variableKey) {
     case 'IS':
       return [
-        { color: '#6ac952', range: '≥10', label: 'Alto' },
-        { color: '#94d351', range: '3.3-10', label: 'Medio Alto' },
-        { color: '#bddc50', range: '1.3-3.3', label: 'Medio' },
-        { color: '#e6a74c', range: '0.5-1.2', label: 'Medio Bajo' },
-        { color: '#e67849', range: '0.1-0.5', label: 'Bajo' },
-        { color: '#e52845', range: '<0.1', label: 'Muy Bajo' }
+        { color: COLORS.VERDE_FUERTE, range: '>5.5', label: 'Muy Alto' },
+        { color: COLORS.VERDE, range: '4.1-5.5', label: 'Alto' },
+        { color: COLORS.VERDE_BAJO, range: '2.5-4.0', label: 'M. Alto' },
+        { color: COLORS.AMARILLO, range: '1.1-2.5', label: 'Medio' },
+        { color: COLORS.ANARANJADO, range: '0.5-1.0', label: 'M. Bajo' },
+        { color: COLORS.ROJO, range: '0.1-0.5', label: 'Bajo' },
+        { color: COLORS.ROJO_FUERTE, range: '<0.1', label: 'Muy Bajo' }
       ]
     case 'IIC':
       return [
-        { color: '#6ac952', range: '<2.1', label: 'Bajo' },
-        { color: '#94d351', range: '2.1-4.3', label: 'Medio Bajo' },
-        { color: '#bddc50', range: '4.3-6.2', label: 'Medio' },
-        { color: '#e6a74c', range: '6.2-11', label: 'Medio Alto' },
-        { color: '#e52845', range: '≥11', label: 'Muy Alto' }
+        { color: COLORS.VERDE_FUERTE, range: '<0.1', label: 'Muy Bajo' },
+        { color: COLORS.VERDE, range: '0.1-2.0', label: 'Bajo' },
+        { color: COLORS.VERDE_BAJO, range: '2.1-4.0', label: 'M. Bajo' },
+        { color: COLORS.AMARILLO, range: '4.1-6.0', label: 'Medio' },
+        { color: COLORS.ANARANJADO, range: '6.1-8.0', label: 'M. Alto' },
+        { color: COLORS.ROJO, range: '8.1-10', label: 'Alto' },
+        { color: COLORS.ROJO_FUERTE, range: '>10', label: 'Muy Alto' }
       ]
     case 'PS':
       return [
-        { color: '#6ac952', range: '≥4.6', label: 'Alto' },
-        { color: '#bddc50', range: '1.5-4.6', label: 'Medio' },
-        { color: '#e6a74c', range: '0.5-1.5', label: 'Medio Bajo' },
-        { color: '#e67849', range: '0.1-0.5', label: 'Bajo' },
-        { color: '#e52845', range: '<0.1', label: 'Muy Bajo' }
+        { color: COLORS.VERDE_FUERTE, range: '>5.5', label: 'Muy Alto' },
+        { color: COLORS.VERDE, range: '4.1-5.5', label: 'Alto' },
+        { color: COLORS.VERDE_BAJO, range: '2.5-4.0', label: 'M. Alto' },
+        { color: COLORS.AMARILLO, range: '1.1-2.5', label: 'Medio' },
+        { color: COLORS.ANARANJADO, range: '0.5-1.0', label: 'M. Bajo' },
+        { color: COLORS.ROJO, range: '0.1-0.5', label: 'Bajo' },
+        { color: COLORS.ROJO_FUERTE, range: '<0.1', label: 'Muy Bajo' }
       ]
     case 'PIC':
       return [
-        { color: '#94d351', range: '<0.1', label: 'Muy Bajo' },
-        { color: '#6ac952', range: '0.1-2.2', label: 'Bajo' },
-        { color: '#f0d648', range: '2.2-4.1', label: 'Medio Bajo' },
-        { color: '#e6a74c', range: '4.1-6.2', label: 'Medio' },
-        { color: '#e67849', range: '6.2-15.5', label: 'Medio Alto' },
-        { color: '#e52845', range: '≥15.5', label: 'Muy Alto' }
+        { color: COLORS.VERDE_FUERTE, range: '<0.1', label: 'Muy Bajo' },
+        { color: COLORS.VERDE, range: '0.1-2.0', label: 'Bajo' },
+        { color: COLORS.VERDE_BAJO, range: '2.1-4.0', label: 'M. Bajo' },
+        { color: COLORS.AMARILLO, range: '4.1-6.0', label: 'Medio' },
+        { color: COLORS.ANARANJADO, range: '6.1-8.0', label: 'M. Alto' },
+        { color: COLORS.ROJO, range: '8.1-10', label: 'Alto' },
+        { color: COLORS.ROJO_FUERTE, range: '>10', label: 'Muy Alto' }
       ]
     case 'IFSS':
     default:
       return [
-        { color: '#6ac952', range: '4-3.5', label: 'Alto' },
-        { color: '#94d351', range: '3.5-2.3', label: 'Medio Alto' },
-        { color: '#bddc50', range: '2.2-1.9', label: 'Medio' },
-        { color: '#e6a74c', range: '1.8-1.5', label: 'Medio Bajo' },
-        { color: '#e67849', range: '1.5-0.6', label: 'Bajo' },
-        { color: '#e52845', range: '0.5-0', label: 'Muy Bajo' }
+        { color: COLORS.VERDE_FUERTE, range: '3.5-4.0', label: 'Muy Alto' },
+        { color: COLORS.VERDE, range: '2.9-3.4', label: 'Alto' },
+        { color: COLORS.VERDE_BAJO, range: '2.3-2.8', label: 'M. Alto' },
+        { color: COLORS.AMARILLO, range: '1.8-2.2', label: 'Medio' },
+        { color: COLORS.ANARANJADO, range: '1.2-1.7', label: 'M. Bajo' },
+        { color: COLORS.ROJO, range: '0.6-1.1', label: 'Bajo' },
+        { color: COLORS.ROJO_FUERTE, range: '0.0-0.5', label: 'Muy Bajo' }
       ]
   }
 })
@@ -319,7 +477,7 @@ const initializeVariables = () => {
       colorClass: v.colorClass || 'default',
       color: colorInfo.color,
       classification: colorInfo.label,
-      active: true  // ✅ Todas las barras activas inmediatamente
+      active: true
     }
   })
 }
@@ -328,15 +486,12 @@ const initializeVariables = () => {
 watch(() => props.selectedVariable, (newVar, oldVar) => {
   console.log('🔄 [HorizontalRankingChart] Variable cambió de', oldVar, 'a', newVar)
   
-  // ✅ Si hay un estado seleccionado, desactivar temporalmente la selección
   if (props.selectedState) {
     isSelectionActive.value = false
   }
   
-  // Resetear animación
   isAnimated.value = false
   
-  // Actualizar colores
   internalVariables.value = internalVariables.value.map(v => {
     const colorInfo = getColorByVariable(v.value)
     return {
@@ -346,37 +501,31 @@ watch(() => props.selectedVariable, (newVar, oldVar) => {
     }
   })
   
-  // Iniciar animación de llenado
   requestAnimationFrame(() => {
     setTimeout(() => {
       isAnimated.value = true
       
-      // ✅ Después de que termine la animación de llenado, reactivar la selección
       if (props.selectedState) {
         setTimeout(() => {
           isSelectionActive.value = true
-        }, 850) // Un poco más que la duración de la animación (0.8s = 800ms)
+        }, 850)
       }
     }, 50)
   })
 }, { deep: true })
 
 watch(() => props.variables, () => {
-  // ✅ Si hay un estado seleccionado, desactivar temporalmente la selección
   if (props.selectedState) {
     isSelectionActive.value = false
   }
   
-  // ✅ Resetear animación cuando cambian los datos
   isAnimated.value = false
   initializeVariables()
   
-  // Reactivar animación
   requestAnimationFrame(() => {
     setTimeout(() => {
       isAnimated.value = true
       
-      // ✅ Después de la animación, reactivar la selección
       if (props.selectedState) {
         setTimeout(() => {
           isSelectionActive.value = true
@@ -389,17 +538,14 @@ watch(() => props.variables, () => {
 onMounted(() => {
   initializeVariables()
   
-  // ✅ Si hay un estado seleccionado al montar, desactivar temporalmente la selección
   if (props.selectedState) {
     isSelectionActive.value = false
   }
   
-  // ✅ Activar animación de llenado después de un pequeño delay
   requestAnimationFrame(() => {
     setTimeout(() => {
       isAnimated.value = true
       
-      // ✅ Después de la animación, reactivar la selección
       if (props.selectedState) {
         setTimeout(() => {
           isSelectionActive.value = true
@@ -416,20 +562,18 @@ const activeVariables = computed(() => {
   return internalVariables.value.slice(0, count)
 })
 
-// Verificar si una barra está seleccionada (respeta isSelectionActive)
 const isSelected = (variable) => {
   if (!props.selectedState) return false
-  if (!isSelectionActive.value) return false // ✅ No mostrar selección durante animación
+  if (!isSelectionActive.value) return false
   return variable.label === props.selectedState || variable.key === props.selectedState
 }
 
-// Cálculo dinámico de altura por barra (sin eje X, solo leyenda)
 const dynamicBarHeight = computed(() => {
   const count = activeVariables.value.length
   if (count === 0) return '100%'
   
   const titleHeight = 30
-  const legendHeight = 40 // ✅ Altura de la leyenda al fondo
+  const legendHeight = 40
   const gapSize = 3
   const totalGaps = (count - 1) * gapSize
   
@@ -441,7 +585,6 @@ const maxValue = computed(() => {
   return Math.max(...values, 1)
 })
 
-// Calcular ticks del eje X (solo para grid lines, ya no se muestra el eje)
 const xAxisTicks = computed(() => {
   const max = maxValue.value
   const step = max / 5
@@ -477,7 +620,8 @@ const handleMouseEnter = (variable, event) => {
     label: variable.label,
     value: variable.value,
     color: variable.color,
-    classification: variable.classification
+    classification: variable.classification,
+    isNoData: isNoData(variable.value)  // ✅ Agregar flag para tooltip
   }
 }
 
@@ -493,18 +637,37 @@ const handleMouseLeave = () => {
   tooltip.value.visible = false
 }
 
-// ✅ Calcula el ancho - proporcional al valor, el min-width de CSS garantiza espacio para texto
 const getBarWidth = (value) => {
   if (!isAnimated.value) return 0
-  const percentage = (value / maxValue.value) * 100
-  return Math.min(percentage, 100)
+  
+  // ✅ Sin datos = sin barra
+  if (isNoData(value)) {
+    return 0
+  }
+  
+  const numValue = parseFloat(value) || 0
+  const minWidth = 5  // Ancho mínimo absoluto
+  
+  // Escala con offset para mejor diferenciación en valores pequeños
+  const percentage = (numValue / maxValue.value) * 100
+  
+  // Agregar un "boost" base + el porcentaje real
+  // Así valores pequeños empiezan en minWidth y crecen proporcionalmente
+  const boostedWidth = minWidth + (percentage * 0.9)
+  
+  return Math.min(boostedWidth, 100)
 }
+
 
 const formatValue = (value) => {
   if (props.valueFormatter) {
     return props.valueFormatter(value)
   }
-  return typeof value === 'number' ? value.toFixed(2) : value
+  if (typeof value === 'number') {
+    // Truncar a 2 decimales sin redondear
+    return Math.floor(value * 100) / 100
+  }
+  return value
 }
 </script>
 
@@ -573,7 +736,6 @@ const formatValue = (value) => {
   z-index: 10;
 }
 
-/* ✅ Estilo mejorado para estado seleccionado */
 .bar-row.is-selected {
   opacity: 1;
   transform: translateX(2px);
@@ -587,7 +749,75 @@ const formatValue = (value) => {
   filter: grayscale(40%);
 }
 
-/* Label del estado */
+/* ============================================================================
+   ✅ ESTILOS PARA "SIN DATOS"
+   ============================================================================ */
+
+.bar-row.is-no-data {
+  opacity: 0.7;
+}
+
+.bar-row.is-no-data:hover {
+  opacity: 0.85;
+}
+
+.no-data-text {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding-left: 8px;
+  font-size: 12px;
+  font-weight: 400;
+  color: #9ca3af;
+}
+
+.floating-classification.no-data-classification {
+  color: #6b7280 !important;
+  text-shadow: none !important;
+}
+
+/* ============================================================================
+   ✅ NUEVOS ESTILOS: Filtro de leyenda
+   ============================================================================ */
+
+.bar-row.is-legend-highlighted {
+  opacity: 1;
+  filter: none;
+  transform: scale(1.01);
+  z-index: 5;
+}
+
+.bar-row.is-legend-highlighted .bar-horizontal {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.bar-row.is-legend-dimmed {
+  opacity: 0.2;
+  filter: grayscale(50%);
+}
+
+.bar-row.is-legend-dimmed:hover {
+  opacity: 0.4;
+  filter: grayscale(25%);
+}
+
+.state-label.legend-highlighted-label {
+  font-weight: 200;
+  color: #1a202c;
+}
+
+.bar-horizontal.legend-highlighted-bar {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.494);
+}
+
+.bar-row.is-legend-highlighted .bar-value{
+  color: white;
+  font-size: 13px; 
+  font-weight: 700;
+}
+
+/* ============================================================================ */
+
 .state-label {
   font-size: 14px;
   font-weight: 100;
@@ -602,14 +832,12 @@ const formatValue = (value) => {
   transition: all 0.3s ease;
 }
 
-/* ✅ Label resaltado cuando está seleccionado */
 .state-label.selected-label {
   font-weight: 200;
   color: #1a202c;
   font-size: 16px;
 }
 
-/* Área de la barra con grid */
 .bar-chart-area {
   position: relative;
   width: 100%;
@@ -644,7 +872,6 @@ const formatValue = (value) => {
   min-height: 12px;
 }
 
-/* ✅ Área gris transparente cuando está seleccionada */
 .bar-row.is-selected .bar-wrapper-horizontal {
   background: transparent;
   box-shadow: none;
@@ -653,7 +880,6 @@ const formatValue = (value) => {
 
 .bar-horizontal {
   height: 100%;
-  /* ✅ Transición de width para animación de llenado */
   transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease, box-shadow 0.3s ease;
   position: relative;
   border-radius: 4px;
@@ -663,7 +889,7 @@ const formatValue = (value) => {
   padding-right: 6px;
   padding-left: 4px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-  min-width: 36px; /* ✅ Reducido para mejor diferenciación */
+  min-width: 36px;
   box-sizing: border-box;
 }
 
@@ -671,7 +897,6 @@ const formatValue = (value) => {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
-/* ✅ Barra seleccionada con efecto de pulso */
 .bar-horizontal.selected-bar {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
   animation: pulse-glow 2s ease-in-out infinite;
@@ -686,9 +911,8 @@ const formatValue = (value) => {
   }
 }
 
-/* Valor dentro de la barra */
 .bar-value {
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
   color: white;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
@@ -697,7 +921,6 @@ const formatValue = (value) => {
   line-height: 1;
 }
 
-/* ✅ Indicador flotante debajo de la barra - solo texto */
 .floating-classification {
   position: absolute;
   top: calc(100% + 10px);
@@ -714,7 +937,6 @@ const formatValue = (value) => {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* Animación de entrada para el indicador */
 .floating-indicator-enter-active {
   animation: indicatorFadeIn 0.3s ease-out;
 }
@@ -746,7 +968,7 @@ const formatValue = (value) => {
 }
 
 /* ============================================================================
-   LEYENDA DE COLORES AL FONDO (REEMPLAZA EJE X)
+   LEYENDA DE COLORES AL FONDO (7 CATEGORÍAS)
    ============================================================================ */
 
 .color-legend-strip {
@@ -803,24 +1025,23 @@ const formatValue = (value) => {
   border-radius: 0 4px 4px 0;
 }
 
-/* ✅ Indicador dentro del bloque de color */
 .legend-indicator {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 600;
   color: white;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  padding: 0 3px;
+  padding: 0 2px;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   line-height: 1;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.2px;
 }
 
 .legend-range-value {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 500;
   color: #6b7280;
   margin-top: 2px;
@@ -891,7 +1112,6 @@ const formatValue = (value) => {
    RESPONSIVE - Media Queries
    ============================================ */
 
-/* Tablets */
 @media (max-width: 768px) {
   .horizontal-bar-chart {
     padding: 6px;
@@ -911,7 +1131,6 @@ const formatValue = (value) => {
     gap: 2px;
   }
   
-  /* Reducir ancho del label de estado */
   .bar-row {
     grid-template-columns: 100px 1fr;
     gap: 8px;
@@ -945,14 +1164,17 @@ const formatValue = (value) => {
     font-size: 9px;
   }
   
-  /* Indicador flotante más pequeño */
+  .no-data-text {
+    font-size: 10px;
+    padding-left: 6px;
+  }
+  
   .floating-classification {
     font-size: 10px;
     top: calc(100% + 6px);
     letter-spacing: 0.4px;
   }
   
-  /* Leyenda más compacta */
   .color-legend-strip {
     display: flex;
     flex-direction: column;
@@ -962,7 +1184,7 @@ const formatValue = (value) => {
   }
 
   .legend-spacer {
-    display: none;  /* Solo en móvil */
+    display: none;
   }
   
   .legend-color-block {
@@ -970,21 +1192,19 @@ const formatValue = (value) => {
   }
   
   .legend-indicator {
-    font-size: 8px;
-    padding: 0 2px;
+    font-size: 7px;
+    padding: 0 1px;
   }
   
   .legend-range-value {
-    font-size: 10px;
+    font-size: 9px;
   }
   
-  /* Ocultar tooltip en móvil (usar touch) */
   .tooltip {
     display: none !important;
   }
 }
 
-/* Móviles pequeños */
 @media (max-width: 480px) {
   .horizontal-bar-chart {
     padding: 5px;
@@ -1004,7 +1224,6 @@ const formatValue = (value) => {
     gap: 1px;
   }
   
-  /* Label aún más pequeño */
   .bar-row {
     grid-template-columns: 70px 1fr;
     gap: 6px;
@@ -1040,14 +1259,17 @@ const formatValue = (value) => {
     font-size: 8px;
   }
   
-  /* Indicador flotante */
+  .no-data-text {
+    font-size: 9px;
+    padding-left: 4px;
+  }
+  
   .floating-classification {
     font-size: 8px;
     top: calc(100% + 4px);
     letter-spacing: 0.3px;
   }
   
-  /* Leyenda más compacta */
   .color-legend-strip {
     grid-template-columns: 70px 1fr;
     gap: 6px;
@@ -1059,29 +1281,26 @@ const formatValue = (value) => {
   }
   
   .legend-indicator {
-    font-size: 6px;
+    font-size: 5px;
     padding: 0 1px;
     letter-spacing: 0;
   }
   
   .legend-range-value {
-    font-size: 8px;
+    font-size: 7px;
     margin-top: 1px;
   }
   
-  /* Grid lines más sutiles */
   .grid-line {
     background: #f0f0f0;
   }
   
-  /* Empty state */
   .empty-state {
     min-height: 150px;
     font-size: 12px;
   }
 }
 
-/* Landscape en móviles */
 @media (max-width: 768px) and (orientation: landscape) {
   .horizontal-bar-chart {
     padding: 4px;
@@ -1123,11 +1342,11 @@ const formatValue = (value) => {
   }
   
   .legend-indicator {
-    font-size: 6px;
+    font-size: 5px;
   }
   
   .legend-range-value {
-    font-size: 7px;
+    font-size: 6px;
   }
 }
 </style>
