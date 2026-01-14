@@ -663,7 +663,11 @@ const formatValue = (value) => {
   if (props.valueFormatter) {
     return props.valueFormatter(value)
   }
-  return typeof value === 'number' ? value.toFixed(2) : value
+  if (typeof value === 'number') {
+    // Truncar a 2 decimales sin redondear
+    return Math.floor(value * 100) / 100
+  }
+  return value
 }
 </script>
 
