@@ -1,6 +1,6 @@
 // src/composables/useMaps.js
 // ✅ ACTUALIZADO: Obtiene datos de Google Sheets (misma fuente que el ranking)
-// ✅ ACTUALIZADO: Nuevos rangos de IFSS (6 categorías)
+// ✅ ACTUALIZADO: Nuevos rangos de IFSS (7 categorías)
 
 import { ref, computed, onMounted } from 'vue'
 import { useStorageData } from '@/dataConection/useStorageData'
@@ -26,6 +26,19 @@ export const useMaps = () => {
     center: [-106, 25],
     projection: 'geoMercator'
   })
+
+  // ============================================================================
+  // COLORES BASE (7 categorías)
+  // ============================================================================
+  const COLORS = {
+    VERDE_FUERTE: '#22c55e',
+    VERDE: '#94d351',
+    VERDE_BAJO: '#bddc50',
+    AMARILLO: '#facc15',
+    ANARANJADO: '#e6a74c',
+    ROJO: '#ef4444',
+    ROJO_FUERTE: '#dc2626'
+  }
 
   // Computed para IFSS nacional
   const nationalIFSS = computed(() => {
@@ -192,7 +205,11 @@ export const useMaps = () => {
     }
   }
 
-  // ✅ ACTUALIZADO: Obtener color basado en IFSS (6 categorías)
+  // ============================================================================
+  // ✅ ACTUALIZADO: Obtener color basado en IFSS (7 categorías)
+  // Muy Alto: 3.5 – 4.0 | Alto: 2.9 – 3.4 | Medio Alto: 2.3 – 2.8
+  // Medio: 1.8 – 2.2 | Medio Bajo: 1.2 – 1.7 | Bajo: 0.6 – 1.1 | Muy Bajo: 0.0 – 0.5
+  // ============================================================================
   const getStateColor = (stateName) => {
     if (!sustainabilityData.value || !sustainabilityData.value[stateName]) {
       return '#e0e0e0'
@@ -201,13 +218,14 @@ export const useMaps = () => {
     const data = sustainabilityData.value[stateName]
     const ifssValue = data.value || 0
     
-    // ✅ Nuevos rangos (6 categorías)
-    if (ifssValue >= 4) return '#6ac952'       // Alto
-    if (ifssValue >= 2.3) return '#94d351'     // Medio Alto
-    if (ifssValue >= 1.9) return '#bddc50'     // Medio
-    if (ifssValue >= 1.5) return '#e6a74c'     // Medio Bajo
-    if (ifssValue > 0.7) return '#e67849'      // Bajo
-    return '#e52845'                           // Muy Bajo (<= 0.7)
+    // ✅ Nuevos rangos (7 categorías)
+    if (ifssValue >= 3.5) return COLORS.VERDE_FUERTE  // Muy Alto (3.5 - 4.0)
+    if (ifssValue >= 2.9) return COLORS.VERDE         // Alto (2.9 - 3.4)
+    if (ifssValue >= 2.3) return COLORS.VERDE_BAJO    // Medio Alto (2.3 - 2.8)
+    if (ifssValue >= 1.8) return COLORS.AMARILLO      // Medio (1.8 - 2.2)
+    if (ifssValue >= 1.2) return COLORS.ANARANJADO    // Medio Bajo (1.2 - 1.7)
+    if (ifssValue >= 0.6) return COLORS.ROJO          // Bajo (0.6 - 1.1)
+    return COLORS.ROJO_FUERTE                         // Muy Bajo (0.0 - 0.5)
   }
 
   // Obtener info del estado
@@ -356,14 +374,21 @@ export const useMaps = () => {
       }))
   }
 
-  // ✅ ACTUALIZADO: Etiquetas IFSS (6 categorías)
+  // ============================================================================
+  // ✅ ACTUALIZADO: Etiquetas IFSS (7 categorías)
+  // Muy Alto: 3.5 – 4.0 | Alto: 2.9 – 3.4 | Medio Alto: 2.3 – 2.8
+  // Medio: 1.8 – 2.2 | Medio Bajo: 1.2 – 1.7 | Bajo: 0.6 – 1.1 | Muy Bajo: 0.0 – 0.5
+  // ============================================================================
   const getIFSSLabel = (ifssValue) => {
-    if (ifssValue >= 4) return { label: 'Alto', color: '#6ac952' }
-    if (ifssValue >= 2.3) return { label: 'Medio Alto', color: '#94d351' }
-    if (ifssValue >= 1.9) return { label: 'Medio', color: '#bddc50' }
-    if (ifssValue >= 1.5) return { label: 'Medio Bajo', color: '#e6a74c' }
-    if (ifssValue > 0.7) return { label: 'Bajo', color: '#e67849' }
-    return { label: 'Muy Bajo', color: '#e52845' }
+    const value = parseFloat(ifssValue) || 0
+    
+    if (value >= 3.5) return { label: 'Muy Alto', color: COLORS.VERDE_FUERTE }
+    if (value >= 2.9) return { label: 'Alto', color: COLORS.VERDE }
+    if (value >= 2.3) return { label: 'Medio Alto', color: COLORS.VERDE_BAJO }
+    if (value >= 1.8) return { label: 'Medio', color: COLORS.AMARILLO }
+    if (value >= 1.2) return { label: 'Medio Bajo', color: COLORS.ANARANJADO }
+    if (value >= 0.6) return { label: 'Bajo', color: COLORS.ROJO }
+    return { label: 'Muy Bajo', color: COLORS.ROJO_FUERTE }
   }
   
   onMounted(() => {

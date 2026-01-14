@@ -59,12 +59,14 @@
             :show-info-card="!isRetractableExpanded"
             :show-navigation="!isRetractableExpanded"
             :active-view="activeView"
+            :selectedVariable="selectedVariable"
             @state-click="handleStateClickWithEmit"
             @state-hover="handleStateHover"
             @state-leave="handleStateLeave"
             @navigate-regional="handleIFSRegionalClick"
             @navigate-federal="handleDatosFederalesClick"
             @view-change="handleViewChange"
+            @legend-filter-change="handleLegendFilterChange"
           />
           <!-- Overlay sobre SOLO el mapa - Aparece cuando entidad es "Datos Regionales" (null) -->
           <transition name="overlay-fade">
@@ -182,7 +184,8 @@
                 :showAllBars="true"
                 :animationDelay="0"
                 :selectedState="selectedState"
-                :selectedVariable="selectedVariable" 
+                :selectedVariable="selectedVariable"
+                :legendFilter="activeLegendFilter"
               />
               
               <!-- Empty State -->
@@ -314,6 +317,26 @@ const emitFiltersCount = () => {
  
   emit('filters-count-change', count)
 }
+
+// ============================================================================
+// ✅ NUEVO: Estado para filtro de leyenda del mapa
+// ============================================================================
+const activeLegendFilter = ref(null)
+
+/**
+ * Handler para cuando cambia el filtro de leyenda desde el mapa
+ */
+const handleLegendFilterChange = (filter) => {
+  console.log('🎨 [HomePage] Filtro de leyenda cambió:', filter)
+  activeLegendFilter.value = filter
+  
+  // Debug: mostrar estados filtrados
+  if (filter && filter.states) {
+    console.log('🎨 [HomePage] Estados filtrados:', filter.states)
+    console.log('🎨 [HomePage] Total:', filter.states.length, 'estados')
+  }
+}
+
 // ============================================================================
 // EMITS - Incluyendo eventos para el toggle
 // ============================================================================
@@ -689,7 +712,8 @@ const fetchAvailableYears = async () => {
 const handleEntityChange = (entity) => {
   console.log('📍 [HomePage] handleEntityChange llamado con:', entity)
   
-  selectedEntity.value = entity
+  // ✅ Limpiar filtro de leyenda cuando cambia la entidad
+  activeLegendFilter.value = null
   
   if (entity === '') {
     resetSelection()
@@ -776,6 +800,9 @@ const handleFiltersChange = (filters) => {
 const handleStateClickWithEmit = async (stateName) => {
   console.log('🗺️ [HomePage] Click en estado:', stateName)
   
+  // ✅ Limpiar filtro de leyenda cuando se hace click en un estado
+  activeLegendFilter.value = null
+  
   if (!stateName) {
     resetSelection()
     selectedEntity.value = ''
@@ -823,6 +850,9 @@ const handleIFSRegionalClick = async () => {
   console.log('🌎 [HomePage] Cambiando a vista IFS Regional')
   
   activeView.value = 'regional'
+  
+  // ✅ Limpiar filtro de leyenda
+  activeLegendFilter.value = null
   
   if (selectedState.value) {
     resetSelection()
@@ -925,6 +955,9 @@ const handlePanelClosed = async () => {
   selectedEntity.value = ''
   selectedVariable.value = null
   
+  // ✅ Limpiar filtro de leyenda
+  activeLegendFilter.value = null
+  
   availableYears.value = [...initialYears.value]
   
   if (initialYears.value.length > 0) {
@@ -963,6 +996,9 @@ const handleOverlayClick = async () => {
   
   selectedEntity.value = ''
   selectedVariable.value = null
+  
+  // ✅ Limpiar filtro de leyenda
+  activeLegendFilter.value = null
   
   restoreInitialYears()
   
@@ -1026,6 +1062,9 @@ watch(toggleAction, async (newAction) => {
   console.log('🔘 [HomePage] Recibida acción de toggle:', newAction)
   
   const { type, filters } = newAction
+  
+  // ✅ Limpiar filtro de leyenda cuando cambia el toggle
+  activeLegendFilter.value = null
   
   if (type === 'federal') {
     // Click en "Datos Regionales" (Federal) → HistoricalCard + StackedArea + Overlay
