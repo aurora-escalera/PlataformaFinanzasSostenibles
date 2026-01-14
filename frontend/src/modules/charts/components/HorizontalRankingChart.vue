@@ -1,5 +1,6 @@
 <!-- HorizontalRankingChart.vue - Con colores dinámicos por variable y filtro de leyenda -->
 <!-- ✅ ACTUALIZADO: Soporte para filtro de leyenda desde el mapa -->
+<!-- ✅ ACTUALIZADO: Valores 0 se muestran en gris con "Sin datos" -->
 <template>
   <div class="horizontal-bar-chart" :style="{ width: width, height: height }">
     <!-- Título -->
@@ -21,7 +22,8 @@
             'is-dimmed': !legendFilter && ((hoveredBarKey !== null && hoveredBarKey !== variable.key && !isSelected(variable)) || 
                          (selectedState !== null && isSelectionActive && !isSelected(variable) && hoveredBarKey === null)),
             'is-legend-highlighted': legendFilter && barMatchesLegendFilter(variable),
-            'is-legend-dimmed': legendFilter && !barMatchesLegendFilter(variable)
+            'is-legend-dimmed': legendFilter && !barMatchesLegendFilter(variable),
+            'is-no-data': isNoData(variable.value)
           }"
           @mouseenter="handleMouseEnter(variable, $event)"
           @mousemove="handleMouseMove($event)"
@@ -49,26 +51,37 @@
             
             <!-- Barra -->
             <div class="bar-wrapper-horizontal">
+              <!-- Barra con valor (solo si hay datos) -->
               <div 
+                v-if="!isNoData(variable.value)"
                 class="bar-horizontal"
-                :class="[variable.colorClass, { 
-                  'selected-bar': isSelected(variable) && !legendFilter,
-                  'legend-highlighted-bar': legendFilter && barMatchesLegendFilter(variable)
-                }]"
+                :class="[
+                  variable.colorClass, 
+                  { 
+                    'selected-bar': isSelected(variable) && !legendFilter,
+                    'legend-highlighted-bar': legendFilter && barMatchesLegendFilter(variable)
+                  }
+                ]"
                 :style="{ 
                   width: getBarWidth(variable.value) + '%',
                   background: variable.color
                 }"
               >
-                <!-- Valor dentro de la barra -->
-                <span class="bar-value">{{ formatValue(variable.value) }}</span>
+                <span class="bar-value">
+                  {{ formatValue(variable.value) }}
+                </span>
               </div>
+              
+              <!-- Texto "Sin datos" cuando no hay datos -->
+              <span v-else class="no-data-text">
+                Sin datos
+              </span>
             </div>
 
             <!-- ✅ Indicador flotante debajo de la barra -->
             <transition name="floating-indicator">
               <span 
-                v-if="isSelected(variable) && !legendFilter" 
+                v-if="isSelected(variable) && !legendFilter && !isNoData(variable.value)" 
                 class="floating-classification"
                 :style="{ 
                   color: variable.color,
@@ -118,7 +131,9 @@
           <div class="tooltip-color" :style="{ backgroundColor: tooltip.color }"></div>
           <div class="tooltip-info">
             <div class="tooltip-label">{{ tooltip.label }}</div>
-            <div class="tooltip-value">{{ currentVariableKey || 'IFSS' }}: {{ formatValue(tooltip.value) }}</div>
+            <div class="tooltip-value">
+              {{ tooltip.isNoData ? 'Sin datos disponibles' : `${currentVariableKey || 'IFSS'}: ${formatValue(tooltip.value)}` }}
+            </div>
             <div class="tooltip-classification">{{ tooltip.classification }}</div>
           </div>
         </div>
@@ -155,10 +170,21 @@ const props = defineProps({
 })
 
 const hoveredBarKey = ref(null)
-const tooltip = ref({ visible: false, x: 0, y: 0, label: '', value: '', color: '', classification: '' })
+const tooltip = ref({ visible: false, x: 0, y: 0, label: '', value: '', color: '', classification: '', isNoData: false })
 const internalVariables = ref([])
 const isAnimated = ref(false)
 const isSelectionActive = ref(true)
+
+// ============================================================================
+// ✅ NUEVO: Función para detectar si un valor es "sin datos"
+// ============================================================================
+const isNoData = (value) => {
+  if (value === null || value === undefined || value === '') return true
+  
+  // Convertir a número y verificar si es 0 o muy cercano a 0
+  const numValue = parseFloat(value)
+  return isNaN(numValue) || numValue === 0 || Math.abs(numValue) < 0.005
+}
 
 // Obtener la key de la variable actual
 const currentVariableKey = computed(() => {
@@ -183,7 +209,8 @@ const COLORS = {
   AMARILLO: '#facc15',
   ANARANJADO: '#e6a74c',
   ROJO: '#ef4444',
-  ROJO_FUERTE: '#dc2626'
+  ROJO_FUERTE: '#dc2626',
+  GRIS: '#9ca3af'  // ✅ Color para "sin datos"
 }
 
 // ============================================================================
@@ -195,6 +222,10 @@ const COLORS = {
  */
 const getIFSSColor = (value) => {
   const numValue = parseFloat(value) || 0
+  
+  // ✅ Sin datos
+  if (isNoData(value)) return { color: COLORS.GRIS, label: 'Sin datos' }
+  
   if (numValue >= 3.5) return { color: COLORS.VERDE_FUERTE, label: 'Muy Alto' }
   if (numValue >= 2.9) return { color: COLORS.VERDE, label: 'Alto' }
   if (numValue >= 2.3) return { color: COLORS.VERDE_BAJO, label: 'Medio Alto' }
@@ -209,6 +240,10 @@ const getIFSSColor = (value) => {
  */
 const getISColor = (value) => {
   const numValue = parseFloat(value) || 0
+  
+  // ✅ Sin datos
+  if (isNoData(value)) return { color: COLORS.GRIS, label: 'Sin datos' }
+  
   if (numValue > 5.5) return { color: COLORS.VERDE_FUERTE, label: 'Muy Alto' }
   if (numValue >= 4.10) return { color: COLORS.VERDE, label: 'Alto' }
   if (numValue >= 2.51) return { color: COLORS.VERDE_BAJO, label: 'Medio Alto' }
@@ -223,6 +258,10 @@ const getISColor = (value) => {
  */
 const getIICColor = (value) => {
   const numValue = parseFloat(value) || 0
+  
+  // ✅ Sin datos
+  if (isNoData(value)) return { color: COLORS.GRIS, label: 'Sin datos' }
+  
   if (numValue > 10.0) return { color: COLORS.ROJO_FUERTE, label: 'Muy Alto' }
   if (numValue >= 8.1) return { color: COLORS.ROJO, label: 'Alto' }
   if (numValue >= 6.1) return { color: COLORS.ANARANJADO, label: 'Medio Alto' }
@@ -237,6 +276,10 @@ const getIICColor = (value) => {
  */
 const getPSColor = (value) => {
   const numValue = parseFloat(value) || 0
+  
+  // ✅ Sin datos
+  if (isNoData(value)) return { color: COLORS.GRIS, label: 'Sin datos' }
+  
   if (numValue > 5.5) return { color: COLORS.VERDE_FUERTE, label: 'Muy Alto' }
   if (numValue >= 4.10) return { color: COLORS.VERDE, label: 'Alto' }
   if (numValue >= 2.51) return { color: COLORS.VERDE_BAJO, label: 'Medio Alto' }
@@ -251,6 +294,10 @@ const getPSColor = (value) => {
  */
 const getPICColor = (value) => {
   const numValue = parseFloat(value) || 0
+  
+  // ✅ Sin datos
+  if (isNoData(value)) return { color: COLORS.GRIS, label: 'Sin datos' }
+  
   if (numValue > 10.0) return { color: COLORS.ROJO_FUERTE, label: 'Muy Alto' }
   if (numValue >= 8.10) return { color: COLORS.ROJO, label: 'Alto' }
   if (numValue >= 6.10) return { color: COLORS.ANARANJADO, label: 'Medio Alto' }
@@ -265,6 +312,11 @@ const getPICColor = (value) => {
 // ============================================================================
 
 const getColorByVariable = (value) => {
+  // ✅ Verificar primero si es sin datos
+  if (isNoData(value)) {
+    return { color: COLORS.GRIS, label: 'Sin datos' }
+  }
+  
   const variableKey = currentVariableKey.value
   
   switch (variableKey) {
@@ -290,6 +342,9 @@ const getColorByVariable = (value) => {
  * Obtener el nivel de clasificación de un valor (para IFSS por defecto)
  */
 const getValueLevel = (value) => {
+  // ✅ Sin datos no tiene nivel
+  if (isNoData(value)) return 'sin-datos'
+  
   const numValue = parseFloat(value) || 0
   
   // Usar los rangos según la variable seleccionada
@@ -565,7 +620,8 @@ const handleMouseEnter = (variable, event) => {
     label: variable.label,
     value: variable.value,
     color: variable.color,
-    classification: variable.classification
+    classification: variable.classification,
+    isNoData: isNoData(variable.value)  // ✅ Agregar flag para tooltip
   }
 }
 
@@ -583,9 +639,25 @@ const handleMouseLeave = () => {
 
 const getBarWidth = (value) => {
   if (!isAnimated.value) return 0
-  const percentage = (value / maxValue.value) * 100
-  return Math.min(percentage, 100)
+  
+  // ✅ Sin datos = sin barra
+  if (isNoData(value)) {
+    return 0
+  }
+  
+  const numValue = parseFloat(value) || 0
+  const minWidth = 5  // Ancho mínimo absoluto
+  
+  // Escala con offset para mejor diferenciación en valores pequeños
+  const percentage = (numValue / maxValue.value) * 100
+  
+  // Agregar un "boost" base + el porcentaje real
+  // Así valores pequeños empiezan en minWidth y crecen proporcionalmente
+  const boostedWidth = minWidth + (percentage * 0.9)
+  
+  return Math.min(boostedWidth, 100)
 }
+
 
 const formatValue = (value) => {
   if (props.valueFormatter) {
@@ -671,6 +743,33 @@ const formatValue = (value) => {
 .bar-row.is-dimmed {
   opacity: 0.15;
   filter: grayscale(40%);
+}
+
+/* ============================================================================
+   ✅ ESTILOS PARA "SIN DATOS"
+   ============================================================================ */
+
+.bar-row.is-no-data {
+  opacity: 0.7;
+}
+
+.bar-row.is-no-data:hover {
+  opacity: 0.85;
+}
+
+.no-data-text {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding-left: 8px;
+  font-size: 12px;
+  font-weight: 400;
+  color: #9ca3af;
+}
+
+.floating-classification.no-data-classification {
+  color: #6b7280 !important;
+  text-shadow: none !important;
 }
 
 /* ============================================================================
@@ -1061,6 +1160,11 @@ const formatValue = (value) => {
     font-size: 9px;
   }
   
+  .no-data-text {
+    font-size: 10px;
+    padding-left: 6px;
+  }
+  
   .floating-classification {
     font-size: 10px;
     top: calc(100% + 6px);
@@ -1149,6 +1253,11 @@ const formatValue = (value) => {
   
   .bar-value {
     font-size: 8px;
+  }
+  
+  .no-data-text {
+    font-size: 9px;
+    padding-left: 4px;
   }
   
   .floating-classification {
