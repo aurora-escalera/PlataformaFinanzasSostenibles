@@ -152,6 +152,7 @@
                     :initialVisibleVariables="['IFS']"
                     :positionsByYear="stackedAreaPositions"
                     :decimalPlaces="2"
+                    :buttonLabels="{ 'IFS': 'Índice de Finanzas Sostenibles' }"
                   />
                 </div>
               </div>
@@ -162,6 +163,7 @@
                 v-else-if="showRegionalCharts"
                 :selectedYear="selectedYear"
                 :selectedVariable="selectedVariable"
+                @years-loaded="handleInternationalYearsLoaded"
               />
               
               <!-- ========== RANKING CHART ========== -->
@@ -418,7 +420,7 @@ const selectedVariable = ref(null)
 const selectedYear = ref(null)
 const selectedEntity = ref('')
 const filterBarKey = ref(0)
-const { fetchData: fetchEntities, fetchSheetNames } = useStorageData()
+const { fetchData: fetchEntities, fetchSheetNames, fetchInternationalSheetNames } = useStorageData()
 
 // Estado para controlar qué vista está activa
 const activeView = ref(null)
@@ -435,6 +437,7 @@ const initialYears = ref([])
 // Guardar años regionales cuando se cargan
 const regionalYears = ref([])
 
+const internationalYears = ref([])
 // ✅ NUEVO: Flag para bloquear cambios de año forzados por el FilterBar
 // Cuando el usuario selecciona "Todos los años", activamos este flag
 // para ignorar cualquier intento del FilterBar de forzar un año específico
@@ -459,6 +462,35 @@ const entitiesError = ref(null)
 
 // Estado para controlar la expansión del panel retráctil
 const isRetractableExpanded = ref(false)
+
+/**
+ * Handler para cuando IFSRegionalCard carga los años disponibles
+ */
+const handleInternationalYearsLoaded = async (years) => {
+  console.log('🌎 [HomePage] Años internacionales recibidos:', years)
+  
+  if (years && years.length > 0) {
+    internationalYears.value = [...years]
+    availableYears.value = years
+    
+    // Si el año actual no está en la lista, usar el primero disponible
+    if (selectedYear.value !== null && !years.includes(selectedYear.value)) {
+      const firstYear = years[0]
+      selectedYear.value = firstYear
+      setActiveYear(firstYear)
+      console.log('📅 [Internacional] Año actualizado al primero disponible:', firstYear)
+    }
+    
+    filterBarKey.value++
+    await nextTick()
+    
+    console.log('✅ [HomePage] Filtro actualizado con años internacionales:', years)
+    
+    emit('available-years-change', years)
+    updateAvailableYears(years)
+    emitFiltersState()
+  }
+}
 
 // ============================================================================
 // FUNCIÓN: Emitir estado de filtros al App.vue (para el toggle)
@@ -788,6 +820,33 @@ const handleEntityChange = async (entity) => {
     resetSelection()
     currentDataView.value = 'federal'
     
+    // ✅ NUEVO: Cargar años del sheet internacional
+    console.log('🌎 [HomePage] Cargando años de datos internacionales...')
+    const intYears = await fetchInternationalSheetNames()
+    
+    if (intYears && intYears.length > 0) {
+      internationalYears.value = [...intYears]
+      availableYears.value = intYears
+      
+      // Establecer el primer año disponible si no hay año seleccionado
+      if (selectedYear.value === null) {
+        // Mantener null si el usuario quiere "Todos los años"
+        console.log('📅 [Internacional] Manteniendo "Todos los años" (null)')
+      } else if (!intYears.includes(selectedYear.value)) {
+        // Si el año actual no existe en internacional, usar el primero
+        const firstYear = intYears[0]
+        selectedYear.value = firstYear
+        setActiveYear(firstYear)
+        console.log('📅 [Internacional] Año cambiado a:', firstYear)
+      }
+      
+      filterBarKey.value++
+      await nextTick()
+      
+      emit('available-years-change', intYears)
+      updateAvailableYears(intYears)
+    }
+    
     // ✅ Solo cargar ranking si NO es showRegionalCharts ni showStackedArea
     if (shouldLoadRanking()) {
       console.log('📊 [HomePage] Cargando ranking...')
@@ -1082,18 +1141,21 @@ const handleRegionalYearsLoaded = async (years) => {
 }
 
 const restoreInitialYears = async () => {
+  // Solo restaurar años cuantitativos si NO estamos en vista regional/federal
+  if (selectedEntity.value === null) {
+    console.log('🔄 [HomePage] En vista regional, no restaurar años cuantitativos')
+    return
+  }
+  
   if (initialYears.value.length > 0) {
     console.log('🔄 [HomePage] Restaurando años iniciales:', initialYears.value)
     availableYears.value = [...initialYears.value]
     
-    // ✅ CORREGIDO: Solo forzar año si:
-    // 1. El año actual NO es null (el usuario NO quiere "Todos los años")
-    // 2. El año actual no está en la lista de años iniciales
     if (selectedYear.value !== null && !initialYears.value.includes(selectedYear.value)) {
-      const firstYear = initialYears.value[0]
-      selectedYear.value = firstYear
-      setActiveYear(firstYear)
-      console.log('📅 Año restaurado al primero de cuantitativos:', firstYear)
+      const preferredYear = initialYears.value.includes('2024') ? '2024' : initialYears.value[0]
+      selectedYear.value = preferredYear
+      setActiveYear(preferredYear)
+      console.log('📅 Año restaurado al preferido de cuantitativos:', preferredYear)
     } else if (selectedYear.value === null) {
       console.log('📅 Usuario tiene "Todos los años" seleccionado, respetando null')
     }
@@ -1118,10 +1180,11 @@ const handlePanelClosed = async () => {
   availableYears.value = [...initialYears.value]
   
   if (initialYears.value.length > 0) {
-    const firstYear = initialYears.value[0]
-    selectedYear.value = firstYear
-    setActiveYear(firstYear)
-    console.log('📅 Año restaurado a DEFAULT:', firstYear)
+    // ✅ CORREGIDO: Preferir 2024 si está disponible
+    const preferredYear = initialYears.value.includes('2024') ? '2024' : initialYears.value[0]
+    selectedYear.value = preferredYear
+    setActiveYear(preferredYear)
+    console.log('📅 Año restaurado a DEFAULT:', preferredYear)
   }
   
   filterBarKey.value++
@@ -1160,9 +1223,10 @@ const handleOverlayClick = async () => {
   restoreInitialYears()
   
   if (availableYears.value.length > 0) {
-    const firstYear = availableYears.value[0]
-    selectedYear.value = firstYear
-    setActiveYear(firstYear)
+    // ✅ CORREGIDO: Preferir 2024 si está disponible
+    const preferredYear = availableYears.value.includes('2024') ? '2024' : availableYears.value[0]
+    selectedYear.value = preferredYear
+    setActiveYear(preferredYear)
   }
   
   resetSelection()
@@ -1382,10 +1446,11 @@ onMounted(async () => {
   currentDataView.value = 'subnacional'
   
   if (availableYears.value.length > 0) {
-    const firstYear = availableYears.value[0]
-    selectedYear.value = firstYear
-    setActiveYear(firstYear)
-    console.log('📅 Año inicial establecido:', firstYear)
+    // ✅ CORREGIDO: Preferir 2024 si está disponible, ya que 2025 puede no tener datos completos
+    const preferredYear = availableYears.value.includes('2024') ? '2024' : availableYears.value[0]
+    selectedYear.value = preferredYear
+    setActiveYear(preferredYear)
+    console.log('📅 Año inicial establecido:', preferredYear)
   }
   
   await loadAllStatesRanking(null)

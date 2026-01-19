@@ -21,7 +21,7 @@
         }"
       >
         <span class="btn-color-dot" :style="{ backgroundColor: getVariableColor(variable) }"></span>
-        {{ variable }}
+        {{ getButtonLabel(variable) }}
       </button>
     </div>
 
@@ -244,7 +244,9 @@ const props = defineProps({
   initialVisibleVariables: { type: Array, default: null },
   positionsByYear: { type: Object, default: () => ({}) },
   percentagesByYear: { type: Object, default: () => ({}) },
-  tooltipLabels: { type: Object, default: () => ({}) }
+  tooltipLabels: { type: Object, default: () => ({}) },
+  // ✅ NUEVA PROP: Etiquetas personalizadas para botones de filtro (no afecta tooltip)
+  buttonLabels: { type: Object, default: () => ({}) }
 })
 
 const emit = defineEmits(['variable-toggle'])
@@ -290,6 +292,16 @@ const availableVariables = computed(() => Object.keys(props.data))
 const visibleVariables = ref([])
 const animatedData = ref({})
 
+// ✅ NUEVA FUNCIÓN: Obtener etiqueta para botón de filtro
+const getButtonLabel = (variable) => {
+  // Si hay una etiqueta personalizada para el botón, usarla
+  if (props.buttonLabels[variable]) {
+    return props.buttonLabels[variable]
+  }
+  // Si no, usar el nombre original de la variable
+  return variable
+}
+
 const tooltipItems = computed(() => {
   if (!hoverState.value.visible || hoverState.value.index === -1) return []
   
@@ -301,6 +313,7 @@ const tooltipItems = computed(() => {
     const value = data[index]
     const color = getVariableColor(varName)
     
+    // ✅ Tooltip usa tooltipLabels (nombres originales), NO buttonLabels
     const displayName = props.tooltipLabels[varName] || varName
     
     let percentage = null
@@ -851,9 +864,9 @@ onUnmounted(() => {
 .tooltip-separator { height: 1px; background: #e0e0e0; margin: 4px 0; }
 .tooltip-fade-enter-active, .tooltip-fade-leave-active { transition: all 0.2s ease; }
 .tooltip-fade-enter-from, .tooltip-fade-leave-to { opacity: 0; transform: translate(-50%, calc(-100% - 20px)); }
+
 /* ============================================
    RESPONSIVE - Media Queries para StackedArea.vue
-   (Agregar al final del <style scoped>)
    ============================================ */
 
 /* Tablets */
@@ -1158,5 +1171,4 @@ onUnmounted(() => {
     font-size: 9px;
   }
 }
-
 </style>

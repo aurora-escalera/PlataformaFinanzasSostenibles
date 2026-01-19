@@ -1,187 +1,233 @@
-<!-- src/modules/charts/components/IFSRegionalCard.vue -->
-<!-- ✅ ACTUALIZADO: Nuevos rangos IFS (escala 0-4 con 6 niveles) -->
+<!-- IFSRegionalCard.vue - Componente dual: Ranking Internacional o Card Individual -->
+<!-- Muestra ranking cuando variable es "Todas" o "IFS", card individual para otras -->
 <template>
-  <div class="ifs-regional-card">
-    <!-- Header -->
-    <div class="card-header" :class="headerColorClass">
-      <div class="header-icon">
-        <svg v-if="isIFSMode" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-        </svg>
-        <span v-else class="icon-dollar">$</span>
+  <div class="ifs-regional-card" :class="{ 'mode-ranking': isRankingMode, 'mode-card': !isRankingMode }">
+    
+    <!-- MODO RANKING (Todas las variables / IFS) -->
+    <template v-if="isRankingMode">
+      <div class="card-header ranking-header">
+        <div class="header-content">
+          <h3 class="card-title">Ranking Internacional IFS</h3>
+          <span class="card-subtitle">{{ selectedYear || 'Todos los años' }}</span>
+        </div>
+        <div class="header-badge">
+          <span class="badge-count">{{ activeVariables.length }}</span>
+          <span class="badge-label">países</span>
+        </div>
       </div>
-      <div class="header-text">
-        <h3 class="header-title">{{ currentConfig.headerTitle }}</h3>
-        <p class="header-subtitle">Datos Federales Consolidados</p>
-      </div>
-      <span class="year-badge">{{ selectedYear || '—' }}</span>
-      
-      <!-- ✅ Botón de exportación circular -->
-      <div class="export-wrapper" ref="exportWrapperRef">
-        <button 
-          class="export-btn-circle"
-          :class="{ 'is-open': showExportMenu }"
-          @click.stop="toggleExportMenu"
-          title="Exportar datos"
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="7 10 12 15 17 10"/>
-            <line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-        </button>
-        
-        <!-- Dropdown menu -->
-        <transition name="dropdown-fade">
-          <div v-if="showExportMenu" class="export-dropdown">
-            <button class="export-option" @click="handleExport('xlsx')">
-              <span class="option-icon xlsx">XLS</span>
-              <span>Excel</span>
-            </button>
-            <button class="export-option" @click="handleExport('csv')">
-              <span class="option-icon csv">CSV</span>
-              <span>CSV</span>
-            </button>
-          </div>
-        </transition>
-      </div>
-    </div>
 
-    <!-- Body -->
-    <div class="card-body">
-      <!-- Loading -->
       <div v-if="loading" class="loading-state">
         <div class="spinner"></div>
-        <p>Cargando datos...</p>
+        <p>Cargando datos internacionales...</p>
       </div>
 
-      <!-- Error -->
       <div v-else-if="error" class="error-state">
         <p>{{ error }}</p>
+        <button @click="loadRankingData" class="retry-btn">Reintentar</button>
       </div>
 
-      <!-- ==================== CONTENT IFS (con gauge) ==================== -->
-      <div v-else-if="isIFSMode" class="content-wrapper content-ifs">
-        <div class="metrics-section">
-          <div class="metrics-title">
-            <span class="title-main">{{ currentConfig.title }}</span>
-            <span class="title-sub">{{ currentConfig.subtitle }}</span>
+      <div v-else class="card-content">
+        <div class="bars-container" :class="{ 'has-hover': hoveredBarKey !== null }">
+          <div 
+            v-for="(country, index) in activeVariables" 
+            :key="country.key"
+            class="bar-row"
+            :class="{ 
+              'is-hovered': hoveredBarKey === country.key,
+              'is-dimmed': hoveredBarKey !== null && hoveredBarKey !== country.key,
+              'is-no-data': isNoData(country.value),
+              'is-mexico': isHighlightedCountry(country.key),
+              'is-not-mexico': !isHighlightedCountry(country.key)
+            }"
+            :style="{ animationDelay: index * 30 + 'ms' }"
+            @mouseenter="handleMouseEnter(country, $event)"
+            @mousemove="handleMouseMove($event)"
+            @mouseleave="handleMouseLeave"
+          >
+            <div class="rank-position" :style="{ backgroundColor: country.color }">
+              <span class="rank-number">{{ index + 1 }}</span>
+            </div>
+            <div class="country-label" :class="{ 'highlighted-label': hoveredBarKey === country.key }">
+              {{ country.label }}
+            </div>
+            <div class="bar-chart-area">
+              <div class="grid-lines">
+                <div v-for="tick in xAxisTicks" :key="tick.value" class="grid-line" :style="{ left: tick.position + '%' }"></div>
+              </div>
+              <div class="bar-wrapper-horizontal">
+                <div v-if="!isNoData(country.value)" class="bar-horizontal" :style="{ width: getBarWidth(country.value) + '%', background: country.color }">
+                  <span class="bar-value">{{ formatValue(country.value) }}</span>
+                </div>
+                <span v-else class="no-data-text">Sin datos</span>
+              </div>
+            </div>
+            <div class="classification-badge" :style="{ backgroundColor: country.color + '20', color: country.color }">
+              {{ country.classification }}
+            </div>
           </div>
-          
-          <div class="metrics-row">
-            <!-- Gauge IFS -->
-            <div class="metric-card ifs-metric">
-              <div class="metric-gauge">
-                <svg viewBox="0 0 140 140" class="gauge-svg">
-                  <circle cx="70" cy="70" r="58" fill="none" stroke="#e5e7eb" stroke-width="10" />
-                  <circle 
-                    cx="70" cy="70" r="58" 
-                    fill="none" 
-                    :stroke="currentLevelColor"
-                    stroke-width="10"
-                    stroke-linecap="round"
-                    :stroke-dasharray="`${gaugeProgress} 365`"
-                    class="gauge-progress"
-                  />
+          <div v-if="activeVariables.length === 0 && !loading" class="empty-state">
+            <div class="empty-icon">🌎</div>
+            <p>No hay datos internacionales disponibles</p>
+          </div>
+        </div>
+
+        <div class="color-legend-strip">
+          <div class="legend-bar-container">
+            <div class="legend-items">
+              <div v-for="(item, index) in legendItems" :key="index" class="legend-item">
+                <div class="legend-color-block" :style="{ backgroundColor: item.color }">
+                  <span class="legend-indicator">{{ item.label }}</span>
+                </div>
+                <span class="legend-range-value">{{ item.range }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <Teleport to="body">
+        <div v-if="tooltip.visible" class="tooltip-international" :style="tooltipStyle">
+          <div class="tooltip-content">
+            <div class="tooltip-flag" :style="{ backgroundColor: tooltip.color }">🌐</div>
+            <div class="tooltip-info">
+              <div class="tooltip-country">{{ tooltip.label }}</div>
+              <div class="tooltip-value">{{ tooltip.isNoData ? 'Sin datos disponibles' : 'IFS: ' + formatValue(tooltip.value) }}</div>
+              <div class="tooltip-classification" :style="{ color: tooltip.color }">{{ tooltip.classification }}</div>
+            </div>
+          </div>
+        </div>
+      </Teleport>
+    </template>
+
+    <!-- MODO CARD (PS, IS, PIC, IIC) - Dashboard Moderno -->
+    <template v-else>
+      <div class="card-modern">
+        <!-- Header con gradiente -->
+        <div class="modern-header" :class="currentConfig.colorTheme">
+          <div class="header-left">
+            <div class="header-icon-modern" :class="currentConfig.colorTheme">
+              <svg v-if="currentConfig.colorTheme === 'green'" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+              </svg>
+              <svg v-else width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+              </svg>
+            </div>
+            <div class="header-text-modern">
+              <h3 class="header-title-modern">{{ currentConfig.headerTitle }}</h3>
+              <span class="header-subtitle-modern">Datos Federales {{ selectedYear || '' }}</span>
+            </div>
+          </div>
+          <div class="header-right">
+            <div class="year-badge-modern" :class="currentConfig.colorTheme">
+              <span class="year-value">{{ selectedYear || '—' }}</span>
+            </div>
+            <button class="export-btn-modern" @click.stop="toggleExportMenu" title="Exportar">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+            </button>
+            <transition name="dropdown-fade">
+              <div v-if="showExportMenu" class="export-dropdown-modern">
+                <button class="export-option-modern" @click="handleExport('xlsx')">
+                  <span class="option-icon-modern xlsx">XLS</span>Excel
+                </button>
+                <button class="export-option-modern" @click="handleExport('csv')">
+                  <span class="option-icon-modern csv">CSV</span>CSV
+                </button>
+              </div>
+            </transition>
+          </div>
+        </div>
+
+        <!-- Body -->
+        <div class="modern-body">
+          <div v-if="loading" class="loading-state-modern">
+            <div class="spinner-modern" :class="currentConfig.colorTheme"></div>
+            <p>Cargando datos...</p>
+          </div>
+
+          <div v-else-if="error" class="error-state-modern">
+            <p>{{ error }}</p>
+          </div>
+
+          <div v-else class="content-modern">
+            <!-- Métricas principales -->
+            <div class="metrics-grid">
+              <!-- Card Valor Principal -->
+              <div class="metric-card-modern main-metric" :class="currentConfig.colorTheme">
+                <div class="metric-icon-bg" :class="currentConfig.colorTheme">
+                  <svg v-if="currentConfig.colorTheme === 'green'" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                  </svg>
+                  <svg v-else width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="12" cy="12" r="10"/><path d="M16 8l-4 4-4-4"/><path d="M8 16l4-4 4 4"/>
+                  </svg>
+                </div>
+                <div class="metric-content">
+                  <span class="metric-label-modern">{{ currentConfig.title }}</span>
+                  <div class="metric-value-modern" :class="currentConfig.colorTheme">
+                    <span class="currency-symbol">$</span>
+                    <span class="value-number">{{ formattedMonetaryValue }}</span>
+                  </div>
+                  <span class="metric-unit-modern">{{ monetaryUnitText }}</span>
+                </div>
+                <div class="metric-decoration" :class="currentConfig.colorTheme"></div>
+              </div>
+
+              <!-- Card Posición -->
+              <div class="metric-card-modern position-metric" :class="currentConfig.colorTheme">
+                <div class="metric-icon-bg" :class="currentConfig.colorTheme">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M18 20V10M12 20V4M6 20v-6"/>
+                  </svg>
+                </div>
+                <div class="metric-content">
+                  <span class="metric-label-modern">Posición Internacional</span>
+                  <div class="position-value-modern" :class="currentConfig.colorTheme">
+                    <span class="position-hash">#</span>
+                    <span class="position-number">{{ positionValue || '—' }}</span>
+                  </div>
+                  <span class="metric-unit-modern">de 20 países</span>
+                </div>
+                <div class="metric-decoration" :class="currentConfig.colorTheme"></div>
+              </div>
+            </div>
+
+            <!-- Indicador visual de progreso -->
+            <div class="progress-section">
+              <div class="progress-header">
+                <span class="progress-title">Nivel de {{ currentConfig.colorTheme === 'green' ? 'Sostenibilidad' : 'Intensidad de Carbono' }}</span>
+                <span class="progress-percentage" :class="currentConfig.colorTheme">{{ getProgressPercentage }}%</span>
+              </div>
+              <div class="progress-bar-container">
+                <div class="progress-bar-bg">
+                  <div class="progress-bar-fill" :class="currentConfig.colorTheme" :style="{ width: getProgressPercentage + '%' }"></div>
+                </div>
+                <div class="progress-markers">
+                  <span>Bajo</span>
+                  <span>Medio</span>
+                  <span>Alto</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Info Section -->
+            <div class="info-section-modern">
+              <div class="info-icon" :class="currentConfig.colorTheme">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>
                 </svg>
-                <div class="gauge-center">
-                  <span class="gauge-value">{{ formattedIFSValue }}</span>
-                  <span class="gauge-label" :style="{ color: currentLevelColor }">{{ currentLevelLabel }}</span>
-                </div>
               </div>
-            </div>
-
-            <div class="metrics-divider"></div>
-
-            <!-- Posición IFS -->
-            <div class="metric-card position-metric">
-              <div class="position-badge position-green">
-                <span class="position-label">Posición Internacional</span>
-                <div class="position-value-wrapper">
-                  <span class="position-hash">#</span>
-                  <span class="position-value">{{ positionValue || '—' }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Leyenda IFS con escala de 6 niveles -->
-        <div class="legend-section">
-          <div class="legend-header">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/>
-              <path d="M12 16v-4M12 8h.01"/>
-            </svg>
-            <span>{{ currentConfig.legendTitle }}</span>
-          </div>
-          <p class="legend-description" v-html="currentConfig.legendDescription"></p>
-          
-          <div class="legend-scale">
-            <div class="scale-bar">
-              <div 
-                v-for="(level, index) in ifsLevels" 
-                :key="index"
-                class="scale-segment"
-                :style="{ background: level.color }"
-              ></div>
-            </div>
-            <div class="scale-labels scale-labels-6">
-              <div 
-                v-for="(level, index) in ifsLevels" 
-                :key="index"
-                class="scale-label"
-                :class="{ 'active': isCurrentLevel(index) }"
-              >
-                <div class="label-indicator" :style="{ background: level.color }"></div>
-                <div class="label-text">
-                  <span class="label-name">{{ level.label }}</span>
-                  <span class="label-range">{{ level.range }}</span>
-                </div>
+              <div class="info-content">
+                <span class="info-title">{{ currentConfig.legendTitle }}</span>
+                <p class="info-description" v-html="currentConfig.legendDescription"></p>
               </div>
             </div>
           </div>
         </div>
       </div>
-
-      <!-- ==================== CONTENT MONETARIO (PS, IS, PIC, IIC) ==================== -->
-      <div v-else class="content-wrapper content-monetary">
-        <div class="content-center">
-          <!-- Row con dos cards -->
-          <div class="monetary-row">
-            <!-- Valor Principal -->
-            <div class="monetary-main" :class="currentConfig.colorTheme">
-              <div class="monetary-label">{{ currentConfig.title }}</div>
-              <div class="monetary-value-row">
-                <span class="monetary-currency">$</span>
-                <span class="monetary-amount">{{ formattedMonetaryValue }}</span>
-              </div>
-              <div class="monetary-unit">{{ monetaryUnitText }}</div>
-            </div>
-            
-            <!-- Posición -->
-            <div class="position-card" :class="currentConfig.colorTheme">
-              <div class="position-label-monetary">Posición Internacional</div>
-              <div class="position-value-monetary">
-                <span class="position-hash-monetary" :class="currentConfig.colorTheme">#</span>{{ positionValue || '—' }}
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Leyenda -->
-        <div class="legend-section">
-          <div class="legend-header">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/>
-              <path d="M12 16v-4M12 8h.01"/>
-            </svg>
-            <span>{{ currentConfig.legendTitle }}</span>
-          </div>
-          <p class="legend-description" v-html="currentConfig.legendDescription"></p>
-        </div>
-      </div>
-    </div>
+    </template>
   </div>
 </template>
 
@@ -193,1476 +239,500 @@ import { getCleanValue } from '@/composables/parseNumber'
 import { useExportData } from '@/composables/useExportData'
 
 const props = defineProps({
-  selectedYear: {
-    type: String,
-    default: null
-  },
-  selectedVariable: {
-    type: [Object, String],
-    default: null
-  }
+  selectedYear: { type: [String, Number, null], default: null },
+  selectedVariable: { type: [Object, String, null], default: null },
+  width: { type: String, default: '100%' },
+  height: { type: String, default: '100%' }
 })
 
-const { fetchData, loading, error } = useStorageData()
-const { exportIFSRegionalData } = useExportData()
+const emit = defineEmits(['data-loaded', 'error', 'years-loaded'])
 
+const { fetchData, parseNumericValue, fetchInternationalSheetNames } = useStorageData()
+const { exportIFSRegionalData } = useExportData()
+const loading = ref(false)
+const error = ref(null)
+
+// Estado Ranking
+const countriesData = ref([])
+const availableYears = ref([])
+const hoveredBarKey = ref(null)
+const tooltip = ref({ visible: false, x: 0, y: 0, label: '', value: '', color: '', classification: '', isNoData: false })
+const isAnimated = ref(false)
+const HIGHLIGHTED_COUNTRY = 'México'
+
+// Estado Card
 const metricValue = ref(0)
 const positionValue = ref(null)
-
-// ✅ Estado del menú de exportación
 const showExportMenu = ref(false)
 const exportWrapperRef = ref(null)
 
-const toggleExportMenu = () => {
-  showExportMenu.value = !showExportMenu.value
-}
-
-// Cerrar menú al hacer clic fuera
-const handleClickOutside = (event) => {
-  if (exportWrapperRef.value && !exportWrapperRef.value.contains(event.target)) {
-    showExportMenu.value = false
+// Modo actual
+const currentVariableKey = computed(() => {
+  if (!props.selectedVariable) return 'ALL'
+  if (typeof props.selectedVariable === 'string') {
+    const lower = props.selectedVariable.toLowerCase()
+    if (lower.includes('todas') || lower.includes('all')) return 'ALL'
+    return props.selectedVariable
   }
-}
-
-onMounted(() => {
-  document.addEventListener('click', handleClickOutside)
-  loadData()
+  const key = props.selectedVariable?.key || 'ALL'
+  if (key.toLowerCase().includes('todas') || key.toLowerCase().includes('all')) return 'ALL'
+  return key
 })
 
-onBeforeUnmount(() => {
-  document.removeEventListener('click', handleClickOutside)
+const isRankingMode = computed(() => {
+  const key = currentVariableKey.value
+  return key === 'ALL' || key === 'IFS' || key === 'todas' || key === 'TODAS'
 })
 
-// ✅ Handler de exportación
-const handleExport = (format) => {
-  console.log('📥 [IFSRegionalCard] Exportando en formato:', format)
-  showExportMenu.value = false
-  
-  const exportData = {
-    indicador: currentConfig.value.headerTitle,
-    valor: isIFSMode.value ? formattedIFSValue.value : metricValue.value,
-    posicion: positionValue.value,
-    tipo: isIFSMode.value ? 'Índice' : 'Monetario (USD)'
-  }
-  
-  exportIFSRegionalData(exportData, format, {
-    year: props.selectedYear,
-    variable: props.selectedVariable
-  })
+// Colores
+const COLORS = {
+  VERDE_FUERTE: '#22c55e', VERDE: '#94d351', VERDE_BAJO: '#bddc50',
+  AMARILLO: '#facc15', ANARANJADO: '#e6a74c', ROJO: '#ef4444',
+  ROJO_FUERTE: '#dc2626', GRIS: '#9ca3af'
 }
 
-// Configuración por variable
-const variableConfigs = {
-  IFS: {
-    key: 'IFS',
-    headerTitle: 'Índice de Finanzas Sostenibles',
-    title: 'Valor IFS',
-    subtitle: 'Índice de Finanzas Sostenibles',
-    legendTitle: '¿Qué es el IFS?',
-    legendDescription: 'El <strong>Índice de Finanzas Sostenibles (IFS)</strong> mide el grado de sostenibilidad fiscal de México, considerando la proporción de ingresos y egresos destinados a actividades ambientalmente sostenibles versus aquellas intensivas en carbono.',
-    valueColumn: 'IFS',
-    positionColumn: 'POS_IFS',
-    isMonetary: false,
-    headerClass: 'header-default',
-    colorTheme: 'green'
-  },
-  PS: {
-    key: 'PS',
-    headerTitle: 'Presupuestos Sostenibles',
-    title: 'Valor Total PS',
-    subtitle: 'Presupuestos Sostenibles',
-    legendTitle: '¿Qué son los Presupuestos Sostenibles?',
-    legendDescription: 'Los <strong>Presupuestos Sostenibles (PS)</strong> representan el monto del presupuesto federal destinado a actividades que promueven la sostenibilidad ambiental.',
-    valueColumn: 'PS ($)',
-    positionColumn: 'POS_PS',
-    isMonetary: true,
-    headerClass: 'header-green',
-    colorTheme: 'green'
-  },
-  IS: {
-    key: 'IS',
-    headerTitle: 'Ingresos Sostenibles',
-    title: 'Valor Total IS',
-    subtitle: 'Ingresos Sostenibles',
-    legendTitle: '¿Qué son los Ingresos Sostenibles?',
-    legendDescription: 'Los <strong>Ingresos Sostenibles (IS)</strong> representan el monto de los ingresos federales provenientes de fuentes que promueven la sostenibilidad ambiental.',
-    valueColumn: 'IS ($)',
-    positionColumn: 'POS_IS',
-    isMonetary: true,
-    headerClass: 'header-green',
-    colorTheme: 'green'
-  },
-  PIC: {
-    key: 'PIC',
-    headerTitle: 'Presupuestos Intensivos en Carbono',
-    title: 'Valor Total PIC',
-    subtitle: 'Presupuestos Intensivos en Carbono',
-    legendTitle: '¿Qué son los PIC?',
-    legendDescription: 'Los <strong>Presupuestos Intensivos en Carbono (PIC)</strong> representan el monto destinado a actividades con alta generación de emisiones de carbono.',
-    valueColumn: 'PIC ($)',
-    positionColumn: 'POS_PIC',
-    isMonetary: true,
-    headerClass: 'header-red',
-    colorTheme: 'red'
-  },
-  IIC: {
-    key: 'IIC',
-    headerTitle: 'Ingresos Intensivos en Carbono',
-    title: 'Valor Total IIC',
-    subtitle: 'Ingresos Intensivos en Carbono',
-    legendTitle: '¿Qué son los IIC?',
-    legendDescription: 'Los <strong>Ingresos Intensivos en Carbono (IIC)</strong> representan el monto de los ingresos provenientes de actividades relacionadas con combustibles fósiles.',
-    valueColumn: 'IIC ($)',
-    positionColumn: 'POS_IIC',
-    isMonetary: true,
-    headerClass: 'header-red',
-    colorTheme: 'red'
-  }
-}
-
-// ✅ ACTUALIZADO: Niveles del IFS (escala 0-4 con 6 niveles)
-// Orden: Alto → Muy Bajo (izquierda a derecha, como en la imagen de referencia)
-const ifsLevels = [
-  { range: '3.5 - 4', label: 'Alto', color: '#22c55e' },
-  { range: '2.3 - 3.5', label: 'Medio Alto', color: '#84cc16' },
-  { range: '1.9 - 2.2', label: 'Medio', color: '#eab308' },
-  { range: '1.5 - 1.8', label: 'Medio Bajo', color: '#f97316' },
-  { range: '0.6 - 1.5', label: 'Bajo', color: '#ef4444' },
-  { range: '0 - 0.5', label: 'Muy Bajo', color: '#dc2626' }
+const legendItems = [
+  { color: COLORS.VERDE_FUERTE, range: '3.5-4.0', label: 'Muy Alto' },
+  { color: COLORS.VERDE, range: '2.9-3.4', label: 'Alto' },
+  { color: COLORS.VERDE_BAJO, range: '2.3-2.8', label: 'M. Alto' },
+  { color: COLORS.AMARILLO, range: '1.8-2.2', label: 'Medio' },
+  { color: COLORS.ANARANJADO, range: '1.2-1.7', label: 'M. Bajo' },
+  { color: COLORS.ROJO, range: '0.6-1.1', label: 'Bajo' },
+  { color: COLORS.ROJO_FUERTE, range: '0.0-0.5', label: 'Muy Bajo' }
 ]
 
-// Computed - Obtener key de variable actual
-const currentVariableKey = computed(() => {
-  if (!props.selectedVariable) return 'IFS'
-  if (typeof props.selectedVariable === 'string') return props.selectedVariable
-  return props.selectedVariable?.key || 'IFS'
+const variableConfigs = {
+  PS: { key: 'PS', headerTitle: 'Presupuestos Sostenibles', title: 'Valor Total PS', legendTitle: '¿Qué son los Presupuestos Sostenibles?', legendDescription: 'Los <strong>Presupuestos Sostenibles (PS)</strong> representan el monto del presupuesto federal destinado a actividades que promueven la sostenibilidad ambiental.', valueColumn: 'PS ($)', positionColumn: 'POS_PS', headerClass: 'header-green', colorTheme: 'green' },
+  IS: { key: 'IS', headerTitle: 'Ingresos Sostenibles', title: 'Valor Total IS', legendTitle: '¿Qué son los Ingresos Sostenibles?', legendDescription: 'Los <strong>Ingresos Sostenibles (IS)</strong> representan el monto de los ingresos federales provenientes de fuentes que promueven la sostenibilidad ambiental.', valueColumn: 'IS ($)', positionColumn: 'POS_IS', headerClass: 'header-green', colorTheme: 'green' },
+  PIC: { key: 'PIC', headerTitle: 'Presupuestos Intensivos en Carbono', title: 'Valor Total PIC', legendTitle: '¿Qué son los PIC?', legendDescription: 'Los <strong>Presupuestos Intensivos en Carbono (PIC)</strong> representan el monto destinado a actividades con alta generación de emisiones de carbono.', valueColumn: 'PIC ($)', positionColumn: 'POS_PIC', headerClass: 'header-red', colorTheme: 'red' },
+  IIC: { key: 'IIC', headerTitle: 'Ingresos Intensivos en Carbono', title: 'Valor Total IIC', legendTitle: '¿Qué son los IIC?', legendDescription: 'Los <strong>Ingresos Intensivos en Carbono (IIC)</strong> representan el monto de los ingresos provenientes de actividades relacionadas con combustibles fósiles.', valueColumn: 'IIC ($)', positionColumn: 'POS_IIC', headerClass: 'header-red', colorTheme: 'red' }
+}
+
+const currentConfig = computed(() => variableConfigs[currentVariableKey.value] || variableConfigs.PS)
+
+// Funciones compartidas
+const isNoData = (value) => {
+  if (value === null || value === undefined || value === '') return true
+  const numValue = parseFloat(value)
+  return isNaN(numValue) || numValue === 0 || Math.abs(numValue) < 0.005
+}
+
+const getIFSColor = (value) => {
+  if (isNoData(value)) return { color: COLORS.GRIS, label: 'Sin datos' }
+  const numValue = parseFloat(value) || 0
+  if (numValue >= 3.5) return { color: COLORS.VERDE_FUERTE, label: 'Muy Alto' }
+  if (numValue >= 2.9) return { color: COLORS.VERDE, label: 'Alto' }
+  if (numValue >= 2.3) return { color: COLORS.VERDE_BAJO, label: 'Medio Alto' }
+  if (numValue >= 1.8) return { color: COLORS.AMARILLO, label: 'Medio' }
+  if (numValue >= 1.2) return { color: COLORS.ANARANJADO, label: 'Medio Bajo' }
+  if (numValue >= 0.6) return { color: COLORS.ROJO, label: 'Bajo' }
+  return { color: COLORS.ROJO_FUERTE, label: 'Muy Bajo' }
+}
+
+const formatValue = (value) => typeof value === 'number' ? Math.floor(value * 100) / 100 : value
+
+const isHighlightedCountry = (countryKey) => {
+  if (!countryKey) return false
+  const normalizedKey = countryKey.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  return normalizedKey === 'mexico' || normalizedKey.includes('mexico')
+}
+
+// Ranking functions
+const activeVariables = computed(() => countriesData.value)
+const maxValue = computed(() => Math.max(...activeVariables.value.map(v => v.value || 0), 4))
+
+const xAxisTicks = computed(() => {
+  const max = maxValue.value
+  const step = max / 4
+  return Array.from({ length: 5 }, (_, i) => ({ value: step * i, position: (step * i / max) * 100 }))
 })
 
-// Computed - Configuración actual
-const currentConfig = computed(() => {
-  return variableConfigs[currentVariableKey.value] || variableConfigs.IFS
-})
+const tooltipStyle = computed(() => ({ left: (tooltip.value.x + 15) + 'px', top: (tooltip.value.y - 70) + 'px' }))
 
-// Computed - Es modo IFS (gauge) o monetario
-const isIFSMode = computed(() => currentVariableKey.value === 'IFS')
+const getBarWidth = (value) => {
+  if (!isAnimated.value || isNoData(value)) return 0
+  return Math.min(8 + ((parseFloat(value) || 0) / maxValue.value) * 100 * 0.88, 100)
+}
 
-// Computed - Clase del header
-const headerColorClass = computed(() => currentConfig.value.headerClass)
+const handleMouseEnter = (country, event) => {
+  hoveredBarKey.value = country.key
+  tooltip.value = { visible: true, x: event.clientX, y: event.clientY, label: country.label, value: country.value, color: country.color, classification: country.classification, isNoData: isNoData(country.value) }
+}
+const handleMouseMove = (event) => { if (tooltip.value.visible) { tooltip.value.x = event.clientX; tooltip.value.y = event.clientY } }
+const handleMouseLeave = () => { hoveredBarKey.value = null; tooltip.value.visible = false }
 
-// Computed - Valor formateado para IFS
-const formattedIFSValue = computed(() => {
-  if (metricValue.value === null || metricValue.value === undefined) return '—'
-  return metricValue.value.toFixed(2)
-})
+const loadAvailableYears = async () => {
+  try {
+    const years = await fetchInternationalSheetNames()
+    if (years?.length) { availableYears.value = years; emit('years-loaded', years) }
+    return years
+  } catch (err) { console.error('Error:', err); return [] }
+}
 
-// Computed - Valor formateado para monetario
+const loadRankingData = async () => {
+  try {
+    loading.value = true; error.value = null
+    const mapping = getMapping('datosInternacionales')
+    const rawData = await fetchData('datosInternacionales', props.selectedYear || '2020')
+    if (!rawData?.length) { countriesData.value = []; return }
+    const categoryColumn = mapping.categoryColumn || 'País'
+    const ifsVariable = mapping.variables?.find(v => v.key === 'IFS') || { column: 'IFS' }
+    countriesData.value = rawData.map(row => {
+      const countryName = row[categoryColumn]
+      const ifsValue = parseNumericValue(row[ifsVariable.column])
+      const colorInfo = getIFSColor(ifsValue)
+      return { key: countryName, label: countryName, value: ifsValue, color: colorInfo.color, classification: colorInfo.label }
+    }).filter(c => c.label).sort((a, b) => {
+      if (isNoData(a.value) && !isNoData(b.value)) return 1
+      if (!isNoData(a.value) && isNoData(b.value)) return -1
+      return (b.value || 0) - (a.value || 0)
+    })
+    setTimeout(() => { isAnimated.value = true }, 100)
+    emit('data-loaded', countriesData.value)
+  } catch (err) { error.value = err.message; emit('error', err) }
+  finally { loading.value = false }
+}
+
+// Card functions
 const formattedMonetaryValue = computed(() => {
-  if (metricValue.value === null || metricValue.value === undefined) return '—'
-  
-  const value = metricValue.value
-  
-  if (value >= 1e12) {
-    return (value / 1e12).toFixed(2)
-  } else if (value >= 1e9) {
-    return (value / 1e9).toFixed(2)
-  } else if (value >= 1e6) {
-    return (value / 1e6).toFixed(2)
-  } else if (value >= 1e3) {
-    return (value / 1e3).toFixed(2)
-  }
-  
-  return value.toFixed(2)
+  if (metricValue.value == null) return '—'
+  const v = metricValue.value
+  if (v >= 1e12) return (v / 1e12).toFixed(2)
+  if (v >= 1e9) return (v / 1e9).toFixed(2)
+  if (v >= 1e6) return (v / 1e6).toFixed(2)
+  if (v >= 1e3) return (v / 1e3).toFixed(2)
+  return v.toFixed(2)
 })
 
-// Texto completo de unidad monetaria en dólares
 const monetaryUnitText = computed(() => {
-  const value = metricValue.value
-  
-  if (value >= 1e12) return 'Billones de dólares (USD)'
-  if (value >= 1e9) return 'Billones de dólares (USD)'
-  if (value >= 1e6) return 'Millones de dólares (USD)'
-  if (value >= 1e3) return 'Miles de dólares (USD)'
+  const v = metricValue.value
+  if (v >= 1e9) return 'Billones de dólares (USD)'
+  if (v >= 1e6) return 'Millones de dólares (USD)'
+  if (v >= 1e3) return 'Miles de dólares (USD)'
   return 'Dólares (USD)'
 })
 
-// ✅ ACTUALIZADO: Progreso del gauge (escala 0-4)
-const gaugeProgress = computed(() => {
-  // Normalizar valor de 0-4 a 0-1, luego multiplicar por circunferencia
-  const normalizedValue = Math.min(metricValue.value, 4) / 4
-  return normalizedValue * 365
+const getProgressPercentage = computed(() => {
+  if (!positionValue.value) return 50
+  // Invertir: posición 1 = 100%, posición 20 = 5%
+  const percentage = Math.max(5, Math.round((21 - positionValue.value) / 20 * 100))
+  return percentage
 })
 
-// ✅ ACTUALIZADO: Nivel actual IFS (6 niveles, orden Alto → Muy Bajo)
-const currentLevelIndex = computed(() => {
-  const val = metricValue.value
-  if (val >= 3.5) return 0      // Alto
-  if (val >= 2.3) return 1      // Medio Alto
-  if (val >= 1.9) return 2      // Medio
-  if (val >= 1.5) return 3      // Medio Bajo
-  if (val >= 0.6) return 4      // Bajo
-  return 5                       // Muy Bajo
-})
-
-const currentLevelColor = computed(() => {
-  return ifsLevels[currentLevelIndex.value]?.color || '#94a3b8'
-})
-
-const currentLevelLabel = computed(() => {
-  return ifsLevels[currentLevelIndex.value]?.label || ''
-})
-
-const isCurrentLevel = (index) => {
-  return currentLevelIndex.value === index
+const toggleExportMenu = () => { showExportMenu.value = !showExportMenu.value }
+const handleClickOutside = (event) => { if (exportWrapperRef.value && !exportWrapperRef.value.contains(event.target)) showExportMenu.value = false }
+const handleExport = (format) => {
+  showExportMenu.value = false
+  exportIFSRegionalData({ indicador: currentConfig.value.headerTitle, valor: metricValue.value, posicion: positionValue.value, tipo: 'Monetario (USD)' }, format, { year: props.selectedYear, variable: props.selectedVariable })
 }
 
-// Cargar datos
-const loadData = async () => {
+const loadCardData = async () => {
   try {
-    console.log('📊 [IFSRegionalCard] Cargando datos para:', currentVariableKey.value, 'año:', props.selectedYear)
-    
-    const sheetName = getSheetName('chartsPresupuestosRegional')
-    const data = await fetchData('chartsPresupuestosRegional', sheetName)
-    console.log('DATOS:' +data)
-    if (!data || data.length === 0) {
-      console.warn('⚠️ [IFSRegionalCard] No hay datos')
-      return
-    }
-    
+    loading.value = true; error.value = null
+    const data = await fetchData('chartsPresupuestosRegional', getSheetName('chartsPresupuestosRegional'))
+    if (!data?.length) return
     let row = data[0]
-    
-    if (props.selectedYear) {
-      const filtered = data.find(r => String(r['Año']).trim() === String(props.selectedYear).trim())
-      if (filtered) {
-        row = filtered
-      }
-    }
-    
-    console.log('📊 [IFSRegionalCard] Fila encontrada:', row)
-    
+    if (props.selectedYear) { const f = data.find(r => String(r['Año']).trim() === String(props.selectedYear).trim()); if (f) row = f }
     const config = currentConfig.value
-    const valueCol = config.valueColumn
-    const posCol = config.positionColumn
-    
-    console.log('📊 [IFSRegionalCard] Columnas - Valor:', valueCol, 'Posición:', posCol)
-    
-    if (row.hasOwnProperty(valueCol)) {
-      metricValue.value = getCleanValue(row, valueCol)
-    } else {
-      console.warn('⚠️ [IFSRegionalCard] Columna no encontrada:', valueCol)
-      metricValue.value = 0
-    }
-    
-    if (row.hasOwnProperty(posCol)) {
-      positionValue.value = Math.round(getCleanValue(row, posCol))
-    } else {
-      console.warn('⚠️ [IFSRegionalCard] Columna no encontrada:', posCol)
-      positionValue.value = null
-    }
-    
-    console.log('✅ [IFSRegionalCard] Valor:', metricValue.value, 'Posición:', positionValue.value)
-    
-  } catch (err) {
-    console.error('❌ [IFSRegionalCard] Error:', err)
-  }
+    if (row.hasOwnProperty(config.valueColumn)) metricValue.value = getCleanValue(row, config.valueColumn)
+    if (row.hasOwnProperty(config.positionColumn)) positionValue.value = Math.round(getCleanValue(row, config.positionColumn))
+  } catch (err) { error.value = err.message }
+  finally { loading.value = false }
 }
 
-watch([() => props.selectedYear, () => props.selectedVariable], () => {
-  loadData()
-}, { immediate: false })
+const loadData = async () => { if (isRankingMode.value) await loadRankingData(); else await loadCardData() }
+
+watch([() => props.selectedYear, () => props.selectedVariable], () => { isAnimated.value = false; loadData() }, { immediate: false })
+watch(isRankingMode, () => { loadData() })
+
+onMounted(async () => { document.addEventListener('click', handleClickOutside); await loadAvailableYears(); await loadData() })
+onBeforeUnmount(() => { document.removeEventListener('click', handleClickOutside) })
 </script>
 
 <style scoped>
-.ifs-regional-card {
-  width: 100%;
-  height: 100%;
-  background: white;
-  border-radius: 12px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-}
-
-/* ==================== HEADER ==================== */
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px 24px;
-  background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
-  transition: background 0.3s ease;
-  flex-shrink: 0;
-}
-
-.card-header.header-green {
-  background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%);
-}
-
-.card-header.header-red {
-  background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
-}
-
-.header-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  flex-shrink: 0;
-}
-
-.icon-dollar {
-  font-size: 20px;
-  font-weight: 600;
-}
-
-.header-text {
-  flex: 1;
-}
-
-.header-title {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: white;
-}
-
-.header-subtitle {
-  margin: 2px 0 0 0;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.year-badge {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  padding: 6px 16px;
-  border-radius: 20px;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-/* ==================== BOTÓN DE EXPORTACIÓN CIRCULAR ==================== */
-.export-wrapper {
-  position: relative;
-  margin-left: 8px;
-}
-
-.export-btn-circle {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  color: rgba(255, 255, 255, 0.9);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.export-btn-circle:hover {
-  background: rgba(255, 255, 255, 0.25);
-  color: white;
-  transform: scale(1.08);
-}
-
-.export-btn-circle.is-open {
-  background: rgba(255, 255, 255, 0.3);
-  color: white;
-}
-
-.export-btn-circle svg {
-  width: 14px;
-  height: 14px;
-}
-
-/* Dropdown */
-.export-dropdown {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  border: 1px solid #e5e7eb;
-  overflow: hidden;
-  z-index: 1000;
-  min-width: 120px;
-}
-
-.export-option {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 12px 14px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  transition: background 0.15s ease;
-  font-size: 13px;
-  color: #374151;
-}
-
-.export-option:hover {
-  background: #f3f4f6;
-}
-
-.export-option:first-child {
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.option-icon {
-  font-size: 9px;
-  font-weight: 700;
-  padding: 3px 6px;
-  border-radius: 4px;
-  color: white;
-}
-
-.option-icon.xlsx {
-  background: #107c41;
-}
-
-.option-icon.csv {
-  background: #6366f1;
-}
-
-/* Animación dropdown */
-.dropdown-fade-enter-active,
-.dropdown-fade-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
-}
-
-.dropdown-fade-enter-from,
-.dropdown-fade-leave-to {
-  opacity: 0;
-  transform: translateY(-8px);
-}
-
-/* ==================== BODY ==================== */
-.card-body {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: auto;
-}
-
-.loading-state,
-.error-state {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: #64748b;
-}
-
-.spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid #e2e8f0;
-  border-top: 3px solid #7cb342;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 12px;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.content-wrapper {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-/* ==================== IFS MODE (GAUGE) ==================== */
-.content-ifs {
-  padding: 24px;
-  gap: 24px;
-}
-
-.metrics-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-  padding: 20px 0;
-}
-
-.metrics-title {
-  text-align: center;
-}
-
-.title-main {
-  display: block;
-  font-size: 18px;
-  font-weight: 700;
-  color: #1e3a5f;
-}
-
-.title-sub {
-  display: block;
-  font-size: 13px;
-  color: #94a3b8;
-  margin-top: 4px;
-}
-
-.metrics-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 40px;
-}
-
-.metric-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.metric-gauge {
-  position: relative;
-  width: 160px;
-  height: 160px;
-}
-
-.gauge-svg {
-  width: 100%;
-  height: 100%;
-  transform: rotate(-90deg);
-}
-
-.gauge-progress {
-  transition: stroke-dasharray 0.8s ease;
-}
-
-.gauge-center {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.gauge-value {
-  font-size: 30px;
-  font-weight: 700;
-  color: #1e3a5f;
-  line-height: 1;
-}
-
-.gauge-label {
-  font-size: 13px;
-  font-weight: 600;
-  margin-top: 4px;
-}
-
-.metrics-divider {
-  width: 1px;
-  height: 140px;
-  background: linear-gradient(180deg, transparent 0%, #e2e8f0 20%, #e2e8f0 80%, transparent 100%);
-}
-
-.position-metric {
-  min-width: 200px;
-}
-
-.position-badge {
-  border-radius: 16px;
-  padding: 20px 32px;
-  text-align: center;
-  border: 2px solid;
-}
-
-.position-badge.position-green {
-  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-  border-color: #86efac;
-}
-
-.position-badge.position-green .position-label {
-  color: #166534;
-}
-
-.position-badge.position-green .position-hash {
-  color: #22c55e;
-}
-
-.position-badge.position-green .position-value {
-  color: #166534;
-}
-
-.position-label {
-  display: block;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 8px;
-}
-
-.position-value-wrapper {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 2px;
-}
-
-.position-hash {
-  font-size: 28px;
-  font-weight: 400;
-  line-height: 1;
-}
-
-.position-value {
-  font-size: 28px;
-  font-weight: 700;
-  line-height: 1;
-}
-
-/* ==================== MONETARY MODE ==================== */
-.content-monetary {
-  padding: 40px 60px 30px 60px;
-}
-
-.content-center {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex: 1;
-  justify-content: center;
-  padding-bottom: 30px;
-}
-
-.monetary-row {
-  display: flex;
-  align-items: stretch;
-  justify-content: center;
-  gap: 30px;
-}
-
-.monetary-main {
-  text-align: center;
-  padding: 30px 40px;
-  border-radius: 16px;
-  border: 2px solid;
-  width: 280px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.monetary-main.green {
-  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-  border-color: #86efac;
-}
-
-.monetary-main.red {
-  background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
-  border-color: #fca5a5;
-}
-
-.monetary-label {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  margin-bottom: 10px;
-  color: #64748b;
-}
-
-.monetary-value-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 3px;
-}
-
-.monetary-currency {
-  font-size: 20px;
-  font-weight: 500;
-}
-
-.monetary-main.green .monetary-currency {
-  color: #16a34a;
-}
-
-.monetary-main.red .monetary-currency {
-  color: #dc2626;
-}
-
-.monetary-amount {
-  font-size: 32px;
-  font-weight: 700;
-  line-height: 1;
-  color: #1e293b;
-}
-
-.monetary-unit {
-  font-size: 12px;
-  font-weight: 500;
-  color: #64748b;
-  margin-top: 8px;
-}
-
-/* Position Card - Monetario */
-.position-card {
-  background: #f8fafc;
-  border-radius: 16px;
-  padding: 30px 40px;
-  text-align: center;
-  border: 2px solid #e2e8f0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  width: 280px;
-}
-
-.position-card.green {
-  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-  border-color: #86efac;
-}
-
-.position-card.red {
-  background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
-  border-color: #fca5a5;
-}
-
-.position-label-monetary {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  color: #94a3b8;
-  margin-bottom: 10px;
-}
-
-.position-value-monetary {
-  font-size: 32px;
-  font-weight: 700;
-  color: #1e293b;
-  line-height: 1;
-}
-
-.position-hash-monetary {
-  font-weight: 400;
-}
-
-.position-hash-monetary.green {
-  color: #16a34a;
-}
-
-.position-hash-monetary.red {
-  color: #dc2626;
-}
-
-/* ==================== LEGEND ==================== */
-.legend-section {
-  background: #f8fafc;
-  border-radius: 12px;
-  padding: 16px 24px;
-  margin-top: auto;
-  flex-shrink: 0;
-}
-
-.legend-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
-  color: #475569;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.legend-header svg {
-  color: #94a3b8;
-}
-
-.legend-description {
-  font-size: 13px;
-  color: #64748b;
-  line-height: 1.5;
-  margin: 0;
-}
-
-.legend-description :deep(strong) {
-  color: #334155;
-}
-
-/* Scale - Solo para IFS */
-.legend-scale {
-  margin-top: 16px;
-}
-
-.scale-bar {
-  display: flex;
-  height: 8px;
-  border-radius: 4px;
-  overflow: hidden;
-  margin-bottom: 12px;
-}
-
-.scale-segment {
-  flex: 1;
-}
-
-.scale-labels {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-/* ✅ NUEVO: Grid de 6 columnas para los 6 niveles */
-.scale-labels-6 {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 6px;
-}
-
-.scale-label {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 8px;
-  background: white;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
-  transition: all 0.3s ease;
-}
-
-.scale-label.active {
-  border-color: currentColor;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.label-indicator {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-  flex-shrink: 0;
-}
-
-.label-text {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.label-name {
-  font-size: 11px;
-  font-weight: 600;
-  color: #475569;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.label-range {
-  font-size: 9px;
-  color: #94a3b8;
-}
-/* ============================================
-   RESPONSIVE - Media Queries para IFSRegionalCard.vue
-   (Reemplazar las media queries existentes)
-   ============================================ */
-
-/* Tablets */
+.ifs-regional-card { width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15); }
+.ifs-regional-card.mode-ranking { background: #163C5F; border-radius: 12px; padding: 12px; box-sizing: border-box; }
+.ifs-regional-card.mode-card { background: white; border-radius: 12px; }
+
+/* HEADER RANKING */
+.ranking-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; margin-bottom: 8px; border-bottom: 2px solid rgba(255, 255, 255, 0.15); flex-shrink: 0; }
+.ranking-header .header-content { display: flex; flex-direction: column; gap: 1px; }
+.ranking-header .card-title { margin: 0; font-size: 15px; font-weight: 300; color: white; letter-spacing: 0.5px; }
+.ranking-header .card-subtitle { font-size: 11px; color: rgba(255, 255, 255, 0.6); font-weight: 400; }
+.header-badge { display: flex; flex-direction: column; align-items: center; background: rgba(255, 255, 255, 0.1); padding: 6px 12px; border-radius: 6px; }
+.badge-count { font-size: 18px; font-weight: 600; color: white; line-height: 1; }
+.badge-label { font-size: 8px; color: rgba(255, 255, 255, 0.7); text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* HEADER CARD */
+.mode-card .card-header { display: flex; align-items: center; gap: 14px; padding: 14px 24px; background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); flex-shrink: 0; }
+.mode-card .card-header.header-green { background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%); }
+.mode-card .card-header.header-red { background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%); }
+.header-icon { width: 40px; height: 40px; border-radius: 10px; background: rgba(255, 255, 255, 0.2); display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; }
+.icon-dollar { font-size: 20px; font-weight: 600; }
+.header-text { flex: 1; }
+.header-title { margin: 0; font-size: 18px; font-weight: 600; color: white; }
+.mode-card .header-subtitle { margin: 2px 0 0 0; font-size: 13px; color: rgba(255, 255, 255, 0.8); }
+.year-badge { background: rgba(255, 255, 255, 0.2); color: white; padding: 6px 16px; border-radius: 20px; font-size: 14px; font-weight: 500; }
+
+/* EXPORT */
+.export-wrapper { position: relative; margin-left: 8px; }
+.export-btn-circle { width: 32px; height: 32px; border-radius: 50%; background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.25); color: rgba(255, 255, 255, 0.9); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; }
+.export-btn-circle:hover { background: rgba(255, 255, 255, 0.25); color: white; transform: scale(1.08); }
+.export-btn-circle.is-open { background: rgba(255, 255, 255, 0.3); }
+.export-dropdown { position: absolute; top: calc(100% + 8px); right: 0; background: white; border-radius: 10px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15); border: 1px solid #e5e7eb; overflow: hidden; z-index: 1000; min-width: 120px; }
+.export-option { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 14px; background: none; border: none; cursor: pointer; font-size: 13px; color: #374151; }
+.export-option:hover { background: #f3f4f6; }
+.export-option:first-child { border-bottom: 1px solid #e5e7eb; }
+.option-icon { font-size: 9px; font-weight: 700; padding: 3px 6px; border-radius: 4px; color: white; }
+.option-icon.xlsx { background: #107c41; }
+.option-icon.csv { background: #6366f1; }
+.dropdown-fade-enter-active, .dropdown-fade-leave-active { transition: opacity 0.15s ease, transform 0.15s ease; }
+.dropdown-fade-enter-from, .dropdown-fade-leave-to { opacity: 0; transform: translateY(-8px); }
+
+/* LOADING/ERROR */
+.loading-state, .error-state { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; gap: 12px; }
+.mode-ranking .loading-state, .mode-ranking .error-state { color: rgba(255, 255, 255, 0.7); }
+.mode-card .loading-state, .mode-card .error-state { color: #64748b; }
+.spinner { width: 36px; height: 36px; border: 3px solid rgba(255, 255, 255, 0.2); border-top-color: #22c55e; border-radius: 50%; animation: spin 1s linear infinite; }
+.mode-card .spinner { border-color: #e2e8f0; border-top-color: #7cb342; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.retry-btn { background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.3); color: white; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+
+/* RANKING CONTENT */
+.mode-ranking .card-content { display: flex; flex-direction: column; flex: 1; overflow: hidden; min-height: 0; background: white; border-radius: 6px; padding: 14px; }
+.bars-container { display: flex; flex-direction: column; gap: 7px; flex: 1; width: 100%; overflow-y: auto; overflow-x: hidden; min-height: 0; padding: 10px; }
+.bar-row { display: grid; grid-template-columns: 18px 100px 1fr 65px; gap: 6px; align-items: center; flex: 1; min-height: 12px; max-height: 28px; padding: 0; transition: opacity 0.3s ease, transform 0.3s ease, background 0.2s ease; cursor: pointer; border-radius: 4px; animation: slideIn 0.4s ease-out backwards; }
+@keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+.bar-row:hover { background: rgba(22, 60, 95, 0.05); }
+.bar-row.is-hovered { opacity: 1; transform: scale(1.01); z-index: 10; background: rgba(22, 60, 95, 0.08); }
+.bar-row.is-dimmed { opacity: 0.3; filter: grayscale(30%); }
+.bar-row.is-no-data { opacity: 0.6; }
+
+/* MEXICO HIGHLIGHT */
+.bar-row.is-not-mexico { opacity: 0.7; filter: saturate(0.95); }
+.bar-row.is-mexico { opacity: 1; background: linear-gradient(135deg, rgba(0, 104, 71, 0.08) 0%, rgba(255, 255, 255, 0.02) 50%, rgba(206, 17, 38, 0.08) 100%), repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(0, 104, 71, 0.03) 4px, rgba(0, 104, 71, 0.03) 8px); box-shadow: 0 0 15px rgba(0, 104, 71, 0.4), 0 0 30px rgba(0, 104, 71, 0.2), 0 0 45px rgba(0, 104, 71, 0.1), inset 0 0 20px rgba(255, 255, 255, 0.5); border-left: 4px solid; border-image: linear-gradient(180deg, #006847 0%, #fff 50%, #ce1126 100%) 1; border-radius: 0 6px 6px 0; position: relative; z-index: 5; padding: 3px 6px 3px 8px; margin: 1px 0; }
+.bar-row.is-mexico .country-label { font-weight: 700; font-size: 14px; color: #1a202c; }
+.bar-row.is-mexico .rank-position { box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2); }
+.bar-row.is-mexico .bar-horizontal { box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2); }
+.bar-row.is-mexico .classification-badge { font-weight: 700; }
+.bar-row.is-not-mexico:hover { opacity: 1; filter: saturate(1); }
+.bars-container.has-hover .bar-row.is-not-mexico:not(.is-hovered) { opacity: 0.4; filter: saturate(0.6); }
+.bars-container.has-hover .bar-row.is-mexico:not(.is-hovered) { opacity: 0.9; }
+
+/* BAR ELEMENTS */
+.rank-position { display: flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 4px; flex-shrink: 0; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15); }
+.bar-row:hover .rank-position { transform: scale(1.05); box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); }
+.rank-number { font-size: 10px; font-weight: 700; color: white; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3); }
+.country-label { font-size: 12px; font-weight: 500; color: #374151; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; }
+.country-label.highlighted-label { font-weight: 600; color: #1a202c; }
+.bar-chart-area { position: relative; width: 100%; height: 100%; min-height: 0; }
+.grid-lines { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+.grid-line { position: absolute; top: 0; bottom: 0; width: 1px; background: #e5e7eb; }
+.bar-wrapper-horizontal { position: relative; width: 100%; height: 100%; background: #f3f4f6; overflow: visible; border-radius: 3px; min-height: 0; }
+.bar-horizontal { height: 100%; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); position: relative; border-radius: 3px; display: flex; align-items: center; justify-content: flex-end; padding-right: 6px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12); min-width: 32px; box-sizing: border-box; }
+.bar-row.is-hovered .bar-horizontal { box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2); }
+.bar-value { font-size: 12px; font-weight: 700; color: white; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3); white-space: nowrap; }
+.no-data-text { display: flex; align-items: center; height: 100%; padding-left: 8px; font-size: 9px; color: #9ca3af; font-style: italic; }
+.classification-badge { font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.2px; padding: 4px 0px; border-radius: 3px; text-align: center; white-space: nowrap; line-height: 1.2; }
+.empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; color: #9ca3af; gap: 8px; padding: 40px; }
+.empty-icon { font-size: 48px; }
+
+/* LEGEND RANKING */
+.color-legend-strip { flex-shrink: 0; padding-top: 8px; margin-top: 6px; border-top: 1px solid #e5e7eb; }
+.legend-bar-container { width: 100%; }
+.legend-items { display: flex; width: 100%; border-radius: 3px; overflow: hidden; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); }
+.legend-item { display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 0; }
+.legend-color-block { width: 100%; height: 14px; display: flex; align-items: center; justify-content: center; }
+.legend-item:first-child .legend-color-block { border-radius: 3px 0 0 3px; }
+.legend-item:last-child .legend-color-block { border-radius: 0 3px 3px 0; }
+.legend-indicator { font-size: 11px; font-weight: 600; color: white; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.4); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-transform: uppercase; letter-spacing: 0.1px; }
+.legend-range-value { font-size: 12px; font-weight: 500; color: #6b7280; margin-top: 1px; white-space: nowrap; }
+
+/* TOOLTIP */
+.tooltip-international { position: fixed; background: rgba(22, 60, 95, 0.96); color: white; padding: 14px 18px; border-radius: 10px; font-size: 12px; white-space: nowrap; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3); pointer-events: none; z-index: 999999; backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.1); }
+.tooltip-content { display: flex; align-items: center; gap: 14px; }
+.tooltip-flag { width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+.tooltip-info { display: flex; flex-direction: column; gap: 4px; }
+.tooltip-country { font-weight: 600; font-size: 14px; color: white; }
+.tooltip-value { font-size: 13px; opacity: 0.9; }
+.tooltip-classification { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* CARD MONETARY - DASHBOARD MODERNO */
+.card-modern { display: flex; flex-direction: column; height: 100%; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); }
+
+/* Header Moderno */
+.modern-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); border-bottom: 1px solid rgba(255,255,255,0.1); }
+.modern-header.green { background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%); }
+.modern-header.red { background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%); }
+.header-left { display: flex; align-items: center; gap: 14px; }
+.header-icon-modern { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.2); color: white; transition: transform 0.3s ease, box-shadow 0.3s ease; }
+.header-icon-modern.green { background: rgba(255,255,255,0.25); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); }
+.header-icon-modern.red { background: rgba(255,255,255,0.25); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); }
+.header-icon-modern:hover { transform: scale(1.05); }
+.header-text-modern { display: flex; flex-direction: column; gap: 2px; }
+.header-title-modern { margin: 0; font-size: 16px; font-weight: 600; color: white; }
+.header-subtitle-modern { font-size: 12px; color: rgba(255,255,255,0.7); }
+.header-right { display: flex; align-items: center; gap: 12px; position: relative; }
+.year-badge-modern { padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: 600; color: white; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); }
+.year-badge-modern.green { background: rgba(255,255,255,0.25); }
+.year-badge-modern.red { background: rgba(255,255,255,0.25); }
+.export-btn-modern { width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); color: rgba(255,255,255,0.9); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; }
+.export-btn-modern:hover { background: rgba(255,255,255,0.25); color: white; transform: scale(1.05); }
+.export-dropdown-modern { position: absolute; top: calc(100% + 8px); right: 0; background: white; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); border: 1px solid #e2e8f0; overflow: hidden; z-index: 1000; min-width: 130px; }
+.export-option-modern { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 16px; background: none; border: none; cursor: pointer; font-size: 13px; color: #374151; transition: all 0.2s ease; }
+.export-option-modern:hover { background: #f3f4f6; color: #1e293b; }
+.export-option-modern:first-child { border-bottom: 1px solid #e2e8f0; }
+.option-icon-modern { font-size: 9px; font-weight: 700; padding: 4px 8px; border-radius: 4px; color: white; }
+.option-icon-modern.xlsx { background: #22c55e; }
+.option-icon-modern.csv { background: #6366f1; }
+
+/* Body Moderno */
+.modern-body { flex: 1; display: flex; flex-direction: column; padding: 20px; overflow: auto; background: #ffffff; }
+.loading-state-modern, .error-state-modern { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; gap: 12px; color: #64748b; }
+.spinner-modern { width: 40px; height: 40px; border: 3px solid #e2e8f0; border-radius: 50%; animation: spin 1s linear infinite; }
+.spinner-modern.green { border-top-color: #22c55e; }
+.spinner-modern.red { border-top-color: #ef4444; }
+.content-modern { display: flex; flex-direction: column; gap: 20px; height: 100%; }
+
+/* Metrics Grid */
+.metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.metric-card-modern { position: relative; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-radius: 16px; padding: 20px; border: 1px solid #e2e8f0; overflow: hidden; transition: transform 0.3s ease, box-shadow 0.3s ease; }
+.metric-card-modern:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.12); }
+.metric-card-modern.green { border-color: rgba(34, 197, 94, 0.3); background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); }
+.metric-card-modern.green:hover { box-shadow: 0 12px 40px rgba(34, 197, 94, 0.2); }
+.metric-card-modern.red { border-color: rgba(239, 68, 68, 0.3); background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); }
+.metric-card-modern.red:hover { box-shadow: 0 12px 40px rgba(239, 68, 68, 0.2); }
+.metric-icon-bg { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; transition: transform 0.3s ease; }
+.metric-icon-bg.green { background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(34, 197, 94, 0.1) 100%); color: #16a34a; }
+.metric-icon-bg.red { background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.1) 100%); color: #dc2626; }
+.metric-card-modern:hover .metric-icon-bg { transform: scale(1.1); }
+.metric-content { position: relative; z-index: 1; }
+.metric-label-modern { display: block; font-size: 12px; font-weight: 500; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+.metric-value-modern { display: flex; align-items: baseline; gap: 4px; margin-bottom: 6px; }
+.metric-value-modern .currency-symbol { font-size: 24px; font-weight: 500; }
+.metric-value-modern.green .currency-symbol { color: #16a34a; }
+.metric-value-modern.red .currency-symbol { color: #dc2626; }
+.metric-value-modern .value-number { font-size: 36px; font-weight: 700; color: #1e293b; line-height: 1; }
+.metric-unit-modern { font-size: 11px; color: #94a3b8; }
+.position-value-modern { display: flex; align-items: baseline; gap: 2px; margin-bottom: 6px; }
+.position-value-modern .position-hash { font-size: 24px; font-weight: 400; }
+.position-value-modern.green .position-hash { color: #16a34a; }
+.position-value-modern.red .position-hash { color: #dc2626; }
+.position-value-modern .position-number { font-size: 42px; font-weight: 700; color: #1e293b; line-height: 1; }
+.metric-decoration { position: absolute; top: -30px; right: -30px; width: 120px; height: 120px; border-radius: 50%; opacity: 0.15; transition: transform 0.5s ease, opacity 0.3s ease; }
+.metric-decoration.green { background: radial-gradient(circle, #22c55e 0%, transparent 70%); }
+.metric-decoration.red { background: radial-gradient(circle, #ef4444 0%, transparent 70%); }
+.metric-card-modern:hover .metric-decoration { transform: scale(1.5); opacity: 0.2; }
+
+/* Progress Section */
+.progress-section { background: #f8fafc; border-radius: 12px; padding: 16px 20px; border: 1px solid #e2e8f0; }
+.progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.progress-title { font-size: 13px; font-weight: 500; color: #475569; }
+.progress-percentage { font-size: 18px; font-weight: 700; }
+.progress-percentage.green { color: #16a34a; }
+.progress-percentage.red { color: #dc2626; }
+.progress-bar-container { display: flex; flex-direction: column; gap: 8px; }
+.progress-bar-bg { height: 10px; background: #e2e8f0; border-radius: 5px; overflow: hidden; }
+.progress-bar-fill { height: 100%; border-radius: 5px; transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); position: relative; }
+.progress-bar-fill.green { background: linear-gradient(90deg, #16a34a 0%, #22c55e 50%, #4ade80 100%); box-shadow: 0 0 20px rgba(34, 197, 94, 0.4); }
+.progress-bar-fill.red { background: linear-gradient(90deg, #dc2626 0%, #ef4444 50%, #f87171 100%); box-shadow: 0 0 20px rgba(239, 68, 68, 0.4); }
+.progress-bar-fill::after { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%); animation: shimmer 2s infinite; }
+@keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+.progress-markers { display: flex; justify-content: space-between; font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* Info Section */
+.info-section-modern { display: flex; gap: 14px; background: #f8fafc; border-radius: 12px; padding: 16px; border: 1px solid #e2e8f0; margin-top: auto; }
+.info-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.info-icon.green { background: rgba(34, 197, 94, 0.15); color: #16a34a; }
+.info-icon.red { background: rgba(239, 68, 68, 0.15); color: #dc2626; }
+.info-content { flex: 1; }
+.info-title { display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 6px; }
+.info-description { font-size: 12px; color: #64748b; line-height: 1.5; margin: 0; }
+.info-description :deep(strong) { color: #1e293b; }
+
+/* RESPONSIVE CARD MODERN */
 @media (max-width: 768px) {
-  .card-header {
-    padding: 10px 14px;
-    gap: 8px;
-  }
-  
-  .header-icon {
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
-  }
-  
-  .header-icon svg {
-    width: 16px;
-    height: 16px;
-  }
-  
-  .icon-dollar {
-    font-size: 16px;
-  }
-  
-  .header-title {
-    font-size: 13px;
-  }
-  
-  .header-subtitle {
-    font-size: 0px;
-  }
-  
-  .year-badge {
-    padding: 4px 10px;
-    font-size: 11px;
-    border-radius: 14px;
-  }
-  
-  .export-btn-circle {
-    width: 26px;
-    height: 26px;
-  }
-  
-  .export-btn-circle svg {
-    width: 11px;
-    height: 11px;
-  }
-  
-  .export-dropdown {
-    min-width: 100px;
-  }
-  
-  .export-option {
-    padding: 10px 12px;
-    font-size: 11px;
-    gap: 8px;
-  }
-  
-  .option-icon {
-    font-size: 8px;
-    padding: 2px 5px;
-  }
-  
-  /* IFS Mode - Gauge */
-  .content-ifs {
-    padding: 0px;
-    gap: 6px;
-  }
-  
-  .metrics-section {
-    gap: 14px;
-    padding: 14px 0;
-  }
-  
-  .title-main {
-    font-size: 14px;
-  }
-  
-  .title-sub {
-    font-size: 11px;
-  }
-  
-  /* ✅ Metrics en 2 columnas con divider vertical */
-  .metrics-row {
-    flex-direction: row;
-    gap: 20px;
-    justify-content: center;
-    align-items: center;
-  }
-  
-  .metrics-divider {
-    width: 1px;
-    height: 100px;
-  }
-  
-  .metric-gauge {
-    width: 110px;
-    height: 110px;
-  }
-  
-  .gauge-value {
-    font-size: 20px;
-  }
-  
-  .gauge-label {
-    font-size: 10px;
-  }
-  
-  .position-metric {
-    min-width: auto;
-  }
-  
-  .position-badge {
-    padding: 12px 20px;
-    border-radius: 12px;
-  }
-  
-  .position-label {
-    font-size: 9px;
-    letter-spacing: 0.8px;
-    margin-bottom: 6px;
-  }
-  
-  .position-hash {
-    font-size: 20px;
-  }
-  
-  .position-value {
-    font-size: 20px;
-  }
-  
-  /* Monetary Mode */
-  .content-monetary {
-    padding: 20px 16px 16px 16px;
-  }
-  
-  .content-center {
-    padding-bottom: 16px;
-  }
-  
-  .monetary-row {
-    flex-direction: row;
-    gap: 14px;
-    justify-content: center;
-    align-items: stretch;
-  }
-  
-  .monetary-main {
-    padding: 16px 20px;
-    border-radius: 12px;
-    width: auto;
-    flex: 1;
-    max-width: 180px;
-  }
-  
-  .monetary-label {
-    font-size: 9px;
-    letter-spacing: 1px;
-    margin-bottom: 8px;
-  }
-  
-  .monetary-currency {
-    font-size: 14px;
-  }
-  
-  .monetary-amount {
-    font-size: 22px;
-  }
-  
-  .monetary-unit {
-    font-size: 9px;
-    margin-top: 6px;
-  }
-  
-  .position-card {
-    padding: 16px 20px;
-    border-radius: 12px;
-    width: auto;
-    flex: 1;
-    max-width: 180px;
-  }
-  
-  .position-label-monetary {
-    font-size: 9px;
-    letter-spacing: 1px;
-    margin-bottom: 8px;
-  }
-  
-  .position-value-monetary {
-    font-size: 22px;
-  }
-  
-  /* Legend */
-  .legend-section {
-    padding: 12px 16px;
-    border-radius: 10px;
-  }
-  
-  .legend-header {
-    font-size: 12px;
-    gap: 8px;
-    margin-bottom: 6px;
-  }
-  
-  .legend-header svg {
-    width: 14px;
-    height: 14px;
-  }
-  
-  .legend-description {
-    font-size: 11px;
-    line-height: 1.4;
-  }
-  
-  .legend-scale {
-    margin-top: 12px;
-  }
-  
-  .scale-bar {
-    height: 6px;
-    margin-bottom: 10px;
-  }
-  
-  .scale-labels-6 {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 5px;
-  }
-  
-  .scale-label {
-    padding: 5px 6px;
-    gap: 5px;
-    border-radius: 6px;
-  }
-  
-  .label-indicator {
-    width: 8px;
-    height: 8px;
-    border-radius: 2px;
-  }
-  
-  .label-name {
-    font-size: 9px;
-  }
-  
-  .label-range {
-    font-size: 8px;
-  }
-  
-  /* Loading/Error */
-  .spinner {
-    width: 26px;
-    height: 26px;
-    border-width: 2px;
-    margin-bottom: 10px;
-  }
-  
-  .loading-state p,
-  .error-state p {
-    font-size: 12px;
-  }
+  .modern-header { padding: 12px 16px; }
+  .header-icon-modern { width: 36px; height: 36px; border-radius: 10px; }
+  .header-icon-modern svg { width: 18px; height: 18px; }
+  .header-title-modern { font-size: 14px; }
+  .header-subtitle-modern { font-size: 10px; }
+  .year-badge-modern { padding: 6px 12px; font-size: 12px; }
+  .export-btn-modern { width: 32px; height: 32px; }
+  .modern-body { padding: 16px; }
+  .metrics-grid { grid-template-columns: 1fr; gap: 12px; }
+  .metric-card-modern { padding: 16px; }
+  .metric-icon-bg { width: 40px; height: 40px; margin-bottom: 12px; }
+  .metric-icon-bg svg { width: 24px; height: 24px; }
+  .metric-value-modern .currency-symbol { font-size: 20px; }
+  .metric-value-modern .value-number { font-size: 28px; }
+  .position-value-modern .position-hash { font-size: 20px; }
+  .position-value-modern .position-number { font-size: 32px; }
+  .progress-section { padding: 14px 16px; }
+  .progress-title { font-size: 12px; }
+  .progress-percentage { font-size: 16px; }
+  .info-section-modern { padding: 14px; gap: 12px; }
+  .info-icon { width: 32px; height: 32px; }
+  .info-title { font-size: 12px; }
+  .info-description { font-size: 11px; }
 }
 
-/* Móviles pequeños */
 @media (max-width: 480px) {
-  .card-header {
-    padding: 8px 12px;
-    gap: 6px;
-  }
-  
-  .header-icon {
-    width: 24px;
-    height: 24px;
-    border-radius: 6px;
-  }
-  
-  .header-icon svg {
-    width: 14px;
-    height: 14px;
-  }
-  
-  .icon-dollar {
-    font-size: 14px;
-  }
-  
-  .header-title {
-    font-size: 11px;
-  }
-  
-  .header-subtitle {
-    font-size: 9px;
-  }
-  
-  .year-badge {
-    padding: 3px 8px;
-    font-size: 10px;
-    border-radius: 12px;
-  }
-  
-  .export-btn-circle {
-    width: 22px;
-    height: 22px;
-  }
-  
-  .export-btn-circle svg {
-    width: 10px;
-    height: 10px;
-  }
-  
-  /* IFS Mode - Gauge */
-  .metrics-section {
-    gap: 5px;
-    padding: 10px 0 0 0 ;
-  }
-  
-  .title-main {
-    font-size: 12px;
-  }
-  
-  .title-sub {
-    font-size: 10px;
-  }
-  
-  /* ✅ Metrics en 2 columnas con divider vertical */
-  .metrics-row {
-    flex-direction: row;
-    gap: 12px;
-    justify-content: center;
-    align-items: center;
-  }
-  
-  .metrics-divider {
-    width: 1px;
-    height: 80px;
-  }
-  
-  .metric-gauge {
-    width: 90px;
-    height: 90px;
-  }
-  
-  .gauge-value {
-    font-size: 16px;
-  }
-  
-  .gauge-label {
-    font-size: 8px;
-  }
-  
-  .position-metric {
-    min-width: auto;
-  }
-  
-  .position-badge {
-    padding: 10px 14px;
-    border-radius: 10px;
-  }
-  
-  .position-label {
-    font-size: 7px;
-    margin-bottom: 4px;
-  }
-  
-  .position-hash {
-    font-size: 16px;
-  }
-  
-  .position-value {
-    font-size: 16px;
-  }
-  
-  /* Monetary Mode */
-  .content-monetary {
-    padding: 14px 12px 12px 12px;
-  }
-  
-  .content-center {
-    padding-bottom: 12px;
-  }
-  
-  .monetary-row {
-    flex-direction: row;
-    gap: 10px;
-    justify-content: center;
-    align-items: stretch;
-  }
-  
-  .monetary-main {
-    padding: 12px 14px;
-    border-radius: 10px;
-    flex: 1;
-    max-width: 150px;
-  }
-  
-  .monetary-label {
-    font-size: 8px;
-    margin-bottom: 6px;
-  }
-  
-  .monetary-currency {
-    font-size: 12px;
-  }
-  
-  .monetary-amount {
-    font-size: 18px;
-  }
-  
-  .monetary-unit {
-    font-size: 8px;
-    margin-top: 4px;
-  }
-  
-  .position-card {
-    padding: 12px 14px;
-    border-radius: 10px;
-    flex: 1;
-    max-width: 150px;
-  }
-  
-  .position-label-monetary {
-    font-size: 8px;
-    margin-bottom: 6px;
-  }
-  
-  .position-value-monetary {
-    font-size: 18px;
-  }
-  
-  /* Legend */
-  .legend-section {
-    padding: 10px 12px;
-    border-radius: 8px;
-  }
-  
-  .legend-header {
-    font-size: 11px;
-    gap: 6px;
-    margin-bottom: 5px;
-  }
-  
-  .legend-header svg {
-    width: 12px;
-    height: 12px;
-  }
-  
-  .legend-description {
-    font-size: 10px;
-  }
-  
-  .legend-scale {
-    margin-top: 10px;
-  }
-  
-  .scale-bar {
-    height: 5px;
-    margin-bottom: 8px;
-  }
-  
-  .scale-labels-6 {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 4px;
-  }
-  
-  .scale-label {
-    padding: 4px 5px;
-    gap: 4px;
-    border-radius: 5px;
-  }
-  
-  .label-indicator {
-    width: 6px;
-    height: 6px;
-  }
-  
-  .label-name {
-    font-size: 8px;
-  }
-  
-  .label-range {
-    font-size: 7px;
-  }
-  
-  .spinner {
-    width: 22px;
-    height: 22px;
-  }
-  
-  .loading-state p,
-  .error-state p {
-    font-size: 11px;
-  }
+  .modern-header { padding: 10px 12px; }
+  .header-icon-modern { width: 32px; height: 32px; }
+  .header-title-modern { font-size: 12px; }
+  .year-badge-modern { padding: 4px 10px; font-size: 11px; }
+  .modern-body { padding: 12px; }
+  .content-modern { gap: 14px; }
+  .metric-card-modern { padding: 14px; border-radius: 12px; }
+  .metric-icon-bg { width: 36px; height: 36px; margin-bottom: 10px; }
+  .metric-value-modern .currency-symbol { font-size: 18px; }
+  .metric-value-modern .value-number { font-size: 24px; }
+  .position-value-modern .position-hash { font-size: 18px; }
+  .position-value-modern .position-number { font-size: 28px; }
+  .metric-label-modern { font-size: 10px; }
+  .metric-unit-modern { font-size: 10px; }
+  .progress-section { padding: 12px; border-radius: 10px; }
+  .progress-bar-bg { height: 8px; }
+  .info-section-modern { padding: 12px; border-radius: 10px; flex-direction: column; align-items: flex-start; }
+  .info-icon { width: 28px; height: 28px; }
 }
 
-/* Landscape en móviles */
-@media (max-width: 768px) and (orientation: landscape) {
-  .card-header {
-    padding: 8px 12px;
-  }
-  
-  .content-ifs {
-    padding: 1px 16px;
-    gap: 10px;
-    flex-direction: row;
-  }
-  
-  .metrics-section {
-    flex: 1;
-    padding: 8px 0;
-  }
-  
-  .metrics-row {
-    flex-direction: row;
-    gap: 16px;
-  }
-  
-  .metrics-divider {
-    width: 1px;
-    height: 70px;
-  }
-  
-  .metric-gauge {
-    width: 80px;
-    height: 80px;
-  }
-  
-  .gauge-value {
-    font-size: 14px;
-  }
-  
-  .gauge-label {
-    font-size: 7px;
-  }
-  
-  .position-badge {
-    padding: 8px 12px;
-  }
-  
-  .position-hash,
-  .position-value {
-    font-size: 14px;
-  }
-  
-  .position-label {
-    font-size: 6px;
-  }
-  
-  .legend-section {
-    flex: 1;
-    margin-top: 0;
-  }
-  
-  .scale-labels-6 {
-    grid-template-columns: repeat(3, 1fr);
-  }
-  
-  /* Monetary landscape */
-  .content-monetary {
-    padding: 10px 16px;
-    flex-direction: row;
-  }
-  
-  .content-center {
-    flex: 1;
-    padding-bottom: 0;
-  }
-  
-  .monetary-row {
-    flex-direction: row;
-    gap: 12px;
-  }
-  
-  .monetary-main,
-  .position-card {
-    padding: 10px 16px;
-    max-width: 160px;
-  }
-  
-  .monetary-amount,
-  .position-value-monetary {
-    font-size: 16px;
-  }
-  
-  .monetary-currency {
-    font-size: 12px;
-  }
-  
-  .monetary-unit {
-    font-size: 7px;
-  }
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .mode-ranking { padding: 10px; border-radius: 10px; }
+  .ranking-header { padding-bottom: 6px; margin-bottom: 6px; }
+  .ranking-header .card-title { font-size: 13px; }
+  .ranking-header .card-subtitle { font-size: 10px; }
+  .header-badge { padding: 4px 10px; }
+  .badge-count { font-size: 14px; }
+  .badge-label { font-size: 7px; }
+  .mode-ranking .card-content { padding: 6px; }
+  .bar-row { grid-template-columns: 20px 80px 1fr 50px; gap: 4px; }
+  .bar-row.is-mexico { padding: 2px 4px 2px 6px; border-left-width: 3px; }
+  .rank-position { width: 18px; height: 18px; }
+  .rank-number { font-size: 8px; }
+  .country-label { font-size: 9px; }
+  .bar-value { font-size: 8px; }
+  .classification-badge { font-size: 6px; padding: 2px 3px; }
+  .legend-color-block { height: 12px; }
+  .legend-indicator { font-size: 6px; }
+  .legend-range-value { font-size: 7px; }
+  .tooltip-international { display: none !important; }
+}
+
+@media (max-width: 480px) {
+  .mode-ranking { padding: 8px; }
+  .ranking-header .card-title { font-size: 12px; }
+  .bar-row { grid-template-columns: 18px 60px 1fr 40px; gap: 3px; }
+  .bar-row.is-mexico { padding: 1px 3px 1px 5px; border-left-width: 3px; }
+  .rank-position { width: 16px; height: 16px; }
+  .rank-number { font-size: 7px; }
+  .country-label { font-size: 8px; }
+  .bar-value { font-size: 7px; }
+  .classification-badge { font-size: 5px; padding: 1px 2px; }
+  .legend-color-block { height: 10px; }
+  .legend-indicator { font-size: 5px; }
+  .legend-range-value { font-size: 6px; }
 }
 </style>

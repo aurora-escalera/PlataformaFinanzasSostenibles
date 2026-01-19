@@ -1,4 +1,5 @@
 <!-- src/modules/object/component/HistoricalCard.vue -->
+<!-- ✅ MODIFICADO: Se agregan buttonLabels a cada gráfico para personalizar nombres de botones sin afectar tooltips -->
 <template>
   <div class="ifss-slider-container">
     <div class="historic-table">
@@ -20,6 +21,7 @@
               :height="350"
               :positionsByYear="isPositionsByYear"
               :percentagesByYear="isPercentagesByYear"
+              :buttonLabels="buttonLabelsIS"
             />
           </div>
         </div>
@@ -40,6 +42,7 @@
               :decimalPlaces="2"
               :positionsByYear="iicPositionsByYear"
               :percentagesByYear="iicPercentagesByYear"
+              :buttonLabels="buttonLabelsIIC"
             />
           </div>
         </div>
@@ -58,6 +61,7 @@
               :showFilters="true"
               :showLegend="true"
               :hideHeader="true"
+              :buttonLabels="buttonLabelsIICBar"
             />
           </div>
         </div>
@@ -73,6 +77,7 @@
               :showFilters="true"
               :showLegend="true"
               :hideHeader="true"
+              :buttonLabels="buttonLabelsISBar"
             />
           </div>
         </div>
@@ -159,7 +164,6 @@ const props = defineProps({
     type: Number,
     default: null
   },
-  // ✅ NUEVAS PROPS: Recibir los 3 filtros desde HomePage
   selectedEntity: {
     type: [String, null],
     default: null
@@ -195,14 +199,41 @@ const pspicPositionsByYear = ref({})
 const pspicPercentagesByYear = ref({})
 
 // ============================================================================
+// ✅ NUEVAS CONSTANTES: Mapeos de buttonLabels para cada gráfico
+// ============================================================================
+
+// Para IS Stacked Area (Figura 2) - IS Total → Ingreso Sostenible Total
+const buttonLabelsIS = {
+  'IS Total': 'Ingreso Sostenible Total',
+  'Financiamiento Total': 'Financiamiento Total' // Sin cambio
+}
+
+// Para IIC Stacked Area (Figura 3) - IIC Total → Ingresos Intensivos en Carbono, IS Total → Ingreso Sostenible Total
+const buttonLabelsIIC = {
+  'IIC Total': 'Ingresos Intensivos en Carbono',
+  'IS Total': 'Ingreso Sostenible Total',
+  'Ingreso Total': 'Ingreso Total' // Sin cambio
+}
+
+// Para IIC Bar Chart (Figura 4) - IIC_C → Combustibles, IIC_H → Hidrocarburos, IIC_M → Minería
+const buttonLabelsIICBar = {
+  'IIC_C': 'Combustibles',
+  'iic_c': 'Combustibles',
+  'IIC_H': 'Hidrocarburos',
+  'iic_h': 'Hidrocarburos',
+  'IIC_M': 'Minería',
+  'iic_m': 'Minería'
+}
+
+// Para IS Bar Chart (Figura 5) - FTDCC → Financiamiento Total destinado al desarrollo de cambio climático
+const buttonLabelsISBar = {
+  'FTDCC': 'Financiamiento Total destinado al desarrollo de cambio climático'
+}
+
+// ============================================================================
 // LÓGICA DE FILTRADO BASADA EN LOS 3 FILTROS
 // ============================================================================
 
-/**
- * Verifica si estamos en el contexto correcto para aplicar filtrado de cards:
- * - Entidad = "Datos Regionales" (null)
- * - Año = "Todos los años" (null)
- */
 const isInFilterableContext = computed(() => {
   const entityIsTodas = props.selectedEntity === null
   const yearIsTodos = props.selectedYear === null
@@ -218,84 +249,45 @@ const isInFilterableContext = computed(() => {
   return entityIsTodas && yearIsTodos
 })
 
-/**
- * Obtiene la key de la variable seleccionada (PS, IIC, PIC, IS o null)
- */
 const selectedVariableKey = computed(() => {
   if (!props.selectedVariable) return null
   return props.selectedVariable.key || null
 })
 
-/**
- * Mapeo de qué variables están en cada row
- */
 const rowVariables = {
-  row1: ['IS', 'IIC'],    // Row 1 tiene IS StackedArea e IIC StackedArea
-  row2: ['IIC', 'IS'],    // Row 2 tiene IIC Bar e IS Bar
-  row3: ['PS', 'PIC'],    // Row 3 tiene PS-PIC StackedArea (ambas)
-  row4: ['PIC', 'PS']     // Row 4 tiene PIC Bar y PS Bar
+  row1: ['IS', 'IIC'],
+  row2: ['IIC', 'IS'],
+  row3: ['PS', 'PIC'],
+  row4: ['PIC', 'PS']
 }
 
-/**
- * Determina si una row debe mostrarse
- * Solo aplica filtrado si estamos en el contexto correcto (Entidad=null, Año=null)
- */
 const shouldShowRow = (rowName) => {
-  // Si NO estamos en contexto filtrable, mostrar todas las rows
   if (!isInFilterableContext.value) return true
-  
-  // Si no hay variable seleccionada ("Todas las variables"), mostrar todas las rows
   if (!selectedVariableKey.value) return true
-  
-  // Mostrar la row si contiene la variable seleccionada
   const variablesInRow = rowVariables[rowName] || []
   return variablesInRow.includes(selectedVariableKey.value)
 }
 
-/**
- * Determina si una card específica debe mostrarse
- * Solo aplica filtrado si estamos en el contexto correcto
- */
 const shouldShowCard = (cardVariable) => {
-  // Si NO estamos en contexto filtrable, mostrar todas las cards
   if (!isInFilterableContext.value) return true
-  
-  // Si no hay variable seleccionada ("Todas las variables"), mostrar todas las cards
   if (!selectedVariableKey.value) return true
-  
-  // Mostrar solo si coincide con la variable seleccionada
   return selectedVariableKey.value === cardVariable
 }
 
-/**
- * Determina si una card es la única visible en su row (para aplicar full-width)
- */
 const isOnlyCardInRow = (cardVariable, rowName) => {
-  // Si NO estamos en contexto filtrable, hay 2 cards por row
   if (!isInFilterableContext.value) return false
-  
-  // Si no hay variable seleccionada, hay 2 cards por row
   if (!selectedVariableKey.value) return false
-  
-  // Si hay variable seleccionada, la card es la única en su row
   return selectedVariableKey.value === cardVariable
 }
 
-/**
- * Obtiene el ancho del chart según si está solo o acompañado
- */
 const getChartWidth = (cardVariable, rowName) => {
   if (isOnlyCardInRow(cardVariable, rowName)) {
-    return 1900 // Ancho completo
+    return 1900
   }
-  return 950 // Mitad del ancho
+  return 950
 }
 
-/**
- * Obtiene las variables iniciales para el gráfico PS-PIC según el filtro
- */
 const getInitialVariablesForPSPIC = () => {
-  // Si NO estamos en contexto filtrable, mostrar ambas
   if (!isInFilterableContext.value) {
     return ['Presupuestos Intensivos en Carbono', 'Presupuestos Sostenibles']
   }
@@ -307,7 +299,6 @@ const getInitialVariablesForPSPIC = () => {
     return ['Presupuestos Intensivos en Carbono']
   }
   
-  // Por defecto (Todas las variables), mostrar ambas
   return ['Presupuestos Intensivos en Carbono', 'Presupuestos Sostenibles']
 }
 
@@ -328,7 +319,7 @@ watch([() => props.selectedEntity, () => props.selectedYear, () => props.selecte
 )
 
 // ============================================================================
-// CARGA DE DATOS (sin cambios)
+// CARGA DE DATOS
 // ============================================================================
 
 const loadData = async () => {
@@ -670,12 +661,8 @@ onMounted(async () => {
 .chart-card.full-width {
   width: 100% !important;
 }
-/* ============================================
-   RESPONSIVE - Media Queries para HistoricalCard.vue
-   (Agregar al final del <style scoped>)
-   ============================================ */
 
-/* Tablets */
+/* RESPONSIVE */
 @media (max-width: 768px) {
   .ifss-slider-container {
     padding: 8px;
@@ -693,7 +680,6 @@ onMounted(async () => {
     max-width: 100%;
   }
   
-  /* Rows pasan a columna */
   .row-1, .row-2, .row-3, .row-4 {
     flex-direction: column;
     height: auto;
@@ -701,7 +687,6 @@ onMounted(async () => {
     width: 100%;
   }
   
-  /* Cards ocupan todo el ancho */
   .IS-anual-linear-chart,
   .IIC-anual-linear-chart,
   .IIC-anual-bar-chart,
@@ -713,7 +698,6 @@ onMounted(async () => {
     max-width: 100%;
   }
   
-  /* Altura mínima para cada card */
   .chart-card {
     min-height: 280px;
     padding: 6px;
@@ -743,7 +727,6 @@ onMounted(async () => {
   }
 }
 
-/* Móviles pequeños */
 @media (max-width: 480px) {
   .ifss-slider-container {
     padding: 6px;
@@ -782,7 +765,6 @@ onMounted(async () => {
   }
 }
 
-/* Landscape en móviles */
 @media (max-width: 768px) and (orientation: landscape) {
   .ifss-slider-container {
     padding: 5px;
@@ -792,7 +774,6 @@ onMounted(async () => {
     gap: 4px;
   }
   
-  /* En landscape, volver a poner 2 cards por fila si hay espacio */
   .row-1, .row-2, .row-4 {
     flex-direction: row;
     gap: 4px;
@@ -807,12 +788,10 @@ onMounted(async () => {
     width: 50%;
   }
   
-  /* Excepto cuando está sola (full-width) */
   .chart-card.full-width {
     width: 100% !important;
   }
   
-  /* Row 3 siempre full width */
   .row-3 {
     flex-direction: column;
   }

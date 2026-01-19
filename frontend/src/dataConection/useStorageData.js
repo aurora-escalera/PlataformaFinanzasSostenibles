@@ -1,5 +1,5 @@
 // src/dataConection/useStorageData.js
-// ✅ ACTUALIZADO con CACHÉ, RETRY, COLA, FAIL SILENCIOSO y fetchRegionalSheetNames
+// ✅ ACTUALIZADO con CACHÉ, RETRY, COLA, FAIL SILENCIOSO, fetchRegionalSheetNames y fetchInternationalSheetNames
 // ✅ parseNumericValue actualizado para manejar formatos mixtos (europeo y americano)
 import { getCurrentConfig, getSheetIdForFile, getSheetName, storageConfig } from './storageConfig'
 
@@ -196,7 +196,7 @@ export function useStorageData() {
   }
 
   /**
-   * ✅ NUEVO: Obtener nombres de hojas (pestañas) de un Google Sheet REGIONAL
+   * ✅ Obtener nombres de hojas (pestañas) de un Google Sheet REGIONAL
    * @param {string} regionalKey - Clave del sheet regional: 'estatusDelPais', 'ambientalesRegional', etc.
    * @returns {Promise<string[]>} - Array con nombres de las hojas/pestañas
    */
@@ -283,6 +283,102 @@ export function useStorageData() {
       
     } catch (error) {
       console.warn(`⚠️ [fetchRegionalSheetNames] Error silencioso para ${regionalKey}:`, error.message)
+      return []
+    }
+  }
+
+  /**
+   * ✅ NUEVO: Obtener nombres de hojas (años) del sheet de datos internacionales
+   * @returns {Promise<string[]>} - Array con nombres de las hojas/pestañas (años)
+   */
+  const fetchInternationalSheetNames = async () => {
+    try {
+      const gsConfig = storageConfig.googlesheets
+      
+      // Obtener configuración de cuantitativosInternacional
+      const internationalConfig = gsConfig.sheets?.cuantitativosInternacional
+      
+      if (!internationalConfig) {
+        console.error('❌ [fetchInternationalSheetNames] No se encontró configuración para cuantitativosInternacional')
+        return []
+      }
+      
+      const sheetId = internationalConfig.sheetId
+      
+      if (!sheetId) {
+        console.error('❌ [fetchInternationalSheetNames] No se encontró sheetId para cuantitativosInternacional')
+        return []
+      }
+      
+      const apiKey = gsConfig.apiKey
+      
+      if (!apiKey) {
+        console.error('❌ [fetchInternationalSheetNames] No se encontró apiKey')
+        return []
+      }
+      
+      // ✅ CACHÉ: Usar clave especial para nombres de hojas internacionales
+      const cacheKey = `__internationalSheetNames__${sheetId}`
+      const cachedEntry = dataCache.get(cacheKey)
+      
+      if (isCacheValid(cachedEntry)) {
+        console.log(`✅ [Cache HIT] Usando nombres de hojas internacionales en caché`)
+        return cachedEntry.data
+      }
+      
+      // Verificar solicitud pendiente
+      if (pendingRequests.has(cacheKey)) {
+        console.log(`⏳ [Pending] Esperando solicitud de nombres internacionales existente`)
+        return await pendingRequests.get(cacheKey)
+      }
+      
+      console.log(`🌎 [fetchInternationalSheetNames] Obteniendo hojas de datos internacionales`)
+      console.log(`  - Sheet ID: ${sheetId}`)
+      
+      const fetchPromise = enqueueRequest(async () => {
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}?key=${apiKey}&fields=sheets.properties.title`
+        const response = await fetchWithRetry(url)
+        
+        if (!response) {
+          console.warn(`⚠️ [fetchInternationalSheetNames] No se pudo obtener hojas`)
+          return []
+        }
+        
+        if (!response.ok) {
+          console.warn(`⚠️ [fetchInternationalSheetNames] Error HTTP ${response.status}`)
+          return []
+        }
+        
+        const data = await response.json()
+        const sheetNames = data.sheets?.map(sheet => sheet.properties.title) || []
+        
+        // Filtrar solo los que parecen años (4 dígitos)
+        const yearSheets = sheetNames
+          .filter(name => /^\d{4}$/.test(name))
+          .sort((a, b) => parseInt(b) - parseInt(a)) // Ordenar descendente
+        
+        console.log(`✅ [fetchInternationalSheetNames] Años encontrados:`, yearSheets)
+        
+        // Guardar en caché
+        dataCache.set(cacheKey, {
+          data: yearSheets,
+          timestamp: Date.now()
+        })
+        console.log(`💾 [Cache SAVE] Nombres de hojas internacionales guardados: ${cacheKey}`)
+        
+        return yearSheets
+      })
+      
+      pendingRequests.set(cacheKey, fetchPromise)
+      
+      try {
+        return await fetchPromise
+      } finally {
+        pendingRequests.delete(cacheKey)
+      }
+      
+    } catch (error) {
+      console.warn(`⚠️ [fetchInternationalSheetNames] Error silencioso:`, error.message)
       return []
     }
   }
@@ -396,7 +492,7 @@ export function useStorageData() {
   }
 
   /**
-   * ✅ NUEVO: Obtener datos de una hoja específica de Google Sheets REGIONAL
+   * ✅ Obtener datos de una hoja específica de Google Sheets REGIONAL
    * @param {string} regionalKey - Clave del sheet regional: 'estatusDelPais', 'ambientalesRegional', etc.
    * @param {string} sheetName - Nombre de la hoja/pestaña (ej: '2024')
    * @returns {Promise<Array>} - Array con los datos de la hoja
@@ -808,8 +904,9 @@ export function useStorageData() {
   return {
     fetchData,
     fetchSheetNames,
-    fetchRegionalSheetNames,  // ✅ NUEVO: Para obtener hojas de sheets regionales
-    fetchRegionalData,        // ✅ NUEVO: Para obtener datos de sheets regionales
+    fetchRegionalSheetNames,
+    fetchRegionalData,
+    fetchInternationalSheetNames,
     transform,
     transformToBarChartData,
     transformToLinearChartData,
