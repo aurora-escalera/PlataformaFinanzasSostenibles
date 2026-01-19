@@ -1,10 +1,10 @@
 <!-- src/modules/charts/components/BarChart.vue -->
-<!-- ✅ ACTUALIZADO: Botón de exportación circular en header dark -->
+<!-- ✅ ACTUALIZADO: Agregada prop hideHeader para ocultar el header interno -->
 <template>
   <div class="vertical-bar-chart">
 
-    <!-- ✅ Header Dark con botón de exportación -->
-    <div class="bar-header-dark">
+    <!-- ✅ Header Dark con botón de exportación - AHORA CONDICIONAL -->
+    <div v-if="!hideHeader" class="bar-header-dark">
       <div class="bar-header-icon">
         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="12" y1="20" x2="12" y2="10"/>
@@ -150,7 +150,8 @@ const props = defineProps({
   headerTitle: { type: String, default: 'Análisis Presupuestario' },
   selectedState: { type: String, default: '' },
   selectedYear: { type: String, default: '' },
-  currency: { type: String, default: 'MXN' }
+  currency: { type: String, default: 'MXN' },
+  hideHeader: { type: Boolean, default: false }  // ✅ NUEVA PROP
 })
 
 const emit = defineEmits(['export'])

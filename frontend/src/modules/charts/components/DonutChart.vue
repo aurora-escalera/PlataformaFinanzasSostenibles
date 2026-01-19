@@ -1,177 +1,196 @@
 <!-- src/modules/charts/components/DonutChart.vue -->
-<!-- ✅ ACTUALIZADO: Botón de exportación circular en distribution-header -->
+<!-- ✅ PROPUESTA A: Dona Izquierda + Info Derecha (Vertical) -->
 <template>
-  <div class="donut-item-vertical">
-    <!-- Barra de distribución horizontal superior -->
-    <div class="distribution-bar-section">
-      <div class="distribution-header">
-        <span class="distribution-label">Distribución</span>
-        <div class="distribution-header-right">
-          <span class="distribution-value" :class="badgeColorClass">{{ displayValue }}</span>
-          
-          <!-- ✅ Botón de exportación circular -->
-          <div class="export-button-wrapper" ref="exportWrapperRef">
-            <button 
-              class="export-btn-circle"
-              :class="[badgeColorClass, { 'is-open': showExportMenu }]"
-              @click.stop="toggleExportMenu"
-              title="Exportar datos"
-            >
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="7 10 12 15 17 10"/>
-                <line x1="12" y1="15" x2="12" y2="3"/>
+  <div class="donut-chart-container">
+    
+    <!-- Layout principal: Info | Dona -->
+    <div class="donut-layout">
+      
+      <!-- LADO IZQUIERDO: Información (centrado) -->
+      <div class="info-side">
+        
+        <!-- Header con título y badge -->
+        <div class="info-header">
+          <div class="info-title-section">
+            <h3 class="info-title">{{ badgeTitle }}</h3>
+            <div class="info-subtitle">{{ selectedYear }}</div>
+          </div>
+          <div class="info-badge" :class="badgeColorClass">
+            {{ mainPercentage }}%
+          </div>
+        </div>
+        
+        <!-- Métricas principales -->
+        <div class="info-metrics">
+          <div class="metric-item">
+            <div class="metric-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
               </svg>
-            </button>
+            </div>
+            <div class="metric-info">
+              <span class="metric-label">Total</span>
+              <span class="metric-value" :class="badgeColorClass">{{ displayValue }}</span>
+            </div>
+          </div>
+          
+          <div class="metric-item" v-if="position">
+            <div class="metric-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              </svg>
+            </div>
+            <div class="metric-info">
+              <span class="metric-label">Posición</span>
+              <span class="metric-value position">#{{ position }}</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Separador -->
+        <div class="info-divider"></div>
+        
+      </div>
+      
+      <!-- LADO DERECHO: Dona -->
+      <div class="donut-side">
+        <div class="donut-wrapper">
+          <svg 
+            class="donut-svg" 
+            :viewBox="`0 0 ${svgSize} ${svgSize}`"
+          >
+            <!-- Círculo de fondo -->
+            <circle 
+              class="donut-background"
+              :cx="center" 
+              :cy="center" 
+              :r="radius"
+              fill="none"
+              stroke="#f1f5f9"
+              :stroke-width="strokeWidth"
+            />
             
-            <!-- Dropdown menu -->
-            <transition name="dropdown-fade">
-              <div v-if="showExportMenu" class="export-dropdown-mini">
-                <button class="export-option" @click="handleExport('xlsx')">
-                  <span class="option-icon xlsx">XLS</span>
-                  <span class="option-text">Excel</span>
-                </button>
-                <button class="export-option" @click="handleExport('csv')">
-                  <span class="option-icon csv">CSV</span>
-                  <span class="option-text">CSV</span>
-                </button>
-              </div>
-            </transition>
+            <!-- Segmentos de la dona -->
+            <circle
+              v-for="(segment, index) in animatedSegments"
+              :key="'segment-' + index"
+              class="donut-segment"
+              :class="{ 
+                'dimmed': !activeSectors[index] || (hoveredIndex !== null && hoveredIndex !== index),
+                'highlighted': hoveredIndex === index
+              }"
+              :cx="center"
+              :cy="center"
+              :r="radius"
+              fill="none"
+              :stroke="segment.color"
+              :stroke-width="hoveredIndex === index ? strokeWidth + 6 : strokeWidth"
+              :stroke-dasharray="segment.dashArray"
+              :stroke-dashoffset="segment.dashOffset"
+              stroke-linecap="butt"
+              style="transform: rotate(-90deg); transform-origin: center;"
+              @mouseenter="onSectorHover(index)"
+              @mouseleave="onSectorLeave"
+              @click="toggleSector(index)"
+            />
+          </svg>
+          
+          <!-- Centro de la dona -->
+          <div class="donut-center">
+            <div class="center-icon" :class="badgeColorClass">
+              <svg v-if="badgeColorClass === 'green'" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+              <svg v-else width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                <path d="M2 17l10 5 10-5"/>
+                <path d="M2 12l10 5 10-5"/>
+              </svg>
+            </div>
+            <div class="center-value" :class="badgeColorClass">{{ displayValue }}</div>
+            <div class="center-label">{{ badgeSubtitle }}</div>
           </div>
         </div>
       </div>
-      <div class="distribution-bar">
+      
+    </div>
+    
+    <!-- Barra de distribución con cards -->
+    <div class="distribution-section">
+      
+      <!-- Header de distribución -->
+      <div class="distribution-header">
+        <span class="distribution-title">Distribución por componente</span>
+        <span class="distribution-total" :class="badgeColorClass">{{ displayValue }}</span>
+      </div>
+      
+      <!-- Barra segmentada grande -->
+      <div class="segmented-bar-wrapper">
+        <div class="segmented-bar">
+          <div 
+            v-for="(sector, index) in processedSectors" 
+            :key="'bar-' + index"
+            class="bar-segment"
+            :class="{ 
+              dimmed: !activeSectors[index],
+              highlighted: hoveredIndex === index 
+            }"
+            :style="{ 
+              width: getSegmentWidth(index) + '%', 
+              backgroundColor: sector.color,
+              animationDelay: (index * 0.15) + 's'
+            }"
+            @mouseenter="onSectorHover(index)"
+            @mouseleave="onSectorLeave"
+            @click="toggleSector(index)"
+          >
+            <span v-if="getSegmentWidth(index) > 15" class="bar-segment-label">
+              {{ getPercentForSector(index) }}%
+            </span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Cards de sectores -->
+      <div class="sector-cards">
         <div 
-          v-for="(sector, index) in computedSectorPaths" 
-          :key="'bar-' + index"
-          class="distribution-segment"
+          v-for="(sector, index) in processedSectors" 
+          :key="'card-' + index"
+          class="sector-card"
           :class="{ 
             dimmed: !activeSectors[index],
             highlighted: hoveredIndex === index 
           }"
           :style="{ 
-            width: sector.displayPercent + '%', 
-            background: sector.color 
+            borderColor: sector.color,
+            animationDelay: (index * 0.1 + 0.3) + 's'
           }"
           @mouseenter="onSectorHover(index)"
           @mouseleave="onSectorLeave"
           @click="toggleSector(index)"
-        />
-      </div>
-      <div class="currency-legend">{{ currencyLegend }}</div>
-    </div>
-    
-    <!-- Área principal - Dona + Badge -->
-    <div class="donut-main-area">
-      <div class="donut-svg-container">
-        <svg class="donut-svg" viewBox="0 0 200 200">
-          <circle cx="100" cy="100" r="72" fill="none" stroke="#e2e8f0" stroke-width="25"/>
-          
-          <template v-for="(sector, index) in computedSectorPaths" :key="index">
-            <circle
-              v-if="sector.isFullCircle"
-              class="donut-ring"
-              :class="{ 
-                dimmed: !activeSectors[index] || (hoveredIndex !== null && hoveredIndex !== index),
-                highlighted: hoveredIndex === index 
-              }"
-              cx="100" cy="100" r="72"
-              fill="none"
-              :stroke="sector.color"
-              stroke-width="25"
-              @mouseenter="onSectorHover(index)"
-              @mouseleave="onSectorLeave"
-              @click="toggleSector(index)"
-            />
-            <path 
-              v-else
-              class="donut-ring"
-              :class="{ 
-                dimmed: !activeSectors[index] || (hoveredIndex !== null && hoveredIndex !== index),
-                highlighted: hoveredIndex === index 
-              }"
-              :d="sector.path"
-              fill="none"
-              :stroke="sector.color"
-              stroke-width="25"
-              @mouseenter="onSectorHover(index)"
-              @mouseleave="onSectorLeave"
-              @click="toggleSector(index)"
-            />
-          </template>
-          
-          <text 
-            v-for="(sector, index) in computedSectorPaths" 
-            :key="'pct-' + index"
-            class="sector-percent"
-            :class="{ dimmed: !activeSectors[index] || (hoveredIndex !== null && hoveredIndex !== index) }"
-            :x="sector.percentX"
-            :y="sector.percentY"
-            text-anchor="middle"
-            dominant-baseline="middle"
-            :transform="`rotate(${sector.textRotation}, ${sector.percentX}, ${sector.percentY})`"
-            v-show="parseFloat(sector.displayPercent) >= 5"
-          >
-            {{ sector.displayPercent }} %
-          </text>
-        </svg>
-        
-        <div class="donut-center">
-          <div class="center-value" :class="badgeColorClass">{{ displayValue }}</div>
+        >
+          <div class="card-color-bar" :style="{ backgroundColor: sector.color }"></div>
+          <div class="card-content">
+            <div class="card-header">
+              <span class="card-dot" :style="{ backgroundColor: sector.color }"></span>
+              <span class="card-name">{{ sector.label }}</span>
+            </div>
+            <div class="card-value">{{ formatValue(sector.value) }}</div>
+            <div class="card-percent" :style="{ color: sector.color }">{{ getPercentForSector(index) }}%</div>
+          </div>
         </div>
       </div>
       
-      <!-- Badge indicador -->
-      <div class="badge-indicator" :class="badgeColorClass">
-        <div class="badge-icon-circle" :class="badgeColorClass">
-          <svg v-if="badgeColorClass === 'green'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-          </svg>
-          <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-            <path d="M2 17l10 5 10-5"/>
-            <path d="M2 12l10 5 10-5"/>
-          </svg>
-        </div>
-        <span class="badge-text">{{ badgeTitle }}</span>
-      </div>
+      <!-- Nota de moneda -->
+      <div class="currency-note">{{ currencyLegend }}</div>
+      
     </div>
     
-    <!-- Lista de datos inferior -->
-    <div class="data-list-section">
-      <div 
-        v-for="(sector, index) in processedSectors" 
-        :key="index"
-        class="data-list-item"
-        :class="{ 
-          active: activeSectors[index], 
-          dimmed: !activeSectors[index],
-          highlighted: hoveredIndex === index 
-        }"
-        @click="toggleSector(index)"
-        @mouseenter="onSectorHover(index)"
-        @mouseleave="onSectorLeave"
-      >
-        <div class="data-item-left">
-          <span 
-            class="data-color-dot" 
-            :style="{ background: sector.color, boxShadow: '0 2px 6px ' + sector.color + '40' }"
-          />
-          <span class="data-item-label">{{ sector.shortLabel || sector.label }}</span>
-        </div>
-        <div class="data-item-right">
-          <span class="data-item-value">{{ formatValue(sector.value) }}</span>
-          <span class="data-item-percent" :style="{ background: sector.color }">
-            {{ getPercentForSector(index) }} %
-          </span>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 
 const props = defineProps({
   data: { type: Array, default: () => [] },
@@ -180,61 +199,50 @@ const props = defineProps({
   size: { type: Number, default: 220 },
   variables: { type: Array, default: () => [] },
   sectors: { type: Array, default: () => [] },
-  currency: { type: String, default: 'MXN' }
+  currency: { type: String, default: 'MXN' },
+  position: { type: [Number, String], default: null },
+  percentage: { type: [Number, String], default: null },
+  selectedYear: { type: String, default: '' }
 })
 
 const emit = defineEmits(['export'])
 
-const showExportMenu = ref(false)
-const exportWrapperRef = ref(null)
+// Configuración del SVG
+const svgSize = 200
+const center = svgSize / 2
+const strokeWidth = 28
+const radius = (svgSize - strokeWidth) / 2 - 8
+const circumference = 2 * Math.PI * radius
 
-const toggleExportMenu = () => {
-  showExportMenu.value = !showExportMenu.value
-}
-
-const handleExport = (format) => {
-  showExportMenu.value = false
-  emit('export', { format, data: getExportData() })
-}
-
-const getExportData = () => {
-  return props.sectors.map(s => ({
-    'Sector': s.label,
-    'Valor': s.value,
-    'Porcentaje': totalAllSectors.value > 0 
-      ? `${((s.value / totalAllSectors.value) * 100).toFixed(2)}%` 
-      : '0%'
-  }))
-}
-
-const handleClickOutside = (event) => {
-  if (exportWrapperRef.value && !exportWrapperRef.value.contains(event.target)) {
-    showExportMenu.value = false
-  }
-}
-
-onMounted(() => {
-  document.addEventListener('click', handleClickOutside)
-})
-
-onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside)
-})
-
+// Estado
 const activeSectors = ref([])
 const hoveredIndex = ref(null)
 
+// Computed para colores y etiquetas
 const badgeColorClass = computed(() => {
   if (props.title === 'IS' || props.title === 'PS') return 'green'
   return 'red'
 })
 
 const badgeTitle = computed(() => {
-  if (props.title === 'IS') return 'Ingresos\nSostenibles'
-  if (props.title === 'IIC') return 'Ingresos\nInt. Carbono'
-  if (props.title === 'PS') return 'Presupuestos\nSostenibles'
-  if (props.title === 'PIC') return 'Presupuestos\nInt. Carbono'
+  if (props.title === 'IS') return 'Ingresos Sostenibles'
+  if (props.title === 'IIC') return 'Ingresos Intensivos en Carbono'
+  if (props.title === 'PS') return 'Presupuestos Sostenibles'
+  if (props.title === 'PIC') return 'Presupuestos Intensivos en Carbono'
   return props.title
+})
+
+const badgeSubtitle = computed(() => {
+  if (props.title === 'IS') return 'IS'
+  if (props.title === 'IIC') return 'IIC'
+  if (props.title === 'PS') return 'PS'
+  if (props.title === 'PIC') return 'PIC'
+  return props.title
+})
+
+const mainPercentage = computed(() => {
+  if (props.percentage) return parseFloat(props.percentage).toFixed(2)
+  return totalPercentage.value.toFixed(2)
 })
 
 const processedSectors = computed(() => {
@@ -244,89 +252,72 @@ const processedSectors = computed(() => {
   }))
 })
 
+// Inicializar sectores activos
 watch(() => props.sectors, (newSectors) => {
   if (newSectors && newSectors.length > 0) {
     activeSectors.value = newSectors.map(() => true)
   }
 }, { immediate: true })
 
+// Cálculos
 const totalAllSectors = computed(() => {
   return props.sectors.reduce((acc, sector) => acc + (sector.value || 0), 0)
 })
 
-const currencyLegend = computed(() => {
-  return props.currency === 'USD' ? '* Cifras en dólares estadounidenses (USD)' : '* Cifras en pesos mexicanos (MXN)'
-})
-
-function getPercentForSector(index) {
-  if (!props.sectors[index] || totalAllSectors.value === 0) return '0.00'
-  const percent = (props.sectors[index].value / totalAllSectors.value) * 100
-  return percent.toFixed(2)
-}
-
-const displayValue = computed(() => {
-  if (hoveredIndex.value !== null && processedSectors.value[hoveredIndex.value]) {
-    return formatValue(processedSectors.value[hoveredIndex.value].value)
-  }
-  
-  const sum = activeSectors.value.reduce((acc, active, i) => {
+const totalActiveSectors = computed(() => {
+  return activeSectors.value.reduce((acc, active, i) => {
     return active && props.sectors[i] ? acc + props.sectors[i].value : acc
   }, 0)
-  
-  return formatValue(sum)
 })
 
-const computedSectorPaths = computed(() => {
+const totalPercentage = computed(() => {
+  if (totalAllSectors.value === 0) return 0
+  return (totalActiveSectors.value / totalAllSectors.value) * 100
+})
+
+const currencyLegend = computed(() => {
+  return props.currency === 'USD' 
+    ? '* Cifras en dólares estadounidenses (USD)' 
+    : '* Cifras en pesos mexicanos (MXN)'
+})
+
+// Segmentos para el SVG
+const animatedSegments = computed(() => {
   if (!props.sectors || props.sectors.length === 0) return []
   
-  const cx = 100, cy = 100, r = 72
   const total = totalAllSectors.value
-  let currentAngle = -90
+  if (total === 0) return []
   
-  return props.sectors.map((sector) => {
-    const percent = total > 0 ? (sector.value / total) * 100 : 0
-    const angleSpan = (percent / 100) * 360
-    const startAngle = currentAngle
-    const endAngle = currentAngle + angleSpan
-    const isFullCircle = angleSpan >= 359.9
+  let accumulatedOffset = 0
+  
+  return props.sectors.map((sector, index) => {
+    const percentage = (sector.value / total) * 100
+    const segmentLength = (percentage / 100) * circumference
+    const gapSize = 0
     
-    const startRad = (startAngle * Math.PI) / 180
-    const endRad = (endAngle * Math.PI) / 180
+    const dashArray = `${Math.max(segmentLength - gapSize, 0)} ${circumference - segmentLength + gapSize}`
+    const dashOffset = -accumulatedOffset
     
-    const x1 = cx + r * Math.cos(startRad)
-    const y1 = cy + r * Math.sin(startRad)
-    const x2 = cx + r * Math.cos(endRad)
-    const y2 = cy + r * Math.sin(endRad)
-    
-    const largeArc = angleSpan > 180 ? 1 : 0
-    const midAngle = startAngle + angleSpan / 2
-    const midRad = (midAngle * Math.PI) / 180
-    const percentX = cx + r * Math.cos(midRad)
-    const percentY = cy + r * Math.sin(midRad)
-    
-    const textRotation = isFullCircle ? 0 : midAngle + 90
-    const finalPercentX = isFullCircle ? cx : percentX
-    const finalPercentY = isFullCircle ? cy - r : percentY
-    
-    currentAngle = endAngle
-    
-    let path = ''
-    if (!isFullCircle && angleSpan > 0) {
-      path = `M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2}`
-    }
+    accumulatedOffset += segmentLength
     
     return {
       ...sector,
-      path,
-      isFullCircle,
-      percentX: finalPercentX,
-      percentY: finalPercentY,
-      textRotation,
-      displayPercent: percent.toFixed(2)
+      percentage,
+      dashArray,
+      dashOffset
     }
   })
 })
 
+// Valor mostrado
+const displayValue = computed(() => {
+  if (hoveredIndex.value !== null && processedSectors.value[hoveredIndex.value]) {
+    return formatValue(processedSectors.value[hoveredIndex.value].value)
+  }
+  return formatValue(totalActiveSectors.value)
+})
+
+// Funciones de interacción
 function toggleSector(index) {
   activeSectors.value[index] = !activeSectors.value[index]
   if (!activeSectors.value.some(Boolean)) {
@@ -335,189 +326,89 @@ function toggleSector(index) {
 }
 
 function onSectorHover(index) {
-  if (activeSectors.value[index]) hoveredIndex.value = index
+  if (activeSectors.value[index]) {
+    hoveredIndex.value = index
+  }
 }
 
 function onSectorLeave() {
   hoveredIndex.value = null
 }
 
+function getPercentForSector(index) {
+  if (!props.sectors[index] || totalAllSectors.value === 0) return '0.00'
+  const percent = (props.sectors[index].value / totalAllSectors.value) * 100
+  return percent.toFixed(2)
+}
+
+function getSegmentWidth(index) {
+  if (!props.sectors[index] || totalAllSectors.value === 0) return 0
+  return (props.sectors[index].value / totalAllSectors.value) * 100
+}
+
 function formatValue(value) {
-  if (!value || value === 0) return '$0.00'
-  const millions = value / 1000000
-  if (millions >= 1000) return '$' + (millions / 1000).toFixed(2) + ' B'
-  if (millions >= 1) return '$' + millions.toFixed(2) + ' M'
-  if (millions >= 0.01) return '$' + millions.toFixed(2) + ' M'
-  return '$' + (value / 1000).toFixed(2) + ' K'
+  if (!value || value === 0) return '$0'
+  const absValue = Math.abs(value)
+  if (absValue >= 1000000000) return '$' + (value / 1000000000).toFixed(2) + ' B'
+  if (absValue >= 1000000) return '$' + (value / 1000000).toFixed(2) + ' M'
+  if (absValue >= 1000) return '$' + (value / 1000).toFixed(2) + ' K'
+  return '$' + value.toFixed(0)
 }
 </script>
 
 <style scoped>
-.donut-item-vertical {
-  flex: 1;
-  border-radius: 0 0 12px 12px;
-  padding: 14px;
+.donut-chart-container {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  min-height: 0;
-  background-color: white;
-  gap: 12px;
-}
-
-.distribution-bar-section { flex-shrink: 0; }
-
-.distribution-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.distribution-label {
-  font-size: 11px;
-  color: #64748b;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-
-.distribution-header-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.distribution-value { font-size: 15px; font-weight: 700; }
-.distribution-value.green { color: #166534; }
-.distribution-value.red { color: #dc2626; }
-
-/* ✅ Botón de exportación circular pequeño */
-.export-button-wrapper { position: relative; }
-
-.export-btn-circle {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  border: 1px solid;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.export-btn-circle.green {
-  background: #f0fdf4;
-  border-color: #86efac;
-  color: #166534;
-}
-
-.export-btn-circle.green:hover { background: #dcfce7; }
-
-.export-btn-circle.red {
-  background: #fef2f2;
-  border-color: #fca5a5;
-  color: #dc2626;
-}
-
-.export-btn-circle.red:hover { background: #fee2e2; }
-
-.export-btn-circle:hover { transform: scale(1.08); }
-.export-btn-circle.is-open { transform: scale(1.08); }
-.export-btn-circle svg { width: 10px; height: 10px; }
-
-.export-dropdown-mini {
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  border: 1px solid #e5e7eb;
-  overflow: hidden;
-  z-index: 1000;
-  min-width: 95px;
-}
-
-.export-option {
-  display: flex;
-  align-items: center;
-  gap: 6px;
   width: 100%;
-  padding: 8px 10px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  transition: background 0.15s ease;
-  font-size: 11px;
-  color: #374151;
-}
-
-.export-option:hover { background: #f3f4f6; }
-.export-option:first-child { border-bottom: 1px solid #e5e7eb; }
-
-.option-icon {
-  font-size: 8px;
-  font-weight: 700;
-  padding: 2px 4px;
-  border-radius: 3px;
-  color: white;
-}
-
-.option-icon.xlsx { background: #107c41; }
-.option-icon.csv { background: #6366f1; }
-.option-text { font-weight: 500; }
-
-.dropdown-fade-enter-active, .dropdown-fade-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
-}
-.dropdown-fade-enter-from, .dropdown-fade-leave-to {
-  opacity: 0;
-  transform: translateY(-6px);
-}
-
-.distribution-bar {
-  display: flex;
-  height: 14px;
-  border-radius: 7px;
-  overflow: hidden;
-  background: #e2e8f0;
-}
-
-.distribution-segment {
   height: 100%;
-  transition: all 0.3s ease;
-  cursor: pointer;
+  padding: 16px;
+  background: white;
+  border-radius: 12px;
+  gap: 12px;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
-.distribution-segment:hover { filter: brightness(1.1); }
-.distribution-segment.dimmed { opacity: 0.2; }
-.distribution-segment.highlighted { filter: brightness(1.15); }
-
-.currency-legend {
-  font-size: 12px;
-  font-style: italic;
-  color: #94a3b8;
-  margin-top: 4px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-.donut-main-area {
+/* ============================================
+   LAYOUT PRINCIPAL: INFO | DONA
+   ============================================ */
+.donut-layout {
+  display: flex;
+  flex-direction: row;
   flex: 1;
+  gap: 24px;
+  min-height: 0;
+  align-items: center;
+}
+
+/* ============================================
+   LADO IZQUIERDO: INFORMACIÓN (CENTRADO)
+   ============================================ */
+.info-side {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  gap: 12px;
+  justify-content: center;
+}
+
+/* ============================================
+   LADO DERECHO: DONA
+   ============================================ */
+.donut-side {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 24px;
-  min-height: 180px;
-  padding: 10px 0;
+  flex-shrink: 0;
+  width: 200px;
 }
 
-.donut-svg-container {
+.donut-wrapper {
   position: relative;
-  width: 170px;
-  height: 170px;
-  flex-shrink: 0;
+  width: 180px;
+  height: 180px;
 }
 
 .donut-svg {
@@ -526,142 +417,613 @@ function formatValue(value) {
   overflow: visible;
 }
 
-.donut-ring {
-  transition: all 0.3s ease;
+.donut-background {
+  opacity: 0.6;
+}
+
+.donut-segment {
   cursor: pointer;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.donut-ring:hover { filter: brightness(1.1); }
-.donut-ring.dimmed { opacity: 0.2; }
-.donut-ring.highlighted { filter: brightness(1.15); stroke-width: 28; }
-
-.sector-percent {
-  font-size: 11px;
-  font-weight: 600;
-  fill: white;
-  stroke: #1e3a5f;
-  stroke-width: 2px;
-  paint-order: stroke fill;
-  pointer-events: none;
-  transition: opacity 0.3s ease;
+.donut-segment.dimmed {
+  opacity: 0.2;
 }
 
-.sector-percent.dimmed { opacity: 0.2; }
+.donut-segment.highlighted {
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.25));
+}
 
+/* Centro de la dona */
 .donut-center {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
   pointer-events: none;
 }
 
-.center-value { font-size: 16px; font-weight: 700; transition: all 0.3s ease; }
-.center-value.green { color: #166534; }
-.center-value.red { color: #dc2626; }
-
-.badge-indicator {
-  padding: 16px 14px;
-  border-radius: 14px;
-  text-align: center;
-  flex-shrink: 0;
-  min-width: 80px;
-}
-
-.badge-indicator.green { background: #f0fdf4; border: 2px solid #86efac; }
-.badge-indicator.red { background: #fef2f2; border: 2px solid #fca5a5; }
-
-.badge-icon-circle {
-  width: 38px;
-  height: 38px;
+.center-icon {
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 10px;
+  margin-bottom: 6px;
 }
 
-.badge-icon-circle.green {
-  background: linear-gradient(135deg, #166534 0%, #15803d 100%);
+.center-icon.green {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
   color: white;
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.35);
 }
 
-.badge-icon-circle.red {
-  background: linear-gradient(135deg, #991b1b 0%, #dc2626 100%);
+.center-icon.red {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   color: white;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
 }
 
-.badge-icon-circle svg { width: 20px; height: 20px; }
-
-.badge-text {
-  font-size: 8px;
+.center-value {
+  font-size: 18px;
   font-weight: 700;
-  text-transform: uppercase;
-  line-height: 1.3;
-  white-space: pre-line;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.1;
+  transition: all 0.3s ease;
 }
 
-.badge-indicator.green .badge-text { color: #166534; }
-.badge-indicator.red .badge-text { color: #dc2626; }
+.center-value.green { color: #166534; }
+.center-value.red { color: #dc2626; }
 
-.data-list-section {
-  background: #f8fafc;
-  border-radius: 12px;
-  padding: 10px;
-  border: 1px solid #e2e8f0;
+.center-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
+/* Header */
+.info-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.info-title-section {
+  flex: 1;
+}
+
+.info-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 2px 0;
+  line-height: 1.3;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.info-subtitle {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.info-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 700;
   flex-shrink: 0;
 }
 
-.data-list-item {
+.info-badge.green {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  color: #166534;
+  border: 1px solid #86efac;
+}
+
+.info-badge.red {
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+}
+
+/* Métricas */
+.info-metrics {
+  display: flex;
+  gap: 16px;
+}
+
+.metric-item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 10px 12px;
-  border-radius: 8px;
-  cursor: pointer;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #f8fafc;
+  border-radius: 10px;
+  flex: 1;
   transition: all 0.2s ease;
 }
 
-.data-list-item:not(:last-child) { border-bottom: 1px solid #e2e8f0; }
-.data-list-item:hover, .data-list-item.highlighted { background: white; }
-.data-list-item.dimmed { opacity: 0.35; }
-
-.data-item-left { display: flex; align-items: center; gap: 10px; }
-
-.data-color-dot {
-  width: 14px;
-  height: 14px;
-  border-radius: 4px;
-  flex-shrink: 0;
+.metric-item:hover {
+  background: #f1f5f9;
 }
 
-.data-item-label { font-size: 12px; font-weight: 500; color: #374151; }
-.data-item-right { display: flex; align-items: center; gap: 14px; }
-.data-item-value { font-size: 14px; font-weight: 500; color: #1e3a5f; }
+.metric-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
 
-.data-item-percent {
+.metric-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.metric-label {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.metric-value {
+  font-size: 15px;
+  font-weight: 700;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.metric-value.green { color: #166534; }
+.metric-value.red { color: #dc2626; }
+.metric-value.position { color: #1e293b; }
+
+/* Separador */
+.info-divider {
+  height: 1px;
+  background: linear-gradient(90deg, #e2e8f0 0%, transparent 100%);
+}
+
+/* ============================================
+   BARRA DE DISTRIBUCIÓN SEGMENTADA + CARDS
+   ============================================ */
+.distribution-section {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.distribution-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.distribution-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.distribution-total {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.distribution-total.green { color: #166534; }
+.distribution-total.red { color: #dc2626; }
+
+/* Barra segmentada grande */
+.segmented-bar-wrapper {
+  background: #f1f5f9;
+  border-radius: 12px;
+  padding: 4px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.segmented-bar {
+  display: flex;
+  height: 32px;
+  border-radius: 8px;
+  overflow: hidden;
+  gap: 3px;
+}
+
+.bar-segment {
+  height: 100%;
+  border-radius: 6px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  min-width: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  animation: segmentGrow 0.6s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes segmentGrow {
+  from {
+    transform: scaleX(0);
+    opacity: 0;
+  }
+  to {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+
+.bar-segment:hover,
+.bar-segment.highlighted {
+  transform: scaleY(1.15);
+  filter: brightness(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 2;
+}
+
+.bar-segment.dimmed {
+  opacity: 0.25;
+  transform: scaleY(0.85);
+}
+
+.bar-segment-label {
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  white-space: nowrap;
+}
+
+/* Cards de sectores */
+.sector-cards {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sector-card {
+  flex: 1;
+  min-width: 100px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: cardSlideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes cardSlideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.sector-card:hover,
+.sector-card.highlighted {
+  background: white;
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.sector-card.dimmed {
+  opacity: 0.35;
+  transform: scale(0.95);
+}
+
+.card-color-bar {
+  height: 4px;
+  width: 100%;
+  transition: height 0.3s ease;
+}
+
+.sector-card:hover .card-color-bar,
+.sector-card.highlighted .card-color-bar {
+  height: 6px;
+}
+
+.card-content {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.card-name {
   font-size: 11px;
   font-weight: 500;
-  color: white;
-  padding: 4px 10px;
-  border-radius: 12px;
-  min-width: 65px;
-  text-align: center;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
+.card-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.card-percent {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.currency-note {
+  font-size: 10px;
+  font-style: italic;
+  color: #94a3b8;
+  text-align: right;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
 @media (max-width: 768px) {
-  .donut-svg-container { width: 140px; height: 140px; }
-  .donut-main-area { gap: 16px; }
-  .badge-indicator { padding: 12px 10px; }
-  .badge-icon-circle { width: 32px; height: 32px; }
-  .badge-icon-circle svg { width: 16px; height: 16px; }
-  .badge-text { font-size: 7px; }
-  .center-value { font-size: 18px; }
-  .data-item-label { font-size: 11px; }
-  .data-item-value { font-size: 12px; }
-  .data-item-percent { font-size: 10px; padding: 3px 8px; min-width: 58px; }
-  .export-btn-circle { width: 20px; height: 20px; }
-  .export-btn-circle svg { width: 9px; height: 9px; }
+  .donut-chart-container {
+    padding: 12px;
+    gap: 10px;
+  }
+  
+  .donut-layout {
+    flex-direction: column-reverse;
+    gap: 16px;
+  }
+  
+  .donut-side {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .donut-wrapper {
+    width: 160px;
+    height: 160px;
+  }
+  
+  .center-icon {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .center-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .center-value {
+    font-size: 16px;
+  }
+  
+  .center-label {
+    font-size: 10px;
+  }
+  
+  .info-side {
+    gap: 10px;
+  }
+  
+  .info-title {
+    font-size: 14px;
+  }
+  
+  .info-badge {
+    padding: 5px 10px;
+    font-size: 13px;
+  }
+  
+  .info-metrics {
+    gap: 10px;
+  }
+  
+  .metric-item {
+    padding: 8px 10px;
+  }
+  
+  .metric-icon {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .metric-icon svg {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .metric-label {
+    font-size: 10px;
+  }
+  
+  .metric-value {
+    font-size: 14px;
+  }
+  
+  /* Distribution section responsive */
+  .distribution-section {
+    gap: 10px;
+  }
+  
+  .distribution-title {
+    font-size: 11px;
+  }
+  
+  .distribution-total {
+    font-size: 14px;
+  }
+  
+  .segmented-bar {
+    height: 26px;
+    gap: 2px;
+  }
+  
+  .bar-segment-label {
+    font-size: 10px;
+  }
+  
+  .sector-cards {
+    gap: 8px;
+  }
+  
+  .sector-card {
+    min-width: 80px;
+  }
+  
+  .card-content {
+    padding: 10px;
+    gap: 4px;
+  }
+  
+  .card-name {
+    font-size: 10px;
+  }
+  
+  .card-value {
+    font-size: 14px;
+  }
+  
+  .card-percent {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .donut-chart-container {
+    padding: 10px;
+    gap: 8px;
+  }
+  
+  .donut-wrapper {
+    width: 140px;
+    height: 140px;
+  }
+  
+  .center-icon {
+    width: 32px;
+    height: 32px;
+    margin-bottom: 4px;
+  }
+  
+  .center-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .center-value {
+    font-size: 14px;
+  }
+  
+  .center-label {
+    font-size: 9px;
+  }
+  
+  .info-metrics {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .metric-item {
+    padding: 8px;
+  }
+  
+  /* Distribution section responsive small */
+  .segmented-bar-wrapper {
+    padding: 3px;
+    border-radius: 10px;
+  }
+  
+  .segmented-bar {
+    height: 22px;
+    border-radius: 6px;
+  }
+  
+  .bar-segment {
+    border-radius: 4px;
+    min-width: 6px;
+  }
+  
+  .bar-segment-label {
+    font-size: 9px;
+  }
+  
+  .sector-cards {
+    gap: 6px;
+  }
+  
+  .sector-card {
+    min-width: 70px;
+    border-radius: 10px;
+  }
+  
+  .card-color-bar {
+    height: 3px;
+  }
+  
+  .sector-card:hover .card-color-bar,
+  .sector-card.highlighted .card-color-bar {
+    height: 5px;
+  }
+  
+  .card-content {
+    padding: 8px;
+    gap: 3px;
+  }
+  
+  .card-dot {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .card-name {
+    font-size: 9px;
+  }
+  
+  .card-value {
+    font-size: 12px;
+  }
+  
+  .card-percent {
+    font-size: 10px;
+  }
+  
+  .currency-note {
+    font-size: 9px;
+  }
 }
 </style>

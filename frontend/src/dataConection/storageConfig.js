@@ -48,6 +48,12 @@ export const storageConfig = {
           cardIFSRegional: 'Hoja 1'
         }
       },
+      cuantitativosInternacional: {
+        sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID_RANKING_INTERNACIONAL,
+        files: {
+          datosInternacionales: '2020'
+        }
+      },
       // ✅ CUALITATIVOS REGIONALES
       cualitativoRegional: {
         estatusDelPais: {
@@ -289,7 +295,8 @@ export const storageConfig = {
       ambientalesRegional: '2024',
       socialesRegional: '2024',
       economicosRegional: '2024',
-      financiamientoRegional: '2024'
+      financiamientoRegional: '2024',
+      datosInternacionales: '2024'
     }
   },
   
@@ -1400,7 +1407,20 @@ export const storageConfig = {
         },
       ]
     },
-    
+//CUANTITATIVO INTERNACIONAL
+datosInternacionales: {
+      categoryColumn: 'País',
+      variables: [
+        {
+          key: 'IFS',
+          column: 'IFS',
+          label: 'IFS',
+          color: '#0F3759',
+          colorClass: 'blue',
+          order: 1
+        }
+      ]
+    },
 // CUANTITATIVOS REGIONALES
     chartsPresupuestosRegional: {
       stateColumn: 'Año',
@@ -1960,7 +1980,16 @@ export function getCurrentConfig() {
 export function getSheetIdForFile(fileKey) {
   const config = storageConfig.googlesheets
   
-  // ✅ PRIMERO: Buscar en sheets de CUALITATIVOS REGIONALES
+  // ✅ NUEVO: Buscar en sheets de CUANTITATIVOS INTERNACIONAL
+  if (config.sheets && config.sheets.cuantitativosInternacional) {
+    if (config.sheets.cuantitativosInternacional.files && 
+        config.sheets.cuantitativosInternacional.files[fileKey]) {
+      console.log(`📄 Archivo "${fileKey}" encontrado en cuantitativosInternacional`)
+      return config.sheets.cuantitativosInternacional.sheetId
+    }
+  }
+  
+  // ✅ Buscar en sheets de CUALITATIVOS REGIONALES
   if (config.sheets && config.sheets.cualitativoRegional) {
     for (const [componentKey, componentConfig] of Object.entries(config.sheets.cualitativoRegional)) {
       if (componentConfig.files && componentConfig.files[fileKey]) {
@@ -2081,17 +2110,27 @@ export function getSheetName(fileKey) {
     'presupuestoEstatal',
     'financiamientos',
     'programas',
-    // ✅ NUEVO: Archivos de cualitativos regionales
+    // Archivos de cualitativos regionales
     'estatusDelPais',
     'ambientalesRegional',
     'socialesRegional',
     'economicosRegional',
     'financiamientoRegional'
+    // ⚠️ NOTA: datosInternacionales NO usa año dinámico por defecto
+    // Si necesitas que use año dinámico, agrégalo aquí
   ]
   
   if (dynamicYearFiles.includes(fileKey)) {
     console.log(`📅 Nombre de hoja dinámico para "${fileKey}": ${currentActiveYear}`)
     return currentActiveYear
+  }
+  
+  // ✅ NUEVO: Buscar en configuración de cuantitativosInternacional
+  if (config.sheets && config.sheets.cuantitativosInternacional) {
+    if (config.sheets.cuantitativosInternacional.files && 
+        config.sheets.cuantitativosInternacional.files[fileKey]) {
+      return config.sheets.cuantitativosInternacional.files[fileKey]
+    }
   }
   
   // Buscar en configuración modular de cualitativos regionales
@@ -2164,6 +2203,7 @@ export function getSheetName(fileKey) {
   
   return config.files[fileKey] || fileKey
 }
+
 
 export function getMapping(mappingName) {
   const mapping = storageConfig.mappings[mappingName]
