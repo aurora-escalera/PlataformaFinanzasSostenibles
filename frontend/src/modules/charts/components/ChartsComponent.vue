@@ -1,76 +1,116 @@
 <!-- src/modules/charts/components/ChartsComponent.vue -->
-<!-- ✅ Para datos ESTATALES - usa columnas PT ($) e IT ($) -->
-<!-- ✅ CORREGIDO: Porcentaje en KPI cards = mismo valor que dentro de las barras -->
+<!-- ✅ REDISEÑADO: Layout 4 filas × 2 columnas -->
+<!-- Fila 1: IS (BarChart + Donut) -->
+<!-- Fila 2: IIC (BarChart + Donut) -->
+<!-- Fila 3: PS (BarChart + Donut) -->
+<!-- Fila 4: PIC (BarChart + Donut) -->
 <template>
-  <div class="charts-wrapper" :class="{ 'single-card': showingSingleCard }">
-
-    <!-- CARD 1: INGRESOS -->
-    <div v-if="!selectedVariable || selectedVariable.key === 'IS' || selectedVariable.key === 'IIC'" class="chart-card">
-      <div class="chart-card-header">
-        <h4 class="card-title">{{ cardTitleIngresos }}</h4>
-      </div>
+  <div class="charts-wrapper">
+    
+    <!-- Loading State -->
+    <div v-if="loading" class="loading-container">
+      <div class="spinner"></div>
+      <p>Cargando datos...</p>
+    </div>
+    
+    <!-- Error State -->
+    <div v-else-if="error" class="error-container">
+      <p>Error: {{ error }}</p>
+    </div>
+    
+    <!-- Charts Grid -->
+    <div v-else class="charts-grid">
       
-      <div class="chart-card-body">
-        <div v-if="loading" class="loading-container">
-          <div class="spinner"></div>
-          <p>Cargando datos...</p>
+      <!-- ============================================ -->
+      <!-- FILA 1: INGRESOS SOSTENIBLES (IS) -->
+      <!-- ============================================ -->
+      <div 
+        v-if="!selectedVariable || selectedVariable.key === 'IS'" 
+        class="chart-row"
+      >
+        <!-- Columna 1: BarChart IS -->
+        <div class="chart-card chart-card-no-header">
+          <div class="chart-card-body">
+            <BarChart 
+              :data="ingresosISData"
+              :title="'Ingreso Total vs Ingresos Sostenibles'"
+              :headerTitle="'Ingresos Sostenibles - ' + (selectedState || 'Sin selección') + ' • ' + (selectedYear || 'Todos')"
+              :selectedState="selectedState"
+              :selectedYear="selectedYear"
+            />
+          </div>
         </div>
         
-        <div v-else-if="error" class="error-container">
-          <p>Error: {{ error }}</p>
-        </div>
-        
-        <div v-else class="chart-col-bar">
-          <BarChart 
-            :data="ingresosData"
-            :title="ingresosTitleDynamic"
-            headerTitle="Análisis de Ingresos"
-            :selectedState="selectedState"
-            :selectedYear="selectedYear"
-          />
-        </div>
-        
-        <div v-if="!loading && !error" class="chart-col-donuts" :class="{ 'single-donut': showingSingleDonutIngresos }">
-          <div v-if="!selectedVariable || selectedVariable.key === 'IS'" class="donut-item">
-            <div class="donut-header-dark">
-              <div class="donut-header-icon green">
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                </svg>
-              </div>
-              <span class="donut-header-title">Componentes de Ingresos Sostenibles</span>
+        <!-- Columna 2: DonutChart IS -->
+        <div class="chart-card chart-card-no-header">
+          <div class="donut-header-blue">
+            <div class="donut-header-icon-blue">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+              </svg>
             </div>
+            <div class="donut-header-text">
+              <h4 class="donut-header-title">Componentes de Ingresos Sostenibles</h4>
+              <span class="donut-header-subtitle">{{ selectedState || 'Sin selección' }} • {{ selectedYear || 'Todos' }}</span>
+            </div>
+          </div>
+          <div class="chart-card-body donut-body">
             <DonutChart 
               v-if="sectoresIngresosSostenibles.length > 0"
-              :key="`is-${props.selectedState}-${sectoresIngresosSostenibles.length}`"
+              :key="`is-${selectedState}-${sectoresIngresosSostenibles.length}`"
               :data="donutIngresosSostenibles"
               title="IS"
               :subtitle="subtitleIngresosSostenibles"
-              :size="220"
+              :size="200"
               :variables="variablesIngresosSostenibles"
               :sectors="sectoresIngresosSostenibles"
             />
             <div v-else class="no-data-message">Sin datos disponibles</div>
           </div>
-          
-          <div v-if="!selectedVariable || selectedVariable.key === 'IIC'" class="donut-item">
-            <div class="donut-header-dark">
-              <div class="donut-header-icon red">
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                  <path d="M2 17l10 5 10-5"/>
-                  <path d="M2 12l10 5 10-5"/>
-                </svg>
-              </div>
-              <span class="donut-header-title">Componentes de Ingresos Intensivos en Carbono</span>
+        </div>
+      </div>
+      
+      <!-- ============================================ -->
+      <!-- FILA 2: INGRESOS INTENSIVOS EN CARBONO (IIC) -->
+      <!-- ============================================ -->
+      <div 
+        v-if="!selectedVariable || selectedVariable.key === 'IIC'" 
+        class="chart-row"
+      >
+        <!-- Columna 1: BarChart IIC -->
+        <div class="chart-card chart-card-no-header">
+          <div class="chart-card-body">
+            <BarChart 
+              :data="ingresosIICData"
+              :title="'Ingreso Total vs Ingresos Intensivos en Carbono'"
+              :headerTitle="'Ingresos Intensivos en Carbono - ' + (selectedState || 'Sin selección') + ' • ' + (selectedYear || 'Todos')"
+              :selectedState="selectedState"
+              :selectedYear="selectedYear"
+            />
+          </div>
+        </div>
+        
+        <!-- Columna 2: DonutChart IIC -->
+        <div class="chart-card chart-card-no-header">
+          <div class="donut-header-blue">
+            <div class="donut-header-icon-blue">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+              </svg>
             </div>
+            <div class="donut-header-text">
+              <h4 class="donut-header-title">Componentes de Ingresos Intensivos en Carbono</h4>
+              <span class="donut-header-subtitle">{{ selectedState || 'Sin selección' }} • {{ selectedYear || 'Todos' }}</span>
+            </div>
+          </div>
+          <div class="chart-card-body donut-body">
             <DonutChart 
               v-if="sectoresIngresosCarbono.length > 0"
-              :key="`iic-${props.selectedState}-${sectoresIngresosCarbono.length}`"
+              :key="`iic-${selectedState}-${sectoresIngresosCarbono.length}`"
               :data="donutIngresosCarbono"
               title="IIC"
               :subtitle="subtitleIngresosCarbono"
-              :size="220"
+              :size="200"
               :variables="variablesIngresosCarbono"
               :sectors="sectoresIngresosCarbono"
             />
@@ -78,75 +118,97 @@
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- CARD 2: PRESUPUESTOS -->
-    <div v-if="!selectedVariable || selectedVariable.key === 'PS' || selectedVariable.key === 'PIC'" class="chart-card">
-      <div class="chart-card-header">
-        <h4 class="card-title">{{ cardTitlePresupuestos }}</h4>
-      </div>
       
-      <div class="chart-card-body">
-        <div v-if="loading" class="loading-container">
-          <div class="spinner"></div>
-          <p>Cargando datos...</p>
+      <!-- ============================================ -->
+      <!-- FILA 3: PRESUPUESTOS SOSTENIBLES (PS) -->
+      <!-- ============================================ -->
+      <div 
+        v-if="!selectedVariable || selectedVariable.key === 'PS'" 
+        class="chart-row"
+      >
+        <!-- Columna 1: BarChart PS -->
+        <div class="chart-card chart-card-no-header">
+          <div class="chart-card-body">
+            <BarChart 
+              :data="presupuestosPSData"
+              :title="'Gasto Total vs Presupuestos Sostenibles'"
+              :headerTitle="'Presupuestos Sostenibles - ' + (selectedState || 'Sin selección') + ' • ' + (selectedYear || 'Todos')"
+              :selectedState="selectedState"
+              :selectedYear="selectedYear"
+            />
+          </div>
         </div>
         
-        <div v-else-if="error" class="error-container">
-          <p>Error: {{ error }}</p>
-        </div>
-        
-        <div v-else class="chart-col-bar">
-          <BarChart 
-            :data="presupuestosData"
-            :title="presupuestosTitleDynamic"
-            headerTitle="Análisis de Presupuestos"
-            :selectedState="selectedState"
-            :selectedYear="selectedYear"
-          />
-        </div>
-        
-        <div v-if="!loading && !error" class="chart-col-donuts" :class="{ 'single-donut': showingSingleDonutPresupuestos }">
-          <div v-if="!selectedVariable || selectedVariable.key === 'PS'" class="donut-item">
-            <div class="donut-header-dark">
-              <div class="donut-header-icon green">
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                </svg>
-              </div>
-              <span class="donut-header-title">Componentes de Presupuestos Sostenibles</span>
+        <!-- Columna 2: DonutChart PS -->
+        <div class="chart-card chart-card-no-header">
+          <div class="donut-header-blue">
+            <div class="donut-header-icon-blue">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+              </svg>
             </div>
+            <div class="donut-header-text">
+              <h4 class="donut-header-title">Componentes de Presupuestos Sostenibles</h4>
+              <span class="donut-header-subtitle">{{ selectedState || 'Sin selección' }} • {{ selectedYear || 'Todos' }}</span>
+            </div>
+          </div>
+          <div class="chart-card-body donut-body">
             <DonutChart 
               v-if="sectoresPresupuestosSostenibles.length > 0"
-              :key="`ps-${props.selectedState}-${sectoresPresupuestosSostenibles.length}`"
+              :key="`ps-${selectedState}-${sectoresPresupuestosSostenibles.length}`"
               :data="donutPresupuestosSostenibles"
               title="PS"
               :subtitle="subtitlePresupuestosSostenibles"
-              :size="220"
+              :size="200"
               :variables="variablesPresupuestosSostenibles"
               :sectors="sectoresPresupuestosSostenibles"
             />
             <div v-else class="no-data-message">Sin datos disponibles</div>
           </div>
-          
-          <div v-if="!selectedVariable || selectedVariable.key === 'PIC'" class="donut-item">
-            <div class="donut-header-dark">
-              <div class="donut-header-icon red">
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                  <path d="M2 17l10 5 10-5"/>
-                  <path d="M2 12l10 5 10-5"/>
-                </svg>
-              </div>
-              <span class="donut-header-title">Componentes de Presupuestos Intensivos en Carbono</span>
+        </div>
+      </div>
+      
+      <!-- ============================================ -->
+      <!-- FILA 4: PRESUPUESTOS INTENSIVOS EN CARBONO (PIC) -->
+      <!-- ============================================ -->
+      <div 
+        v-if="!selectedVariable || selectedVariable.key === 'PIC'" 
+        class="chart-row"
+      >
+        <!-- Columna 1: BarChart PIC -->
+        <div class="chart-card chart-card-no-header">
+          <div class="chart-card-body">
+            <BarChart 
+              :data="presupuestosPICData"
+              :title="'Gasto Total vs Presupuestos Intensivos en Carbono'"
+              :headerTitle="'Presupuestos Intensivos en Carbono - ' + (selectedState || 'Sin selección') + ' • ' + (selectedYear || 'Todos')"
+              :selectedState="selectedState"
+              :selectedYear="selectedYear"
+            />
+          </div>
+        </div>
+        
+        <!-- Columna 2: DonutChart PIC -->
+        <div class="chart-card chart-card-no-header">
+          <div class="donut-header-blue">
+            <div class="donut-header-icon-blue">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+              </svg>
             </div>
+            <div class="donut-header-text">
+              <h4 class="donut-header-title">Componentes de Presupuestos Intensivos en Carbono</h4>
+              <span class="donut-header-subtitle">{{ selectedState || 'Sin selección' }} • {{ selectedYear || 'Todos' }}</span>
+            </div>
+          </div>
+          <div class="chart-card-body donut-body">
             <DonutChart 
               v-if="sectoresPresupuestosCarbono.length > 0"
-              :key="`pic-${props.selectedState}-${sectoresPresupuestosCarbono.length}`"
+              :key="`pic-${selectedState}-${sectoresPresupuestosCarbono.length}`"
               :data="donutPresupuestosCarbono"
               title="PIC"
               :subtitle="subtitlePresupuestosCarbono"
-              :size="220"
+              :size="200"
               :variables="variablesPresupuestosCarbono"
               :sectors="sectoresPresupuestosCarbono"
             />
@@ -154,8 +216,8 @@
           </div>
         </div>
       </div>
+      
     </div>
-
   </div>
 </template>
 
@@ -173,10 +235,6 @@ const props = defineProps({
   ifssData: { type: Object, default: () => ({}) }
 })
 
-const showingSingleCard = computed(() => !!props.selectedVariable)
-const showingSingleDonutPresupuestos = computed(() => props.selectedVariable && (props.selectedVariable.key === 'PS' || props.selectedVariable.key === 'PIC'))
-const showingSingleDonutIngresos = computed(() => props.selectedVariable && (props.selectedVariable.key === 'IS' || props.selectedVariable.key === 'IIC'))
-
 const { fetchData, loading, error } = useStorageData()
 const dataLoaded = ref(false)
 const rawPresupuestosData = ref([])
@@ -185,19 +243,7 @@ const presupuestosMapping = getMapping('chartsPresupuestos')
 const ingresosMapping = getMapping('chartsIngresos')
 
 // ============================================================================
-// MAPEO DE COLUMNAS PARA POSICIÓN (sin porcentaje de columna)
-// ============================================================================
-
-// Mapeo de columnas de posición por tipo de variable
-const positionColumnMap = {
-  'presupuesto_total': null,
-  'presupuesto_sostenible': 'POS_PS',
-  'presupuesto_carbono': 'POS_PIC',
-  'ingresos_total': null,
-  'ingresos_sostenibles': 'POS_IS',
-  'ingresos_carbono': 'POS_IIC'
-}
-
+// CARGA DE DATOS
 // ============================================================================
 
 const loadChartData = async () => {
@@ -222,6 +268,10 @@ watch(() => props.selectedYear, async (newYear, oldYear) => {
   }
 })
 
+// ============================================================================
+// FILTRADO DE DATOS
+// ============================================================================
+
 const filteredPresupuestosData = computed(() => {
   if (!dataLoaded.value || !props.selectedState || !rawPresupuestosData.value.length) return []
   return rawPresupuestosData.value.filter(row => row[presupuestosMapping.stateColumn] === props.selectedState)
@@ -232,7 +282,10 @@ const filteredIngresosData = computed(() => {
   return rawIngresosData.value.filter(row => row[ingresosMapping.stateColumn] === props.selectedState)
 })
 
-// ✅ Función para limpiar valores numéricos
+// ============================================================================
+// UTILIDADES
+// ============================================================================
+
 const getCleanValue = (row, column) => {
   if (!row || !column) return 0
   const raw = row[column]
@@ -248,69 +301,166 @@ const getCleanValue = (row, column) => {
   return parseFloat(raw) || 0
 }
 
-// ✅ CORREGIDO: Función para calcular porcentaje respecto al total (igual que BarChart)
 const calculatePercentageOfTotal = (value, totalValue) => {
   if (!totalValue || totalValue === 0) return null
   return ((value / totalValue) * 100).toFixed(2)
 }
 
-// ✅ CORREGIDO: Función para transformar datos con porcentaje CALCULADO (no de columna)
-const transformSingleRowToBarChart = (row, mapping) => {
-  if (!row) return { variables: [] }
-  
-  // Primero, obtener el valor total (primera variable)
-  const totalColumn = mapping.variableColumns[0]?.column
-  const totalValue = totalColumn ? getCleanValue(row, totalColumn) : 0
-  
-  const variables = mapping.variableColumns.map((varConfig, index) => {
-    const value = getCleanValue(row, varConfig.column)
-    
-    // Obtener posición de la columna correspondiente
-    const positionColumn = positionColumnMap[varConfig.key]
-    const position = positionColumn ? getCleanValue(row, positionColumn) : null
-    
-    // ✅ CORREGIDO: Calcular porcentaje igual que BarChart (value / total * 100)
-    // Para el total (index 0), el porcentaje es null (no se muestra)
-    let percentage = null
-    if (index > 0 && totalValue > 0) {
-      percentage = calculatePercentageOfTotal(value, totalValue)
-    }
-    
-    return {
-      key: varConfig.key, 
-      label: varConfig.label, 
-      value,
-      color: varConfig.color, 
-      colorClass: varConfig.colorClass, 
-      order: varConfig.order || 0,
-      position: position || null,
-      percentage: percentage
-    }
-  })
-  
-  variables.sort((a, b) => a.order - b.order)
-  return { variables }
-}
+// ============================================================================
+// DATOS PARA BARCHARTS - INGRESOS
+// ============================================================================
 
-const presupuestosData = computed(() => {
-  if (!filteredPresupuestosData.value.length) return { variables: [] }
-  const result = transformSingleRowToBarChart(filteredPresupuestosData.value[0], presupuestosMapping)
-  if (props.selectedVariable && result.variables.length >= 3) {
-    if (props.selectedVariable.key === 'PS') result.variables = [result.variables[0], result.variables[1]].filter(v => v)
-    else if (props.selectedVariable.key === 'PIC') result.variables = [result.variables[0], result.variables[2]].filter(v => v)
-  }
-  return result
-})
-
-const ingresosData = computed(() => {
+// IS: Ingreso Total vs Ingresos Sostenibles
+const ingresosISData = computed(() => {
   if (!filteredIngresosData.value.length) return { variables: [] }
-  const result = transformSingleRowToBarChart(filteredIngresosData.value[0], ingresosMapping)
-  if (props.selectedVariable && result.variables.length >= 3) {
-    if (props.selectedVariable.key === 'IS') result.variables = [result.variables[0], result.variables[1]].filter(v => v)
-    else if (props.selectedVariable.key === 'IIC') result.variables = [result.variables[0], result.variables[2]].filter(v => v)
+  const row = filteredIngresosData.value[0]
+  
+  const itValue = getCleanValue(row, 'IT ($)')
+  const isValue = getCleanValue(row, 'IS ($)')
+  const isPercentage = calculatePercentageOfTotal(isValue, itValue)
+  const isPosition = getCleanValue(row, 'POS_IS')
+  
+  return {
+    variables: [
+      {
+        key: 'ingresos_total',
+        label: 'Ingreso Total',
+        value: itValue,
+        color: '#9ca3af',
+        colorClass: 'gray',
+        order: 1,
+        position: null,
+        percentage: null
+      },
+      {
+        key: 'ingresos_sostenibles',
+        label: 'Ingresos Sostenibles',
+        value: isValue,
+        color: '#7cb342',
+        colorClass: 'green',
+        order: 2,
+        position: isPosition || null,
+        percentage: isPercentage
+      }
+    ]
   }
-  return result
 })
+
+// IIC: Ingreso Total vs Ingresos Intensivos en Carbono
+const ingresosIICData = computed(() => {
+  if (!filteredIngresosData.value.length) return { variables: [] }
+  const row = filteredIngresosData.value[0]
+  
+  const itValue = getCleanValue(row, 'IT ($)')
+  const iicValue = getCleanValue(row, 'IIC ($)')
+  const iicPercentage = calculatePercentageOfTotal(iicValue, itValue)
+  const iicPosition = getCleanValue(row, 'POS_IIC')
+  
+  return {
+    variables: [
+      {
+        key: 'ingresos_total',
+        label: 'Ingreso Total',
+        value: itValue,
+        color: '#9ca3af',
+        colorClass: 'gray',
+        order: 1,
+        position: null,
+        percentage: null
+      },
+      {
+        key: 'ingresos_carbono',
+        label: 'Ingresos Intensivos en Carbono',
+        value: iicValue,
+        color: '#DC143C',
+        colorClass: 'red',
+        order: 2,
+        position: iicPosition || null,
+        percentage: iicPercentage
+      }
+    ]
+  }
+})
+
+// ============================================================================
+// DATOS PARA BARCHARTS - PRESUPUESTOS
+// ============================================================================
+
+// PS: Gasto Total vs Presupuestos Sostenibles
+const presupuestosPSData = computed(() => {
+  if (!filteredPresupuestosData.value.length) return { variables: [] }
+  const row = filteredPresupuestosData.value[0]
+  
+  const ptValue = getCleanValue(row, 'PT ($)')
+  const psValue = getCleanValue(row, 'PS ($)')
+  const psPercentage = calculatePercentageOfTotal(psValue, ptValue)
+  const psPosition = getCleanValue(row, 'POS_PS')
+  
+  return {
+    variables: [
+      {
+        key: 'presupuesto_total',
+        label: 'Gasto Total',
+        value: ptValue,
+        color: '#9ca3af',
+        colorClass: 'gray',
+        order: 1,
+        position: null,
+        percentage: null
+      },
+      {
+        key: 'presupuesto_sostenible',
+        label: 'Presupuestos Sostenibles',
+        value: psValue,
+        color: '#7cb342',
+        colorClass: 'green',
+        order: 2,
+        position: psPosition || null,
+        percentage: psPercentage
+      }
+    ]
+  }
+})
+
+// PIC: Gasto Total vs Presupuestos Intensivos en Carbono
+const presupuestosPICData = computed(() => {
+  if (!filteredPresupuestosData.value.length) return { variables: [] }
+  const row = filteredPresupuestosData.value[0]
+  
+  const ptValue = getCleanValue(row, 'PT ($)')
+  const picValue = getCleanValue(row, 'PIC ($)')
+  const picPercentage = calculatePercentageOfTotal(picValue, ptValue)
+  const picPosition = getCleanValue(row, 'POS_PIC')
+  
+  return {
+    variables: [
+      {
+        key: 'presupuesto_total',
+        label: 'Gasto Total',
+        value: ptValue,
+        color: '#9ca3af',
+        colorClass: 'gray',
+        order: 1,
+        position: null,
+        percentage: null
+      },
+      {
+        key: 'presupuesto_carbono',
+        label: 'Presupuestos Intensivos en Carbono',
+        value: picValue,
+        color: '#DC143C',
+        colorClass: 'red',
+        order: 2,
+        position: picPosition || null,
+        percentage: picPercentage
+      }
+    ]
+  }
+})
+
+// ============================================================================
+// DATOS PARA DONUTS - CÁLCULO COMÚN
+// ============================================================================
 
 const calculateDonutData = (row, sectorsConfig, totalValue) => {
   if (!row || !sectorsConfig || !totalValue) return { mainPercentage: 0, sectors: [] }
@@ -318,45 +468,24 @@ const calculateDonutData = (row, sectorsConfig, totalValue) => {
   const sectors = sectorsConfig.map(sectorConfig => {
     const value = getCleanValue(row, sectorConfig.column)
     sectorsTotal += value
-    return { key: sectorConfig.key, label: sectorConfig.label, value, color: sectorConfig.color, colorClass: sectorConfig.colorClass }
+    return { 
+      key: sectorConfig.key, 
+      label: sectorConfig.label, 
+      value, 
+      color: sectorConfig.color, 
+      colorClass: sectorConfig.colorClass 
+    }
   })
-  return { mainPercentage: totalValue > 0 ? Math.round((sectorsTotal / totalValue) * 100) : 0, sectors }
+  return { 
+    mainPercentage: totalValue > 0 ? Math.round((sectorsTotal / totalValue) * 100) : 0, 
+    sectors 
+  }
 }
 
-// ✅ ESTATALES: Columna PT ($) para presupuestos
-const donutPresupuestosSostenibles = computed(() => {
-  if (!filteredPresupuestosData.value.length) return [{ label: 'PS', value: 0, color: '#7cb342' }, { label: 'Resto', value: 100, color: '#E8E8E8' }]
-  const row = filteredPresupuestosData.value[0]
-  const total = getCleanValue(row, 'PT ($)')
-  const data = calculateDonutData(row, presupuestosMapping.donutSectorsPS || [], total)
-  return [{ label: 'PS', value: data.mainPercentage, color: '#7cb342' }, { label: 'Resto', value: 100 - data.mainPercentage, color: '#E8E8E8' }]
-})
+// ============================================================================
+// DONUTS - INGRESOS SOSTENIBLES (IS)
+// ============================================================================
 
-const sectoresPresupuestosSostenibles = computed(() => {
-  if (!filteredPresupuestosData.value.length) return []
-  const row = filteredPresupuestosData.value[0]
-  return calculateDonutData(row, presupuestosMapping.donutSectorsPS || [], getCleanValue(row, 'PT ($)')).sectors
-})
-
-const subtitlePresupuestosSostenibles = computed(() => `${donutPresupuestosSostenibles.value[0].value}%`)
-
-const donutPresupuestosCarbono = computed(() => {
-  if (!filteredPresupuestosData.value.length) return [{ label: 'PIC', value: 0, color: '#DC143C' }, { label: 'Resto', value: 100, color: '#E8E8E8' }]
-  const row = filteredPresupuestosData.value[0]
-  const total = getCleanValue(row, 'PT ($)')
-  const data = calculateDonutData(row, presupuestosMapping.donutSectorsPIC || [], total)
-  return [{ label: 'PIC', value: data.mainPercentage, color: '#DC143C' }, { label: 'Resto', value: 100 - data.mainPercentage, color: '#E8E8E8' }]
-})
-
-const sectoresPresupuestosCarbono = computed(() => {
-  if (!filteredPresupuestosData.value.length) return []
-  const row = filteredPresupuestosData.value[0]
-  return calculateDonutData(row, presupuestosMapping.donutSectorsPIC || [], getCleanValue(row, 'PT ($)')).sectors
-})
-
-const subtitlePresupuestosCarbono = computed(() => `${donutPresupuestosCarbono.value[0].value}%`)
-
-// ✅ ESTATALES: Columna IT ($) para ingresos
 const donutIngresosSostenibles = computed(() => {
   if (!filteredIngresosData.value.length) return [{ label: 'IS', value: 0, color: '#7cb342' }, { label: 'Resto', value: 100, color: '#E8E8E8' }]
   const row = filteredIngresosData.value[0]
@@ -372,6 +501,15 @@ const sectoresIngresosSostenibles = computed(() => {
 })
 
 const subtitleIngresosSostenibles = computed(() => `${donutIngresosSostenibles.value[0].value}%`)
+
+const variablesIngresosSostenibles = computed(() => {
+  const sectors = ingresosMapping?.donutSectorsIS || []
+  return sectors.map(s => ({ key: s.key, label: s.label, colorClass: s.colorClass, active: true }))
+})
+
+// ============================================================================
+// DONUTS - INGRESOS INTENSIVOS EN CARBONO (IIC)
+// ============================================================================
 
 const donutIngresosCarbono = computed(() => {
   if (!filteredIngresosData.value.length) return [{ label: 'IIC', value: 0, color: '#DC143C' }, { label: 'Resto', value: 100, color: '#E8E8E8' }]
@@ -389,180 +527,202 @@ const sectoresIngresosCarbono = computed(() => {
 
 const subtitleIngresosCarbono = computed(() => `${donutIngresosCarbono.value[0].value}%`)
 
-const presupuestosTitleDynamic = computed(() => {
-  const yearSuffix = props.selectedYear ? ` en ${props.selectedYear}` : ''
-  if (props.selectedVariable?.key === 'PS') return `Presupuestos Sostenibles (PS) con respecto al Presupuesto Total (PT)${yearSuffix}`
-  if (props.selectedVariable?.key === 'PIC') return `Presupuestos Intensivos en Carbono (PIC) con respecto al Presupuesto Total (PT)${yearSuffix}`
-  return `Presupuestos Intensivos en Carbono (PIC) y Presupuestos Sostenibles (PS) con respecto del gasto total${yearSuffix}`
+const variablesIngresosCarbono = computed(() => {
+  const sectors = ingresosMapping?.donutSectorsIIC || []
+  return sectors.map(s => ({ key: s.key, label: s.label, colorClass: s.colorClass, active: true }))
 })
 
-const ingresosTitleDynamic = computed(() => {
-  const yearSuffix = props.selectedYear ? ` en ${props.selectedYear}` : ''
-  if (props.selectedVariable?.key === 'IS') return `Ingresos Sostenibles (IS) con respecto al Ingreso Total (IT)${yearSuffix}`
-  if (props.selectedVariable?.key === 'IIC') return `Ingresos Intensivos en Carbono (IIC) con respecto al Ingreso Total (IT)${yearSuffix}`
-  return `Proporción del gasto asignado a Ingresos${yearSuffix}`
+// ============================================================================
+// DONUTS - PRESUPUESTOS SOSTENIBLES (PS)
+// ============================================================================
+
+const donutPresupuestosSostenibles = computed(() => {
+  if (!filteredPresupuestosData.value.length) return [{ label: 'PS', value: 0, color: '#7cb342' }, { label: 'Resto', value: 100, color: '#E8E8E8' }]
+  const row = filteredPresupuestosData.value[0]
+  const total = getCleanValue(row, 'PT ($)')
+  const data = calculateDonutData(row, presupuestosMapping.donutSectorsPS || [], total)
+  return [{ label: 'PS', value: data.mainPercentage, color: '#7cb342' }, { label: 'Resto', value: 100 - data.mainPercentage, color: '#E8E8E8' }]
 })
 
-const cardTitlePresupuestos = computed(() => {
-  if (!props.selectedState) return 'Selecciona un estado'
-  return `Presupuestos - ${props.selectedState}${props.selectedYear ? ` - ${props.selectedYear}` : ''}`
+const sectoresPresupuestosSostenibles = computed(() => {
+  if (!filteredPresupuestosData.value.length) return []
+  const row = filteredPresupuestosData.value[0]
+  return calculateDonutData(row, presupuestosMapping.donutSectorsPS || [], getCleanValue(row, 'PT ($)')).sectors
 })
 
-const cardTitleIngresos = computed(() => {
-  if (!props.selectedState) return 'Selecciona un estado'
-  return `Ingresos - ${props.selectedState}${props.selectedYear ? ` - ${props.selectedYear}` : ''}`
-})
+const subtitlePresupuestosSostenibles = computed(() => `${donutPresupuestosSostenibles.value[0].value}%`)
 
-// Variables para leyenda de donas
 const variablesPresupuestosSostenibles = computed(() => {
   const sectors = presupuestosMapping?.donutSectorsPS || []
   return sectors.map(s => ({ key: s.key, label: s.label, colorClass: s.colorClass, active: true }))
 })
 
+// ============================================================================
+// DONUTS - PRESUPUESTOS INTENSIVOS EN CARBONO (PIC)
+// ============================================================================
+
+const donutPresupuestosCarbono = computed(() => {
+  if (!filteredPresupuestosData.value.length) return [{ label: 'PIC', value: 0, color: '#DC143C' }, { label: 'Resto', value: 100, color: '#E8E8E8' }]
+  const row = filteredPresupuestosData.value[0]
+  const total = getCleanValue(row, 'PT ($)')
+  const data = calculateDonutData(row, presupuestosMapping.donutSectorsPIC || [], total)
+  return [{ label: 'PIC', value: data.mainPercentage, color: '#DC143C' }, { label: 'Resto', value: 100 - data.mainPercentage, color: '#E8E8E8' }]
+})
+
+const sectoresPresupuestosCarbono = computed(() => {
+  if (!filteredPresupuestosData.value.length) return []
+  const row = filteredPresupuestosData.value[0]
+  return calculateDonutData(row, presupuestosMapping.donutSectorsPIC || [], getCleanValue(row, 'PT ($)')).sectors
+})
+
+const subtitlePresupuestosCarbono = computed(() => `${donutPresupuestosCarbono.value[0].value}%`)
+
 const variablesPresupuestosCarbono = computed(() => {
   const sectors = presupuestosMapping?.donutSectorsPIC || []
-  return sectors.map(s => ({ key: s.key, label: s.label, colorClass: s.colorClass, active: true }))
-})
-
-const variablesIngresosSostenibles = computed(() => {
-  const sectors = ingresosMapping?.donutSectorsIS || []
-  return sectors.map(s => ({ key: s.key, label: s.label, colorClass: s.colorClass, active: true }))
-})
-
-const variablesIngresosCarbono = computed(() => {
-  const sectors = ingresosMapping?.donutSectorsIIC || []
   return sectors.map(s => ({ key: s.key, label: s.label, colorClass: s.colorClass, active: true }))
 })
 </script>
 
 <style scoped>
+/* ============================================
+   CONTENEDOR PRINCIPAL
+   ============================================ */
 .charts-wrapper {
-  margin-top: 10px;
+  width: 100%;
+  padding: 10px;
+}
+
+/* ============================================
+   GRID DE CHARTS - 4 FILAS
+   ============================================ */
+.charts-grid {
   display: flex;
   flex-direction: column;
   gap: 20px;
   width: 100%;
-  height: 100%;
 }
 
-.charts-wrapper.single-card { align-items: center; }
-.charts-wrapper.single-card .chart-card { height: 55%; max-height: 100%; }
+/* ============================================
+   FILA - 2 COLUMNAS
+   ============================================ */
+.chart-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  width: 100%;
+}
 
+/* ============================================
+   CARD DE CHART
+   ============================================ */
 .chart-card {
   display: flex;
   flex-direction: column;
-  width: 100%;
-  height: 100%;
   background: white;
   border-radius: 12px;
-  padding: 12px;
-  border: 1px solid #1a365d;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.182);
-  box-sizing: border-box;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  min-height: 320px;
+}
+
+/* Card sin header externo - para BarCharts que tienen su propio header azul */
+.chart-card-no-header {
+  padding: 0;
+  overflow: hidden;
+}
+
+.chart-card-no-header .chart-card-body {
+  padding: 0;
+  margin: 0;
 }
 
 .chart-card-header {
   display: flex;
-  width: 100%;
-  padding: 10px;
-  margin-bottom: 10px;
-  border-bottom: 1px solid #163C5F;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .card-title {
-  padding: 4px 0 2px 0;
-  text-align: left;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-weight: 100;
-  color: #163C5F;
-  font-size: 19px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
   margin: 0;
+  line-height: 1.3;
 }
 
 .chart-card-body {
-  display: flex;
-  flex-direction: row;
-  gap: 15px;
-  width: 100%;
-  height: 100%;
   flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 250px;
 }
 
-.chart-col-bar {
-  flex: 1;
-  height: 100%;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  padding: 15px;
-  border-radius: 12px;
-  background: white;
+.chart-card-body.donut-body {
+  padding: 10px;
 }
 
-.chart-col-donuts {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: row;
-  gap: 15px;
-  padding: 15px;
-  border-radius: 12px;
-  background: white;
-}
-
-.chart-col-donuts.single-donut { justify-content: center; }
-.chart-col-donuts.single-donut .donut-item { max-width: 100%; }
-
-.donut-item {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  border-radius: 12px;
-  min-height: 0;
-  flex: 1;
-  padding: 0 0 15px 0;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
-  overflow: hidden;
-}
-
-.donut-item:first-child:last-child { max-width: 100%; }
-
-.donut-header-dark {
+/* ============================================
+   HEADER AZUL PARA DONUTS (igual que BarChart)
+   ============================================ */
+.donut-header-blue {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 12px;
+  padding: 13px 12px 13px 14px;
   background: linear-gradient(135deg, #1e3a5f 0%, #153d5e 100%);
   border-radius: 12px 12px 0 0;
   flex-shrink: 0;
-  width: 100%;
 }
 
-.donut-header-icon {
-  width: 20px;
-  height: 20px;
-  min-width: 20px;
-  border-radius: 4px;
+.donut-header-icon-blue {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border-radius: 6px;
   background: rgba(255, 255, 255, 0.15);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: #93c5fd;
 }
 
-.donut-header-icon.green { color: #86efac; }
-.donut-header-icon.red { color: #fca5a5; }
-.donut-header-icon svg { width: 12px; height: 12px; }
+.donut-header-icon-blue svg {
+  width: 12px;
+  height: 12px;
+}
+
+.donut-header-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
 
 .donut-header-title {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 600;
   color: white;
+  margin: 0;
   line-height: 1.2;
-  letter-spacing: 0.2px;
 }
 
+.donut-header-subtitle {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 10px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.2;
+}
+
+/* ============================================
+   ESTADOS DE CARGA Y ERROR
+   ============================================ */
 .loading-container,
 .error-container {
   display: flex;
@@ -570,19 +730,18 @@ const variablesIngresosCarbono = computed(() => {
   align-items: center;
   justify-content: center;
   width: 100%;
-  height: 100%;
-  min-height: 200px;
-  color: #666;
+  min-height: 400px;
+  color: #64748b;
 }
 
 .spinner {
   width: 40px;
   height: 40px;
-  border: 4px solid #f3f3f3;
+  border: 4px solid #e2e8f0;
   border-top: 4px solid #7cb342;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin-bottom: 10px;
+  margin-bottom: 16px;
 }
 
 @keyframes spin {
@@ -590,7 +749,9 @@ const variablesIngresosCarbono = computed(() => {
   100% { transform: rotate(360deg); }
 }
 
-.error-container { color: #DC143C; }
+.error-container {
+  color: #DC143C;
+}
 
 .no-data-message {
   display: flex;
@@ -599,74 +760,37 @@ const variablesIngresosCarbono = computed(() => {
   width: 100%;
   height: 100%;
   min-height: 200px;
-  color: rgba(255, 255, 255, 0.6);
+  color: #94a3b8;
   font-size: 14px;
+  font-style: italic;
 }
 
 /* ============================================
-   RESPONSIVE - Media Queries
+   RESPONSIVE - TABLETS
    ============================================ */
-
-@media (max-width: 1200px) {
-  .chart-card-body { flex-direction: column; }
-  .chart-col-donuts { flex-direction: row; flex: 1; }
-}
-
-/* Tablets */
-@media (max-width: 768px) {
-  .charts-wrapper {
+@media (max-width: 1024px) {
+  .chart-row {
+    grid-template-columns: 1fr;
     gap: 16px;
-    margin-top: 8px;
   }
   
   .chart-card {
-    padding: 10px;
-    border-radius: 10px;
-  }
-  
-  .chart-card-header {
-    padding: 8px;
-    margin-bottom: 8px;
-  }
-  
-  .card-title {
-    font-size: 14px;
-    padding: 2px 0;
-  }
-  
-  .chart-card-body {
-    flex-direction: column;
-    gap: 12px;
-  }
-  
-  .chart-col-bar {
-    padding: 10px;
     min-height: 300px;
   }
   
-  .chart-col-donuts {
-    flex-direction: column;
-    gap: 12px;
-    padding: 10px;
-  }
-  
-  .donut-item {
-    min-height: 280px;
-    border-radius: 10px;
-  }
-  
-  .donut-header-dark {
+  .donut-header-blue {
     padding: 8px 10px;
     gap: 6px;
   }
   
-  .donut-header-icon {
-    width: 18px;
-    height: 18px;
-    min-width: 18px;
+  .donut-header-icon-blue {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    border-radius: 5px;
   }
   
-  .donut-header-icon svg {
+  .donut-header-icon-blue svg {
     width: 10px;
     height: 10px;
   }
@@ -675,149 +799,159 @@ const variablesIngresosCarbono = computed(() => {
     font-size: 11px;
   }
   
-  .loading-container,
-  .error-container {
-    min-height: 150px;
-  }
-  
-  .spinner {
-    width: 30px;
-    height: 30px;
-    border-width: 3px;
-  }
-  
-  .no-data-message {
-    min-height: 150px;
-    font-size: 12px;
+  .donut-header-subtitle {
+    font-size: 9px;
   }
 }
 
-/* Móviles pequeños */
-@media (max-width: 480px) {
+/* ============================================
+   RESPONSIVE - MÓVILES
+   ============================================ */
+@media (max-width: 768px) {
   .charts-wrapper {
+    padding: 8px;
+  }
+  
+  .charts-grid {
+    gap: 16px;
+  }
+  
+  .chart-row {
     gap: 12px;
-    margin-top: 6px;
   }
   
   .chart-card {
-    padding: 8px;
-    border-radius: 8px;
+    padding: 12px;
+    border-radius: 10px;
+    min-height: 280px;
+  }
+  
+  .chart-card-no-header {
+    padding: 0;
   }
   
   .chart-card-header {
-    padding: 6px;
-    margin-bottom: 6px;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+    gap: 8px;
   }
   
   .card-title {
     font-size: 12px;
   }
   
-  .chart-card-body {
-    gap: 10px;
+  .donut-header-blue {
+    padding: 8px 10px;
+    gap: 6px;
   }
   
-  .chart-col-bar {
-    padding: 8px;
+  .donut-header-icon-blue {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    border-radius: 5px;
+  }
+  
+  .donut-header-icon-blue svg {
+    width: 10px;
+    height: 10px;
+  }
+  
+  .donut-header-title {
+    font-size: 11px;
+  }
+  
+  .donut-header-subtitle {
+    font-size: 9px;
+  }
+  
+  .chart-card-body {
+    min-height: 220px;
+  }
+}
+
+/* ============================================
+   RESPONSIVE - MÓVILES PEQUEÑOS
+   ============================================ */
+@media (max-width: 480px) {
+  .charts-wrapper {
+    padding: 6px;
+  }
+  
+  .charts-grid {
+    gap: 12px;
+  }
+  
+  .chart-card {
+    padding: 10px;
+    border-radius: 8px;
     min-height: 260px;
   }
   
-  .chart-col-donuts {
-    gap: 10px;
-    padding: 8px;
+  .chart-card-no-header {
+    padding: 0;
   }
   
-  .donut-item {
-    min-height: 250px;
-    border-radius: 8px;
-    padding: 0 0 10px 0;
+  .chart-card-header {
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+    gap: 6px;
   }
   
-  .donut-header-dark {
+  .card-title {
+    font-size: 11px;
+  }
+  
+  .donut-header-blue {
     padding: 6px 8px;
     gap: 5px;
-    border-radius: 8px 8px 0 0;
   }
   
-  .donut-header-icon {
-    width: 16px;
-    height: 16px;
-    min-width: 16px;
-    border-radius: 3px;
+  .donut-header-icon-blue {
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    border-radius: 4px;
   }
   
-  .donut-header-icon svg {
+  .donut-header-icon-blue svg {
     width: 9px;
     height: 9px;
   }
   
   .donut-header-title {
     font-size: 10px;
-    letter-spacing: 0.1px;
   }
   
-  .loading-container,
-  .error-container {
-    min-height: 120px;
-    font-size: 12px;
-  }
-  
-  .spinner {
-    width: 24px;
-    height: 24px;
-    border-width: 2px;
-    margin-bottom: 8px;
-  }
-  
-  .no-data-message {
-    min-height: 120px;
-    font-size: 11px;
-  }
-}
-
-/* Landscape en móviles */
-@media (max-width: 768px) and (orientation: landscape) {
-  .charts-wrapper {
-    gap: 10px;
-  }
-  
-  .chart-card {
-    padding: 8px;
-  }
-  
-  .chart-card-header {
-    padding: 6px;
-    margin-bottom: 6px;
-  }
-  
-  .card-title {
-    font-size: 12px;
+  .donut-header-subtitle {
+    font-size: 8px;
   }
   
   .chart-card-body {
-    flex-direction: row;
-    gap: 10px;
-  }
-  
-  .chart-col-bar {
-    flex: 1;
     min-height: 200px;
-    padding: 8px;
   }
   
-  .chart-col-donuts {
-    flex: 1;
-    flex-direction: row;
-    gap: 8px;
-    padding: 8px;
+  .no-data-message {
+    font-size: 12px;
+    min-height: 150px;
+  }
+}
+
+/* ============================================
+   RESPONSIVE - LANDSCAPE MÓVIL
+   ============================================ */
+@media (max-width: 768px) and (orientation: landscape) {
+  .chart-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
   }
   
-  .donut-item {
+  .chart-card {
+    min-height: 240px;
+  }
+  
+  .chart-card-body {
     min-height: 180px;
-  }
-  
-  .donut-header-title {
-    font-size: 9px;
   }
 }
 </style>

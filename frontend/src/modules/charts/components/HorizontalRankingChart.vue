@@ -131,9 +131,9 @@
           <div class="tooltip-color" :style="{ backgroundColor: tooltip.color }"></div>
           <div class="tooltip-info">
             <div class="tooltip-label">{{ tooltip.label }}</div>
-            <div class="tooltip-value">
-              {{ tooltip.isNoData ? 'Sin datos disponibles' : `${currentVariableKey || 'IFSS'}: ${formatValue(tooltip.value)}` }}
-            </div>
+              <div class="tooltip-value">
+                {{ tooltip.isNoData ? 'Sin datos disponibles' : `${currentVariableKey || 'IFSS'}: ${formatValue(tooltip.value)}` }}
+              </div>
             <div class="tooltip-classification">{{ tooltip.classification }}</div>
           </div>
         </div>
@@ -181,9 +181,8 @@ const isSelectionActive = ref(true)
 const isNoData = (value) => {
   if (value === null || value === undefined || value === '') return true
   
-  // Convertir a número y verificar si es 0 o muy cercano a 0
   const numValue = parseFloat(value)
-  return isNaN(numValue) || numValue === 0 || Math.abs(numValue) < 0.005
+  return isNaN(numValue) || numValue === 0
 }
 
 // Obtener la key de la variable actual
@@ -664,8 +663,17 @@ const formatValue = (value) => {
     return props.valueFormatter(value)
   }
   if (typeof value === 'number') {
-    // Truncar a 2 decimales sin redondear
-    return Math.floor(value * 100) / 100
+    const variableKey = props.selectedVariable?.key
+    
+    // Si es una variable específica (IS, IIC, PS, PIC), 3 decimales + '%'
+    if (variableKey === 'IS' || variableKey === 'IIC' || variableKey === 'PS' || variableKey === 'PIC') {
+      const truncated = Math.trunc(value * 1000) / 1000
+      return truncated.toFixed(3) + '%'
+    }
+    
+    // Todas las variables (IFSS): 2 decimales
+    const truncated = Math.trunc(value * 100) / 100
+    return truncated.toFixed(2)
   }
   return value
 }
@@ -891,6 +899,7 @@ const formatValue = (value) => {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   min-width: 36px;
   box-sizing: border-box;
+  padding-left: 60px; 
 }
 
 .bar-row.is-hovered .bar-horizontal {
