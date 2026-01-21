@@ -1,190 +1,181 @@
 <!-- src/modules/charts/components/DonutChart.vue -->
-<!-- ✅ PROPUESTA A: Dona Izquierda + Info Derecha (Vertical) -->
+<!-- ✅ ACTUALIZADO: Mejor centrado vertical, letra más grande, mejor distribución del espacio -->
 <template>
   <div class="donut-chart-container">
     
-    <!-- Layout principal: Info | Dona -->
-    <div class="donut-layout">
-      
-      <!-- LADO IZQUIERDO: Información (centrado) -->
-      <div class="info-side">
-        
-        <!-- Header con título y badge -->
-        <div class="info-header">
-          <div class="info-title-section">
-            <h3 class="info-title">{{ badgeTitle }}</h3>
-            <div class="info-subtitle">{{ selectedYear }}</div>
-          </div>
-          <div class="info-badge" :class="badgeColorClass">
-            {{ mainPercentage }}%
-          </div>
-        </div>
-        
-        <!-- Métricas principales -->
-        <div class="info-metrics">
-          <div class="metric-item">
-            <div class="metric-icon">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-              </svg>
-            </div>
-            <div class="metric-info">
-              <span class="metric-label">Total</span>
-              <span class="metric-value" :class="badgeColorClass">{{ displayValue }}</span>
-            </div>
-          </div>
-          
-          <div class="metric-item" v-if="position">
-            <div class="metric-icon">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-              </svg>
-            </div>
-            <div class="metric-info">
-              <span class="metric-label">Posición</span>
-              <span class="metric-value position">#{{ position }}</span>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Separador -->
-        <div class="info-divider"></div>
-        
-      </div>
-      
-      <!-- LADO DERECHO: Dona -->
-      <div class="donut-side">
-        <div class="donut-wrapper">
-          <svg 
-            class="donut-svg" 
-            :viewBox="`0 0 ${svgSize} ${svgSize}`"
-          >
-            <!-- Círculo de fondo -->
-            <circle 
-              class="donut-background"
-              :cx="center" 
-              :cy="center" 
-              :r="radius"
-              fill="none"
-              stroke="#f1f5f9"
-              :stroke-width="strokeWidth"
-            />
-            
-            <!-- Segmentos de la dona -->
-            <circle
-              v-for="(segment, index) in animatedSegments"
-              :key="'segment-' + index"
-              class="donut-segment"
-              :class="{ 
-                'dimmed': !activeSectors[index] || (hoveredIndex !== null && hoveredIndex !== index),
-                'highlighted': hoveredIndex === index
-              }"
-              :cx="center"
-              :cy="center"
-              :r="radius"
-              fill="none"
-              :stroke="segment.color"
-              :stroke-width="hoveredIndex === index ? strokeWidth + 6 : strokeWidth"
-              :stroke-dasharray="segment.dashArray"
-              :stroke-dashoffset="segment.dashOffset"
-              stroke-linecap="butt"
-              style="transform: rotate(-90deg); transform-origin: center;"
-              @mouseenter="onSectorHover(index)"
-              @mouseleave="onSectorLeave"
-              @click="toggleSector(index)"
-            />
+    <!-- ========== ESTADO VACÍO: Cuando no hay datos ========== -->
+    <div v-if="isEmptyState" class="empty-state-container">
+      <div class="empty-state-content" :class="badgeColorClass">
+        <!-- Icono -->
+        <div class="empty-icon" :class="badgeColorClass">
+          <svg v-if="badgeColorClass === 'green'" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="M9 12h6M12 9v6" stroke-linecap="round"/>
           </svg>
-          
-          <!-- Centro de la dona -->
-          <div class="donut-center">
-            <div class="center-icon" :class="badgeColorClass">
-              <svg v-if="badgeColorClass === 'green'" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-              </svg>
-              <svg v-else width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                <path d="M2 17l10 5 10-5"/>
-                <path d="M2 12l10 5 10-5"/>
-              </svg>
-            </div>
-            <div class="center-value" :class="badgeColorClass">{{ displayValue }}</div>
-            <div class="center-label">{{ badgeSubtitle }}</div>
-          </div>
+          <svg v-else width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
+          </svg>
+        </div>
+        
+        <!-- Título -->
+        <h3 class="empty-title">{{ emptyStateTitle }}</h3>
+        
+        <!-- Descripción -->
+        <p class="empty-description">{{ emptyStateDescription }}</p>
+        
+        <!-- Badge con año -->
+        <div class="empty-badge" :class="badgeColorClass">
+          <span class="empty-badge-label">{{ badgeSubtitle }}</span>
         </div>
       </div>
-      
     </div>
     
-    <!-- Barra de distribución con cards -->
-    <div class="distribution-section">
-      
-      <!-- Header de distribución -->
-      <div class="distribution-header">
-        <span class="distribution-title">Distribución por componente</span>
-        <span class="distribution-total" :class="badgeColorClass">{{ displayValue }}</span>
+    <!-- ========== ESTADO NORMAL: Con datos ========== -->
+    <template v-else>
+      <!-- Layout principal: Dona | Lista de Sectores -->
+      <div class="donut-layout">
+        
+        <!-- LADO IZQUIERDO: Dona centrada verticalmente -->
+        <div class="donut-side">
+          <div class="donut-content">
+            <div class="donut-wrapper">
+              <svg 
+                class="donut-svg" 
+                :viewBox="`0 0 ${svgSize} ${svgSize}`"
+              >
+                <!-- Círculo de fondo -->
+                <circle 
+                  class="donut-background"
+                  :cx="center" 
+                  :cy="center" 
+                  :r="radius"
+                  fill="none"
+                  stroke="#f1f5f9"
+                  :stroke-width="strokeWidth"
+                />
+                
+                <!-- Segmentos de la dona usando paths -->
+                <path
+                  v-for="(segment, index) in arcSegments"
+                  :key="'segment-' + index"
+                  class="donut-segment"
+                  :class="{ 
+                    'dimmed': !activeSectors[index] || (hoveredIndex !== null && hoveredIndex !== index),
+                    'highlighted': hoveredIndex === index
+                  }"
+                  :d="segment.path"
+                  fill="none"
+                  :stroke="segment.color"
+                  :stroke-width="strokeWidth"
+                  stroke-linecap="butt"
+                  @mouseenter="onSectorHover(index)"
+                  @mouseleave="onSectorLeave"
+                  @click="toggleSector(index)"
+                />
+              </svg>
+              
+              <!-- Centro de la dona -->
+              <div class="donut-center">
+                <div class="center-icon" :class="badgeColorClass">
+                  <svg v-if="badgeColorClass === 'green'" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  </svg>
+                  <svg v-else width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                    <path d="M2 17l10 5 10-5"/>
+                    <path d="M2 12l10 5 10-5"/>
+                  </svg>
+                </div>
+                <div class="center-value" :class="badgeColorClass">{{ displayValue }}</div>
+                <div class="center-label">{{ badgeSubtitle }}</div>
+              </div>
+            </div>
+            
+            <!-- Info debajo de la dona -->
+            <div class="donut-info">
+              <div class="info-badge" :class="badgeColorClass">
+                {{ mainPercentage }}%
+              </div>
+              <div class="info-year">{{ selectedYear }}</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- LADO DERECHO: Lista de Sectores centrada verticalmente -->
+        <div class="sectors-side">
+          <div class="sectors-content">
+            <div class="sectors-header">
+              <span class="sectors-title">{{ badgeTitle }}</span>
+            </div>
+            
+            <!-- Lista de sectores estilo imagen 2 -->
+            <div class="sectors-list">
+              <div 
+                v-for="(sector, index) in processedSectors" 
+                :key="'sector-' + index"
+                class="sector-row"
+                :class="{ 
+                  dimmed: !activeSectors[index],
+                  highlighted: hoveredIndex === index 
+                }"
+                @mouseenter="onSectorHover(index)"
+                @mouseleave="onSectorLeave"
+                @click="toggleSector(index)"
+              >
+                <div class="sector-left">
+                  <span class="sector-dot" :style="{ backgroundColor: sector.color }"></span>
+                  <span class="sector-name">{{ sector.label }}</span>
+                </div>
+                <div class="sector-right">
+                  <span class="sector-value">{{ formatValue(sector.value) }}</span>
+                  <span class="sector-percent-badge" :style="{ backgroundColor: sector.color }">
+                    {{ getPercentForSector(index) }}%
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
       </div>
       
-      <!-- Barra segmentada grande -->
-      <div class="segmented-bar-wrapper">
-        <div class="segmented-bar">
-          <div 
-            v-for="(sector, index) in processedSectors" 
-            :key="'bar-' + index"
-            class="bar-segment"
-            :class="{ 
-              dimmed: !activeSectors[index],
-              highlighted: hoveredIndex === index 
-            }"
-            :style="{ 
+      <!-- Barra segmentada inferior -->
+      <div class="distribution-bar-section">
+        <div class="distribution-header">
+          <span class="distribution-label">Distribución</span>
+          <span class="distribution-total" :class="badgeColorClass">{{ formatValue(totalActiveSectors) }}</span>
+        </div>
+        
+        <div class="segmented-bar-wrapper">
+          <div class="segmented-bar">
+            <div 
+              v-for="(sector, index) in processedSectors" 
+              :key="'bar-' + index"
+              class="bar-segment"
+              :class="{ 
+                dimmed: !activeSectors[index],
+                highlighted: hoveredIndex === index 
+              }"
+              :style="{ 
               width: getSegmentWidth(index) + '%', 
               backgroundColor: sector.color,
-              animationDelay: (index * 0.15) + 's'
+              animationDelay: (index * 0.1) + 's'
             }"
             @mouseenter="onSectorHover(index)"
             @mouseleave="onSectorLeave"
             @click="toggleSector(index)"
           >
-            <span v-if="getSegmentWidth(index) > 15" class="bar-segment-label">
+            <span v-if="getSegmentWidth(index) > 10" class="bar-segment-label">
               {{ getPercentForSector(index) }}%
             </span>
           </div>
         </div>
       </div>
       
-      <!-- Cards de sectores -->
-      <div class="sector-cards">
-        <div 
-          v-for="(sector, index) in processedSectors" 
-          :key="'card-' + index"
-          class="sector-card"
-          :class="{ 
-            dimmed: !activeSectors[index],
-            highlighted: hoveredIndex === index 
-          }"
-          :style="{ 
-            borderColor: sector.color,
-            animationDelay: (index * 0.1 + 0.3) + 's'
-          }"
-          @mouseenter="onSectorHover(index)"
-          @mouseleave="onSectorLeave"
-          @click="toggleSector(index)"
-        >
-          <div class="card-color-bar" :style="{ backgroundColor: sector.color }"></div>
-          <div class="card-content">
-            <div class="card-header">
-              <span class="card-dot" :style="{ backgroundColor: sector.color }"></span>
-              <span class="card-name">{{ sector.label }}</span>
-            </div>
-            <div class="card-value">{{ formatValue(sector.value) }}</div>
-            <div class="card-percent" :style="{ color: sector.color }">{{ getPercentForSector(index) }}%</div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Nota de moneda -->
       <div class="currency-note">{{ currencyLegend }}</div>
-      
     </div>
+    </template>
     
   </div>
 </template>
@@ -217,6 +208,27 @@ const circumference = 2 * Math.PI * radius
 // Estado
 const activeSectors = ref([])
 const hoveredIndex = ref(null)
+
+// ========== ESTADO VACÍO ==========
+const isEmptyState = computed(() => {
+  return totalAllSectors.value === 0
+})
+
+const emptyStateTitle = computed(() => {
+  if (props.title === 'IS') return 'Sin Ingresos Sostenibles'
+  if (props.title === 'IIC') return 'Sin Ingresos Intensivos en Carbono'
+  if (props.title === 'PS') return 'Sin Presupuestos Sostenibles'
+  if (props.title === 'PIC') return 'Sin Presupuestos Intensivos en Carbono'
+  return 'Sin datos disponibles'
+})
+
+const emptyStateDescription = computed(() => {
+  if (props.title === 'IS') return 'No se registraron ingresos sostenibles para este período'
+  if (props.title === 'IIC') return 'No se registraron ingresos intensivos en carbono para este período'
+  if (props.title === 'PS') return 'No se asignaron presupuestos sostenibles para este período'
+  if (props.title === 'PIC') return 'No se asignaron presupuestos intensivos en carbono para este período'
+  return 'No hay información disponible para mostrar'
+})
 
 // Computed para colores y etiquetas
 const badgeColorClass = computed(() => {
@@ -282,32 +294,79 @@ const currencyLegend = computed(() => {
 })
 
 // Segmentos para el SVG
-const animatedSegments = computed(() => {
+// Función para calcular punto en el arco
+function polarToCartesian(centerX, centerY, radius, angleInDegrees) {
+  const angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0
+  return {
+    x: centerX + (radius * Math.cos(angleInRadians)),
+    y: centerY + (radius * Math.sin(angleInRadians))
+  }
+}
+
+// Función para crear path de arco
+function describeArc(x, y, radius, startAngle, endAngle) {
+  // Caso especial: círculo completo (360°)
+  if (endAngle - startAngle >= 359.99) {
+    // Dibujar círculo completo usando dos arcos de 180°
+    const start = polarToCartesian(x, y, radius, 0)
+    const mid = polarToCartesian(x, y, radius, 180)
+    return [
+      "M", start.x, start.y,
+      "A", radius, radius, 0, 1, 0, mid.x, mid.y,
+      "A", radius, radius, 0, 1, 0, start.x, start.y
+    ].join(" ")
+  }
+  
+  const start = polarToCartesian(x, y, radius, endAngle)
+  const end = polarToCartesian(x, y, radius, startAngle)
+  const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1"
+  
+  return [
+    "M", start.x, start.y,
+    "A", radius, radius, 0, largeArcFlag, 0, end.x, end.y
+  ].join(" ")
+}
+
+// Segmentos usando paths de arco (sin gaps)
+const arcSegments = computed(() => {
   if (!props.sectors || props.sectors.length === 0) return []
   
   const total = totalAllSectors.value
   if (total === 0) return []
   
-  let accumulatedOffset = 0
+  let currentAngle = 0
   
   return props.sectors.map((sector, index) => {
     const percentage = (sector.value / total) * 100
-    const segmentLength = (percentage / 100) * circumference
-    const gapSize = 0
+    const angle = (percentage / 100) * 360
     
-    const dashArray = `${Math.max(segmentLength - gapSize, 0)} ${circumference - segmentLength + gapSize}`
-    const dashOffset = -accumulatedOffset
+    const startAngle = currentAngle
+    let endAngle = currentAngle + angle
     
-    accumulatedOffset += segmentLength
+    // Si es 100% (o muy cercano), usar 360 grados completos
+    if (percentage >= 99.99) {
+      endAngle = startAngle + 360
+    } else {
+      // Pequeño overlap para evitar gaps (0.5 grados) solo si no es el último
+      endAngle = Math.min(endAngle + 0.5, startAngle + 360)
+    }
+    
+    const path = describeArc(center, center, radius, startAngle, endAngle)
+    
+    currentAngle += angle
     
     return {
       ...sector,
       percentage,
-      dashArray,
-      dashOffset
+      path,
+      startAngle,
+      endAngle
     }
   })
 })
+
+// Mantener animatedSegments para compatibilidad (si se usa en otro lugar)
+const animatedSegments = computed(() => arcSegments.value)
 
 // Valor mostrado
 const displayValue = computed(() => {
@@ -362,47 +421,154 @@ function formatValue(value) {
   flex-direction: column;
   width: 100%;
   height: 100%;
-  padding: 16px;
+  padding: 20px;
   background: white;
   border-radius: 12px;
-  gap: 12px;
+  gap: 16px;
   overflow: hidden;
   box-sizing: border-box;
 }
 
 /* ============================================
-   LAYOUT PRINCIPAL: INFO | DONA
+   ESTADO VACÍO
+   ============================================ */
+.empty-state-container {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.empty-state-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+  gap: 14px;
+  padding: 40px;
+  border-radius: 16px;
+  background: #fafbfc;
+}
+
+.empty-state-content.green {
+  border: 2px solid #86efac;
+  box-shadow: 0 4px 20px rgba(34, 197, 94, 0.12);
+}
+
+.empty-state-content.red {
+  border: 2px solid #fca5a5;
+  box-shadow: 0 4px 20px rgba(239, 68, 68, 0.12);
+}
+
+.empty-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-icon.green {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  color: #22c55e;
+  border: 2px dashed #86efac;
+}
+
+.empty-icon.red {
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  color: #ef4444;
+  border: 2px dashed #fca5a5;
+}
+
+.empty-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.empty-description {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.5;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.empty-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  margin-top: 4px;
+}
+
+.empty-badge.green {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border: 1px solid #86efac;
+}
+
+.empty-badge.red {
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border: 1px solid #fca5a5;
+}
+
+.empty-badge-label {
+  font-size: 14px;
+  font-weight: 700;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.empty-badge.green .empty-badge-label {
+  color: #166534;
+}
+
+.empty-badge.red .empty-badge-label {
+  color: #dc2626;
+}
+
+.empty-badge-year {
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+  padding-left: 8px;
+  border-left: 1px solid #e2e8f0;
+}
+
+/* ============================================
+   LAYOUT PRINCIPAL: DONA | LISTA SECTORES
    ============================================ */
 .donut-layout {
   display: flex;
   flex-direction: row;
   flex: 1;
-  gap: 24px;
+  gap: 32px;
   min-height: 0;
-  align-items: center;
+  align-items: center; /* ✅ Centrado vertical */
 }
 
 /* ============================================
-   LADO IZQUIERDO: INFORMACIÓN (CENTRADO)
-   ============================================ */
-.info-side {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-width: 0;
-  gap: 12px;
-  justify-content: center;
-}
-
-/* ============================================
-   LADO DERECHO: DONA
+   LADO IZQUIERDO: DONA CENTRADA
    ============================================ */
 .donut-side {
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 200px;
+  width: 220px;
+  height: 100%;
+}
+
+.donut-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
 }
 
 .donut-wrapper {
@@ -423,15 +589,15 @@ function formatValue(value) {
 
 .donut-segment {
   cursor: pointer;
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s ease;
 }
 
 .donut-segment.dimmed {
-  opacity: 0.2;
+  opacity: 0.25;
 }
 
 .donut-segment.highlighted {
-  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.25));
+  filter: brightness(1.15) drop-shadow(0 0 8px rgba(0,0,0,0.3));
 }
 
 /* Centro de la dona */
@@ -448,8 +614,8 @@ function formatValue(value) {
 }
 
 .center-icon {
-  width: 42px;
-  height: 42px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -469,8 +635,13 @@ function formatValue(value) {
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
 }
 
+.center-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
 .center-value {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.1;
@@ -481,7 +652,7 @@ function formatValue(value) {
 .center-value.red { color: #dc2626; }
 
 .center-label {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   color: #64748b;
   text-transform: uppercase;
@@ -489,39 +660,19 @@ function formatValue(value) {
   margin-top: 2px;
 }
 
-/* Header */
-.info-header {
+/* Info debajo de la dona */
+.donut-info {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-}
-
-.info-title-section {
-  flex: 1;
-}
-
-.info-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: #1e293b;
-  margin: 0 0 2px 0;
-  line-height: 1.3;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-.info-subtitle {
-  font-size: 12px;
-  color: #64748b;
-  font-weight: 500;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
 }
 
 .info-badge {
-  padding: 6px 12px;
+  padding: 6px 16px;
   border-radius: 20px;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
-  flex-shrink: 0;
 }
 
 .info-badge.green {
@@ -536,77 +687,161 @@ function formatValue(value) {
   border: 1px solid #fca5a5;
 }
 
-/* Métricas */
-.info-metrics {
-  display: flex;
-  gap: 16px;
-}
-
-.metric-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  background: #f8fafc;
-  border-radius: 10px;
-  flex: 1;
-  transition: all 0.2s ease;
-}
-
-.metric-item:hover {
-  background: #f1f5f9;
-}
-
-.metric-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #64748b;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-
-.metric-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.metric-label {
-  font-size: 11px;
+.info-year {
+  font-size: 13px;
   color: #64748b;
   font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-
-.metric-value {
-  font-size: 15px;
-  font-weight: 700;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-.metric-value.green { color: #166534; }
-.metric-value.red { color: #dc2626; }
-.metric-value.position { color: #1e293b; }
-
-/* Separador */
-.info-divider {
-  height: 1px;
-  background: linear-gradient(90deg, #e2e8f0 0%, transparent 100%);
 }
 
 /* ============================================
-   BARRA DE DISTRIBUCIÓN SEGMENTADA + CARDS
+   LADO DERECHO: LISTA DE SECTORES CENTRADA
    ============================================ */
-.distribution-section {
+.sectors-side {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  justify-content: center; /* ✅ Centrado vertical */
+}
+
+.sectors-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 100%;
+}
+
+.sectors-header {
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+.sectors-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Lista de sectores */
+.sectors-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+  flex: 1;
+  padding-right: 4px;
+}
+
+/* Scrollbar personalizado */
+.sectors-list::-webkit-scrollbar {
+  width: 5px;
+}
+
+.sectors-list::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.sectors-list::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.sectors-list::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Fila de sector - COMPACTO para evitar scroll */
+.sector-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: #f8fafc;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid transparent;
+  flex-shrink: 0;
+}
+
+.sector-row:hover,
+.sector-row.highlighted {
+  background: white;
+  border-color: #e2e8f0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateX(4px);
+}
+
+.sector-row.dimmed {
+  opacity: 0.4;
+  transform: scale(0.98);
+}
+
+.sector-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.sector-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.sector-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #334155;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.sector-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.sector-value {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e293b;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.sector-percent-badge {
+  padding: 4px 10px;
+  border-radius: 14px;
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+  min-width: 54px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* ============================================
+   BARRA SEGMENTADA INFERIOR
+   ============================================ */
+.distribution-bar-section {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
+  padding-top: 16px;
+  border-top: 2px solid #e2e8f0;
 }
 
 .distribution-header {
@@ -615,26 +850,25 @@ function formatValue(value) {
   align-items: center;
 }
 
-.distribution-title {
-  font-size: 12px;
-  font-weight: 600;
-  color: #475569;
+.distribution-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .distribution-total {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
 }
 
 .distribution-total.green { color: #166534; }
 .distribution-total.red { color: #dc2626; }
 
-/* Barra segmentada grande */
 .segmented-bar-wrapper {
   background: #f1f5f9;
-  border-radius: 12px;
+  border-radius: 10px;
   padding: 4px;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
 }
@@ -642,22 +876,21 @@ function formatValue(value) {
 .segmented-bar {
   display: flex;
   height: 32px;
-  border-radius: 8px;
+  border-radius: 6px;
   overflow: hidden;
   gap: 3px;
 }
 
 .bar-segment {
   height: 100%;
-  border-radius: 6px;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 5px;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
-  min-width: 8px;
+  min-width: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
-  animation: segmentGrow 0.6s cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: segmentGrow 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 @keyframes segmentGrow {
@@ -686,146 +919,61 @@ function formatValue(value) {
 
 .bar-segment-label {
   color: white;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
   white-space: nowrap;
 }
 
-/* Cards de sectores */
-.sector-cards {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.sector-card {
-  flex: 1;
-  min-width: 100px;
-  background: #f8fafc;
-  border-radius: 12px;
-  border: 2px solid transparent;
-  overflow: hidden;
-  cursor: pointer;
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  animation: cardSlideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
-}
-
-@keyframes cardSlideUp {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-.sector-card:hover,
-.sector-card.highlighted {
-  background: white;
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-}
-
-.sector-card.dimmed {
-  opacity: 0.35;
-  transform: scale(0.95);
-}
-
-.card-color-bar {
-  height: 4px;
-  width: 100%;
-  transition: height 0.3s ease;
-}
-
-.sector-card:hover .card-color-bar,
-.sector-card.highlighted .card-color-bar {
-  height: 6px;
-}
-
-.card-content {
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.card-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-  flex-shrink: 0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
-}
-
-.card-name {
-  font-size: 11px;
-  font-weight: 500;
-  color: #64748b;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.card-value {
-  font-size: 16px;
-  font-weight: 700;
-  color: #1e293b;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-.card-percent {
-  font-size: 13px;
-  font-weight: 700;
-}
-
 .currency-note {
-  font-size: 10px;
+  font-size: 11px;
   font-style: italic;
   color: #94a3b8;
   text-align: right;
 }
 
 /* ============================================
-   RESPONSIVE
+   RESPONSIVE - Tablets
    ============================================ */
 @media (max-width: 768px) {
   .donut-chart-container {
-    padding: 12px;
-    gap: 10px;
+    padding: 14px;
+    gap: 12px;
   }
   
   .donut-layout {
-    flex-direction: column-reverse;
-    gap: 16px;
+    flex-direction: column;
+    gap: 20px;
   }
   
   .donut-side {
     width: 100%;
-    justify-content: center;
+    height: auto;
+  }
+  
+  .donut-content {
+    flex-direction: row;
+    gap: 20px;
+    align-items: center;
   }
   
   .donut-wrapper {
-    width: 160px;
-    height: 160px;
+    width: 150px;
+    height: 150px;
+  }
+  
+  .donut-info {
+    justify-content: center;
   }
   
   .center-icon {
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
   }
   
   .center-icon svg {
-    width: 20px;
-    height: 20px;
+    width: 17px;
+    height: 17px;
   }
   
   .center-value {
@@ -836,113 +984,83 @@ function formatValue(value) {
     font-size: 10px;
   }
   
-  .info-side {
-    gap: 10px;
-  }
-  
-  .info-title {
-    font-size: 14px;
-  }
-  
   .info-badge {
-    padding: 5px 10px;
-    font-size: 13px;
-  }
-  
-  .info-metrics {
-    gap: 10px;
-  }
-  
-  .metric-item {
-    padding: 8px 10px;
-  }
-  
-  .metric-icon {
-    width: 28px;
-    height: 28px;
-  }
-  
-  .metric-icon svg {
-    width: 14px;
-    height: 14px;
-  }
-  
-  .metric-label {
-    font-size: 10px;
-  }
-  
-  .metric-value {
+    padding: 5px 12px;
     font-size: 14px;
   }
   
-  /* Distribution section responsive */
-  .distribution-section {
+  .sectors-side {
+    max-height: 220px;
+  }
+  
+  .sectors-content {
     gap: 10px;
   }
   
-  .distribution-title {
-    font-size: 11px;
+  .sectors-title {
+    font-size: 15px;
   }
   
-  .distribution-total {
+  .sectors-list {
+    gap: 5px;
+  }
+  
+  .sector-row {
+    padding: 10px 14px;
+    border-radius: 10px;
+  }
+  
+  .sector-name {
     font-size: 14px;
+  }
+  
+  .sector-value {
+    font-size: 15px;
+  }
+  
+  .sector-percent-badge {
+    padding: 4px 8px;
+    font-size: 12px;
+    min-width: 50px;
   }
   
   .segmented-bar {
     height: 26px;
-    gap: 2px;
   }
   
   .bar-segment-label {
-    font-size: 10px;
-  }
-  
-  .sector-cards {
-    gap: 8px;
-  }
-  
-  .sector-card {
-    min-width: 80px;
-  }
-  
-  .card-content {
-    padding: 10px;
-    gap: 4px;
-  }
-  
-  .card-name {
-    font-size: 10px;
-  }
-  
-  .card-value {
-    font-size: 14px;
-  }
-  
-  .card-percent {
-    font-size: 12px;
+    font-size: 11px;
   }
 }
 
+/* ============================================
+   RESPONSIVE - Móviles pequeños
+   ============================================ */
 @media (max-width: 480px) {
   .donut-chart-container {
-    padding: 10px;
-    gap: 8px;
+    padding: 12px;
+    gap: 10px;
+  }
+  
+  .donut-content {
+    flex-direction: column;
+    gap: 12px;
   }
   
   .donut-wrapper {
-    width: 140px;
-    height: 140px;
+    width: 130px;
+    height: 130px;
   }
   
   .center-icon {
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
     margin-bottom: 4px;
   }
   
   .center-icon svg {
-    width: 16px;
-    height: 16px;
+    width: 15px;
+    height: 15px;
   }
   
   .center-value {
@@ -953,77 +1071,120 @@ function formatValue(value) {
     font-size: 9px;
   }
   
-  .info-metrics {
-    flex-direction: column;
+  .info-badge {
+    padding: 4px 10px;
+    font-size: 13px;
+  }
+  
+  .sectors-side {
+    max-height: 200px;
+  }
+  
+  .sectors-header {
+    padding-bottom: 8px;
+  }
+  
+  .sectors-title {
+    font-size: 14px;
+  }
+  
+  .sectors-list {
+    gap: 4px;
+  }
+  
+  .sector-row {
+    padding: 8px 12px;
+    border-radius: 8px;
+  }
+  
+  .sector-dot {
+    width: 11px;
+    height: 11px;
+  }
+  
+  .sector-name {
+    font-size: 13px;
+  }
+  
+  .sector-value {
+    font-size: 14px;
+  }
+  
+  .sector-percent-badge {
+    padding: 3px 7px;
+    font-size: 11px;
+    min-width: 45px;
+    border-radius: 12px;
+  }
+  
+  .distribution-bar-section {
     gap: 8px;
+    padding-top: 12px;
   }
   
-  .metric-item {
-    padding: 8px;
+  .distribution-label {
+    font-size: 11px;
   }
   
-  /* Distribution section responsive small */
+  .distribution-total {
+    font-size: 14px;
+  }
+  
   .segmented-bar-wrapper {
     padding: 3px;
-    border-radius: 10px;
+    border-radius: 8px;
   }
   
   .segmented-bar {
     height: 22px;
-    border-radius: 6px;
+    border-radius: 5px;
+    gap: 2px;
   }
   
   .bar-segment {
     border-radius: 4px;
-    min-width: 6px;
+    min-width: 3px;
   }
   
   .bar-segment-label {
-    font-size: 9px;
-  }
-  
-  .sector-cards {
-    gap: 6px;
-  }
-  
-  .sector-card {
-    min-width: 70px;
-    border-radius: 10px;
-  }
-  
-  .card-color-bar {
-    height: 3px;
-  }
-  
-  .sector-card:hover .card-color-bar,
-  .sector-card.highlighted .card-color-bar {
-    height: 5px;
-  }
-  
-  .card-content {
-    padding: 8px;
-    gap: 3px;
-  }
-  
-  .card-dot {
-    width: 8px;
-    height: 8px;
-  }
-  
-  .card-name {
-    font-size: 9px;
-  }
-  
-  .card-value {
-    font-size: 12px;
-  }
-  
-  .card-percent {
     font-size: 10px;
   }
   
   .currency-note {
-    font-size: 9px;
+    font-size: 10px;
+  }
+}
+
+/* ============================================
+   RESPONSIVE - Landscape en móviles
+   ============================================ */
+@media (max-width: 768px) and (orientation: landscape) {
+  .donut-layout {
+    flex-direction: row;
+    gap: 20px;
+  }
+  
+  .donut-side {
+    width: auto;
+    height: 100%;
+  }
+  
+  .donut-content {
+    flex-direction: column;
+  }
+  
+  .donut-wrapper {
+    width: 140px;
+    height: 140px;
+  }
+  
+  .sectors-side {
+    max-height: none;
+    flex: 1;
+  }
+  
+  .sectors-list {
+    max-height: 180px;
   }
 }
 </style>

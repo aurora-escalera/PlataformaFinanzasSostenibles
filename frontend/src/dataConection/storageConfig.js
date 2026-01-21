@@ -1460,11 +1460,25 @@ datosInternacionales: {
       ],
       donutSectorsPSRegional: [
         {
+          key: 'ps_biodeiversidad_reg',
+          column: 'PS_AM',
+          label: 'Cambio climático',
+          colorClass: 'dark-green',
+          color: '#1b5e20'
+        },
+        {
           key: 'ps_cambio_climatico_reg',
           column: 'PS_CC',
           label: 'Cambio climático',
           colorClass: 'dark-green',
           color: '#2e7d32'
+        },
+        {
+          key: 'ps_eficiencia_energetica_reg',
+          column: 'PS_EE',
+          label: 'Eficiencia Energética',
+          colorClass: 'dark-green',
+          color: '#388e3c'
         },
         {
           key: 'ps_energia_renovable_reg',
@@ -1474,19 +1488,33 @@ datosInternacionales: {
           color: '#43a047'
         },
         {
-          key: 'ps_eficiencia_energetica_reg',
-          column: 'PS_EE',
-          label: 'Eficiencia Energética',
+          key: 'ps_gestion_forestal_reg',
+          column: 'PS_GF',
+          label: 'Gestión Forestal',
+          colorClass: 'dark-green',
+          color: '#4caf50'
+        },
+        {
+          key: 'ps_conser_oceanos_reg',
+          column: 'PS_CO',
+          label: 'Convervación de Océanos',
           colorClass: 'dark-green',
           color: '#66bb6a'
+        },
+        {
+          key: 'ps_transporte_sostenible_reg',
+          column: 'PS_TS',
+          label: 'Transporte Sostenible',
+          colorClass: 'dark-green',
+          color: '#81c784'
         },
         {
           key: 'ps_desastres_reg',
           column: 'PS_DN',
           label: 'Desastres Naturales',
           colorClass: 'dark-green',
-          color: '#1b5e20'
-        }
+          color: '#a5d6a7'
+        },
       ],
       donutSectorsPICRegional: [
         {
@@ -1766,33 +1794,58 @@ datosInternacionales: {
       yearColumn: 'Año',
       variableColumns: [
         {
-          key: 'PS_ER',
-          column: 'PS_ER', 
-          label: 'Energías Renovables',
-          color: '#2e7d32',
-          order: 1
+          key: 'PS_AM',
+          column: 'PS_AM', 
+          label: 'Biodiversidad',
+          color: '#1b5e20',
         },
+        ,
         {
-          key: 'PS_DN',
-          column: 'PS_DN', 
-          label: 'Desastres Naturales',
-          color: '#558b2f',
-          order: 2
+          key: 'ps_cambio_climatico_hist',
+          column: 'PS_CC',
+          label: 'Cambio climático',
+          colorClass: 'dark-green',
         },
         {
           key: 'PS_EE',
           column: 'PS_EE', 
           label: 'Eficiencia Energética',
-          color: '#7cb342',
-          order: 3
+          color: '#388e3c',
         },
         {
-          key: 'PS_AM',
-          column: 'PS_CC', 
-          label: 'Cambio Climático',
-          color: '#9ccc65',
-          order: 3
+          key: 'PS_ER',
+          column: 'PS_ER', 
+          label: 'Energías Renovables',
+          color: '#43a047',
+        },
+        {
+          key: 'ps_gestion_forestal_reg',
+          column: 'PS_GF',
+          label: 'Gestión Forestal',
+          colorClass: 'dark-green',
+          color: '#4caf50'
+        },
+        {
+          key: 'ps_conser_oceanos_reg',
+          column: 'PS_CO',
+          label: 'Convervación de Océanos',
+          colorClass: 'dark-green',
+          color: '#66bb6a'
+        },
+        {
+          key: 'ps_transporte_sostenible_reg',
+          column: 'PS_TS',
+          label: 'Transporte Sostenible',
+          colorClass: 'dark-green',
+          color: '#81c784'
+        },
+        {
+          key: 'PS_DN',
+          column: 'PS_DN', 
+          label: 'Desastres Naturales',
+          color: '#a5d6a7',
         }
+
       ]
     },
     

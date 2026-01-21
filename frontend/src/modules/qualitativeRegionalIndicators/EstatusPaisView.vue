@@ -1,9 +1,9 @@
 <!-- src/modules/qualitativeRegionalIndicators/EstatusPaisView.vue -->
-<!-- ✅ PROPUESTA 2: Diseño en 3 Filas - Proporciones ajustadas -->
+<!-- ✅ CORREGIDO: Validación de años antes de cargar datos -->
 <template>
   <div class="estatus-pais-container">
-    <!-- ✅ EMPTY STATE cuando no hay año seleccionado -->
-    <div v-if="!selectedYear" class="global-empty-state">
+    <!-- ✅ EMPTY STATE cuando no hay año seleccionado o año inválido -->
+    <div v-if="!selectedYear || (!isYearValid && yearsLoaded)" class="global-empty-state">
       <div class="empty-state-content">
         <div class="empty-state-icon">
           <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#718096" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -12,14 +12,27 @@
             <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
           </svg>
         </div>
-        <h2 class="empty-state-title">Selecciona un año</h2>
+        <h2 class="empty-state-title">
+          {{ !selectedYear ? 'Selecciona un año' : 'Año no disponible' }}
+        </h2>
         <p class="empty-state-description">
-          Selecciona un año en el filtro superior para visualizar el estatus del país.
+          {{ !selectedYear 
+            ? 'Selecciona un año en el filtro superior para visualizar el estatus del país.' 
+            : `El año ${selectedYear} no tiene datos disponibles. Años disponibles: ${validYears.join(', ')}` 
+          }}
         </p>
       </div>
     </div>
 
-    <!-- ✅ CONTENIDO cuando hay año seleccionado -->
+    <!-- ✅ LOADING STATE mientras carga años -->
+    <div v-else-if="!yearsLoaded" class="global-empty-state">
+      <div class="empty-state-content">
+        <div class="spinner"></div>
+        <p class="empty-state-description">Cargando información...</p>
+      </div>
+    </div>
+
+    <!-- ✅ CONTENIDO cuando hay año válido seleccionado -->
     <div v-else class="card-body">
       
       <!-- ========================================== -->
@@ -220,15 +233,26 @@ const props = defineProps({
 
 const emit = defineEmits(['back'])
 
-const { fetchData } = useStorageData()
+const { fetchData, fetchSheetNames } = useStorageData()
 const rawData = ref([])
 const loading = ref(false)
 const error = ref(null)
+
+// ✅ NUEVO: Años válidos del sheet
+const validYears = ref([])
+const yearsLoaded = ref(false)
 
 // Computed: Obtener datos del país
 const countryData = computed(() => {
   if (rawData.value.length === 0) return null
   return rawData.value[0]
+})
+
+// ✅ NUEVO: Verificar si el año seleccionado es válido
+const isYearValid = computed(() => {
+  if (!yearsLoaded.value) return false
+  if (!props.selectedYear) return false
+  return validYears.value.includes(String(props.selectedYear))
 })
 
 // Formatear número grande
@@ -239,29 +263,60 @@ const formatCurrency = (value) => {
   return new Intl.NumberFormat('es-MX').format(num)
 }
 
+// ✅ Cargar años válidos del sheet
+const loadValidYears = async () => {
+  try {
+    console.log('📅 [EstatusPaisView] Cargando años válidos del sheet...')
+    const sheetNames = await fetchSheetNames('estatusDelPais')
+    validYears.value = sheetNames
+      .filter(name => /^\d{4}$/.test(name))
+      .sort((a, b) => b - a)
+    yearsLoaded.value = true
+    console.log('📅 [EstatusPaisView] Años válidos:', validYears.value)
+    return validYears.value
+  } catch (err) {
+    console.error('❌ [EstatusPaisView] Error obteniendo años válidos:', err)
+    yearsLoaded.value = true
+    return []
+  }
+}
+
 // Cargar datos
 const loadData = async () => {
-  if (!props.selectedYear) return
+  // ✅ VALIDACIÓN: No cargar si no hay año o si los años no se han cargado
+  if (!props.selectedYear) {
+    console.log('⏸️ [EstatusPaisView] Sin año seleccionado')
+    return
+  }
+  
+  // ✅ VALIDACIÓN: Esperar a que los años válidos se carguen
+  if (!yearsLoaded.value) {
+    console.log('⏸️ [EstatusPaisView] Esperando carga de años válidos...')
+    return
+  }
+  
+  const yearStr = String(props.selectedYear)
+  
+  // ✅ VALIDACIÓN: Verificar que el año existe en el sheet
+  if (!validYears.value.includes(yearStr)) {
+    console.warn(`⚠️ [EstatusPaisView] Año ${yearStr} NO existe. Años válidos:`, validYears.value)
+    // NO limpiar rawData - mantener datos anteriores si los hay
+    return
+  }
   
   loading.value = true
   error.value = null
   
   try {
-    console.log('📊 [EstatusPaisView] Cargando datos para año:', props.selectedYear)
+    console.log('📊 [EstatusPaisView] Cargando datos para año:', yearStr)
     
-    // Establecer año activo ANTES de fetchData
-    setActiveYear(String(props.selectedYear))
-    
-    // fetchData usa el año dinámico internamente a través de getSheetName
+    setActiveYear(yearStr)
     const data = await fetchData('estatusDelPais')
     
-    console.log('📊 [EstatusPaisView] Datos obtenidos:', data)
-    console.log('📊 [EstatusPaisView] Total filas:', data?.length)
+    console.log('📊 [EstatusPaisView] Datos obtenidos:', data?.length, 'filas')
     
     if (data && data.length > 0) {
-      // Para datos regionales, la primera fila contiene los datos de México
       rawData.value = data
-      console.log('📊 [EstatusPaisView] Primera fila:', data[0])
       console.log('📊 [EstatusPaisView] Columnas:', Object.keys(data[0]))
     } else {
       console.warn('⚠️ [EstatusPaisView] No se obtuvieron datos')
@@ -272,20 +327,41 @@ const loadData = async () => {
   } catch (err) {
     console.error('❌ [EstatusPaisView] Error cargando datos:', err)
     error.value = err.message
-    rawData.value = []
   } finally {
     loading.value = false
   }
 }
 
-// Watchers
-watch(() => props.selectedYear, (newYear) => {
-  if (newYear) loadData()
-}, { immediate: true })
+// ✅ CORREGIDO: Watch sin immediate, espera a que años estén cargados
+watch(() => props.selectedYear, (newYear, oldYear) => {
+  console.log('👀 [EstatusPaisView] Año cambió:', oldYear, '→', newYear)
+  
+  if (newYear && yearsLoaded.value) {
+    loadData()
+  }
+})
+
+// ✅ Watch para cuando los años se cargan
+watch(yearsLoaded, (loaded) => {
+  if (loaded && props.selectedYear) {
+    console.log('📅 [EstatusPaisView] Años cargados, intentando cargar datos...')
+    loadData()
+  }
+})
 
 // Lifecycle
-onMounted(() => {
-  if (props.selectedYear) loadData()
+onMounted(async () => {
+  console.log('🚀 [EstatusPaisView] Montado con año:', props.selectedYear)
+  
+  // PRIMERO cargar años válidos
+  await loadValidYears()
+  
+  // LUEGO intentar cargar datos si el año es válido
+  if (props.selectedYear && isYearValid.value) {
+    await loadData()
+  } else if (props.selectedYear) {
+    console.warn(`⚠️ [EstatusPaisView] Año inicial ${props.selectedYear} no es válido, esperando año correcto...`)
+  }
 })
 </script>
 
@@ -348,6 +424,17 @@ onMounted(() => {
   color: #718096;
   margin: 0;
   line-height: 1.6;
+}
+
+/* ========== SPINNER ========== */
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e2e8f0;
+  border-top: 3px solid #1e3a5f;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
 }
 
 /* ========== CARD BODY ========== */
