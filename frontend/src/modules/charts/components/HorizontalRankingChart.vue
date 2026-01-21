@@ -402,6 +402,8 @@ const barMatchesLegendFilter = (variable) => {
 // LEYENDA DE COLORES DINÁMICA CON 7 CATEGORÍAS
 // ============================================================================
 
+// En el computed legendItems, cambiar las abreviaturas por texto completo
+
 const legendItems = computed(() => {
   const variableKey = currentVariableKey.value
   
@@ -410,9 +412,9 @@ const legendItems = computed(() => {
       return [
         { color: COLORS.VERDE_FUERTE, range: '>5.5', label: 'Muy Alto' },
         { color: COLORS.VERDE, range: '4.1-5.5', label: 'Alto' },
-        { color: COLORS.VERDE_BAJO, range: '2.5-4.0', label: 'M. Alto' },
+        { color: COLORS.VERDE_BAJO, range: '2.5-4.0', label: 'Medio Alto' },  // ✅ Cambiado
         { color: COLORS.AMARILLO, range: '1.1-2.5', label: 'Medio' },
-        { color: COLORS.ANARANJADO, range: '0.5-1.0', label: 'M. Bajo' },
+        { color: COLORS.ANARANJADO, range: '0.5-1.0', label: 'Medio Bajo' },  // ✅ Cambiado
         { color: COLORS.ROJO, range: '0.1-0.5', label: 'Bajo' },
         { color: COLORS.ROJO_FUERTE, range: '<0.1', label: 'Muy Bajo' }
       ]
@@ -420,9 +422,9 @@ const legendItems = computed(() => {
       return [
         { color: COLORS.VERDE_FUERTE, range: '<0.1', label: 'Muy Bajo' },
         { color: COLORS.VERDE, range: '0.1-2.0', label: 'Bajo' },
-        { color: COLORS.VERDE_BAJO, range: '2.1-4.0', label: 'M. Bajo' },
+        { color: COLORS.VERDE_BAJO, range: '2.1-4.0', label: 'Medio Bajo' },  // ✅ Cambiado
         { color: COLORS.AMARILLO, range: '4.1-6.0', label: 'Medio' },
-        { color: COLORS.ANARANJADO, range: '6.1-8.0', label: 'M. Alto' },
+        { color: COLORS.ANARANJADO, range: '6.1-8.0', label: 'Medio Alto' },  // ✅ Cambiado
         { color: COLORS.ROJO, range: '8.1-10', label: 'Alto' },
         { color: COLORS.ROJO_FUERTE, range: '>10', label: 'Muy Alto' }
       ]
@@ -430,9 +432,9 @@ const legendItems = computed(() => {
       return [
         { color: COLORS.VERDE_FUERTE, range: '>5.5', label: 'Muy Alto' },
         { color: COLORS.VERDE, range: '4.1-5.5', label: 'Alto' },
-        { color: COLORS.VERDE_BAJO, range: '2.5-4.0', label: 'M. Alto' },
+        { color: COLORS.VERDE_BAJO, range: '2.5-4.0', label: 'Medio Alto' },  // ✅ Cambiado
         { color: COLORS.AMARILLO, range: '1.1-2.5', label: 'Medio' },
-        { color: COLORS.ANARANJADO, range: '0.5-1.0', label: 'M. Bajo' },
+        { color: COLORS.ANARANJADO, range: '0.5-1.0', label: 'Medio Bajo' },  // ✅ Cambiado
         { color: COLORS.ROJO, range: '0.1-0.5', label: 'Bajo' },
         { color: COLORS.ROJO_FUERTE, range: '<0.1', label: 'Muy Bajo' }
       ]
@@ -440,9 +442,9 @@ const legendItems = computed(() => {
       return [
         { color: COLORS.VERDE_FUERTE, range: '<0.1', label: 'Muy Bajo' },
         { color: COLORS.VERDE, range: '0.1-2.0', label: 'Bajo' },
-        { color: COLORS.VERDE_BAJO, range: '2.1-4.0', label: 'M. Bajo' },
+        { color: COLORS.VERDE_BAJO, range: '2.1-4.0', label: 'Medio Bajo' },  // ✅ Cambiado
         { color: COLORS.AMARILLO, range: '4.1-6.0', label: 'Medio' },
-        { color: COLORS.ANARANJADO, range: '6.1-8.0', label: 'M. Alto' },
+        { color: COLORS.ANARANJADO, range: '6.1-8.0', label: 'Medio Alto' },  // ✅ Cambiado
         { color: COLORS.ROJO, range: '8.1-10', label: 'Alto' },
         { color: COLORS.ROJO_FUERTE, range: '>10', label: 'Muy Alto' }
       ]
@@ -451,9 +453,9 @@ const legendItems = computed(() => {
       return [
         { color: COLORS.VERDE_FUERTE, range: '3.5-4.0', label: 'Muy Alto' },
         { color: COLORS.VERDE, range: '2.9-3.4', label: 'Alto' },
-        { color: COLORS.VERDE_BAJO, range: '2.3-2.8', label: 'M. Alto' },
+        { color: COLORS.VERDE_BAJO, range: '2.3-2.8', label: 'Medio Alto' },  // ✅ Cambiado
         { color: COLORS.AMARILLO, range: '1.8-2.2', label: 'Medio' },
-        { color: COLORS.ANARANJADO, range: '1.2-1.7', label: 'M. Bajo' },
+        { color: COLORS.ANARANJADO, range: '1.2-1.7', label: 'Medio Bajo' },  // ✅ Cambiado
         { color: COLORS.ROJO, range: '0.6-1.1', label: 'Bajo' },
         { color: COLORS.ROJO_FUERTE, range: '0.0-0.5', label: 'Muy Bajo' }
       ]

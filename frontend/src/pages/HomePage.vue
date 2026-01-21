@@ -153,7 +153,8 @@
                     :positionsByYear="stackedAreaPositions"
                     :decimalPlaces="2"
                     :buttonLabels="{ 'IFS': 'Índice de Finanzas Sostenibles' }"
-                  />
+                    :hideCurrencyLegend="true"
+                    />
                 </div>
               </div>
               
@@ -1523,37 +1524,46 @@ onMounted(async () => {
   background: #d32f2f;
 }
 
+/* ✅ MEJORADO: map-and-charts-wrapper con más altura */
 .map-and-charts-wrapper {
   display: flex;
   gap: 10px;
   padding: 19.6px;  
   border-radius: 15px;
-  height: 100%;
   margin: 0 auto;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.182);
   box-sizing: border-box;
   z-index: 2;
   position: relative;
   transition: gap 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
-  height: 100%;
-  overflow: visible; 
+  overflow: visible;
+  height: 640px;
+  /* ← Añadir ancho mínimo para acomodar mapa + charts */
+  min-width: 1800px;
 }
 
 .map-and-charts-wrapper.no-gap {
   gap: 0;
 }
 
+/* ✅ MEJORADO: charts-section ajustado para la nueva altura */
 .charts-section {
   transform: translateX(-48px);
-  height: 605px;
+  height: 100%;
+  min-height: unset;
+  max-height: 100%;
   border-radius: 8px;
   width: 980px;
+  flex-shrink: 0; /* ← Evitar que se comprima */
   transition: all 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
+  overflow: hidden;
 }
 
 .charts-container {
   height: 100%;
+  max-height: 100%;
   width: 985px;
+  overflow: hidden;
 }
 
 .ranking-loading, .ranking-error {
@@ -1677,6 +1687,7 @@ onMounted(async () => {
   padding-bottom: 5px;
 }
 
+/* ✅ MEJORADO: Overlay ajustado para nueva altura */
 .map-overlay-filter {
   position: absolute;
   top: 19.6px;
@@ -1809,6 +1820,8 @@ onMounted(async () => {
     background: transparent;
     box-shadow: none;
     border-radius: 0;
+    height: auto;
+    min-height: unset;
   }
   
   .charts-section {
@@ -1946,4 +1959,4 @@ body {
   zoom: 0.92;
   overflow-x: visible;
 }
-</style>
+</style>1

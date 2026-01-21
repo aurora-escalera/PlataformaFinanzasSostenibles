@@ -2,18 +2,18 @@
 <template>
   <div class="filter-bar-container" :class="{ 'show-overflow': showOverflow }">
     <!-- Barra de filtros principal (DESKTOP) -->
-    <div ref="filterBarRef" class="filter-bar" :class="{ 'expanded': isSlideUp || activeDropdown, 'has-entity-selected': selectedEntity, 'locked-expanded': props.isLocked, 'animating-down': isAnimatingDown }" @mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave">
+    <div ref="filterBarRef" class="filter-bar" :class="{ 'expanded': isSlideUp || activeDropdown, 'has-entity-selected': hasActiveFilters, 'locked-expanded': props.isLocked, 'animating-down': isAnimatingDown }" @mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave">
       <div class="filter-content">
         <!-- Filtro Entidad -->
         <div class="filter-group">
           <label class="filter-label">Entidad</label>
-          <div class="filter-dropdown">
+          <div class="filter-dropdown" @mouseleave="handleDropdownMouseLeave('entidad')">
             <button @click="toggleDropdown('entidad')" class="dropdown-button" :class="{ 'active': activeDropdown === 'entidad', 'has-selection': selectedEntity }">
               <span class="dropdown-text">{{ getEntityLabel() }}</span>
               <span class="dropdown-arrow">▼</span>
             </button>
             <span class="filter-tooltip">Elige una entidad específica o los 'Datos Regionales' para ver las gráficas correspondientes</span>
-            <div v-if="activeDropdown === 'entidad'" class="dropdown-menu">
+            <div v-if="activeDropdown === 'entidad'" class="dropdown-menu" @mouseenter="cancelDropdownClose">
               <div class="dropdown-search">
                 <input v-model="entitySearch" placeholder="Buscar entidad..." class="search-input" @click.stop>
               </div>
@@ -35,18 +35,18 @@
         <!-- Filtro Año -->
         <div class="filter-group">
           <label class="filter-label">Año</label>
-          <div class="filter-dropdown">
+          <div class="filter-dropdown" @mouseleave="handleDropdownMouseLeave('año')">
             <button @click="toggleDropdown('año')" class="dropdown-button" :class="{ 'active': activeDropdown === 'año', 'has-selection': selectedYear !== null }" :disabled="loadingYears">
               <span class="dropdown-text">{{ loadingYears ? 'Cargando...' : getYearLabel() }}</span>
               <span class="dropdown-arrow">▼</span>
             </button>
             <span class="filter-tooltip">Elige uno de los años para ver los datos</span>
-            <div v-if="activeDropdown === 'año'" class="dropdown-menu">
+            <div v-if="activeDropdown === 'año'" class="dropdown-menu" @mouseenter="cancelDropdownClose">
               <div class="dropdown-search">
                 <input v-model="yearSearch" placeholder="Buscar año..." class="search-input" @click.stop>
               </div>
               <div class="dropdown-options">
-                <div v-if="!yearSearch && selectedEntity !== ''" @click="selectYear(null)" class="dropdown-option" :class="{ 'selected': selectedYear === null }">
+                <div v-if="!yearSearch && selectedEntity === null" @click="selectYear(null)" class="dropdown-option" :class="{ 'selected': selectedYear === null }">
                   <span>Todos los años</span>
                 </div>
                 <div v-for="year in filteredYears" :key="year" @click="selectYear(year)" class="dropdown-option" :class="{ 'selected': selectedYear === year }">
@@ -61,13 +61,13 @@
         <!-- Filtro Variable -->
         <div class="filter-group filter-group-last">
           <label class="filter-label">Variable</label>
-          <div class="filter-dropdown">
+          <div class="filter-dropdown" @mouseleave="handleDropdownMouseLeave('variable')">
             <button @click="toggleDropdown('variable')" class="dropdown-button" :class="{ 'active': activeDropdown === 'variable', 'has-selection': selectedVariable !== null }">
               <span class="dropdown-text">{{ getVariableLabel() }}</span>
               <span class="dropdown-arrow">▼</span>
             </button>
             <span class="filter-tooltip">Selecciona una variable para ver los datos correspondientes</span>
-            <div v-if="activeDropdown === 'variable'" class="dropdown-menu variable-menu">
+            <div v-if="activeDropdown === 'variable'" class="dropdown-menu variable-menu" @mouseenter="cancelDropdownClose">
               <div class="dropdown-search">
                 <input v-model="variableSearch" placeholder="Buscar variable..." class="search-input" @click.stop>
               </div>
@@ -162,7 +162,7 @@
                     <input v-model="yearSearch" placeholder="Buscar año..." class="drawer-search-input" @click.stop>
                   </div>
                   <div class="drawer-dropdown-options">
-                    <div v-if="!yearSearch && selectedEntity !== ''" @click="selectYearMobile(null)" class="drawer-dropdown-option" :class="{ 'selected': selectedYear === null }">
+                    <div v-if="!yearSearch && selectedEntity === null" @click="selectYearMobile(null)" class="drawer-dropdown-option" :class="{ 'selected': selectedYear === null }">
                       <span>Todos los años</span>
                       <span v-if="selectedYear === null" class="check-icon">✓</span>
                     </div>
@@ -291,9 +291,29 @@ const showOverflow = ref(false)
 let overflowTimeout = null
 
 // ============================================================================
+// TIMEOUT PARA CERRAR DROPDOWN
+// ============================================================================
+let dropdownCloseTimeout = null
+
+// ============================================================================
 // COMPUTED
 // ============================================================================
-const hasActiveFilters = computed(() => selectedEntity.value !== '' || selectedYear.value !== null || selectedVariable.value !== null)
+const isDefaultState = computed(() => 
+  selectedEntity.value === '' && 
+  selectedYear.value !== null && 
+  selectedVariable.value === null
+)
+
+const hasActiveFilters = computed(() => {
+  // Si está en DEFAULT, no hay filtros activos
+  if (isDefaultState.value) return false
+  
+  // Hay filtros activos si cualquiera es diferente al DEFAULT
+  return selectedEntity.value !== '' || 
+         selectedYear.value === null || 
+         selectedVariable.value !== null
+})
+
 const activeFiltersCount = computed(() => {
   let count = 0
   if (selectedEntity.value !== '' && selectedEntity.value !== null) count++
@@ -436,13 +456,15 @@ const handleMouseLeave = () => {
     clearTimeout(overflowTimeout)
     overflowTimeout = null
   }
-  showOverflow.value = false
   
   if (props.isLocked) return
-  if (!activeDropdown.value && !selectedEntity.value) {
+  if (!activeDropdown.value && !hasActiveFilters.value) {
+    showOverflow.value = false // Asegurar overflow hidden cuando baja
     slideTimeout.value = setTimeout(() => { 
       isSlideUp.value = false 
     }, 300)
+  } else {
+    showOverflow.value = false
   }
 }
 
@@ -450,6 +472,12 @@ const handleMouseLeave = () => {
 // DROPDOWN HANDLERS
 // ============================================================================
 const toggleDropdown = (name) => { 
+  // Cancelar cualquier cierre pendiente al hacer click
+  if (dropdownCloseTimeout) {
+    clearTimeout(dropdownCloseTimeout)
+    dropdownCloseTimeout = null
+  }
+  
   isSlideUp.value = true
   if (slideTimeout.value) { 
     clearTimeout(slideTimeout.value)
@@ -474,6 +502,38 @@ const closeAllDropdowns = () => {
   }, 300) 
 }
 
+// ============================================================================
+// DROPDOWN MOUSE LEAVE HANDLER - CIERRA DROPDOWN AL SALIR SIN SELECCIONAR
+// ============================================================================
+const handleDropdownMouseLeave = (dropdownName) => {
+  // Solo procesar si el dropdown que disparó el evento es el activo
+  if (activeDropdown.value && activeDropdown.value === dropdownName) {
+    // Cancelar cualquier cierre pendiente anterior
+    if (dropdownCloseTimeout) {
+      clearTimeout(dropdownCloseTimeout)
+    }
+    
+    // Pequeño delay para permitir movimientos rápidos del mouse
+    dropdownCloseTimeout = setTimeout(() => {
+      // Verificar de nuevo que sigue siendo el mismo dropdown activo
+      if (activeDropdown.value === dropdownName) {
+        activeDropdown.value = null
+        entitySearch.value = ''
+        yearSearch.value = ''
+        variableSearch.value = ''
+      }
+    }, 150)
+  }
+}
+
+// Cancelar el cierre si el mouse entra al menú
+const cancelDropdownClose = () => {
+  if (dropdownCloseTimeout) {
+    clearTimeout(dropdownCloseTimeout)
+    dropdownCloseTimeout = null
+  }
+}
+
 const handleClickOutside = (e) => { 
   if (filterBarRef.value && !filterBarRef.value.contains(e.target) && activeDropdown.value) {
     closeAllDropdowns()
@@ -484,6 +544,12 @@ const handleClickOutside = (e) => {
 // SELECT HANDLERS
 // ============================================================================
 const selectEntity = (entityName) => { 
+  // Cancelar cierre pendiente ya que se seleccionó algo
+  if (dropdownCloseTimeout) {
+    clearTimeout(dropdownCloseTimeout)
+    dropdownCloseTimeout = null
+  }
+  
   const prev = selectedEntity.value
   selectedEntity.value = entityName
   emit('entity-change', entityName)
@@ -499,6 +565,12 @@ const selectEntity = (entityName) => {
 }
 
 const selectYear = (year) => { 
+  // Cancelar cierre pendiente ya que se seleccionó algo
+  if (dropdownCloseTimeout) {
+    clearTimeout(dropdownCloseTimeout)
+    dropdownCloseTimeout = null
+  }
+  
   setYear(year)
   setActiveYear(year !== null ? year : (years.value[0] || '2024'))
   emit('year-change', year)
@@ -508,6 +580,12 @@ const selectYear = (year) => {
 }
 
 const selectVariable = (variable) => { 
+  // Cancelar cierre pendiente ya que se seleccionó algo
+  if (dropdownCloseTimeout) {
+    clearTimeout(dropdownCloseTimeout)
+    dropdownCloseTimeout = null
+  }
+  
   selectedVariable.value = variable
   emit('variable-change', variable)
   emitFiltersChange()
@@ -537,6 +615,13 @@ watch(() => props.initialYear, (v) => {
 watch(() => props.initialVariable, (v) => { 
   if (v !== selectedVariable.value) selectedVariable.value = v 
 }, { immediate: true })
+
+// Asegurar que overflow esté hidden cuando la barra está abajo
+watch(isSlideUp, (isUp) => {
+  if (!isUp) {
+    showOverflow.value = false
+  }
+})
 
 watch(() => props.isLocked, (n, o) => { 
   if (n) { 
@@ -602,6 +687,7 @@ onBeforeUnmount(() => {
   document.body.style.overflow = ''
   if (slideTimeout.value) clearTimeout(slideTimeout.value)
   if (overflowTimeout) clearTimeout(overflowTimeout)
+  if (dropdownCloseTimeout) clearTimeout(dropdownCloseTimeout)
 })
 </script>
 
@@ -838,10 +924,22 @@ onBeforeUnmount(() => {
   background: white; 
   border-radius: 8px; 
   box-shadow: 0 8px 32px rgba(0,0,0,0.15); 
-  margin-top: 8px; 
+  margin-top: 0px; 
+  padding-top: 8px;
   overflow: hidden; 
   animation: dropdownFadeIn 0.2s ease; 
   z-index: 1000; 
+}
+
+/* Área invisible para conectar botón con menú */
+.dropdown-menu::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background: transparent;
 }
 
 @keyframes dropdownFadeIn { 
@@ -1021,6 +1119,16 @@ onBeforeUnmount(() => {
   left: 50%; 
   transform: translateX(-50%); 
   overflow: visible !important;
+}
+
+.variable-menu::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background: transparent;
 }
 
 .variable-menu .dropdown-options {

@@ -1,5 +1,6 @@
 <!-- src/modules/charts/components/HistoricBarChart.vue -->
 <!-- ✅ MODIFICADO: Agregada prop buttonLabels para personalizar etiquetas de botones sin afectar tooltip -->
+<!-- ✅ CORREGIDO: yearGroupWidth ahora usa maxYearsWithoutScroll para mostrar solo esos años en pantalla -->
 <template>
   <div class="bar-chart-container">
     <div v-if="!hideHeader" class="chart-title-section">
@@ -189,10 +190,13 @@ const checkIsMobile = () => { isMobile.value = window.innerWidth <= 768 }
 
 const needsScroll = computed(() => (props.data?.length || 0) > props.maxYearsWithoutScroll)
 
+// ✅ CORREGIDO: Usar maxYearsWithoutScroll para calcular el ancho de cada grupo de año
+// Esto asegura que solo quepan maxYearsWithoutScroll años en la pantalla visible
 const yearGroupWidth = computed(() => {
   if (!needsScroll.value) return null
   const containerWidth = barsContainerWidth.value || 800
-  return Math.max(containerWidth / 6, 80)
+  // Dividir el contenedor entre maxYearsWithoutScroll para que solo esos años sean visibles
+  return Math.max(containerWidth / props.maxYearsWithoutScroll, 80)
 })
 
 const totalBarsWidth = computed(() => {

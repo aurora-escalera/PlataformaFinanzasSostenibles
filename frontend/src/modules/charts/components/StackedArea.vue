@@ -25,8 +25,12 @@
       </button>
     </div>
 
-    <!-- ✅ NUEVA LEYENDA EN GRIS -->
-    <div v-if="availableVariables.length > 0" class="currency-legend">
+    <!-- ✅ LEYENDA EN GRIS (controlable via prop - texto transparente cuando hideCurrencyLegend es true) -->
+    <div 
+      v-if="availableVariables.length > 0" 
+      class="currency-legend"
+      :style="{ color: props.hideCurrencyLegend ? 'transparent' : '#888' }"
+    >
       * Cifras en dólares estadounidenses (USD)
     </div>
 
@@ -246,7 +250,9 @@ const props = defineProps({
   percentagesByYear: { type: Object, default: () => ({}) },
   tooltipLabels: { type: Object, default: () => ({}) },
   // ✅ NUEVA PROP: Etiquetas personalizadas para botones de filtro (no afecta tooltip)
-  buttonLabels: { type: Object, default: () => ({}) }
+  buttonLabels: { type: Object, default: () => ({}) },
+  // ✅ NUEVA PROP: Ocultar texto de leyenda de moneda (mantiene el espacio)
+  hideCurrencyLegend: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['variable-toggle'])

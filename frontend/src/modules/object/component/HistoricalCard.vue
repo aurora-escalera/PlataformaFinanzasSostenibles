@@ -1,9 +1,11 @@
 <!-- src/modules/object/component/HistoricalCard.vue -->
+<!-- ✅ MODIFICADO: Reorganización de filas - IS juntas (row1) e IIC juntas (row2) -->
 <!-- ✅ MODIFICADO: Se agregan buttonLabels a cada gráfico para personalizar nombres de botones sin afectar tooltips -->
+<!-- ✅ MODIFICADO: Se agrega maxYearsWithoutScroll="5" a cada HistoricBarChart para mostrar solo 5 años en pantalla -->
 <template>
   <div class="ifss-slider-container">
     <div class="historic-table">
-      <!-- ROW 1 - Solo visible si: Todas las variables, IS o IIC -->
+      <!-- ROW 1 - IS (Ingresos Sostenibles): StackedArea + BarChart -->
       <div v-if="shouldShowRow('row1')" class="row-1">
         <!-- IS Stacked Area Chart Card -->
         <div v-if="shouldShowCard('IS')" class="chart-card IS-anual-linear-chart" :class="{ 'full-width': isOnlyCardInRow('IS', 'row1') }">
@@ -26,8 +28,28 @@
           </div>
         </div>
         
+        <!-- IS Bar Chart Card -->
+        <div v-if="shouldShowCard('IS')" class="chart-card IS-anual-bar-chart" :class="{ 'full-width': isOnlyCardInRow('IS', 'row1') }">
+          <div class="chart-card-header">
+            <h4 class="card-title">Análisis histórico del Financiamiento Total destinado al desarrollo dedicado a cambio climático de Ingresos Sostenibles</h4>
+          </div>
+          <div class="chart-card-body">
+            <HistoricBarChart
+              :data="chartDataBarIS"
+              :showFilters="true"
+              :showLegend="true"
+              :hideHeader="true"
+              :buttonLabels="buttonLabelsISBar"
+              :maxYearsWithoutScroll="6"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- ROW 2 - IIC (Ingresos Intensivos en Carbono): StackedArea + BarChart -->
+      <div v-if="shouldShowRow('row2')" class="row-2">
         <!-- IIC Stacked Area Card -->
-        <div v-if="shouldShowCard('IIC')" class="chart-card IIC-anual-linear-chart" :class="{ 'full-width': isOnlyCardInRow('IIC', 'row1') }">
+        <div v-if="shouldShowCard('IIC')" class="chart-card IIC-anual-linear-chart" :class="{ 'full-width': isOnlyCardInRow('IIC', 'row2') }">
           <div class="chart-card-header">
             <h4 class="card-title">Análisis histórico de Ingresos Intensivos en Carbono e Ingreso Total</h4>
           </div>
@@ -36,7 +58,7 @@
               :data="chartDataStackedArea"
               :xLabels="years"
               :hideHeader="true"
-              :width="getChartWidth('IIC', 'row1')"
+              :width="getChartWidth('IIC', 'row2')"
               :height="350"
               :showCurrencySymbol="true"
               :decimalPlaces="2"
@@ -46,10 +68,7 @@
             />
           </div>
         </div>
-      </div>
-
-      <!-- ROW 2 - Solo visible si: Todas las variables, IS o IIC -->
-      <div v-if="shouldShowRow('row2')" class="row-2">
+        
         <!-- IIC Bar Chart Card -->
         <div v-if="shouldShowCard('IIC')" class="chart-card IIC-anual-bar-chart" :class="{ 'full-width': isOnlyCardInRow('IIC', 'row2') }">
           <div class="chart-card-header">
@@ -62,22 +81,8 @@
               :showLegend="true"
               :hideHeader="true"
               :buttonLabels="buttonLabelsIICBar"
-            />
-          </div>
-        </div>
-        
-        <!-- IS Bar Chart Card -->
-        <div v-if="shouldShowCard('IS')" class="chart-card IS-anual-bar-chart" :class="{ 'full-width': isOnlyCardInRow('IS', 'row2') }">
-          <div class="chart-card-header">
-            <h4 class="card-title">Análisis histórico del Financiamiento Total destinado al desarrollo dedicado a cambio climático de Ingresos Sostenibles </h4>
-          </div>
-          <div class="chart-card-body">
-            <HistoricBarChart
-              :data="chartDataBarIS"
-              :showFilters="true"
-              :showLegend="true"
-              :hideHeader="true"
-              :buttonLabels="buttonLabelsISBar"
+              :maxYearsWithoutScroll="5"
+              :initialActiveVariables="['iic_c', 'iic_h', 'iic_m']"
             />
           </div>
         </div>
@@ -124,6 +129,7 @@
               :showFilters="true"
               :showLegend="true"
               :hideHeader="true"
+              :maxYearsWithoutScroll="6"
             />
           </div>
         </div>
@@ -139,6 +145,8 @@
               :showFilters="true"
               :showLegend="true"
               :hideHeader="true"
+              :maxYearsWithoutScroll="4"
+              :initialActiveVariables="['PS_EE','PS_ER', 'ps_transporte_sostenible_reg', 'PS_DN']"
             />
           </div>
         </div>
@@ -254,11 +262,12 @@ const selectedVariableKey = computed(() => {
   return props.selectedVariable.key || null
 })
 
+// ✅ ACTUALIZADO: Mapeo de variables por fila según nueva organización
 const rowVariables = {
-  row1: ['IS', 'IIC'],
-  row2: ['IIC', 'IS'],
-  row3: ['PS', 'PIC'],
-  row4: ['PIC', 'PS']
+  row1: ['IS'],           // Fila 1: Solo IS (StackedArea + BarChart)
+  row2: ['IIC'],          // Fila 2: Solo IIC (StackedArea + BarChart)
+  row3: ['PS', 'PIC'],    // Fila 3: PS y PIC (sin cambios)
+  row4: ['PIC', 'PS']     // Fila 4: PIC y PS (sin cambios)
 }
 
 const shouldShowRow = (rowName) => {
