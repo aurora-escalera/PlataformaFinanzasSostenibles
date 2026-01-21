@@ -1538,7 +1538,8 @@ onMounted(async () => {
   transition: gap 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
   overflow: visible;
   height: 640px;
-
+  /* ← Añadir ancho mínimo para acomodar mapa + charts */
+  min-width: 1800px;
 }
 
 .map-and-charts-wrapper.no-gap {
@@ -1553,6 +1554,7 @@ onMounted(async () => {
   max-height: 100%;
   border-radius: 8px;
   width: 980px;
+  flex-shrink: 0; /* ← Evitar que se comprima */
   transition: all 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
   overflow: hidden;
 }
