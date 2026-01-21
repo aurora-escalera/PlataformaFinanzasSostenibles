@@ -1739,14 +1739,6 @@ datosInternacionales: {
           color: '#DC143C',
           percentageColumn: 'IIC (%)',
           positionColumn: 'POS_IIC'
-        },
-        {
-          key: 'IS Total',
-          column: 'IS ($)',
-          label: 'IS Total',
-          color: '#7cb342',
-          percentageColumn: 'IS (%)',
-          positionColumn: 'POS_IS'
         }
       ]
     },
@@ -1799,7 +1791,6 @@ datosInternacionales: {
           label: 'Biodiversidad',
           color: '#1b5e20',
         },
-        ,
         {
           key: 'ps_cambio_climatico_hist',
           column: 'PS_CC',

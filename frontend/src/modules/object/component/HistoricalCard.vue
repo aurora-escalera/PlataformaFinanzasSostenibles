@@ -1,5 +1,6 @@
 <!-- src/modules/object/component/HistoricalCard.vue -->
 <!-- ✅ MODIFICADO: Se agregan buttonLabels a cada gráfico para personalizar nombres de botones sin afectar tooltips -->
+<!-- ✅ MODIFICADO: Se agrega maxYearsWithoutScroll="5" a cada HistoricBarChart para mostrar solo 5 años en pantalla -->
 <template>
   <div class="ifss-slider-container">
     <div class="historic-table">
@@ -62,6 +63,8 @@
               :showLegend="true"
               :hideHeader="true"
               :buttonLabels="buttonLabelsIICBar"
+              :maxYearsWithoutScroll="5"
+              :initialActiveVariables="['iic_c', 'iic_h', 'iic_m']"
             />
           </div>
         </div>
@@ -78,6 +81,7 @@
               :showLegend="true"
               :hideHeader="true"
               :buttonLabels="buttonLabelsISBar"
+              :maxYearsWithoutScroll="6"
             />
           </div>
         </div>
@@ -124,6 +128,7 @@
               :showFilters="true"
               :showLegend="true"
               :hideHeader="true"
+              :maxYearsWithoutScroll="6"
             />
           </div>
         </div>
@@ -139,6 +144,8 @@
               :showFilters="true"
               :showLegend="true"
               :hideHeader="true"
+              :maxYearsWithoutScroll="4"
+              :initialActiveVariables="['PS_EE','PS_ER', 'ps_transporte_sostenible_reg', 'PS_DN']"
             />
           </div>
         </div>
