@@ -1,5 +1,5 @@
 <!-- src/modules/maps/components/MexicoMapSVG.vue --> 
-<!-- ✅ ACTUALIZADO: Leyenda sincronizada con variable seleccionada del filtro -->
+<!-- ✅ ACTUALIZADO: Card mejorada cuando se selecciona un estado -->
 <template>
   <div class="map-wrapper" @click="handleBackgroundClick">
     <!-- CARD FLOTANTE CON INFO DEL ESTADO/NACIONAL -->
@@ -17,11 +17,22 @@
         </div>
         
         <div class="card-top-row">
-          <div class="card-position-number">
+          <div v-if="!selectedState" class="card-position-number">
             {{ getCurrentPosition() }}
           </div>
-          <div class="card-ifss-info">
-            <div class="ifss-value-text">{{ selectedState ? 'IFSS' : 'IFS' }}: {{ getDisplayIFSS() }}</div>
+          <div class="card-ifss-info" :class="{ 'state-view': selectedState }">
+            <template v-if="selectedState">
+              <div class="ifss-label-full">Índice de Finanzas Sostenibles Subnacional</div>
+              <div 
+                class="ifss-value-large"
+                :style="{ color: getCurrentClassificationColor() }"
+              >
+                {{ getDisplayIFSS() }}
+              </div>
+            </template>
+            <template v-else>
+              <div class="ifss-value-text">IFS: {{ getDisplayIFSS() }}</div>
+            </template>
             <div 
               class="ifss-classification"
               :style="{ color: getCurrentClassificationColor() }"
@@ -202,7 +213,6 @@ const mousePosition = ref({ x: 0, y: 0 })
 
 // ============================================================================
 // ESTADO PARA FILTRO DE LEYENDA
-// ✅ AHORA GUARDA LOS NOMBRES DE LOS ESTADOS
 // ============================================================================
 const activeLegendFilter = ref(null)
 
@@ -248,7 +258,6 @@ const getStatesByLevel = (level) => {
 
 // ============================================================================
 // FUNCIÓN: Verificar si un estado está en el filtro activo
-// ✅ AHORA VERIFICA POR NOMBRE DE ESTADO
 // ============================================================================
 const stateMatchesFilter = (stateName) => {
   if (!activeLegendFilter.value?.states) return true
@@ -257,34 +266,29 @@ const stateMatchesFilter = (stateName) => {
 
 // ============================================================================
 // HANDLER: Click en item de leyenda
-// ✅ GUARDA LOS NOMBRES DE LOS ESTADOS AL HACER CLICK
 // ============================================================================
 const handleLegendClick = (item) => {
-  // Toggle si ya está activo
   if (activeLegendFilter.value?.level === item.level) {
     activeLegendFilter.value = null
     emit('legend-filter-change', null)
     return
   }
   
-  // Obtener los estados que pertenecen a este nivel IFSS
   const statesInLevel = getStatesByLevel(item.level)
   
   console.log(`🎨 [MexicoMapSVG] Nivel "${item.label}" seleccionado`)
   console.log(`🎨 [MexicoMapSVG] Estados:`, statesInLevel)
   
-  // Guardar filtro CON los estados
   activeLegendFilter.value = {
     ...item,
     states: statesInLevel
   }
   
-  // Emitir con la lista de estados
   emit('legend-filter-change', {
     level: item.level,
     label: item.label,
     color: item.color,
-    states: statesInLevel  // ✅ Lista de nombres de estados
+    states: statesInLevel
   })
 }
 
@@ -481,7 +485,7 @@ const tooltipStyle = computed(() => {
 }
 
 .map-info-card.state-selected {
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.9);
   box-shadow: 0 8px 32px rgba(5, 55, 89, 0.15);
 }
 
@@ -517,8 +521,32 @@ const tooltipStyle = computed(() => {
   line-height: 1;
 }
 
+/* ============================================================================
+   ESTILOS CARD-IFSS-INFO - Vista normal y vista de estado
+   ============================================================================ */
 .card-ifss-info {
   text-align: left;
+}
+
+.card-ifss-info.state-view {
+  text-align: center;
+  width: 100%;
+}
+
+.ifss-label-full {
+  font-size: 10px;
+  color: #64748b;
+  font-weight: 500;
+  line-height: 1.3;
+  margin-bottom: 8px;
+  letter-spacing: 0.02em;
+}
+
+.ifss-value-large {
+  font-size: 36px;
+  font-weight: 300;
+  line-height: 1;
+  margin-bottom: 4px;
 }
 
 .ifss-value-text {
@@ -533,6 +561,11 @@ const tooltipStyle = computed(() => {
   font-weight: 600;
   margin: 0;
   line-height: 1.2;
+}
+
+.card-ifss-info.state-view .ifss-classification {
+  font-size: 14px;
+  margin-top: 2px;
 }
 
 .card-bottom-stack {
@@ -905,6 +938,16 @@ const tooltipStyle = computed(() => {
     text-align: left;
   }
   
+  .ifss-label-full {
+    font-size: 7px;
+    margin-bottom: 4px;
+  }
+  
+  .ifss-value-large {
+    font-size: 20px;
+    margin-bottom: 2px;
+  }
+  
   .ifss-value-text {
     font-size: 9px;
   }
@@ -912,6 +955,10 @@ const tooltipStyle = computed(() => {
   .ifss-classification {
     font-size: 8px;
     line-height: 1.1;
+  }
+  
+  .card-ifss-info.state-view .ifss-classification {
+    font-size: 9px;
   }
   
   .card-bottom-stack {
@@ -1020,12 +1067,26 @@ const tooltipStyle = computed(() => {
     font-size: 20px;
   }
   
+  .ifss-label-full {
+    font-size: 6px;
+    margin-bottom: 3px;
+  }
+  
+  .ifss-value-large {
+    font-size: 16px;
+    margin-bottom: 2px;
+  }
+  
   .ifss-value-text {
     font-size: 8px;
   }
   
   .ifss-classification {
     font-size: 7px;
+  }
+  
+  .card-ifss-info.state-view .ifss-classification {
+    font-size: 8px;
   }
   
   .card-bottom-stack {
@@ -1111,6 +1172,15 @@ const tooltipStyle = computed(() => {
   
   .card-position-number {
     font-size: 18px;
+  }
+  
+  .ifss-label-full {
+    font-size: 6px;
+    margin-bottom: 3px;
+  }
+  
+  .ifss-value-large {
+    font-size: 16px;
   }
   
   .ifss-value-text {
