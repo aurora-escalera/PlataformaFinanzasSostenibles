@@ -1257,7 +1257,7 @@ const getRankingTitle = computed(() => {
   const yearSuffix = selectedYear.value ? ` - ${selectedYear.value}` : ''
   
   if (!selectedVariable.value || !selectedVariable.value.key) {
-    return `Ranking IFSS por Estado${yearSuffix}`
+    return `Ranking Índice de Finanzas Sostenibles Subnacional${yearSuffix}`
   }
   
   const variableLabels = {
@@ -1267,7 +1267,7 @@ const getRankingTitle = computed(() => {
     'IS': 'Ingresos Sostenibles (IS)'
   }
   
-  return `Ranking ${variableLabels[selectedVariable.value.key] || 'IFSS'} por Estado${yearSuffix}`
+  return `Ranking ${variableLabels[selectedVariable.value.key] || 'Índice de Finanzas Sostenibles Subnacional'} por Estado${yearSuffix}`
 })
 
 // ============================================================================
