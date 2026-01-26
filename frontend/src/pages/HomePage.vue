@@ -142,7 +142,7 @@
                   <h4 class="card-title">{{ stackedAreaTitle }}</h4>
                 </div>
                 <div class="chart-card-body">
-                  <StackedArea
+                  <LinearChart
                     :data="stackedAreaChartData"
                     :xLabels="stackedAreaYears"
                     :showCurrencySymbol="false"
@@ -153,8 +153,7 @@
                     :positionsByYear="stackedAreaPositions"
                     :decimalPlaces="2"
                     :buttonLabels="{ 'IFS': 'Índice de Finanzas Sostenibles' }"
-                    :hideCurrencyLegend="true"
-                    />
+                  />
                 </div>
               </div>
               
@@ -280,7 +279,7 @@ import { getMapping, getSheetName, setActiveYear } from '@/dataConection/storage
 import { useStackedAreaData } from '@/composables/useStackedArea'
 import DefaultInfoCard from '@/modules/maps/components/DefaultInfoCard.vue'
 import { useDataToggle } from '@/composables/useDataToggle'
-
+import LinearChart from '../modules/charts/components/LinearChart.vue'
 const props = defineProps({
   title: {
     type: String,
