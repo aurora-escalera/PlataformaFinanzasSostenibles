@@ -1,5 +1,5 @@
 <!-- src/modules/maps/components/MexicoMapSVG.vue --> 
-<!-- ✅ ACTUALIZADO: Leyenda sincronizada con variable seleccionada del filtro -->
+<!-- ✅ ACTUALIZADO: Card mejorada cuando se selecciona un estado -->
 <template>
   <div class="map-wrapper" @click="handleBackgroundClick">
     <!-- CARD FLOTANTE CON INFO DEL ESTADO/NACIONAL -->
@@ -17,11 +17,22 @@
         </div>
         
         <div class="card-top-row">
-          <div class="card-position-number">
+          <div v-if="!selectedState" class="card-position-number">
             {{ getCurrentPosition() }}
           </div>
-          <div class="card-ifss-info">
-            <div class="ifss-value-text">{{ selectedState ? 'IFSS' : 'IFS' }}: {{ getDisplayIFSS() }}</div>
+          <div class="card-ifss-info" :class="{ 'state-view': selectedState }">
+            <template v-if="selectedState">
+              <div class="ifss-label-full">Índice de Finanzas Sostenibles Subnacional</div>
+              <div 
+                class="ifss-value-large"
+                :style="{ color: getCurrentClassificationColor() }"
+              >
+                {{ getDisplayIFSS() }}
+              </div>
+            </template>
+            <template v-else>
+              <div class="ifss-value-text">IFS: {{ getDisplayIFSS() }}</div>
+            </template>
             <div 
               class="ifss-classification"
               :style="{ color: getCurrentClassificationColor() }"
@@ -202,7 +213,6 @@ const mousePosition = ref({ x: 0, y: 0 })
 
 // ============================================================================
 // ESTADO PARA FILTRO DE LEYENDA
-// ✅ AHORA GUARDA LOS NOMBRES DE LOS ESTADOS
 // ============================================================================
 const activeLegendFilter = ref(null)
 
@@ -248,7 +258,6 @@ const getStatesByLevel = (level) => {
 
 // ============================================================================
 // FUNCIÓN: Verificar si un estado está en el filtro activo
-// ✅ AHORA VERIFICA POR NOMBRE DE ESTADO
 // ============================================================================
 const stateMatchesFilter = (stateName) => {
   if (!activeLegendFilter.value?.states) return true
@@ -257,34 +266,29 @@ const stateMatchesFilter = (stateName) => {
 
 // ============================================================================
 // HANDLER: Click en item de leyenda
-// ✅ GUARDA LOS NOMBRES DE LOS ESTADOS AL HACER CLICK
 // ============================================================================
 const handleLegendClick = (item) => {
-  // Toggle si ya está activo
   if (activeLegendFilter.value?.level === item.level) {
     activeLegendFilter.value = null
     emit('legend-filter-change', null)
     return
   }
   
-  // Obtener los estados que pertenecen a este nivel IFSS
   const statesInLevel = getStatesByLevel(item.level)
   
   console.log(`🎨 [MexicoMapSVG] Nivel "${item.label}" seleccionado`)
   console.log(`🎨 [MexicoMapSVG] Estados:`, statesInLevel)
   
-  // Guardar filtro CON los estados
   activeLegendFilter.value = {
     ...item,
     states: statesInLevel
   }
   
-  // Emitir con la lista de estados
   emit('legend-filter-change', {
     level: item.level,
     label: item.label,
     color: item.color,
-    states: statesInLevel  // ✅ Lista de nombres de estados
+    states: statesInLevel
   })
 }
 
@@ -481,7 +485,7 @@ const tooltipStyle = computed(() => {
 }
 
 .map-info-card.state-selected {
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.9);
   box-shadow: 0 8px 32px rgba(5, 55, 89, 0.15);
 }
 
@@ -517,8 +521,32 @@ const tooltipStyle = computed(() => {
   line-height: 1;
 }
 
+/* ============================================================================
+   ESTILOS CARD-IFSS-INFO - Vista normal y vista de estado
+   ============================================================================ */
 .card-ifss-info {
   text-align: left;
+}
+
+.card-ifss-info.state-view {
+  text-align: center;
+  width: 100%;
+}
+
+.ifss-label-full {
+  font-size: 10px;
+  color: #64748b;
+  font-weight: 500;
+  line-height: 1.3;
+  margin-bottom: 8px;
+  letter-spacing: 0.02em;
+}
+
+.ifss-value-large {
+  font-size: 36px;
+  font-weight: 300;
+  line-height: 1;
+  margin-bottom: 4px;
 }
 
 .ifss-value-text {
@@ -533,6 +561,11 @@ const tooltipStyle = computed(() => {
   font-weight: 600;
   margin: 0;
   line-height: 1.2;
+}
+
+.card-ifss-info.state-view .ifss-classification {
+  font-size: 14px;
+  margin-top: 2px;
 }
 
 .card-bottom-stack {
@@ -851,421 +884,319 @@ const tooltipStyle = computed(() => {
   opacity: 0.5;
   filter: grayscale(30%) brightness(1);
 }
-
 /* ============================================
-   RESPONSIVE - Media Queries
+   RESPONSIVE - Media Queries MexicoMapSVG
    ============================================ */
 
 @media (max-width: 768px) {
   .map-wrapper {
-    width: 100%;
-    min-height: 350px;
-    border-radius: 15px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.182);
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 280px;
+    max-height: 320px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    box-sizing: border-box;
+    overflow: hidden;
   }
   
   .mexico-map {
-    border-radius: 15px;
+    border-radius: 12px;
+    width: 100%;
+    height: 100%;
   }
   
+  /* ✅ OCULTAR map-info-card en móvil */
   .map-info-card {
-    top: 8px;
-    right: 8px;
-    width: 130px;
-    padding: 8px;
-    border-radius: 10px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    display: none !important;
   }
   
-  .map-info-card.state-selected {
-    width: 130px;
-    padding: 8px;
-  }
-  
-  .card-content {
-    gap: 6px;
-  }
-  
-  .card-position-title {
-    font-size: 7px;
-    margin-bottom: 0;
-    line-height: 1.2;
-  }
-  
-  .card-top-row {
-    gap: 6px;
-    padding: 0;
-  }
-  
-  .card-position-number {
-    font-size: 24px;
-  }
-  
-  .card-ifss-info {
-    text-align: left;
-  }
-  
-  .ifss-value-text {
-    font-size: 9px;
-  }
-  
-  .ifss-classification {
-    font-size: 8px;
-    line-height: 1.1;
-  }
-  
-  .card-bottom-stack {
-    gap: 4px;
-  }
-  
-  .card-label-pill {
-    font-size: 7px;
-    padding: 4px 6px;
-    min-height: 28px;
-    border-radius: 6px;
-  }
-  
+  /* ✅ hover-info-box a la IZQUIERDA */
   .hover-info-box {
-    top: auto;
-    bottom: 80px;
-    left: 28%;
-    transform: translateX(-50%);
-    width: 180px;
-    height: 60px;
+    top: 70%;
+    left: 8px;
+    bottom: auto;
+    transform: translateY(-70%);
+    transform: translateX(90%);
+    width: 75px;
+    height: auto;
   }
   
   .location-label {
-    font-size: 10px;
-    margin-bottom: 4px;
+    font-size: 8px;
+    margin-bottom: 3px;
   }
   
   .value-display {
-    font-size: 24px;
-    padding-bottom: 8px;
+    font-size: 18px;
+    padding-bottom: 6px;
   }
   
   .color-legend {
-    bottom: 15px;
-    left: 50%;
-    transform: translateX(-50%);
+    bottom: 10px;
+    left: 35%;
+    transform: translateX(-35%);
   }
   
   .legend-items-horizontal {
-    width: 300px;
+    width: 260px;
   }
   
   .legend-selected-state {
-    width: 300px;
-    height: 24px;
+    width: 260px;
+    height: 20px;
   }
   
   .legend-item-horizontal {
-    min-width: 35px;
+    min-width: 30px;
   }
   
   .legend-label {
-    font-size: 6px;
+    font-size: 5px;
   }
   
   .legend-range {
-    font-size: 6px;
+    font-size: 5px;
   }
   
   .legend-color-horizontal {
-    height: 14px;
+    height: 11px;
   }
   
   .selected-state-label {
-    font-size: 8px;
+    font-size: 7px;
   }
 }
 
 @media (max-width: 480px) {
   .map-wrapper {
-    min-height: 280px;
-    border-radius: 12px;
+    min-height: 240px;
+    max-height: 280px;
+    border-radius: 10px;
   }
   
   .mexico-map {
-    border-radius: 12px;
+    border-radius: 10px;
   }
   
   .map-info-card {
-    top: 50px;
-    right: 50px;
-    width: 110px;
-    padding: 6px;
-    border-radius: 8px;
-  }
-  
-  .map-info-card.state-selected {
-    width: 110px;
-    padding: 6px;
-  }
-  
-  .card-content {
-    gap: 4px;
-  }
-  
-  .card-position-title {
-    font-size: 6px;
-    line-height: 1.1;
-  }
-  
-  .card-top-row {
-    gap: 4px;
-  }
-  
-  .card-position-number {
-    font-size: 20px;
-  }
-  
-  .ifss-value-text {
-    font-size: 8px;
-  }
-  
-  .ifss-classification {
-    font-size: 7px;
-  }
-  
-  .card-bottom-stack {
-    gap: 3px;
-  }
-  
-  .card-label-pill {
-    font-size: 6px;
-    padding: 3px 5px;
-    min-height: 24px;
-    border-radius: 5px;
-    line-height: 1.2;
+    display: none !important;
   }
   
   .hover-info-box {
-    width: 100px;
-    height: 50px;
-    bottom: 55px;
-    left: 130px;
+    left: 6px;
+    width: 65px;
   }
   
   .location-label {
-    font-size: 9px;
-    margin-bottom: 3px;
+    font-size: 7px;
+    margin-bottom: 2px;
   }
   
   .value-display {
-    font-size: 20px;
-    padding-bottom: 6px;
-    border-bottom-width: 1px;
+    font-size: 15px;
+    padding-bottom: 5px;
   }
   
   .legend-items-horizontal {
-    width: 245px;
+    width: 220px;
   }
   
   .legend-selected-state {
-    width: 245px;
-    height: 20px;
-  }
-  
-  .legend-item-horizontal {
-    min-width: 28px;
-  }
-  
-  .legend-label {
-    font-size: 5px;
-  }
-  
-  .legend-range {
-    font-size: 5px;
-  }
-  
-  .legend-color-horizontal {
-    height: 12px;
-  }
-  
-  .selected-state-label {
-    font-size: 7px;
-  }
-}
-
-@media (max-width: 768px) and (orientation: landscape) {
-  .map-wrapper {
-    min-height: 280px;
-  }
-  
-  .map-info-card {
-    top: 5px;
-    right: 5px;
-    width: 110px;
-    padding: 6px;
-  }
-  
-  .map-info-card.state-selected {
-    width: 110px;
-    padding: 6px;
-  }
-  
-  .card-position-title {
-    font-size: 6px;
-  }
-  
-  .card-position-number {
-    font-size: 18px;
-  }
-  
-  .ifss-value-text {
-    font-size: 8px;
-  }
-  
-  .ifss-classification {
-    font-size: 7px;
-  }
-  
-  .card-label-pill {
-    font-size: 6px;
-    min-height: 22px;
-    padding: 3px 4px;
-  }
-  
-  .hover-info-box {
-    bottom: 50px;
-    width: 140px;
-    height: 50px;
-  }
-  
-  .location-label {
-    font-size: 8px;
-  }
-  
-  .value-display {
-    font-size: 18px;
-  }
-  
-  .color-legend {
-    bottom: 8px;
-  }
-  
-  .legend-items-horizontal {
-    width: 230px;
-  }
-  
-  .legend-selected-state {
-    width: 230px;
+    width: 220px;
     height: 18px;
   }
   
+  .legend-item-horizontal {
+    min-width: 26px;
+  }
+  
   .legend-label {
-    font-size: 5px;
+    font-size: 4px;
   }
   
   .legend-range {
-    font-size: 5px;
+    font-size: 4px;
   }
   
   .legend-color-horizontal {
-    height: 10px;
+    height: 9px;
   }
-}
-</style>
-
-<style>
-.mexico-map-tooltip {
-  background: white;
-  color: #1a202c;
-  padding: 8px 10px;
-  border-radius: 8px;
-  min-width: 130px;
-  box-shadow: 
-    0 2px 4px rgba(0, 0, 0, 0.08),
-    0 4px 12px rgba(0, 0, 0, 0.1);
-  display: flex;
-  gap: 8px;
-  align-items: flex-start;
-  position: fixed;
-  pointer-events: none;
-  z-index: 99999;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  animation: tooltipFadeIn 0.15s ease-out;
-}
-
-@keyframes tooltipFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(5px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+  
+  .selected-state-label {
+    font-size: 6px;
   }
 }
 
-.tooltip-icon-circle {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-  transition: background 0.3s ease;
-}
-
-.tooltip-icon-circle svg {
-  width: 14px;
-  height: 14px;
-  fill: white;
-}
-
-.tooltip-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.tooltip-state-name {
-  font-size: 11px;
-  font-weight: 600;
-  color: #2d3748;
-  margin-bottom: 1px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.tooltip-classification {
-  font-size: 9px;
-  font-weight: 600;
-  margin-bottom: 5px;
-  transition: color 0.3s ease;
-}
-
-.tooltip-stats {
-  display: flex;
-  gap: 12px;
-}
-
-.tooltip-stat {
-  text-align: left;
-}
-
-.tooltip-stat-value {
-  font-size: 12px;
-  font-weight: 700;
-  color: #2d3748;
-  line-height: 1.2;
-}
-
-.tooltip-stat-label {
-  font-size: 7px;
-  color: #a0aec0;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-  font-weight: 500;
-}
-
-@media (max-width: 768px) {
-  .mexico-map-tooltip {
+@media (max-width: 360px) {
+  .map-wrapper {
+    min-height: 200px;
+    max-height: 240px;
+    border-radius: 8px;
+  }
+  
+  .mexico-map {
+    border-radius: 8px;
+  }
+  
+  .map-info-card {
     display: none !important;
+  }
+  
+  .hover-info-box {
+    left: 5px;
+    width: 55px;
+  }
+  
+  .location-label {
+    font-size: 6px;
+    margin-bottom: 2px;
+  }
+  
+  .value-display {
+    font-size: 12px;
+    padding-bottom: 4px;
+  }
+  
+  .legend-items-horizontal {
+    width: 190px;
+  }
+  
+  .legend-selected-state {
+    width: 190px;
+    height: 16px;
+  }
+  
+  .legend-item-horizontal {
+    min-width: 22px;
+  }
+  
+  .legend-label {
+    font-size: 4px;
+  }
+  
+  .legend-range {
+    font-size: 3px;
+  }
+  
+  .legend-color-horizontal {
+    height: 8px;
+  }
+  
+  .selected-state-label {
+    font-size: 5px;
+  }
+}
+
+@media (max-width: 320px) {
+  .map-wrapper {
+    min-height: 180px;
+    max-height: 220px;
+    border-radius: 6px;
+  }
+  
+  .mexico-map {
+    border-radius: 6px;
+  }
+  
+  .map-info-card {
+    display: none !important;
+  }
+  
+  .hover-info-box {
+    left: 4px;
+    width: 48px;
+  }
+  
+  .location-label {
+    font-size: 5px;
+    margin-bottom: 1px;
+  }
+  
+  .value-display {
+    font-size: 10px;
+    padding-bottom: 3px;
+  }
+  
+  .legend-items-horizontal {
+    width: 160px;
+  }
+  
+  .legend-selected-state {
+    width: 160px;
+    height: 14px;
+  }
+  
+  .legend-item-horizontal {
+    min-width: 18px;
+  }
+  
+  .legend-label {
+    display: none;
+  }
+  
+  .legend-range {
+    font-size: 3px;
+    margin-top: 1px;
+  }
+  
+  .legend-color-horizontal {
+    height: 6px;
+  }
+  
+  .selected-state-label {
+    font-size: 5px;
+  }
+}
+
+/* Landscape en móviles */
+@media (max-width: 768px) and (orientation: landscape) {
+  .map-wrapper {
+    min-height: 220px;
+    max-height: 260px;
+  }
+  
+  .map-info-card {
+    display: none !important;
+  }
+  
+  .hover-info-box {
+    left: 5px;
+    width: 60px;
+  }
+  
+  .location-label {
+    font-size: 6px;
+  }
+  
+  .value-display {
+    font-size: 13px;
+    padding-bottom: 4px;
+  }
+  
+  .legend-items-horizontal {
+    width: 200px;
+  }
+  
+  .legend-selected-state {
+    width: 200px;
+    height: 14px;
+  }
+  
+  .legend-label {
+    font-size: 4px;
+  }
+  
+  .legend-range {
+    font-size: 3px;
+  }
+  
+  .legend-color-horizontal {
+    height: 7px;
+  }
+  
+  .selected-state-label {
+    font-size: 5px;
   }
 }
 </style>

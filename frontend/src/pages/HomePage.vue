@@ -142,7 +142,7 @@
                   <h4 class="card-title">{{ stackedAreaTitle }}</h4>
                 </div>
                 <div class="chart-card-body">
-                  <StackedArea
+                  <LinearChart
                     :data="stackedAreaChartData"
                     :xLabels="stackedAreaYears"
                     :showCurrencySymbol="false"
@@ -153,8 +153,7 @@
                     :positionsByYear="stackedAreaPositions"
                     :decimalPlaces="2"
                     :buttonLabels="{ 'IFS': 'Índice de Finanzas Sostenibles' }"
-                    :hideCurrencyLegend="true"
-                    />
+                  />
                 </div>
               </div>
               
@@ -280,7 +279,7 @@ import { getMapping, getSheetName, setActiveYear } from '@/dataConection/storage
 import { useStackedAreaData } from '@/composables/useStackedArea'
 import DefaultInfoCard from '@/modules/maps/components/DefaultInfoCard.vue'
 import { useDataToggle } from '@/composables/useDataToggle'
-
+import LinearChart from '../modules/charts/components/LinearChart.vue'
 const props = defineProps({
   title: {
     type: String,
@@ -1257,7 +1256,7 @@ const getRankingTitle = computed(() => {
   const yearSuffix = selectedYear.value ? ` - ${selectedYear.value}` : ''
   
   if (!selectedVariable.value || !selectedVariable.value.key) {
-    return `Ranking IFSS por Estado${yearSuffix}`
+    return `Ranking Índice de Finanzas Sostenibles Subnacional${yearSuffix}`
   }
   
   const variableLabels = {
@@ -1267,7 +1266,7 @@ const getRankingTitle = computed(() => {
     'IS': 'Ingresos Sostenibles (IS)'
   }
   
-  return `Ranking ${variableLabels[selectedVariable.value.key] || 'IFSS'} por Estado${yearSuffix}`
+  return `Ranking ${variableLabels[selectedVariable.value.key] || 'Índice de Finanzas Sostenibles Subnacional'} por Estado${yearSuffix}`
 })
 
 // ============================================================================
@@ -1808,96 +1807,191 @@ onMounted(async () => {
 }
 
 /* ============================================
-   RESPONSIVE - Media Queries
+   RESPONSIVE - Media Queries para HomePage
    ============================================ */
 
 @media (max-width: 768px) {
+  .map-container {
+    width: 100%;
+    padding: 0 16px 8px 16px;
+    box-sizing: border-box;
+    overflow-x: hidden;
+  }
+  
   .map-and-charts-wrapper {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
     padding: 0;
     background: transparent;
     box-shadow: none;
     border-radius: 0;
-    height: auto;
-    min-height: unset;
+    height: auto !important;
+    min-height: unset !important;
+    min-width: unset !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+    overflow: visible;
+  }
+  
+  .map-and-charts-wrapper.no-gap {
+    gap: 12px;
+  }
+  
+  /* ✅ MAPA - Mismo ancho que header y toggle */
+  .map-and-charts-wrapper > :deep(.map-wrapper) {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 280px;
+    max-height: 320px;
+    border-radius: 12px;
+    box-sizing: border-box;
+    flex-shrink: 0;
   }
   
   .charts-section {
-    transform: translateX(0);
+    transform: none !important;
     width: 100% !important;
+    max-width: 100% !important;
     min-width: unset !important;
     height: auto;
-    min-height: 500px;
-    border-radius: 15px;
+    min-height: 400px;
+    border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.182);
     background: white;
-    padding: 10px;
+    padding: 8px;
+    box-sizing: border-box;
+    flex-shrink: 0;
   }
   
   .charts-container {
     width: 100% !important;
+    max-width: 100% !important;
     min-width: unset !important;
+    height: auto;
   }
   
   .chart-card {
     border-radius: 10px;
+    width: 100%;
+  }
+  
+  .chart-card-header {
+    padding: 6px 8px;
+    margin-bottom: 6px;
+  }
+  
+  .card-title {
+    font-size: 14px;
+  }
+  
+  .chart-card-body {
+    border-radius: 6px;
   }
   
   .ranking-chart-section {
-    min-height: 380px;
+    min-height: 350px;
+    height: auto !important;
   }
   
   .filters-toggles-row {
     height: auto;
-    padding: 10px 0;
+    padding: 8px 16px;
+    width: 100%;
+    box-sizing: border-box;
   }
   
   .filters-column {
     min-width: unset;
     width: 100%;
+    max-width: 100%;
   }
   
-  .map-container {
-    width: 100%;
-    padding: 0 10px 8px 10px;
-  }
-  
+  /* Overlay ajustado */
   .map-overlay-filter {
     position: absolute;
     top: 0;
     left: 0;
-    width: 100%;
-    aspect-ratio: 16 / 9;
-    height: 330px;
-    border-radius: 15px;
+    width: 100% !important;
+    height: 100% !important;
+    max-height: none;
+    border-radius: 12px;
     z-index: 200;
+    box-sizing: border-box;
   }
   
   .overlay-message {
-    padding: 10px;
-    max-width: 90%;
+    padding: 16px;
+    max-width: 85%;
   }
   
   .overlay-text {
-    font-size: 11px;
+    font-size: 12px;
+    line-height: 1.5;
   }
   
+  /* Ranking Panel */
   .ranking-panel {
-    width: 100%;
-    height: auto;
+    width: 100% !important;
+    height: auto !important;
+    padding: 0 16px;
+    box-sizing: border-box;
   }
   
   .ranking-panel.historical-view,
   .ranking-panel.regional-view,
   .ranking-panel.variable-view {
-    width: 100%;
-    height: auto;
-    padding-bottom: 20px;
+    width: 100% !important;
+    height: auto !important;
+    padding: 0 16px 20px 16px;
     margin-bottom: 20px;
   }
+  
+  .body-ranking-panel {
+    width: 100%;
+    height: auto;
+    padding-bottom: 10px;
+  }
+  
+  .regional-charts-spacing {
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+  }
 
+  /* Loading y Error states */
+  .loading-state,
+  .error-state {
+    min-height: 200px;
+    padding: 20px;
+  }
+  
+  .spinner {
+    width: 30px;
+    height: 30px;
+    margin-bottom: 15px;
+  }
+  
+  .ranking-loading,
+  .ranking-error {
+    padding: 20px;
+  }
+  
+  .spinner-small {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .charts-empty-state {
+    padding: 20px;
+  }
+  
+  .empty-state-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+  }
+
+  /* Ocultar panel cualitativo */
   .qualitative-panel,
   .qualitative-panel-wrapper {
     display: none !important;
@@ -1910,28 +2004,43 @@ onMounted(async () => {
 }
 
 @media (max-width: 480px) {
+  .map-container {
+    padding: 0 12px 6px 12px;
+  }
+  
   .map-and-charts-wrapper {
-    gap: 12px;
+    gap: 10px;
+  }
+  
+  /* ✅ MAPA - Más compacto */
+  .map-and-charts-wrapper > :deep(.map-wrapper) {
+    min-height: 240px;
+    max-height: 280px;
+    border-radius: 10px;
   }
   
   .charts-section {
-    min-height: 350px;
-    padding: 8px;
-    border-radius: 12px;
+    min-height: 320px;
+    padding: 6px;
+    border-radius: 10px;
   }
   
   .chart-card {
-    padding: 8px;
+    padding: 6px;
     border-radius: 8px;
   }
   
+  .chart-card-header {
+    padding: 5px 6px;
+    margin-bottom: 5px;
+  }
+  
   .card-title {
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .map-overlay-filter {
-    max-height: 400px;
-    border-radius: 12px;
+    border-radius: 10px;
   }
   
   .overlay-message {
@@ -1940,23 +2049,149 @@ onMounted(async () => {
   
   .overlay-text {
     font-size: 11px;
-    line-height: 1.4;
   }
   
   .ranking-chart-section {
-    min-height: 320px;
+    min-height: 280px;
+  }
+  
+  .filters-toggles-row {
+    padding: 6px 12px;
+  }
+  
+  .ranking-panel,
+  .ranking-panel.historical-view,
+  .ranking-panel.regional-view,
+  .ranking-panel.variable-view {
+    padding: 0 12px 15px 12px;
+  }
+  
+  .loading-state,
+  .error-state {
+    min-height: 150px;
+    padding: 15px;
+  }
+  
+  .charts-empty-state {
+    padding: 15px;
+  }
+  
+  .empty-state-icon {
+    font-size: 40px;
   }
 }
-</style>
 
-<style>
-body {
-  zoom: 0.92;
-  overflow-x: visible;
+@media (max-width: 360px) {
+  .map-container {
+    padding: 0 8px 4px 8px;
+  }
+  
+  .map-and-charts-wrapper {
+    gap: 8px;
+  }
+  
+  /* ✅ MAPA - Aún más compacto */
+  .map-and-charts-wrapper > :deep(.map-wrapper) {
+    min-height: 200px;
+    max-height: 240px;
+    border-radius: 8px;
+  }
+  
+  .charts-section {
+    min-height: 260px;
+    padding: 4px;
+    border-radius: 8px;
+  }
+  
+  .chart-card {
+    padding: 4px;
+    border-radius: 6px;
+  }
+  
+  .chart-card-header {
+    padding: 4px 5px;
+    margin-bottom: 4px;
+  }
+  
+  .card-title {
+    font-size: 12px;
+  }
+
+  .map-overlay-filter {
+    border-radius: 8px;
+  }
+  
+  .overlay-text {
+    font-size: 10px;
+  }
+  
+  .ranking-chart-section {
+    min-height: 220px;
+  }
+  
+  .filters-toggles-row {
+    padding: 4px 8px;
+  }
+  
+  .ranking-panel,
+  .ranking-panel.historical-view,
+  .ranking-panel.regional-view,
+  .ranking-panel.variable-view {
+    padding: 0 8px 10px 8px;
+  }
 }
 
-#app {
-  zoom: 0.92;
-  overflow-x: visible;
+@media (max-width: 320px) {
+  .map-container {
+    padding: 0 6px 4px 6px;
+  }
+  
+  .map-and-charts-wrapper {
+    gap: 6px;
+  }
+  
+  .map-and-charts-wrapper > :deep(.map-wrapper) {
+    min-height: 180px;
+    max-height: 220px;
+    border-radius: 6px;
+  }
+  
+  .charts-section {
+    min-height: 220px;
+    padding: 3px;
+    border-radius: 6px;
+  }
+  
+  .chart-card {
+    padding: 3px;
+    border-radius: 5px;
+  }
+  
+  .card-title {
+    font-size: 11px;
+  }
+
+  .map-overlay-filter {
+    border-radius: 6px;
+  }
+  
+  .overlay-text {
+    font-size: 9px;
+  }
+  
+  .ranking-chart-section {
+    min-height: 200px;
+  }
+  
+  .filters-toggles-row {
+    padding: 4px 6px;
+  }
+  
+  .ranking-panel,
+  .ranking-panel.historical-view,
+  .ranking-panel.regional-view,
+  .ranking-panel.variable-view {
+    padding: 0 6px 8px 6px;
+  }
 }
 </style>1

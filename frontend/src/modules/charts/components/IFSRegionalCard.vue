@@ -7,7 +7,7 @@
     <template v-if="isRankingMode">
       <div class="card-header ranking-header">
         <div class="header-content">
-          <h3 class="card-title">Ranking Internacional IFS</h3>
+          <h3 class="card-title">Ranking Índice de Finanzas Sostenibles Regional</h3>
           <span class="card-subtitle">{{ selectedYear || 'Todos los años' }}</span>
         </div>
         <div class="header-badge">
@@ -294,9 +294,9 @@ const COLORS = {
 const legendItems = [
   { color: COLORS.VERDE_FUERTE, range: '3.5-4.0', label: 'Muy Alto' },
   { color: COLORS.VERDE, range: '2.9-3.4', label: 'Alto' },
-  { color: COLORS.VERDE_BAJO, range: '2.3-2.8', label: 'M. Alto' },
+  { color: COLORS.VERDE_BAJO, range: '2.3-2.8', label: 'Medio Alto' },
   { color: COLORS.AMARILLO, range: '1.8-2.2', label: 'Medio' },
-  { color: COLORS.ANARANJADO, range: '1.2-1.7', label: 'M. Bajo' },
+  { color: COLORS.ANARANJADO, range: '1.2-1.7', label: 'Medio Bajo' },
   { color: COLORS.ROJO, range: '0.6-1.1', label: 'Bajo' },
   { color: COLORS.ROJO_FUERTE, range: '0.0-0.5', label: 'Muy Bajo' }
 ]
@@ -329,7 +329,7 @@ const getIFSColor = (value) => {
   return { color: COLORS.ROJO_FUERTE, label: 'Muy Bajo' }
 }
 
-const formatValue = (value) => typeof value === 'number' ? Math.floor(value * 100) / 100 : value
+const formatValue = (value) => typeof value === 'number' ? value.toFixed(2) : value
 
 const isHighlightedCountry = (countryKey) => {
   if (!countryKey) return false
@@ -542,7 +542,7 @@ onBeforeUnmount(() => { document.removeEventListener('click', handleClickOutside
 .legend-bar-container { width: 100%; }
 .legend-items { display: flex; width: 100%; border-radius: 3px; overflow: hidden; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); }
 .legend-item { display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 0; }
-.legend-color-block { width: 100%; height: 14px; display: flex; align-items: center; justify-content: center; }
+.legend-color-block { width: 100%; height: 15px; display: flex; align-items: center; justify-content: center; }
 .legend-item:first-child .legend-color-block { border-radius: 3px 0 0 3px; }
 .legend-item:last-child .legend-color-block { border-radius: 0 3px 3px 0; }
 .legend-indicator { font-size: 11px; font-weight: 600; color: white; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.4); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-transform: uppercase; letter-spacing: 0.1px; }
