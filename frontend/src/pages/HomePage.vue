@@ -1,5 +1,5 @@
 <!-- src/modules/maps/components/HomePage.vue -->
-<!-- ✅ VERSIÓN CORREGIDA: Los handlers ahora actualizan las refs PRIMERO antes de verificar condiciones -->
+<!-- ✅ VERSIÓN CORREGIDA: Incluye overlays para QualitativePanel -->
 <template>
   <div class="filters-toggles-row">
     <!-- Columna izquierda: Filtros -->
@@ -69,16 +69,39 @@
             @view-change="handleViewChange"
             @legend-filter-change="handleLegendFilterChange"
           />
+
           <!-- Overlay sobre SOLO el mapa - Aparece cuando entidad es "Datos Regionales" (null) -->
           <transition name="overlay-fade">
             <div 
-              v-if="showMapOverlay" 
+              v-if="showMapOverlay && !isRetractableExpanded" 
               class="map-overlay-filter regional-overlay"
               @click.stop="handleOverlayClick"
             >
               <div class="overlay-message">
                 <h2 class="overlay-text">
                   {{ overlayMessage }}
+                </h2>
+              </div>
+            </div>
+          </transition>
+
+          <!-- ✅ NUEVO: Overlay para QualitativePanel - SOLO sobre el mapa -->
+          <transition name="overlay-fade">
+            <div 
+              v-if="showQualitativeOverlay" 
+              class="map-overlay-filter qualitative-overlay"
+            >
+              <div class="overlay-message">
+                <div class="overlay-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+                    <rect x="9" y="3" width="6" height="4" rx="1"/>
+                    <path d="M9 12h6"/>
+                    <path d="M9 16h6"/>
+                  </svg>
+                </div>
+                <h2 class="overlay-text">
+                  {{ qualitativeOverlayMessage }}
                 </h2>
               </div>
             </div>
@@ -95,6 +118,7 @@
           @toggle="handleDatosCualitativosClick"
           @years-loaded="handleYearsLoaded"
           @panel-closed="handlePanelClosed"
+          @data-type-change="handleQualitativeDataTypeChange"
         />
 
         <!-- RANKING CHART SECTION - Al lado del mapa -->
@@ -280,6 +304,7 @@ import { useStackedAreaData } from '@/composables/useStackedArea'
 import DefaultInfoCard from '@/modules/maps/components/DefaultInfoCard.vue'
 import { useDataToggle } from '@/composables/useDataToggle'
 import LinearChart from '../modules/charts/components/LinearChart.vue'
+
 const props = defineProps({
   title: {
     type: String,
@@ -320,7 +345,6 @@ watch(openFiltersAction, (action) => {
 // AGREGAR: Emitir contador de filtros activos
 const emitFiltersCount = () => {
   const count = filterBarRef.value?.activeFiltersCount || 0
- 
   emit('filters-count-change', count)
 }
 
@@ -336,7 +360,6 @@ const handleLegendFilterChange = (filter) => {
   console.log('🎨 [HomePage] Filtro de leyenda cambió:', filter)
   activeLegendFilter.value = filter
   
-  // Debug: mostrar estados filtrados
   if (filter && filter.states) {
     console.log('🎨 [HomePage] Estados filtrados:', filter.states)
     console.log('🎨 [HomePage] Total:', filter.states.length, 'estados')
@@ -344,7 +367,7 @@ const handleLegendFilterChange = (filter) => {
 }
 
 // ============================================================================
-// EMITS - Incluyendo eventos para el toggle
+// EMITS
 // ============================================================================
 const emit = defineEmits([
   'region-selected', 
@@ -425,7 +448,7 @@ const { fetchData: fetchEntities, fetchSheetNames, fetchInternationalSheetNames 
 // Estado para controlar qué vista está activa
 const activeView = ref(null)
 
-// ✅ NUEVO: currentDataView para QualitativePanel (evita el warning)
+// currentDataView para QualitativePanel
 const currentDataView = ref('subnacional')
 
 // Array de años disponibles (dinámico)
@@ -438,9 +461,12 @@ const initialYears = ref([])
 const regionalYears = ref([])
 
 const internationalYears = ref([])
-// ✅ NUEVO: Flag para bloquear cambios de año forzados por el FilterBar
-// Cuando el usuario selecciona "Todos los años", activamos este flag
-// para ignorar cualquier intento del FilterBar de forzar un año específico
+
+// ✅ NUEVO: Estado para controlar el overlay del QualitativePanel
+// Valores posibles: null, 'selection', 'regional-categories'
+const qualitativePanelLevel = ref(null)
+
+// Flag para bloquear cambios de año forzados por el FilterBar
 const blockYearChanges = ref(false)
 
 // Guardar estado inicial de filtros
@@ -473,7 +499,6 @@ const handleInternationalYearsLoaded = async (years) => {
     internationalYears.value = [...years]
     availableYears.value = years
     
-    // Si el año actual no está en la lista, usar el primero disponible
     if (selectedYear.value !== null && !years.includes(selectedYear.value)) {
       const firstYear = years[0]
       selectedYear.value = firstYear
@@ -493,13 +518,8 @@ const handleInternationalYearsLoaded = async (years) => {
 }
 
 // ============================================================================
-// FUNCIÓN: Emitir estado de filtros al App.vue (para el toggle)
+// FUNCIÓN: Emitir estado de filtros al App.vue
 // ============================================================================
-
-/**
- * Emite el estado actual de los filtros al componente padre (App.vue)
- * y actualiza el composable para que el toggle refleje el estado correcto
- */
 const emitFiltersState = () => {
   const state = {
     selectedEntity: selectedEntity.value,
@@ -510,13 +530,9 @@ const emitFiltersState = () => {
   
   console.log('📡 [HomePage] Emitiendo estado de filtros:', state)
   
-  // Emitir al padre
   emit('filters-state-change', state)
-  
-  // También actualizar el composable directamente
   updateFiltersState(state)
 
-  // AGREGAR: Emitir contador de filtros para el badge móvil
   nextTick(() => {
     const count = filterBarRef.value?.activeFiltersCount || 0
     emit('filters-count-change', count)
@@ -527,9 +543,6 @@ const emitFiltersState = () => {
 // LÓGICA CENTRALIZADA DE FILTROS
 // ============================================================================
 
-/**
- * Obtiene el primer año válido de la lista de años disponibles
- */
 const defaultYear = computed(() => {
   if (!availableYears.value || availableYears.value.length === 0) {
     return null
@@ -539,117 +552,55 @@ const defaultYear = computed(() => {
   ) || null
 })
 
-/**
- * CONDICIÓN PRINCIPAL: Los 3 filtros en "Todas..." (null)
- * Entidad = null (Todas las entidades)
- * Año = null (Todos los años)
- * Variable = null (Todas las variables)
- */
 const areAllFiltersOnTodas = computed(() => {
   const entityIsTodas = selectedEntity.value === null
   const yearIsTodos = selectedYear.value === null
   const variableIsTodas = selectedVariable.value === null
-  
-  const result = entityIsTodas && yearIsTodos && variableIsTodas
-  
-  return result
+  return entityIsTodas && yearIsTodos && variableIsTodas
 })
 
-/**
- * Detecta si algún filtro está en blanco "-" (string vacío)
- */
 const hasBlankFilter = computed(() => {
   return selectedEntity.value === '' || selectedVariable.value === ''
 })
 
-/**
- * Detecta si hay una variable específica seleccionada
- */
 const hasSpecificVariable = computed(() => {
   return selectedVariable.value !== null && selectedVariable.value !== ''
 })
 
 // ============================================================================
-// ✅ COMPUTED PARA showRegionalCharts, showStackedArea, showMapOverlay
+// COMPUTED PARA showRegionalCharts, showStackedArea, showMapOverlay
 // ============================================================================
 
-/**
- * ✅ Mostrar StackedArea cuando:
- * - Entidad es "Datos Regionales" (null)
- * - Año es "Todos los años" (null)
- */
 const showStackedArea = computed(() => {
   if (isRetractableExpanded.value) {
     return false
   }
-  
   const entityIsTodas = selectedEntity.value === null
   const yearIsTodos = selectedYear.value === null
-  
   return entityIsTodas && yearIsTodos
 })
 
-/**
- * ✅ CORREGIDO: Mostrar RegionalCharts cuando:
- * - Entidad es "Datos Regionales" (null)
- * - Año es un año ESPECÍFICO (no null)
- * - Variable es "Todas las variables" (null) O una variable específica (IS, IIC, PS, PIC)
- * 
- * Solo se oculta cuando la variable está en blanco ''
- */
 const showRegionalCharts = computed(() => {
-  // No mostrar si entidad está en blanco
-  if (selectedEntity.value === '') {
-    return false
-  }
-  
-  // No mostrar si variable está en blanco (el "-")
-  if (selectedVariable.value === '') {
-    return false
-  }
-  
-  // No mostrar si hay estado seleccionado en el mapa
-  if (selectedState.value) {
-    return false
-  }
-  
-  // No mostrar si panel cualitativo está expandido
-  if (isRetractableExpanded.value) {
-    return false
-  }
+  if (selectedEntity.value === '') return false
+  if (selectedVariable.value === '') return false
+  if (selectedState.value) return false
+  if (isRetractableExpanded.value) return false
   
   const entityIsRegional = selectedEntity.value === null
   const yearIsSpecific = selectedYear.value !== null
-  // ✅ Variable puede ser null (Todas) O un objeto con key (IS, IIC, PS, PIC)
   const variableIsValid = selectedVariable.value === null || 
                           (selectedVariable.value && selectedVariable.value.key)
   
-  const result = entityIsRegional && yearIsSpecific && variableIsValid
-  
-  console.log('🌎 [showRegionalCharts]:', {
-    entity: selectedEntity.value, entityIsRegional,
-    year: selectedYear.value, yearIsSpecific,
-    variable: selectedVariable.value, variableIsValid,
-    result
-  })
-  
-  return result
+  return entityIsRegional && yearIsSpecific && variableIsValid
 })
 
-/**
- * ✅ Mostrar overlay del mapa cuando Entidad es "Datos Regionales" (null)
- */
 const showMapOverlay = computed(() => {
   if (isRetractableExpanded.value) {
     return false
   }
-  
   return selectedEntity.value === null
 })
 
-/**
- * Mensaje del overlay
- */
 const overlayMessage = computed(() => {
   if (selectedEntity.value === null) {
     return 'Te encuentras en la vista de resultados federales. Haz clic en cualquier sección del área azul encima del mapa para regresar a los datos subnacionales.'
@@ -657,9 +608,44 @@ const overlayMessage = computed(() => {
   return ''
 })
 
+// ============================================================================
+// ✅ NUEVO: COMPUTED PARA OVERLAY DE QUALITATIVE PANEL
+// ============================================================================
+
 /**
- * Bloquear barra de filtros cuando los 3 filtros están en "Todas..."
+ * ✅ NUEVO: Computed para mostrar overlay cuando QualitativePanel está expandido
  */
+const showQualitativeOverlay = computed(() => {
+  if (!isRetractableExpanded.value) {
+    return false
+  }
+  
+  // Nivel 1: Selección de tipo de datos (subnacional/regional)
+  if (qualitativePanelLevel.value === 'selection') {
+    return true
+  }
+  
+  // Nivel 2: Categorías regionales
+  if (qualitativePanelLevel.value === 'regional-categories') {
+    return true
+  }
+  
+  return false
+})
+
+/**
+ * ✅ NUEVO: Mensaje dinámico del overlay según el nivel
+ */
+const qualitativeOverlayMessage = computed(() => {
+  if (qualitativePanelLevel.value === 'selection') {
+    return 'Selecciona si deseas visualizar indicadores cualitativos regionales o subnacionales en el panel de la derecha.'
+  }
+  if (qualitativePanelLevel.value === 'regional-categories') {
+    return 'Selecciona un año en el filtro superior y una categoría en el panel de la derecha para visualizar los indicadores cualitativos regionales.'
+  }
+  return ''
+})
+
 const isFilterBarLocked = computed(() => {
   if (isRetractableExpanded.value) {
     return false
@@ -667,16 +653,10 @@ const isFilterBarLocked = computed(() => {
   return areAllFiltersOnTodas.value
 })
 
-/**
- * Ocultar panel cuando hay filtros en blanco "-"
- */
 const shouldHidePanel = computed(() => {
   return hasBlankFilter.value
 })
 
-/**
- * Mostrar HistoricalCard cuando Entidad=null y Año=null
- */
 const showHistoricalCard = computed(() => {
   if (shouldHidePanel.value) return false
   if (selectedState.value) return false
@@ -687,15 +667,11 @@ const showHistoricalCard = computed(() => {
   return entityIsTodas && yearIsTodos
 })
 
-/**
- * Mostrar panel de ranking
- */
 const showRankingPanel = computed(() => {
   if (shouldHidePanel.value) return false
   return selectedState.value || showHistoricalCard.value || showRegionalCharts.value
 })
 
-// Card de info
 const isDefaultState = computed(() => {
   return selectedEntity.value === '' && 
          selectedVariable.value === null &&
@@ -761,22 +737,11 @@ const fetchAvailableYears = async () => {
   }
 }
 
-// ============================================================================
-// ✅ FUNCIÓN HELPER: Verificar si debe cargar ranking
-// ============================================================================
 const shouldLoadRanking = () => {
-  // No cargar si panel cualitativo está expandido
   if (isRetractableExpanded.value) return false
-  
-  // No cargar si showRegionalCharts está activo
   if (showRegionalCharts.value) return false
-  
-  // No cargar si showStackedArea está activo
   if (showStackedArea.value) return false
-  
-  // No cargar si areAllFiltersOnTodas
   if (areAllFiltersOnTodas.value) return false
-  
   return true
 }
 
@@ -784,29 +749,13 @@ const shouldLoadRanking = () => {
 // HANDLERS DE CAMBIOS DE FILTROS
 // ============================================================================
 
-/**
- * ✅ CORREGIDO: handleEntityChange
- * PRIMERO actualiza selectedEntity.value, LUEGO verifica condiciones
- */
 const handleEntityChange = async (entity) => {
   console.log('📍 [HomePage] handleEntityChange llamado con:', entity)
-  console.log('   selectedYear actual:', selectedYear.value)
-  console.log('   selectedVariable actual:', selectedVariable.value)
   
-  // ✅ PASO 1: Actualizar el valor PRIMERO
   selectedEntity.value = entity
-  
-  // ✅ PASO 2: Esperar a que Vue recalcule los computed
   await nextTick()
   
-  // ✅ PASO 3: Ahora los computed están actualizados
-  console.log('🔍 [handleEntityChange] Después de actualizar:')
-  console.log('   showRegionalCharts:', showRegionalCharts.value)
-  console.log('   showStackedArea:', showStackedArea.value)
-  console.log('   showMapOverlay:', showMapOverlay.value)
-  
   if (entity === '') {
-    // Entidad en blanco "-"
     resetSelection()
     restoreInitialYears()
     currentDataView.value = 'subnacional'
@@ -815,29 +764,22 @@ const handleEntityChange = async (entity) => {
   }
   
   if (entity === null) {
-    // ✅ Entidad = "Datos Regionales" (null)
     console.log('🌎 [HomePage] Entidad cambiada a "Datos Regionales"')
     resetSelection()
     currentDataView.value = 'federal'
     
-    // ✅ NUEVO: Cargar años del sheet internacional
-    console.log('🌎 [HomePage] Cargando años de datos internacionales...')
     const intYears = await fetchInternationalSheetNames()
     
     if (intYears && intYears.length > 0) {
       internationalYears.value = [...intYears]
       availableYears.value = intYears
       
-      // Establecer el primer año disponible si no hay año seleccionado
       if (selectedYear.value === null) {
-        // Mantener null si el usuario quiere "Todos los años"
         console.log('📅 [Internacional] Manteniendo "Todos los años" (null)')
       } else if (!intYears.includes(selectedYear.value)) {
-        // Si el año actual no existe en internacional, usar el primero
         const firstYear = intYears[0]
         selectedYear.value = firstYear
         setActiveYear(firstYear)
-        console.log('📅 [Internacional] Año cambiado a:', firstYear)
       }
       
       filterBarKey.value++
@@ -847,90 +789,55 @@ const handleEntityChange = async (entity) => {
       updateAvailableYears(intYears)
     }
     
-    // ✅ Solo cargar ranking si NO es showRegionalCharts ni showStackedArea
     if (shouldLoadRanking()) {
-      console.log('📊 [HomePage] Cargando ranking...')
       if (selectedVariable.value && selectedVariable.value !== '' && selectedVariable.value !== null) {
         await updateRankingByVariable(selectedVariable.value)
       } else if (selectedVariable.value === null && selectedYear.value !== null) {
         await loadAllStatesRanking(null)
       }
-    } else {
-      console.log('⏭️ [HomePage] No cargar ranking - showRegionalCharts o showStackedArea activo')
     }
     
     emitFiltersState()
     return
   }
   
-  // ✅ Entidad específica seleccionada
   currentDataView.value = 'subnacional'
   restoreInitialYears()
   handleStateClick(entity)
-  console.log('🗺️ [HomePage] Mapa actualizado con:', entity)
-  
   emitFiltersState()
 }
 
-/**
- * ✅ CORREGIDO: handleYearChange
- */
 const handleYearChange = async (year) => {
   console.log('📅 [HomePage] handleYearChange llamado con:', year)
-  console.log('   selectedEntity actual:', selectedEntity.value)
-  console.log('   selectedVariable actual:', selectedVariable.value)
-  console.log('   selectedYear ANTES:', selectedYear.value)
-  console.log('   blockYearChanges:', blockYearChanges.value)
   
-  // ✅ PROTECCIÓN 1: Si blockYearChanges está activo y se intenta forzar un año
   if (blockYearChanges.value && year !== null) {
-    console.log('⚠️ [handleYearChange] BLOQUEADO por flag: ignorando año forzado:', year)
+    console.log('⚠️ [handleYearChange] BLOQUEADO')
     return
   }
   
-  // ✅ Si el usuario selecciona "Todos los años" (null), activar el bloqueo temporalmente
   if (year === null && selectedEntity.value === null) {
-    console.log('🔒 [handleYearChange] Activando bloqueo de cambios de año')
     blockYearChanges.value = true
-    
-    // Desactivar el bloqueo después de un tiempo para permitir cambios futuros del usuario
     setTimeout(() => {
-      console.log('🔓 [handleYearChange] Desactivando bloqueo de cambios de año')
       blockYearChanges.value = false
     }, 1000)
   } else if (year !== null) {
-    // Si el usuario selecciona un año específico, desactivar el bloqueo
     blockYearChanges.value = false
   }
   
-  // ✅ PASO 1: Actualizar el valor PRIMERO
   selectedYear.value = year
   
   if (year) {
     setActiveYear(year)
   }
   
-  // ✅ PASO 2: Esperar a que Vue recalcule los computed
   await nextTick()
-  
-  // ✅ PASO 3: Ahora los computed están actualizados
-  console.log('🔍 [handleYearChange] Después de actualizar:')
-  console.log('   showRegionalCharts:', showRegionalCharts.value)
-  console.log('   showStackedArea:', showStackedArea.value)
-  console.log('   areAllFiltersOnTodas:', areAllFiltersOnTodas.value)
   
   if (!isRetractableExpanded.value) {
     if (showStackedArea.value) {
-      // Entidad=null, Año=null → StackedArea
-      console.log('📊 [HomePage] Cargando StackedArea...')
       await loadIFSSData()
     } else if (showRegionalCharts.value) {
-      // Entidad=null, Año=específico, Variable=null → Regional
-      console.log('🌎 [HomePage] showRegionalCharts activo - componentes se cargan automáticamente')
-      // NO cargar ranking
+      console.log('🌎 [HomePage] showRegionalCharts activo')
     } else if (shouldLoadRanking()) {
-      // Cargar ranking solo si corresponde
-      console.log('📊 [HomePage] Cargando ranking...')
       if (selectedVariable.value !== '' && selectedVariable.value !== null) {
         await updateRankingByVariable(selectedVariable.value)
       } else if (selectedVariable.value === null) {
@@ -942,24 +849,11 @@ const handleYearChange = async (year) => {
   emitFiltersState()
 }
 
-/**
- * ✅ CORREGIDO: handleVariableChange
- */
 const handleVariableChange = async (variable) => {
   console.log('📊 [HomePage] handleVariableChange llamado con:', variable)
-  console.log('   selectedEntity actual:', selectedEntity.value)
-  console.log('   selectedYear actual:', selectedYear.value)
   
-  // ✅ PASO 1: Actualizar el valor PRIMERO
   selectedVariable.value = variable
-  
-  // ✅ PASO 2: Esperar a que Vue recalcule los computed
   await nextTick()
-  
-  // ✅ PASO 3: Ahora los computed están actualizados
-  console.log('🔍 [handleVariableChange] Después de actualizar:')
-  console.log('   showRegionalCharts:', showRegionalCharts.value)
-  console.log('   areAllFiltersOnTodas:', areAllFiltersOnTodas.value)
   
   if (variable === '') {
     emitFiltersState()
@@ -967,14 +861,11 @@ const handleVariableChange = async (variable) => {
   }
   
   if (isRetractableExpanded.value) {
-    console.log('⏸️ [HomePage] Panel cualitativo activo, saltando carga de ranking')
     emitFiltersState()
     return
   }
   
-  // ✅ Solo cargar ranking si NO es showRegionalCharts
   if (showRegionalCharts.value) {
-    console.log('🌎 [HomePage] showRegionalCharts activo, no cargar ranking')
     emitFiltersState()
     return
   }
@@ -992,9 +883,6 @@ const handleVariableChange = async (variable) => {
 
 const handleFiltersChange = (filters) => {
   console.log('🔧 Filtros aplicados:', filters)
-  console.log('🔧 Estado actual - showRegionalCharts:', showRegionalCharts.value)
-  console.log('🔧 Estado actual - showMapOverlay:', showMapOverlay.value)
-  console.log('🔧 Estado actual - showStackedArea:', showStackedArea.value)
 }
 
 // ============================================================================
@@ -1004,16 +892,13 @@ const handleFiltersChange = (filters) => {
 const handleStateClickWithEmit = async (stateName) => {
   console.log('🗺️ [HomePage] Click en estado:', stateName)
   
-  // ✅ Limpiar filtro de leyenda cuando se hace click en un estado
   activeLegendFilter.value = null
   
   if (!stateName) {
     resetSelection()
     selectedEntity.value = ''
     emit('region-selected', null)
-    
     restoreInitialYears()
-    
     await nextTick()
     
     if (shouldLoadRanking()) {
@@ -1031,15 +916,12 @@ const handleStateClickWithEmit = async (stateName) => {
   handleStateClick(stateName)
   selectedEntity.value = stateName
   currentDataView.value = 'subnacional'
-  
   restoreInitialYears()
-  
   await nextTick()
   
   if (selectedState.value === stateName) {
     const stateData = getStateInfo(stateName)
     emit('region-selected', { name: stateName, data: stateData })
-    console.log('✅ [HomePage] Estado seleccionado y sincronizado:', stateName)
   } else {
     emit('region-selected', null)
   }
@@ -1048,7 +930,6 @@ const handleStateClickWithEmit = async (stateName) => {
 }
 
 const handleViewChange = (view) => {
-  console.log('👁️ [HomePage] Vista cambiada a:', view)
   activeView.value = view
 }
 
@@ -1057,8 +938,6 @@ const handleIFSRegionalClick = async () => {
   
   activeView.value = 'regional'
   currentDataView.value = 'federal'
-  
-  // ✅ Limpiar filtro de leyenda
   activeLegendFilter.value = null
   
   if (selectedState.value) {
@@ -1070,10 +949,7 @@ const handleIFSRegionalClick = async () => {
   selectedVariable.value = null
   
   await nextTick()
-  
   await loadIFSSData()
-  
-  console.log('✅ [HomePage] Vista IFS Regional activada con filtros en "Todas..."')
   
   emitFiltersState()
 }
@@ -1082,13 +958,23 @@ const handleDatosFederalesClick = async () => {
   console.log('🏛️ [HomePage] Click en Plataforma de Finanzas Sostenibles')
 }
 
+// ✅ MODIFICADO: handleDatosCualitativosClick para controlar el overlay
 const handleDatosCualitativosClick = () => {
   console.log('🔄 Toggling panel cualitativo:', !isRetractableExpanded.value)
+  
+  if (!isRetractableExpanded.value) {
+    // Abriendo el panel → mostrar nivel 1 (selección)
+    qualitativePanelLevel.value = 'selection'
+  } else {
+    // Cerrando el panel → limpiar nivel
+    qualitativePanelLevel.value = null
+  }
+  
   isRetractableExpanded.value = !isRetractableExpanded.value
 }
 
 const handleYearsLoaded = async (years) => {
-  console.log('📅 [HomePage] Años recibidos de ambientales:', years)
+  console.log('📅 [HomePage] Años recibidos de QualitativePanel:', years)
   
   if (years && years.length > 0) {
     availableYears.value = years
@@ -1100,11 +986,27 @@ const handleYearsLoaded = async (years) => {
     filterBarKey.value++
     await nextTick()
     
-    console.log('✅ Filtro actualizado con años de ambientales')
-    
     emit('available-years-change', years)
     updateAvailableYears(years)
     emitFiltersState()
+  }
+}
+
+/**
+ * ✅ NUEVO: Handler para cuando cambia el tipo de datos en QualitativePanel
+ */
+const handleQualitativeDataTypeChange = (dataType) => {
+  console.log('📊 [HomePage] QualitativePanel data-type-change:', dataType)
+  
+  if (dataType === 'regional') {
+    // Usuario seleccionó "Datos Regionales" → mostrar overlay de categorías
+    qualitativePanelLevel.value = 'regional-categories'
+  } else if (dataType === 'subnacional') {
+    // Usuario seleccionó "Datos Subnacionales" → no mostrar overlay
+    qualitativePanelLevel.value = null
+  } else if (dataType === null) {
+    // Usuario volvió al nivel 1 → mostrar overlay de selección
+    qualitativePanelLevel.value = 'selection'
   }
 }
 
@@ -1117,22 +1019,14 @@ const handleRegionalYearsLoaded = async (years) => {
     regionalYears.value = [...years]
     availableYears.value = years
     
-    // ✅ CORREGIDO: Solo cambiar año si:
-    // 1. El año actual NO es null (usuario NO quiere "Todos los años")
-    // 2. El año actual no está en la lista de años regionales
     if (selectedYear.value !== null && !years.includes(selectedYear.value)) {
       const firstYear = years[0]
       selectedYear.value = firstYear
       setActiveYear(firstYear)
-      console.log('📅 [Regional] Año actualizado al primero disponible:', firstYear)
-    } else if (selectedYear.value === null) {
-      console.log('📅 [Regional] Usuario tiene "Todos los años" seleccionado, respetando null')
     }
     
     filterBarKey.value++
     await nextTick()
-    
-    console.log('✅ [HomePage] Filtro actualizado con años regionales:', years)
     
     emit('available-years-change', years)
     updateAvailableYears(years)
@@ -1141,23 +1035,17 @@ const handleRegionalYearsLoaded = async (years) => {
 }
 
 const restoreInitialYears = async () => {
-  // Solo restaurar años cuantitativos si NO estamos en vista regional/federal
   if (selectedEntity.value === null) {
-    console.log('🔄 [HomePage] En vista regional, no restaurar años cuantitativos')
     return
   }
   
   if (initialYears.value.length > 0) {
-    console.log('🔄 [HomePage] Restaurando años iniciales:', initialYears.value)
     availableYears.value = [...initialYears.value]
     
     if (selectedYear.value !== null && !initialYears.value.includes(selectedYear.value)) {
       const preferredYear = initialYears.value.includes('2024') ? '2024' : initialYears.value[0]
       selectedYear.value = preferredYear
       setActiveYear(preferredYear)
-      console.log('📅 Año restaurado al preferido de cuantitativos:', preferredYear)
-    } else if (selectedYear.value === null) {
-      console.log('📅 Usuario tiene "Todos los años" seleccionado, respetando null')
     }
     
     filterBarKey.value++
@@ -1169,34 +1057,30 @@ const restoreInitialYears = async () => {
 }
 
 const handlePanelClosed = async () => {
-  console.log('🔄 [HomePage] Panel cualitativo cerrado, reseteando filtros a DEFAULT...')
+  console.log('🔄 [HomePage] Panel cualitativo cerrado')
   
   selectedEntity.value = ''
   selectedVariable.value = null
   currentDataView.value = 'subnacional'
-  
   activeLegendFilter.value = null
+  
+  // ✅ Limpiar nivel del panel
+  qualitativePanelLevel.value = null
   
   availableYears.value = [...initialYears.value]
   
   if (initialYears.value.length > 0) {
-    // ✅ CORREGIDO: Preferir 2024 si está disponible
     const preferredYear = initialYears.value.includes('2024') ? '2024' : initialYears.value[0]
     selectedYear.value = preferredYear
     setActiveYear(preferredYear)
-    console.log('📅 Año restaurado a DEFAULT:', preferredYear)
   }
   
   filterBarKey.value++
   await nextTick()
   
   resetSelection()
-  
   await loadAllStatesRanking(null)
-  
   activeView.value = null
-  
-  console.log('✅ Filtros reseteados a DEFAULT')
   
   emitFiltersState()
 }
@@ -1212,18 +1096,16 @@ const handleMapContainerClick = (event) => {
 }
 
 const handleOverlayClick = async () => {
-  console.log('🔲 [HomePage] Click en overlay, cambiando a DEFAULT...')
+  console.log('🔲 [HomePage] Click en overlay')
   
   selectedEntity.value = ''
   selectedVariable.value = null
   currentDataView.value = 'subnacional'
-  
   activeLegendFilter.value = null
   
   restoreInitialYears()
   
   if (availableYears.value.length > 0) {
-    // ✅ CORREGIDO: Preferir 2024 si está disponible
     const preferredYear = availableYears.value.includes('2024') ? '2024' : availableYears.value[0]
     selectedYear.value = preferredYear
     setActiveYear(preferredYear)
@@ -1231,15 +1113,11 @@ const handleOverlayClick = async () => {
   
   resetSelection()
   emit('region-selected', null)
-  
   await loadAllStatesRanking(null)
-  
   activeView.value = null
   
   filterBarKey.value++
   await nextTick()
-  
-  console.log('✅ Cambiado a DEFAULT')
   
   emitFiltersState()
 }
@@ -1273,38 +1151,27 @@ const getRankingTitle = computed(() => {
 // WATCHERS
 // ============================================================================
 
-/**
- * Watch para recibir acciones del toggle desde App.vue
- */
 watch(toggleAction, async (newAction) => {
   if (!newAction) return
   
   console.log('🔘 [HomePage] Recibida acción de toggle:', newAction)
   
   const { type, filters } = newAction
-  
   activeLegendFilter.value = null
   
   if (type === 'federal') {
-    console.log('🔘 [HomePage] Aplicando filtros para "Datos Regionales" (Federal)')
-    
     selectedEntity.value = filters.entity
     selectedYear.value = filters.year
     selectedVariable.value = filters.variable
     currentDataView.value = 'federal'
     
     resetSelection()
-    
     await loadIFSSData()
     
     filterBarKey.value++
     await nextTick()
     
-    console.log('✅ [HomePage] Filtros aplicados para "Datos Regionales"')
-    
   } else if (type === 'subnacional') {
-    console.log('🔘 [HomePage] Aplicando filtros para "Datos Subnacionales"')
-    
     selectedEntity.value = filters.entity
     selectedYear.value = filters.year
     selectedVariable.value = filters.variable
@@ -1315,77 +1182,40 @@ watch(toggleAction, async (newAction) => {
     }
     
     await restoreInitialYears()
-    
     resetSelection()
-    
     await loadAllStatesRanking(null)
     
     filterBarKey.value++
     await nextTick()
-    
-    console.log('✅ [HomePage] Filtros aplicados para "Datos Subnacionales"')
   }
   
   emitFiltersState()
   
 }, { deep: true })
 
-/**
- * Watch para cargar datos del StackedArea cuando areAllFiltersOnTodas
- */
 watch(areAllFiltersOnTodas, async (newValue, oldValue) => {
-  console.log('👀 [areAllFiltersOnTodas] cambió de', oldValue, 'a', newValue)
-  
-  if (isRetractableExpanded.value) {
-    console.log('⏸️ [HomePage] Panel cualitativo activo, saltando carga de StackedArea')
-    return
-  }
+  if (isRetractableExpanded.value) return
   
   if (newValue && !oldValue) {
-    console.log('🌎 [HomePage] Filtros en "Todas...", cargando StackedArea')
     await loadIFSSData()
   }
 })
 
-/**
- * Watch para detectar cambios en showRegionalCharts
- * ✅ CORREGIDO: Ya NO restauramos años automáticamente aquí
- * La restauración de años se maneja en los handlers específicos cuando es necesario
- */
 watch(showRegionalCharts, async (newValue, oldValue) => {
   console.log('👀 [showRegionalCharts] cambió de', oldValue, 'a', newValue)
-  
-  if (newValue) {
-    console.log('🌎 [HomePage] showRegionalCharts activado - mostrando IFSRegionalCard y RegionalChartsComponent')
-  }
-  
-  // ✅ REMOVIDO: Ya no restauramos años aquí porque causaba que se forzara
-  // un año específico cuando el usuario seleccionaba "Todos los años"
-  // La restauración se hace ahora solo cuando el usuario cambia a un estado
-  // que realmente lo requiere (ej: seleccionar un estado del mapa)
 })
 
-/**
- * Watch para sincronizar cuando selectedState cambia desde el mapa
- */
 watch(selectedState, async (newState, oldState) => {
-  console.log('👀 [HomePage] Watch selectedState:', { newState, oldState })
-  
   if (newState && newState !== oldState) {
     if (selectedEntity.value !== newState) {
       selectedEntity.value = newState
-      console.log('🔄 [HomePage] selectedEntity sincronizado con mapa:', newState)
     }
     
     currentDataView.value = 'subnacional'
     
     const stateData = getStateInfo(newState)
     setChartData(stateData)
-    emit('region-selected', {
-      name: newState,
-      data: stateData
-    })
-    
+    emit('region-selected', { name: newState, data: stateData })
     emitFiltersState()
     
   } else if (!newState && oldState) {
@@ -1423,9 +1253,12 @@ watch(isRetractableExpanded, async (isExpanded, wasExpanded) => {
   console.log('👀 [HomePage] isRetractableExpanded cambió:', { isExpanded, wasExpanded })
   
   if (isExpanded) {
-    console.log('⏸️ [HomePage] Panel cualitativo abierto, ranking y datos cuantitativos pausados')
+    // Al abrir, establecer nivel de selección
+    if (qualitativePanelLevel.value === null) {
+      qualitativePanelLevel.value = 'selection'
+    }
   } else if (!isExpanded && wasExpanded) {
-    console.log('▶️ [HomePage] Panel cualitativo cerrado, handlePanelClosed manejará la recarga')
+    qualitativePanelLevel.value = null
   }
 })
 
@@ -1437,7 +1270,6 @@ onMounted(async () => {
   console.log('\n🚀 ===== INICIALIZANDO HomePage =====')
   
   await fetchAvailableYears()
-  
   await loadEntitiesFromSheet()
   await initializeSlider()
   
@@ -1446,11 +1278,9 @@ onMounted(async () => {
   currentDataView.value = 'subnacional'
   
   if (availableYears.value.length > 0) {
-    // ✅ CORREGIDO: Preferir 2024 si está disponible, ya que 2025 puede no tener datos completos
     const preferredYear = availableYears.value.includes('2024') ? '2024' : availableYears.value[0]
     selectedYear.value = preferredYear
     setActiveYear(preferredYear)
-    console.log('📅 Año inicial establecido:', preferredYear)
   }
   
   await loadAllStatesRanking(null)
@@ -1460,19 +1290,12 @@ onMounted(async () => {
     year: selectedYear.value,
     variable: null
   }
-  console.log('💾 Estado inicial de filtros (DEFAULT):', initialFilters.value)
-  console.log('💾 Años iniciales guardados:', initialYears.value)
-  
-  console.log('👁️ Vista inicial: ninguna activa (null)')
-  
-  console.log('✅ HomePage inicializado')
-  console.log('   areAllFiltersOnTodas:', areAllFiltersOnTodas.value)
   
   emit('available-years-change', availableYears.value)
   updateAvailableYears(availableYears.value)
   emitFiltersState()
   
-  console.log('\n')
+  console.log('✅ HomePage inicializado\n')
 })
 </script>
 
@@ -1523,7 +1346,6 @@ onMounted(async () => {
   background: #d32f2f;
 }
 
-/* ✅ MEJORADO: map-and-charts-wrapper con más altura */
 .map-and-charts-wrapper {
   display: flex;
   gap: 10px;
@@ -1537,7 +1359,6 @@ onMounted(async () => {
   transition: gap 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
   overflow: visible;
   height: 640px;
-  /* ← Añadir ancho mínimo para acomodar mapa + charts */
   min-width: 1800px;
 }
 
@@ -1545,7 +1366,6 @@ onMounted(async () => {
   gap: 0;
 }
 
-/* ✅ MEJORADO: charts-section ajustado para la nueva altura */
 .charts-section {
   transform: translateX(-48px);
   height: 100%;
@@ -1553,7 +1373,7 @@ onMounted(async () => {
   max-height: 100%;
   border-radius: 8px;
   width: 980px;
-  flex-shrink: 0; /* ← Evitar que se comprima */
+  flex-shrink: 0;
   transition: all 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
   overflow: hidden;
 }
@@ -1686,7 +1506,7 @@ onMounted(async () => {
   padding-bottom: 5px;
 }
 
-/* ✅ MEJORADO: Overlay ajustado para nueva altura */
+/* Overlay base */
 .map-overlay-filter {
   position: absolute;
   top: 19.6px;
@@ -1719,6 +1539,33 @@ onMounted(async () => {
 
 .map-overlay-filter.regional-overlay .overlay-text {
   color: white;
+}
+
+/* ✅ NUEVO: Estilos para overlay de QualitativePanel */
+.map-overlay-filter.qualitative-overlay {
+  background: rgba(22, 60, 95, 0.90);
+  cursor: default;
+}
+
+.map-overlay-filter.qualitative-overlay:hover {
+  background: rgba(22, 60, 95, 0.90);
+}
+
+.map-overlay-filter.qualitative-overlay .overlay-icon {
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 16px;
+}
+
+.map-overlay-filter.qualitative-overlay .overlay-text {
+  color: white;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.overlay-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .overlay-message {
@@ -1807,7 +1654,7 @@ onMounted(async () => {
 }
 
 /* ============================================
-   RESPONSIVE - Media Queries para HomePage
+   RESPONSIVE
    ============================================ */
 
 @media (max-width: 768px) {
@@ -1839,7 +1686,6 @@ onMounted(async () => {
     gap: 12px;
   }
   
-  /* ✅ MAPA - Mismo ancho que header y toggle */
   .map-and-charts-wrapper > :deep(.map-wrapper) {
     width: 100% !important;
     max-width: 100% !important;
@@ -1908,7 +1754,6 @@ onMounted(async () => {
     max-width: 100%;
   }
   
-  /* Overlay ajustado */
   .map-overlay-filter {
     position: absolute;
     top: 0;
@@ -1931,7 +1776,6 @@ onMounted(async () => {
     line-height: 1.5;
   }
   
-  /* Ranking Panel */
   .ranking-panel {
     width: 100% !important;
     height: auto !important;
@@ -1959,7 +1803,6 @@ onMounted(async () => {
     padding-bottom: 10px;
   }
 
-  /* Loading y Error states */
   .loading-state,
   .error-state {
     min-height: 200px;
@@ -1991,7 +1834,6 @@ onMounted(async () => {
     margin-bottom: 15px;
   }
 
-  /* Ocultar panel cualitativo */
   .qualitative-panel,
   .qualitative-panel-wrapper {
     display: none !important;
@@ -2012,7 +1854,6 @@ onMounted(async () => {
     gap: 10px;
   }
   
-  /* ✅ MAPA - Más compacto */
   .map-and-charts-wrapper > :deep(.map-wrapper) {
     min-height: 240px;
     max-height: 280px;
@@ -2090,7 +1931,6 @@ onMounted(async () => {
     gap: 8px;
   }
   
-  /* ✅ MAPA - Aún más compacto */
   .map-and-charts-wrapper > :deep(.map-wrapper) {
     min-height: 200px;
     max-height: 240px;
@@ -2194,4 +2034,4 @@ onMounted(async () => {
     padding: 0 6px 8px 6px;
   }
 }
-</style>1
+</style>

@@ -1,5 +1,5 @@
 <!-- src/modules/qualitativeIndicators/components/QualitativePanel.vue -->
-<!-- ✅ CORREGIDO: v-else-if encadenados para evitar montaje múltiple de componentes -->
+<!-- ✅ CORREGIDO: Usa fetchRegionalSheetNames para indicadores regionales -->
 <template>
   <div 
     class="qualitative-panel"
@@ -181,7 +181,8 @@
         <EstatusPaisView 
           :selectedEntity="props.selectedEntity"
           :selectedYear="props.selectedYear"
-          @back="handleBackToCategories" 
+          @back="handleBackToCategories"
+          @years-loaded="handleRegionalYearsLoaded"
         />
       </div>
 
@@ -190,7 +191,8 @@
         <AmbientalesRegionalView
           :selectedEntity="props.selectedEntity"
           :selectedYear="props.selectedYear"
-          @back="handleBackToCategories" 
+          @back="handleBackToCategories"
+          @years-loaded="handleRegionalYearsLoaded"
         />
       </div>
 
@@ -199,7 +201,8 @@
         <SocialesRegionalView
           :selectedEntity="props.selectedEntity"
           :selectedYear="props.selectedYear"
-          @back="handleBackToCategories" 
+          @back="handleBackToCategories"
+          @years-loaded="handleRegionalYearsLoaded"
         />
       </div>
 
@@ -208,7 +211,8 @@
         <EconomicosRegionalView
           :selectedEntity="props.selectedEntity"
           :selectedYear="props.selectedYear"
-          @back="handleBackToCategories" 
+          @back="handleBackToCategories"
+          @years-loaded="handleRegionalYearsLoaded"
         />
       </div>
 
@@ -217,7 +221,8 @@
         <FinanciamientoRegionalView
           :selectedEntity="props.selectedEntity"
           :selectedYear="props.selectedYear"
-          @back="handleBackToCategories" 
+          @back="handleBackToCategories"
+          @years-loaded="handleRegionalYearsLoaded"
         />
       </div>
 
@@ -297,7 +302,7 @@ const selectedDataType = ref(null) // 'subnacional' | 'regional' | null
 const selectedCategory = ref(null)
 
 // ✅ Composable para obtener datos
-const { fetchSheetNames } = useStorageData()
+const { fetchSheetNames, fetchRegionalSheetNames } = useStorageData()
 
 // ============================================
 // TOOLTIP CON TELEPORT
@@ -363,7 +368,18 @@ const expandTooltipMessage = computed(() => {
 })
 
 // ============================================
+// ✅ HANDLER PARA AÑOS CARGADOS DESDE COMPONENTES REGIONALES
+// ============================================
+const handleRegionalYearsLoaded = (years) => {
+  console.log('📅 [QualitativePanel] Años recibidos de componente regional:', years)
+  if (years && years.length > 0) {
+    emit('years-loaded', years)
+  }
+}
+
+// ============================================
 // FUNCIONES DE CARGA DE AÑOS - SUBNACIONALES
+// (Usan fetchSheetNames porque están en estructura plana)
 // ============================================
 const loadAmbientalesYears = async () => {
   try {
@@ -436,80 +452,101 @@ const loadGobernabilidadYears = async () => {
 }
 
 // ============================================
-// FUNCIONES DE CARGA DE AÑOS - REGIONALES
+// ✅ FUNCIONES DE CARGA DE AÑOS - REGIONALES
+// (Usan fetchRegionalSheetNames porque están en estructura anidada)
 // ============================================
 const loadEstatusPaisYears = async () => {
   try {
-    console.log('📅 [QualitativePanel] Cargando años de sheet ESTATUS DEL PAÍS...')
-    const sheetNames = await fetchSheetNames('estatusDelPais')
+    console.log('📅 [QualitativePanel] Cargando años de sheet ESTATUS DEL PAÍS (regional)...')
+    // ✅ CORRECCIÓN: Usar fetchRegionalSheetNames con la clave correcta
+    const sheetNames = await fetchRegionalSheetNames('estatusDelPais')
     const years = sheetNames
       .filter(name => /^\d{4}$/.test(name))
       .sort((a, b) => b - a)
     console.log('✅ [QualitativePanel] Años ESTATUS DEL PAÍS encontrados:', years)
-    emit('years-loaded', years)
+    if (years.length > 0) {
+      emit('years-loaded', years)
+    }
+    return years
   } catch (err) {
     console.error('❌ [QualitativePanel] Error cargando años estatus del país:', err)
-    emit('years-loaded', ['2024', '2023', '2022'])
+    return []
   }
 }
 
 const loadAmbientalesRegionalYears = async () => {
   try {
     console.log('📅 [QualitativePanel] Cargando años de sheet AMBIENTALES REGIONAL...')
-    const sheetNames = await fetchSheetNames('ambientalesRegional')
+    // ✅ CORRECCIÓN: Usar fetchRegionalSheetNames
+    const sheetNames = await fetchRegionalSheetNames('ambientalesRegional')
     const years = sheetNames
       .filter(name => /^\d{4}$/.test(name))
       .sort((a, b) => b - a)
     console.log('✅ [QualitativePanel] Años AMBIENTALES REGIONAL encontrados:', years)
-    emit('years-loaded', years)
+    if (years.length > 0) {
+      emit('years-loaded', years)
+    }
+    return years
   } catch (err) {
     console.error('❌ [QualitativePanel] Error cargando años ambientales regional:', err)
-    emit('years-loaded', ['2024', '2023', '2022'])
+    return []
   }
 }
 
 const loadSocialesRegionalYears = async () => {
   try {
     console.log('📅 [QualitativePanel] Cargando años de sheet SOCIALES REGIONAL...')
-    const sheetNames = await fetchSheetNames('socialesRegional')
+    // ✅ CORRECCIÓN: Usar fetchRegionalSheetNames
+    const sheetNames = await fetchRegionalSheetNames('socialesRegional')
     const years = sheetNames
       .filter(name => /^\d{4}$/.test(name))
       .sort((a, b) => b - a)
     console.log('✅ [QualitativePanel] Años SOCIALES REGIONAL encontrados:', years)
-    emit('years-loaded', years)
+    if (years.length > 0) {
+      emit('years-loaded', years)
+    }
+    return years
   } catch (err) {
     console.error('❌ [QualitativePanel] Error cargando años sociales regional:', err)
-    emit('years-loaded', ['2024', '2023', '2022'])
+    return []
   }
 }
 
 const loadEconomicosRegionalYears = async () => {
   try {
     console.log('📅 [QualitativePanel] Cargando años de sheet ECONÓMICOS REGIONAL...')
-    const sheetNames = await fetchSheetNames('economicosRegional')
+    // ✅ CORRECCIÓN: Usar fetchRegionalSheetNames
+    const sheetNames = await fetchRegionalSheetNames('economicosRegional')
     const years = sheetNames
       .filter(name => /^\d{4}$/.test(name))
       .sort((a, b) => b - a)
     console.log('✅ [QualitativePanel] Años ECONÓMICOS REGIONAL encontrados:', years)
-    emit('years-loaded', years)
+    if (years.length > 0) {
+      emit('years-loaded', years)
+    }
+    return years
   } catch (err) {
     console.error('❌ [QualitativePanel] Error cargando años económicos regional:', err)
-    emit('years-loaded', ['2024', '2023', '2022'])
+    return []
   }
 }
 
 const loadFinanciamientoSostenibleYears = async () => {
   try {
     console.log('📅 [QualitativePanel] Cargando años de sheet FINANCIAMIENTO SOSTENIBLE...')
-    const sheetNames = await fetchSheetNames('financiamientoRegional')
+    // ✅ CORRECCIÓN: Usar fetchRegionalSheetNames
+    const sheetNames = await fetchRegionalSheetNames('financiamientoRegional')
     const years = sheetNames
       .filter(name => /^\d{4}$/.test(name))
       .sort((a, b) => b - a)
     console.log('✅ [QualitativePanel] Años FINANCIAMIENTO SOSTENIBLE encontrados:', years)
-    emit('years-loaded', years)
+    if (years.length > 0) {
+      emit('years-loaded', years)
+    }
+    return years
   } catch (err) {
     console.error('❌ [QualitativePanel] Error cargando años financiamiento sostenible:', err)
-    emit('years-loaded', ['2024', '2023', '2022'])
+    return []
   }
 }
 

@@ -1,8 +1,17 @@
-<!-- src/modules/qualitativeIndicators/components/AmbientalesRegionalView.vue -->
+<!-- src/modules/qualitativeRegionalIndicators/AmbientalesRegionalView.vue -->
+<!-- ✅ CORREGIDO: Emite años válidos al padre y valida año seleccionado -->
 <template>
   <div class="ambientales-container">
-    <!-- EMPTY STATE -->
-    <div v-if="!selectedYear" class="global-empty-state">
+    <!-- ✅ LOADING STATE mientras carga años -->
+    <div v-if="!yearsLoaded" class="global-empty-state">
+      <div class="empty-state-content">
+        <div class="spinner"></div>
+        <p class="empty-state-description">Cargando información...</p>
+      </div>
+    </div>
+
+    <!-- ✅ EMPTY STATE cuando no hay año o año inválido -->
+    <div v-else-if="!selectedYear || !isYearValid" class="global-empty-state">
       <div class="empty-state-content">
         <div class="empty-state-icon">
           <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#718096" stroke-width="1.5">
@@ -10,8 +19,15 @@
             <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
           </svg>
         </div>
-        <h2 class="empty-state-title">Selecciona un año</h2>
-        <p class="empty-state-description">Selecciona un año en el filtro superior para visualizar los indicadores ambientales.</p>
+        <h2 class="empty-state-title">
+          {{ !selectedYear ? 'Selecciona un año' : 'Año no disponible' }}
+        </h2>
+        <p class="empty-state-description">
+          {{ !selectedYear 
+            ? 'Selecciona un año en el filtro superior para visualizar los indicadores ambientales.' 
+            : `El año ${selectedYear} no tiene datos disponibles. Años disponibles: ${validYears.join(', ')}` 
+          }}
+        </p>
       </div>
     </div>
 
@@ -237,11 +253,17 @@ const props = defineProps({
   selectedCountry: { type: String, default: 'México' }
 })
 
+// ✅ IMPORTANTE: Agregar emit para years-loaded
+const emit = defineEmits(['back', 'years-loaded'])
+
 const { fetchRegionalData, fetchRegionalSheetNames } = useStorageData()
 const rawData = ref([])
 const loading = ref(false)
 const error = ref(null)
-const availableYears = ref([])
+
+// ✅ NUEVO: Estado de años válidos
+const validYears = ref([])
+const yearsLoaded = ref(false)
 
 // Donut config GEI
 const donutSize = 100
@@ -255,16 +277,24 @@ const energyDonutRadius = (energyDonutSize - energyStrokeWidth) / 2
 
 // Colores GEI - VARIACIONES DE AZUL
 const geiColors = {
-  energy: '#0F3759',      // Azul muy oscuro
-  agriculture: '#2563eb', // Azul medio
-  industrial: '#60a5fa',  // Azul claro
-  waste: '#93c5fd'        // Azul muy claro
+  energy: '#0F3759',
+  agriculture: '#2563eb',
+  industrial: '#60a5fa',
+  waste: '#93c5fd'
 }
 
 const countryData = computed(() => {
   if (rawData.value.length === 0) return null
   const found = rawData.value.find(row => row['País']?.toLowerCase() === props.selectedCountry?.toLowerCase())
   return found || rawData.value[0]
+})
+
+// ✅ NUEVO: Computed para validar año
+const isYearValid = computed(() => {
+  if (!yearsLoaded.value) return false
+  if (!props.selectedYear) return false
+  const yearStr = String(props.selectedYear)
+  return validYears.value.some(y => String(y) === yearStr)
 })
 
 const geiLegend = computed(() => [
@@ -351,51 +381,85 @@ const formatNumber = (value) => {
   return num.toLocaleString()
 }
 
-const isDataLoaded = ref(false)
-const currentLoadedYear = ref(null)
-
-const loadAvailableYears = async () => {
+// ✅ CORREGIDO: Cargar años válidos y EMITIR AL PADRE
+const loadValidYears = async () => {
   try {
+    console.log('📅 [AmbientalesRegionalView] Cargando años válidos...')
     const sheetNames = await fetchRegionalSheetNames('ambientalesRegional')
-    const years = sheetNames.filter(name => /^\d{4}$/.test(name)).sort((a, b) => Number(b) - Number(a))
-    availableYears.value = years
+    const years = sheetNames
+      .filter(name => /^\d{4}$/.test(name))
+      .sort((a, b) => Number(b) - Number(a))
+    
+    validYears.value = years
+    yearsLoaded.value = true
+    
+    console.log('📅 [AmbientalesRegionalView] Años válidos:', years)
+    
+    // ✅ IMPORTANTE: Emitir años al padre
+    if (years.length > 0) {
+      console.log('📤 [AmbientalesRegionalView] Emitiendo años al padre:', years)
+      emit('years-loaded', years)
+    }
+    
     return years
-  } catch (err) { return [] }
+  } catch (err) {
+    console.error('❌ [AmbientalesRegionalView] Error cargando años:', err)
+    yearsLoaded.value = true
+    return []
+  }
 }
 
-const loadData = async (forceReload = false) => {
+// ✅ CORREGIDO: Cargar datos solo si el año es válido
+const loadData = async () => {
   if (!props.selectedYear) return
+  if (!yearsLoaded.value) return
+  
   const yearStr = String(props.selectedYear)
-  if (availableYears.value.length > 0 && !availableYears.value.includes(yearStr)) return
-  if (!forceReload && isDataLoaded.value && currentLoadedYear.value === yearStr) return
-  if (loading.value) return
+  
+  // Validar que el año existe
+  if (!validYears.value.some(y => String(y) === yearStr)) {
+    console.warn(`⚠️ [AmbientalesRegionalView] Año ${yearStr} no disponible`)
+    return
+  }
+  
   loading.value = true
   try {
+    console.log(`📊 [AmbientalesRegionalView] Cargando datos para año: ${yearStr}`)
     const data = await fetchRegionalData('ambientalesRegional', yearStr)
     if (data && data.length > 0) {
       rawData.value = data
-      isDataLoaded.value = true
-      currentLoadedYear.value = yearStr
+      console.log(`✅ [AmbientalesRegionalView] Datos cargados: ${data.length} registros`)
     }
-  } catch (err) { console.error(err) }
-  finally { loading.value = false }
+  } catch (err) {
+    console.error('❌ [AmbientalesRegionalView] Error:', err)
+    error.value = err.message
+  } finally {
+    loading.value = false
+  }
 }
 
+// Watch para cambios de año
 watch(() => props.selectedYear, async (newYear) => {
-  if (newYear) {
-    const yearStr = String(newYear)
-    if (yearStr !== currentLoadedYear.value) {
-      rawData.value = []
-      isDataLoaded.value = false
-      if (availableYears.value.length === 0) await loadAvailableYears()
-      await loadData()
-    }
+  if (newYear && yearsLoaded.value) {
+    rawData.value = []
+    await loadData()
   }
-}, { immediate: true })
+}, { immediate: false })
 
+// Watch para cuando los años se cargan
+watch(yearsLoaded, (loaded) => {
+  if (loaded && props.selectedYear && isYearValid.value) {
+    loadData()
+  }
+})
+
+// Lifecycle
 onMounted(async () => {
-  await loadAvailableYears()
-  if (props.selectedYear) await loadData()
+  console.log('🚀 [AmbientalesRegionalView] Montado con año:', props.selectedYear)
+  await loadValidYears()
+  if (props.selectedYear && isYearValid.value) {
+    await loadData()
+  }
 })
 </script>
 
@@ -450,6 +514,16 @@ onMounted(async () => {
   color: #718096;
   margin: 0;
   line-height: 1.5;
+}
+
+.spinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #0F3759;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 12px;
 }
 
 .card-body {
@@ -553,12 +627,6 @@ onMounted(async () => {
 .section-title {
   font-size: 12px;
   font-weight: 600;
-  color: white;
-}
-
-.section-value {
-  font-size: 13px;
-  font-weight: 700;
   color: white;
 }
 
@@ -941,15 +1009,6 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   background: #f8fafc;
-}
-
-.spinner {
-  width: 24px;
-  height: 24px;
-  border: 2px solid #e2e8f0;
-  border-top-color: #0F3759;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
 }
 
 @keyframes spin {

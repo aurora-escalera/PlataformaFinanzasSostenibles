@@ -1,9 +1,17 @@
 <!-- src/modules/qualitativeRegionalIndicators/EstatusPaisView.vue -->
-<!-- ✅ CORREGIDO: Validación de años antes de cargar datos -->
+<!-- ✅ CORREGIDO: Usa fetchRegionalSheetNames y fetchRegionalData para datos regionales -->
 <template>
   <div class="estatus-pais-container">
+    <!-- ✅ LOADING STATE mientras carga años -->
+    <div v-if="!yearsLoaded" class="global-empty-state">
+      <div class="empty-state-content">
+        <div class="spinner"></div>
+        <p class="empty-state-description">Cargando información...</p>
+      </div>
+    </div>
+
     <!-- ✅ EMPTY STATE cuando no hay año seleccionado o año inválido -->
-    <div v-if="!selectedYear || (!isYearValid && yearsLoaded)" class="global-empty-state">
+    <div v-else-if="!selectedYear || !isYearValid" class="global-empty-state">
       <div class="empty-state-content">
         <div class="empty-state-icon">
           <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#718096" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -21,14 +29,6 @@
             : `El año ${selectedYear} no tiene datos disponibles. Años disponibles: ${validYears.join(', ')}` 
           }}
         </p>
-      </div>
-    </div>
-
-    <!-- ✅ LOADING STATE mientras carga años -->
-    <div v-else-if="!yearsLoaded" class="global-empty-state">
-      <div class="empty-state-content">
-        <div class="spinner"></div>
-        <p class="empty-state-description">Cargando información...</p>
       </div>
     </div>
 
@@ -218,7 +218,6 @@
 <script setup>
 import { ref, watch, onMounted, computed } from 'vue'
 import { useStorageData } from '@/dataConection/useStorageData'
-import { setActiveYear } from '@/dataConection/storageConfig'
 
 const props = defineProps({
   selectedEntity: {
@@ -231,14 +230,16 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['back'])
+const emit = defineEmits(['back', 'years-loaded'])
 
-const { fetchData, fetchSheetNames } = useStorageData()
+// ✅ CORRECCIÓN: Usar fetchRegionalSheetNames y fetchRegionalData
+const { fetchRegionalSheetNames, fetchRegionalData } = useStorageData()
+
 const rawData = ref([])
 const loading = ref(false)
 const error = ref(null)
 
-// ✅ NUEVO: Años válidos del sheet
+// Años válidos del sheet
 const validYears = ref([])
 const yearsLoaded = ref(false)
 
@@ -248,11 +249,22 @@ const countryData = computed(() => {
   return rawData.value[0]
 })
 
-// ✅ NUEVO: Verificar si el año seleccionado es válido
+// Verificar si el año seleccionado es válido
 const isYearValid = computed(() => {
   if (!yearsLoaded.value) return false
   if (!props.selectedYear) return false
-  return validYears.value.includes(String(props.selectedYear))
+  
+  const yearStr = String(props.selectedYear)
+  const isValid = validYears.value.some(y => String(y) === yearStr)
+  
+  console.log('🔍 [EstatusPaisView] Validando año:', {
+    selectedYear: props.selectedYear,
+    yearStr,
+    validYears: validYears.value,
+    isValid
+  })
+  
+  return isValid
 })
 
 // Formatear número grande
@@ -263,17 +275,33 @@ const formatCurrency = (value) => {
   return new Intl.NumberFormat('es-MX').format(num)
 }
 
-// ✅ Cargar años válidos del sheet
+// ✅ CORRECCIÓN: Cargar años válidos usando fetchRegionalSheetNames
 const loadValidYears = async () => {
   try {
-    console.log('📅 [EstatusPaisView] Cargando años válidos del sheet...')
-    const sheetNames = await fetchSheetNames('estatusDelPais')
-    validYears.value = sheetNames
+    console.log('📅 [EstatusPaisView] Cargando años válidos del sheet estatusDelPais...')
+    
+    // ✅ Usar fetchRegionalSheetNames en lugar de fetchSheetNames
+    const sheetNames = await fetchRegionalSheetNames('estatusDelPais')
+    
+    console.log('📅 [EstatusPaisView] Sheets encontrados:', sheetNames)
+    
+    const years = sheetNames
       .filter(name => /^\d{4}$/.test(name))
       .sort((a, b) => b - a)
+    
+    validYears.value = years
     yearsLoaded.value = true
-    console.log('📅 [EstatusPaisView] Años válidos:', validYears.value)
-    return validYears.value
+    
+    console.log('📅 [EstatusPaisView] Años válidos:', years)
+    
+    // ✅ IMPORTANTE: Emitir los años al padre para actualizar el filtro
+    if (years.length > 0) {
+      console.log('📤 [EstatusPaisView] Emitiendo años al padre:', years)
+      emit('years-loaded', years)
+    }
+    
+    return years
+    
   } catch (err) {
     console.error('❌ [EstatusPaisView] Error obteniendo años válidos:', err)
     yearsLoaded.value = true
@@ -281,15 +309,15 @@ const loadValidYears = async () => {
   }
 }
 
-// Cargar datos
+// ✅ CORRECCIÓN: Cargar datos usando fetchRegionalData
 const loadData = async () => {
-  // ✅ VALIDACIÓN: No cargar si no hay año o si los años no se han cargado
+  // Validación: No cargar si no hay año o si los años no se han cargado
   if (!props.selectedYear) {
     console.log('⏸️ [EstatusPaisView] Sin año seleccionado')
     return
   }
   
-  // ✅ VALIDACIÓN: Esperar a que los años válidos se carguen
+  // Validación: Esperar a que los años válidos se carguen
   if (!yearsLoaded.value) {
     console.log('⏸️ [EstatusPaisView] Esperando carga de años válidos...')
     return
@@ -297,10 +325,9 @@ const loadData = async () => {
   
   const yearStr = String(props.selectedYear)
   
-  // ✅ VALIDACIÓN: Verificar que el año existe en el sheet
-  if (!validYears.value.includes(yearStr)) {
+  // Validación: Verificar que el año existe en el sheet
+  if (!validYears.value.some(y => String(y) === yearStr)) {
     console.warn(`⚠️ [EstatusPaisView] Año ${yearStr} NO existe. Años válidos:`, validYears.value)
-    // NO limpiar rawData - mantener datos anteriores si los hay
     return
   }
   
@@ -310,14 +337,15 @@ const loadData = async () => {
   try {
     console.log('📊 [EstatusPaisView] Cargando datos para año:', yearStr)
     
-    setActiveYear(yearStr)
-    const data = await fetchData('estatusDelPais')
+    // ✅ Usar fetchRegionalData en lugar de fetchData
+    const data = await fetchRegionalData('estatusDelPais', yearStr)
     
     console.log('📊 [EstatusPaisView] Datos obtenidos:', data?.length, 'filas')
     
     if (data && data.length > 0) {
       rawData.value = data
       console.log('📊 [EstatusPaisView] Columnas:', Object.keys(data[0]))
+      console.log('📊 [EstatusPaisView] Primer registro:', data[0])
     } else {
       console.warn('⚠️ [EstatusPaisView] No se obtuvieron datos')
       rawData.value = []
@@ -332,7 +360,7 @@ const loadData = async () => {
   }
 }
 
-// ✅ CORREGIDO: Watch sin immediate, espera a que años estén cargados
+// Watch para cambios de año
 watch(() => props.selectedYear, (newYear, oldYear) => {
   console.log('👀 [EstatusPaisView] Año cambió:', oldYear, '→', newYear)
   
@@ -341,7 +369,7 @@ watch(() => props.selectedYear, (newYear, oldYear) => {
   }
 })
 
-// ✅ Watch para cuando los años se cargan
+// Watch para cuando los años se cargan
 watch(yearsLoaded, (loaded) => {
   if (loaded && props.selectedYear) {
     console.log('📅 [EstatusPaisView] Años cargados, intentando cargar datos...')
@@ -353,14 +381,15 @@ watch(yearsLoaded, (loaded) => {
 onMounted(async () => {
   console.log('🚀 [EstatusPaisView] Montado con año:', props.selectedYear)
   
-  // PRIMERO cargar años válidos
+  // PRIMERO cargar años válidos (y emitirlos al padre)
   await loadValidYears()
   
   // LUEGO intentar cargar datos si el año es válido
   if (props.selectedYear && isYearValid.value) {
     await loadData()
   } else if (props.selectedYear) {
-    console.warn(`⚠️ [EstatusPaisView] Año inicial ${props.selectedYear} no es válido, esperando año correcto...`)
+    console.warn(`⚠️ [EstatusPaisView] Año inicial ${props.selectedYear} no es válido`)
+    // Si hay años válidos, el filtro se actualizará automáticamente
   }
 })
 </script>

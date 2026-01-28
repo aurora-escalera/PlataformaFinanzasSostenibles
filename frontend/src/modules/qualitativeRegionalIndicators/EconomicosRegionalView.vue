@@ -1,8 +1,17 @@
 <!-- src/modules/qualitativeRegionalIndicators/EconomicosRegionalView.vue -->
+<!-- ✅ CORREGIDO: Emite años válidos al padre y valida año seleccionado -->
 <template>
   <div class="economicos-container">
-    <!-- EMPTY STATE -->
-    <div v-if="!selectedYear" class="global-empty-state">
+    <!-- ✅ LOADING STATE mientras carga años -->
+    <div v-if="!yearsLoaded" class="global-empty-state">
+      <div class="empty-state-content">
+        <div class="spinner"></div>
+        <p class="empty-state-description">Cargando información...</p>
+      </div>
+    </div>
+
+    <!-- ✅ EMPTY STATE cuando no hay año o año inválido -->
+    <div v-else-if="!selectedYear || !isYearValid" class="global-empty-state">
       <div class="empty-state-content">
         <div class="empty-state-icon">
           <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#718096" stroke-width="1.5">
@@ -10,8 +19,15 @@
             <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
           </svg>
         </div>
-        <h2 class="empty-state-title">Selecciona un año</h2>
-        <p class="empty-state-description">Selecciona un año en el filtro superior para visualizar los indicadores económicos.</p>
+        <h2 class="empty-state-title">
+          {{ !selectedYear ? 'Selecciona un año' : 'Año no disponible' }}
+        </h2>
+        <p class="empty-state-description">
+          {{ !selectedYear 
+            ? 'Selecciona un año en el filtro superior para visualizar los indicadores económicos.' 
+            : `El año ${selectedYear} no tiene datos disponibles. Años disponibles: ${validYears.join(', ')}` 
+          }}
+        </p>
       </div>
     </div>
 
@@ -248,25 +264,37 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import { useStorageData } from '../../dataConection/useStorageData'
+import { useStorageData } from '@/dataConection/useStorageData'
 
 const props = defineProps({
   selectedYear: { type: [String, Number], default: null },
   selectedCountry: { type: String, default: 'México' }
 })
 
-const emit = defineEmits(['back'])
+// ✅ IMPORTANTE: Agregar emit para years-loaded
+const emit = defineEmits(['back', 'years-loaded'])
 
 const { fetchRegionalData, fetchRegionalSheetNames } = useStorageData()
 const rawData = ref([])
 const loading = ref(false)
 const error = ref(null)
-const availableYears = ref([])
+
+// ✅ NUEVO: Estado de años válidos
+const validYears = ref([])
+const yearsLoaded = ref(false)
 
 const countryData = computed(() => {
   if (rawData.value.length === 0) return null
   const found = rawData.value.find(row => row['País']?.toLowerCase() === props.selectedCountry?.toLowerCase())
   return found || rawData.value[0]
+})
+
+// ✅ NUEVO: Computed para validar año
+const isYearValid = computed(() => {
+  if (!yearsLoaded.value) return false
+  if (!props.selectedYear) return false
+  const yearStr = String(props.selectedYear)
+  return validYears.value.some(y => String(y) === yearStr)
 })
 
 const formatLargeCurrency = (value) => {
@@ -347,27 +375,46 @@ const getBudgetPCPercentage = (value) => {
   return Math.min((num / 10000) * 100, 100)
 }
 
-const isDataLoaded = ref(false)
-const currentLoadedYear = ref(null)
-
-const loadAvailableYears = async () => {
+// ✅ CORREGIDO: Cargar años válidos y EMITIR AL PADRE
+const loadValidYears = async () => {
   try {
+    console.log('📅 [EconomicosRegionalView] Cargando años válidos...')
     const sheetNames = await fetchRegionalSheetNames('economicosRegional')
-    const years = sheetNames.filter(name => /^\d{4}$/.test(name)).sort((a, b) => Number(b) - Number(a))
-    availableYears.value = years
+    const years = sheetNames
+      .filter(name => /^\d{4}$/.test(name))
+      .sort((a, b) => Number(b) - Number(a))
+    
+    validYears.value = years
+    yearsLoaded.value = true
+    
+    console.log('📅 [EconomicosRegionalView] Años válidos:', years)
+    
+    // ✅ IMPORTANTE: Emitir años al padre
+    if (years.length > 0) {
+      console.log('📤 [EconomicosRegionalView] Emitiendo años al padre:', years)
+      emit('years-loaded', years)
+    }
+    
     return years
-  } catch (err) { console.error('Error cargando años:', err); return [] }
+  } catch (err) {
+    console.error('❌ [EconomicosRegionalView] Error cargando años:', err)
+    yearsLoaded.value = true
+    return []
+  }
 }
 
-const loadData = async (forceReload = false) => {
+// ✅ CORREGIDO: Cargar datos solo si el año es válido
+const loadData = async () => {
   if (!props.selectedYear) return
+  if (!yearsLoaded.value) return
+  
   const yearStr = String(props.selectedYear)
-  if (availableYears.value.length > 0 && !availableYears.value.includes(yearStr)) {
-    console.warn(`Año ${yearStr} no disponible para economicosRegional`)
+  
+  // Validar que el año existe
+  if (!validYears.value.some(y => String(y) === yearStr)) {
+    console.warn(`⚠️ [EconomicosRegionalView] Año ${yearStr} no disponible`)
     return
   }
-  if (!forceReload && isDataLoaded.value && currentLoadedYear.value === yearStr) return
-  if (loading.value) return
   
   loading.value = true
   try {
@@ -375,29 +422,38 @@ const loadData = async (forceReload = false) => {
     const data = await fetchRegionalData('economicosRegional', yearStr)
     if (data && data.length > 0) {
       rawData.value = data
-      isDataLoaded.value = true
-      currentLoadedYear.value = yearStr
       console.log(`✅ [EconomicosRegionalView] Datos cargados: ${data.length} registros`)
     }
-  } catch (err) { console.error('❌ [EconomicosRegionalView] Error:', err); error.value = err.message }
-  finally { loading.value = false }
+  } catch (err) {
+    console.error('❌ [EconomicosRegionalView] Error:', err)
+    error.value = err.message
+  } finally {
+    loading.value = false
+  }
 }
 
+// Watch para cambios de año
 watch(() => props.selectedYear, async (newYear) => {
-  if (newYear) {
-    const yearStr = String(newYear)
-    if (yearStr !== currentLoadedYear.value) {
-      rawData.value = []
-      isDataLoaded.value = false
-      if (availableYears.value.length === 0) await loadAvailableYears()
-      await loadData()
-    }
+  if (newYear && yearsLoaded.value) {
+    rawData.value = []
+    await loadData()
   }
-}, { immediate: true })
+}, { immediate: false })
 
+// Watch para cuando los años se cargan
+watch(yearsLoaded, (loaded) => {
+  if (loaded && props.selectedYear && isYearValid.value) {
+    loadData()
+  }
+})
+
+// Lifecycle
 onMounted(async () => {
-  await loadAvailableYears()
-  if (props.selectedYear) await loadData()
+  console.log('🚀 [EconomicosRegionalView] Montado con año:', props.selectedYear)
+  await loadValidYears()
+  if (props.selectedYear && isYearValid.value) {
+    await loadData()
+  }
 })
 </script>
 
@@ -408,6 +464,7 @@ onMounted(async () => {
 .empty-state-icon { width: 70px; height: 70px; margin-bottom: 14px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%); border-radius: 50%; }
 .empty-state-title { font-size: 16px; font-weight: 600; color: #2d3748; margin: 0 0 6px 0; }
 .empty-state-description { font-size: 13px; color: #718096; margin: 0; line-height: 1.5; }
+.spinner { width: 30px; height: 30px; border: 3px solid #e2e8f0; border-top-color: #0F3759; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 12px; }
 .card-body { height: 100%; display: flex; flex-direction: column; gap: 6px; overflow: hidden; }
 .main-header { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 8px; background: linear-gradient(135deg, #0F3759 0%, #1a4d7a 100%); flex-shrink: 0; }
 .header-icon-badge { width: 24px; height: 24px; border-radius: 6px; background: rgba(255, 255, 255, 0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -493,6 +550,5 @@ onMounted(async () => {
 .summary-note { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 6px; background: #f8fafc; border-radius: 6px; }
 .summary-note span { font-size: 10px; color: #94a3b8; }
 .loading-state { display: flex; align-items: center; justify-content: center; background: #f8fafc; }
-.spinner { width: 24px; height: 24px; border: 2px solid #e2e8f0; border-top-color: #0F3759; border-radius: 50%; animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 </style>

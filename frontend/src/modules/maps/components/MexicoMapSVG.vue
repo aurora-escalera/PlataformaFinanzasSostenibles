@@ -1,5 +1,5 @@
-<!-- src/modules/maps/components/MexicoMapSVG.vue --> 
-<!-- ✅ ACTUALIZADO: Card mejorada cuando se selecciona un estado -->
+<!-- src/modules/maps/components/MexicoMapSVG.vue -->
+<!-- ✅ ACTUALIZADO: Tooltip rediseñado estilo Figura 2 con información de Figura 1 -->
 <template>
   <div class="map-wrapper" @click="handleBackgroundClick">
     <!-- CARD FLOTANTE CON INFO DEL ESTADO/NACIONAL -->
@@ -143,40 +143,49 @@
       </g>
     </svg>
 
+    <!-- ✅ TOOLTIP REDISEÑADO - Estilo Figura 2 con información de Figura 1 -->
     <Teleport to="body">
-      <div 
-        v-if="hoveredState" 
-        class="mexico-map-tooltip"
-        :style="tooltipStyle"
-      >
+      <transition name="tooltip-fade">
         <div 
-          class="tooltip-icon-circle"
-          :style="{ background: getTooltipIconGradient() }"
+          v-if="hoveredState && !selectedState" 
+          class="map-tooltip-compact"
+          :style="tooltipStyle"
         >
-          <svg viewBox="0 0 24 24">
-            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-          </svg>
-        </div>
-        <div class="tooltip-info">
-          <div class="tooltip-state-name">{{ hoveredState }}</div>
+          <div class="tooltip-compact-content">
+            <!-- Cuadrito de color (sin ícono) -->
+            <div 
+              class="tooltip-color-box"
+              :style="{ backgroundColor: getTooltipColor() }"
+            ></div>
+            
+            <!-- Información -->
+            <div class="tooltip-compact-info">
+              <!-- Nombre del estado -->
+              <div class="tooltip-state-name">{{ hoveredState }}</div>
+              
+              <!-- Valor IFSS -->
+              <div class="tooltip-ifss-row">
+                <span class="tooltip-ifss-value">{{ formatIFSSValue(getStateInfo(hoveredState).value) }}</span>
+                <span class="tooltip-ifss-label">IFSS</span>
+              </div>
+              
+              <!-- Año -->
+              <div class="tooltip-year-row">
+                <span class="tooltip-year-value">{{ getStateInfo(hoveredState).year || '2024' }}</span>
+                <span class="tooltip-year-label">Año</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Clasificación en la parte inferior -->
           <div 
-            class="tooltip-classification"
+            class="tooltip-classification-bar"
             :style="{ color: getTooltipColor() }"
           >
             {{ getIFSSLabel(getStateInfo(hoveredState).value || 0).label }}
           </div>
-          <div class="tooltip-stats">
-            <div class="tooltip-stat">
-              <div class="tooltip-stat-value">{{ getStateInfo(hoveredState).value || 0 }}</div>
-              <div class="tooltip-stat-label">IFSS</div>
-            </div>
-            <div class="tooltip-stat">
-              <div class="tooltip-stat-value">{{ getStateInfo(hoveredState).year || '-' }}</div>
-              <div class="tooltip-stat-label">Año</div>
-            </div>
-          </div>
         </div>
-      </div>
+      </transition>
     </Teleport>
   </div>
 </template>
@@ -381,17 +390,11 @@ const getTooltipColor = () => {
   return props.getIFSSLabel(props.getStateInfo(props.hoveredState).value || 0).color || '#718096'
 }
 
-const getTooltipIconGradient = () => {
-  const color = getTooltipColor()
-  return `linear-gradient(135deg, ${color} 0%, ${adjustColor(color, -20)} 100%)`
-}
-
-const adjustColor = (color, amount) => {
-  const hex = color.replace('#', '')
-  const r = Math.max(0, Math.min(255, parseInt(hex.substring(0, 2), 16) + amount))
-  const g = Math.max(0, Math.min(255, parseInt(hex.substring(2, 4), 16) + amount))
-  const b = Math.max(0, Math.min(255, parseInt(hex.substring(4, 6), 16) + amount))
-  return `rgb(${r}, ${g}, ${b})`
+// ✅ Formatear valor IFSS con 2 decimales
+const formatIFSSValue = (value) => {
+  if (value === null || value === undefined) return '0.00'
+  const numValue = parseFloat(value) || 0
+  return numValue.toFixed(2)
 }
 
 // ============================================================================
@@ -442,12 +445,13 @@ const handleDatosFederalesClick = () => {
   window.open('https://plataformafinanzassostenibles.gflac.org/ranking', '_blank')
 }
 
+// ✅ TOOLTIP STYLE - Posición optimizada
 const tooltipStyle = computed(() => {
   if (!props.hoveredState) return { display: 'none' }
   return {
     position: 'fixed',
-    left: `${mousePosition.value.x + 28}px`,
-    top: `${mousePosition.value.y - 75}px`,
+    left: `${mousePosition.value.x + 15}px`,
+    top: `${mousePosition.value.y - 20}px`,
     pointerEvents: 'none',
     zIndex: 99999
   }
@@ -521,9 +525,6 @@ const tooltipStyle = computed(() => {
   line-height: 1;
 }
 
-/* ============================================================================
-   ESTILOS CARD-IFSS-INFO - Vista normal y vista de estado
-   ============================================================================ */
 .card-ifss-info {
   text-align: left;
 }
@@ -884,6 +885,119 @@ const tooltipStyle = computed(() => {
   opacity: 0.5;
   filter: grayscale(30%) brightness(1);
 }
+
+/* ============================================================================
+   ✅ TOOLTIP COMPACTO - Estilo Figura 2 con info de Figura 1
+   ============================================================================ */
+
+.map-tooltip-compact {
+  position: fixed;
+  background: rgba(30, 30, 35, 0.95);
+  color: white;
+  padding: 12px 16px;
+  border-radius: 12px;
+  white-space: nowrap;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  z-index: 99999;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  min-width: 120px;
+}
+
+.tooltip-compact-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+/* Cuadrito de color (reemplaza el ícono de ubicación) */
+.tooltip-color-box {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.tooltip-compact-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Nombre del estado */
+.tooltip-state-name {
+  font-weight: 600;
+  font-size: 15px;
+  color: white;
+  line-height: 1.2;
+}
+
+/* Fila de IFSS y Año */
+.tooltip-ifss-row,
+.tooltip-year-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.tooltip-ifss-value,
+.tooltip-year-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.tooltip-ifss-label,
+.tooltip-year-label {
+  font-size: 11px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* Clasificación en la parte inferior */
+.tooltip-classification-bar {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Animación de entrada/salida */
+.tooltip-fade-enter-active {
+  animation: tooltipFadeIn 0.15s ease-out;
+}
+
+.tooltip-fade-leave-active {
+  animation: tooltipFadeOut 0.1s ease-in;
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes tooltipFadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(4px) scale(0.96);
+  }
+}
+
 /* ============================================
    RESPONSIVE - Media Queries MexicoMapSVG
    ============================================ */
@@ -966,6 +1080,43 @@ const tooltipStyle = computed(() => {
   .selected-state-label {
     font-size: 7px;
   }
+
+  /* ✅ Tooltip compacto en móvil */
+  .map-tooltip-compact {
+    padding: 10px 12px;
+    border-radius: 10px;
+    min-width: 100px;
+  }
+
+  .tooltip-color-box {
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+  }
+
+  .tooltip-compact-content {
+    gap: 10px;
+  }
+
+  .tooltip-state-name {
+    font-size: 13px;
+  }
+
+  .tooltip-ifss-value,
+  .tooltip-year-value {
+    font-size: 12px;
+  }
+
+  .tooltip-ifss-label,
+  .tooltip-year-label {
+    font-size: 10px;
+  }
+
+  .tooltip-classification-bar {
+    font-size: 11px;
+    margin-top: 6px;
+    padding-top: 6px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1026,6 +1177,43 @@ const tooltipStyle = computed(() => {
   .selected-state-label {
     font-size: 6px;
   }
+
+  /* Tooltip más compacto */
+  .map-tooltip-compact {
+    padding: 8px 10px;
+    border-radius: 8px;
+    min-width: 90px;
+  }
+
+  .tooltip-color-box {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+  }
+
+  .tooltip-compact-content {
+    gap: 8px;
+  }
+
+  .tooltip-state-name {
+    font-size: 12px;
+  }
+
+  .tooltip-ifss-value,
+  .tooltip-year-value {
+    font-size: 11px;
+  }
+
+  .tooltip-ifss-label,
+  .tooltip-year-label {
+    font-size: 9px;
+  }
+
+  .tooltip-classification-bar {
+    font-size: 10px;
+    margin-top: 5px;
+    padding-top: 5px;
+  }
 }
 
 @media (max-width: 360px) {
@@ -1085,6 +1273,43 @@ const tooltipStyle = computed(() => {
   
   .selected-state-label {
     font-size: 5px;
+  }
+
+  /* Tooltip mínimo */
+  .map-tooltip-compact {
+    padding: 6px 8px;
+    border-radius: 6px;
+    min-width: 80px;
+  }
+
+  .tooltip-color-box {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+  }
+
+  .tooltip-compact-content {
+    gap: 6px;
+  }
+
+  .tooltip-state-name {
+    font-size: 11px;
+  }
+
+  .tooltip-ifss-value,
+  .tooltip-year-value {
+    font-size: 10px;
+  }
+
+  .tooltip-ifss-label,
+  .tooltip-year-label {
+    font-size: 8px;
+  }
+
+  .tooltip-classification-bar {
+    font-size: 9px;
+    margin-top: 4px;
+    padding-top: 4px;
   }
 }
 
@@ -1147,6 +1372,43 @@ const tooltipStyle = computed(() => {
   .selected-state-label {
     font-size: 5px;
   }
+
+  /* Tooltip ultra compacto */
+  .map-tooltip-compact {
+    padding: 5px 7px;
+    border-radius: 5px;
+    min-width: 70px;
+  }
+
+  .tooltip-color-box {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+  }
+
+  .tooltip-compact-content {
+    gap: 5px;
+  }
+
+  .tooltip-state-name {
+    font-size: 10px;
+  }
+
+  .tooltip-ifss-value,
+  .tooltip-year-value {
+    font-size: 9px;
+  }
+
+  .tooltip-ifss-label,
+  .tooltip-year-label {
+    font-size: 7px;
+  }
+
+  .tooltip-classification-bar {
+    font-size: 8px;
+    margin-top: 3px;
+    padding-top: 3px;
+  }
 }
 
 /* Landscape en móviles */
@@ -1197,6 +1459,30 @@ const tooltipStyle = computed(() => {
   
   .selected-state-label {
     font-size: 5px;
+  }
+
+  /* Tooltip en landscape */
+  .map-tooltip-compact {
+    padding: 8px 10px;
+    border-radius: 8px;
+  }
+
+  .tooltip-color-box {
+    width: 18px;
+    height: 18px;
+  }
+
+  .tooltip-state-name {
+    font-size: 12px;
+  }
+
+  .tooltip-ifss-value,
+  .tooltip-year-value {
+    font-size: 11px;
+  }
+
+  .tooltip-classification-bar {
+    font-size: 10px;
   }
 }
 </style>
