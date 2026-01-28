@@ -1,9 +1,17 @@
 <!-- src/modules/qualitativeRegionalIndicators/FinanciamientoRegionalView.vue -->
-<!-- ✅ REDISEÑO v5: Iconos azul oscuro uniforme, sin total -->
+<!-- ✅ CORREGIDO: Emite años válidos al padre y valida año seleccionado -->
 <template>
   <div class="financiamiento-container">
-    <!-- EMPTY STATE -->
-    <div v-if="!selectedYear" class="global-empty-state">
+    <!-- ✅ LOADING STATE mientras carga años -->
+    <div v-if="!yearsLoaded" class="global-empty-state">
+      <div class="empty-state-content">
+        <div class="spinner"></div>
+        <p class="empty-state-description">Cargando información...</p>
+      </div>
+    </div>
+
+    <!-- ✅ EMPTY STATE cuando no hay año o año inválido -->
+    <div v-else-if="!selectedYear || !isYearValid" class="global-empty-state">
       <div class="empty-state-content">
         <div class="empty-state-icon">
           <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#718096" stroke-width="1.5">
@@ -12,12 +20,19 @@
             <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
           </svg>
         </div>
-        <h2 class="empty-state-title">Selecciona un año</h2>
-        <p class="empty-state-description">Selecciona un año en el filtro superior para visualizar el financiamiento sostenible internacional.</p>
+        <h2 class="empty-state-title">
+          {{ !selectedYear ? 'Selecciona un año' : 'Año no disponible' }}
+        </h2>
+        <p class="empty-state-description">
+          {{ !selectedYear 
+            ? 'Selecciona un año en el filtro superior para visualizar el financiamiento sostenible internacional.' 
+            : `El año ${selectedYear} no tiene datos disponibles. Años disponibles: ${validYears.join(', ')}` 
+          }}
+        </p>
       </div>
     </div>
 
-    <!-- CONTENIDO - UNA SOLA CARD -->
+    <!-- CONTENIDO -->
     <div v-else class="main-card" :class="{ 'animate-in': isAnimating }">
       <!-- HEADER -->
       <div class="card-header">
@@ -38,7 +53,7 @@
         </div>
       </div>
 
-      <!-- BODY - LISTA DE FONDOS -->
+      <!-- BODY -->
       <div v-if="loading" class="card-body loading-state">
         <div class="spinner"></div>
       </div>
@@ -53,10 +68,7 @@
           <div class="fund-info">
             <span class="fund-name">Fondo Verde del Clima (FVC)</span>
             <div class="fund-bar">
-              <div 
-                class="fund-bar-fill" 
-                :style="{ width: isAnimating ? getBarWidth('FVC') + '%' : '0%' }"
-              ></div>
+              <div class="fund-bar-fill" :style="{ width: isAnimating ? getBarWidth('FVC') + '%' : '0%' }"></div>
             </div>
           </div>
           <div class="fund-value">
@@ -78,10 +90,7 @@
           <div class="fund-info">
             <span class="fund-name">Fondo para el Medio Ambiente Mundial (FMAM)</span>
             <div class="fund-bar">
-              <div 
-                class="fund-bar-fill" 
-                :style="{ width: isAnimating ? getBarWidth('FMAM') + '%' : '0%' }"
-              ></div>
+              <div class="fund-bar-fill" :style="{ width: isAnimating ? getBarWidth('FMAM') + '%' : '0%' }"></div>
             </div>
           </div>
           <div class="fund-value">
@@ -101,10 +110,7 @@
           <div class="fund-info">
             <span class="fund-name">Fondo de Inversión Climática (FIC)</span>
             <div class="fund-bar">
-              <div 
-                class="fund-bar-fill" 
-                :style="{ width: isAnimating ? getBarWidth('FIC') + '%' : '0%' }"
-              ></div>
+              <div class="fund-bar-fill" :style="{ width: isAnimating ? getBarWidth('FIC') + '%' : '0%' }"></div>
             </div>
           </div>
           <div class="fund-value">
@@ -126,10 +132,7 @@
           <div class="fund-info">
             <span class="fund-name">Banco Interamericano de Desarrollo (BID)</span>
             <div class="fund-bar">
-              <div 
-                class="fund-bar-fill" 
-                :style="{ width: isAnimating ? getBarWidth('BID') + '%' : '0%' }"
-              ></div>
+              <div class="fund-bar-fill" :style="{ width: isAnimating ? getBarWidth('BID') + '%' : '0%' }"></div>
             </div>
           </div>
           <div class="fund-value">
@@ -138,7 +141,7 @@
         </div>
       </div>
 
-      <!-- FOOTER - Solo fuente -->
+      <!-- FOOTER -->
       <div class="card-footer">
         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="10"/>
@@ -160,19 +163,31 @@ const props = defineProps({
   selectedCountry: { type: String, default: 'México' }
 })
 
-const emit = defineEmits(['back'])
+// ✅ IMPORTANTE: Agregar emit para years-loaded
+const emit = defineEmits(['back', 'years-loaded'])
 
 const { fetchRegionalData, fetchRegionalSheetNames } = useStorageData()
 const rawData = ref([])
 const loading = ref(false)
 const error = ref(null)
-const availableYears = ref([])
 const isAnimating = ref(false)
+
+// ✅ NUEVO: Estado de años válidos
+const validYears = ref([])
+const yearsLoaded = ref(false)
 
 const countryData = computed(() => {
   if (rawData.value.length === 0) return null
   const found = rawData.value.find(row => row['País']?.toLowerCase() === props.selectedCountry?.toLowerCase())
   return found || rawData.value[0]
+})
+
+// ✅ NUEVO: Computed para validar año
+const isYearValid = computed(() => {
+  if (!yearsLoaded.value) return false
+  if (!props.selectedYear) return false
+  const yearStr = String(props.selectedYear)
+  return validYears.value.some(y => String(y) === yearStr)
 })
 
 const maxFundValue = computed(() => {
@@ -225,27 +240,46 @@ const triggerAnimation = () => {
   })
 }
 
-const isDataLoaded = ref(false)
-const currentLoadedYear = ref(null)
-
-const loadAvailableYears = async () => {
+// ✅ CORREGIDO: Cargar años válidos y EMITIR AL PADRE
+const loadValidYears = async () => {
   try {
+    console.log('📅 [FinanciamientoRegionalView] Cargando años válidos...')
     const sheetNames = await fetchRegionalSheetNames('financiamientoRegional')
-    const years = sheetNames.filter(name => /^\d{4}$/.test(name)).sort((a, b) => Number(b) - Number(a))
-    availableYears.value = years
+    const years = sheetNames
+      .filter(name => /^\d{4}$/.test(name))
+      .sort((a, b) => Number(b) - Number(a))
+    
+    validYears.value = years
+    yearsLoaded.value = true
+    
+    console.log('📅 [FinanciamientoRegionalView] Años válidos:', years)
+    
+    // ✅ IMPORTANTE: Emitir años al padre
+    if (years.length > 0) {
+      console.log('📤 [FinanciamientoRegionalView] Emitiendo años al padre:', years)
+      emit('years-loaded', years)
+    }
+    
     return years
-  } catch (err) { console.error('Error cargando años:', err); return [] }
+  } catch (err) {
+    console.error('❌ [FinanciamientoRegionalView] Error cargando años:', err)
+    yearsLoaded.value = true
+    return []
+  }
 }
 
-const loadData = async (forceReload = false) => {
+// ✅ CORREGIDO: Cargar datos solo si el año es válido
+const loadData = async () => {
   if (!props.selectedYear) return
+  if (!yearsLoaded.value) return
+  
   const yearStr = String(props.selectedYear)
-  if (availableYears.value.length > 0 && !availableYears.value.includes(yearStr)) {
-    console.warn(`Año ${yearStr} no disponible para financiamientoRegional`)
+  
+  // Validar que el año existe
+  if (!validYears.value.some(y => String(y) === yearStr)) {
+    console.warn(`⚠️ [FinanciamientoRegionalView] Año ${yearStr} no disponible`)
     return
   }
-  if (!forceReload && isDataLoaded.value && currentLoadedYear.value === yearStr) return
-  if (loading.value) return
   
   loading.value = true
   isAnimating.value = false
@@ -255,30 +289,39 @@ const loadData = async (forceReload = false) => {
     const data = await fetchRegionalData('financiamientoRegional', yearStr)
     if (data && data.length > 0) {
       rawData.value = data
-      isDataLoaded.value = true
-      currentLoadedYear.value = yearStr
       console.log(`✅ [FinanciamientoRegionalView] Datos cargados: ${data.length} registros`)
       triggerAnimation()
     }
-  } catch (err) { console.error('❌ [FinanciamientoRegionalView] Error:', err); error.value = err.message }
-  finally { loading.value = false }
+  } catch (err) {
+    console.error('❌ [FinanciamientoRegionalView] Error:', err)
+    error.value = err.message
+  } finally {
+    loading.value = false
+  }
 }
 
+// Watch para cambios de año
 watch(() => props.selectedYear, async (newYear) => {
-  if (newYear) {
-    const yearStr = String(newYear)
-    if (yearStr !== currentLoadedYear.value) {
-      rawData.value = []
-      isDataLoaded.value = false
-      if (availableYears.value.length === 0) await loadAvailableYears()
-      await loadData()
-    }
+  if (newYear && yearsLoaded.value) {
+    rawData.value = []
+    await loadData()
   }
-}, { immediate: true })
+}, { immediate: false })
 
+// Watch para cuando los años se cargan
+watch(yearsLoaded, (loaded) => {
+  if (loaded && props.selectedYear && isYearValid.value) {
+    loadData()
+  }
+})
+
+// Lifecycle
 onMounted(async () => {
-  await loadAvailableYears()
-  if (props.selectedYear) await loadData()
+  console.log('🚀 [FinanciamientoRegionalView] Montado con año:', props.selectedYear)
+  await loadValidYears()
+  if (props.selectedYear && isYearValid.value) {
+    await loadData()
+  }
 })
 </script>
 
@@ -296,221 +339,47 @@ onMounted(async () => {
 }
 
 /* Empty State */
-.global-empty-state { 
-  display: flex; 
-  align-items: center; 
-  justify-content: center; 
-  height: 100%; 
-  background: white;
-  border-radius: 16px;
-}
-.empty-state-content { 
-  display: flex; 
-  flex-direction: column; 
-  align-items: center; 
-  text-align: center; 
-  max-width: 280px; 
-}
-.empty-state-icon { 
-  width: 64px; 
-  height: 64px; 
-  margin-bottom: 12px; 
-  display: flex; 
-  align-items: center; 
-  justify-content: center; 
-  background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%); 
-  border-radius: 50%; 
-}
-.empty-state-title { 
-  font-size: 15px; 
-  font-weight: 600; 
-  color: #2d3748; 
-  margin: 0 0 6px 0; 
-}
-.empty-state-description { 
-  font-size: 12px; 
-  color: #718096; 
-  margin: 0; 
-  line-height: 1.4; 
-}
+.global-empty-state { display: flex; align-items: center; justify-content: center; height: 100%; background: white; border-radius: 16px; }
+.empty-state-content { display: flex; flex-direction: column; align-items: center; text-align: center; max-width: 280px; }
+.empty-state-icon { width: 64px; height: 64px; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%); border-radius: 50%; }
+.empty-state-title { font-size: 15px; font-weight: 600; color: #2d3748; margin: 0 0 6px 0; }
+.empty-state-description { font-size: 12px; color: #718096; margin: 0; line-height: 1.4; }
+.spinner { width: 30px; height: 30px; border: 3px solid #e2e8f0; border-top-color: #0F3759; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 12px; }
 
-/* ========== MAIN CARD ========== */
-.main-card {
-  background: white;
-  border-radius: 16px;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-  overflow: hidden;
-  opacity: 0;
-  transform: translateY(10px);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
+/* Main Card */
+.main-card { background: white; border-radius: 16px; height: 100%; display: flex; flex-direction: column; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); overflow: hidden; opacity: 0; transform: translateY(10px); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+.main-card.animate-in { opacity: 1; transform: translateY(0); }
 
-.main-card.animate-in {
-  opacity: 1;
-  transform: translateY(0);
-}
+/* Header */
+.card-header { display: flex; align-items: center; gap: 12px; padding: 14px 18px; background: linear-gradient(135deg, #0F3759 0%, #1a4d7a 100%); flex-shrink: 0; }
+.header-icon { width: 36px; height: 36px; border-radius: 10px; background: rgba(255, 255, 255, 0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.header-title { flex: 1; font-size: 14px; font-weight: 600; color: white; }
+.header-info { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; opacity: 0.7; cursor: pointer; transition: opacity 0.2s; }
+.header-info:hover { opacity: 1; }
 
-/* ========== CARD HEADER ========== */
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 18px;
-  background: linear-gradient(135deg, #0F3759 0%, #1a4d7a 100%);
-  flex-shrink: 0;
-}
+/* Body */
+.card-body { flex: 1; padding: 12px 14px; display: flex; flex-direction: column; justify-content: center; gap: 6px; overflow: hidden; }
 
-.header-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.15);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
+/* Fund Row */
+.fund-row { display: flex; align-items: center; gap: 14px; padding: 14px 16px; background: #f8fafc; border-radius: 12px; margin: 4px 0; }
+.row-divider { display: none; }
 
-.header-title {
-  flex: 1;
-  font-size: 14px;
-  font-weight: 600;
-  color: white;
-}
+/* Icon Box */
+.fund-icon-box { width: 42px; height: 42px; border-radius: 10px; background: #0F3759; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.fund-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.fund-name { font-size: 13px; font-weight: 600; color: #1e293b; line-height: 1.3; }
 
-.header-info {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0.7;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
+/* Fund Bar */
+.fund-bar { height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; max-width: 180px; }
+.fund-bar-fill { height: 100%; border-radius: 3px; background: #0F3759; transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
+.fund-value { display: flex; flex-direction: column; align-items: flex-end; min-width: 85px; }
+.value-amount { font-size: 22px; font-weight: 800; color: #0F3759; line-height: 1; }
 
-.header-info:hover {
-  opacity: 1;
-}
-
-/* ========== CARD BODY ========== */
-.card-body {
-  flex: 1;
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 6px;
-  overflow: hidden;
-}
-
-/* ========== FUND ROW ========== */
-.fund-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px 16px;
-  background: #f8fafc;
-  border-radius: 12px;
-  margin: 4px 0;
-}
-
-.row-divider {
-  display: none;
-}
-
-/* ========== ICON BOX - AZUL OSCURO UNIFORME ========== */
-.fund-icon-box {
-  width: 42px;
-  height: 42px;
-  border-radius: 10px;
-  background: #0F3759;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.fund-info {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.fund-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: #1e293b;
-  line-height: 1.3;
-}
-
-/* ========== FUND BAR - AZUL OSCURO ========== */
-.fund-bar {
-  height: 6px;
-  background: #e2e8f0;
-  border-radius: 3px;
-  overflow: hidden;
-  max-width: 180px;
-}
-
-.fund-bar-fill {
-  height: 100%;
-  border-radius: 3px;
-  background: #0F3759;
-  transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.fund-value {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  min-width: 85px;
-}
-
-.value-amount {
-  font-size: 22px;
-  font-weight: 800;
-  color: #0F3759;
-  line-height: 1;
-}
-
-/* ========== CARD FOOTER ========== */
-.card-footer {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 12px 18px;
-  background: #f8fafc;
-  border-top: 1px solid #f1f5f9;
-  flex-shrink: 0;
-  color: #94a3b8;
-}
-
-.card-footer span {
-  font-size: 11px;
-}
+/* Footer */
+.card-footer { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 12px 18px; background: #f8fafc; border-top: 1px solid #f1f5f9; flex-shrink: 0; color: #94a3b8; }
+.card-footer span { font-size: 11px; }
 
 /* Loading State */
-.loading-state { 
-  display: flex; 
-  align-items: center; 
-  justify-content: center; 
-  flex: 1;
-}
-.spinner { 
-  width: 32px; 
-  height: 32px; 
-  border: 3px solid #e2e8f0; 
-  border-top-color: #0F3759; 
-  border-radius: 50%; 
-  animation: spin 0.8s linear infinite; 
-}
+.loading-state { display: flex; align-items: center; justify-content: center; flex: 1; }
 @keyframes spin { to { transform: rotate(360deg); } }
 </style>
