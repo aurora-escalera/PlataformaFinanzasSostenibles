@@ -650,7 +650,9 @@ onBeforeUnmount(() => { document.removeEventListener('click', handleClickOutside
 .info-description { font-size: 12px; color: #64748b; line-height: 1.5; margin: 0; }
 .info-description :deep(strong) { color: #1e293b; }
 
-/* RESPONSIVE CARD MODERN */
+/* ============================================
+   RESPONSIVE CARD MODERN (MODO CARD)
+   ============================================ */
 @media (max-width: 768px) {
   .modern-header { padding: 12px 16px; }
   .header-icon-modern { width: 36px; height: 36px; border-radius: 10px; }
@@ -698,41 +700,256 @@ onBeforeUnmount(() => { document.removeEventListener('click', handleClickOutside
   .info-icon { width: 28px; height: 28px; }
 }
 
-/* RESPONSIVE */
+/* ============================================
+   RESPONSIVE CARD MODERN (MODO CARD)
+   ============================================ */
 @media (max-width: 768px) {
-  .mode-ranking { padding: 10px; border-radius: 10px; }
+  .modern-header { padding: 12px 16px; }
+  .header-icon-modern { width: 36px; height: 36px; border-radius: 10px; }
+  .header-icon-modern svg { width: 18px; height: 18px; }
+  .header-title-modern { font-size: 14px; }
+  .header-subtitle-modern { font-size: 10px; }
+  .year-badge-modern { padding: 6px 12px; font-size: 12px; }
+  .export-btn-modern { width: 32px; height: 32px; }
+  .modern-body { padding: 16px; }
+  .metrics-grid { grid-template-columns: 1fr; gap: 12px; }
+  .metric-card-modern { padding: 16px; }
+  .metric-icon-bg { width: 40px; height: 40px; margin-bottom: 12px; }
+  .metric-icon-bg svg { width: 24px; height: 24px; }
+  .metric-value-modern .currency-symbol { font-size: 20px; }
+  .metric-value-modern .value-number { font-size: 28px; }
+  .position-value-modern .position-hash { font-size: 20px; }
+  .position-value-modern .position-number { font-size: 32px; }
+  .progress-section { padding: 14px 16px; }
+  .progress-title { font-size: 12px; }
+  .progress-percentage { font-size: 16px; }
+  .info-section-modern { padding: 14px; gap: 12px; }
+  .info-icon { width: 32px; height: 32px; }
+  .info-title { font-size: 12px; }
+  .info-description { font-size: 11px; }
+}
+
+@media (max-width: 480px) {
+  .modern-header { padding: 10px 12px; }
+  .header-icon-modern { width: 32px; height: 32px; }
+  .header-title-modern { font-size: 12px; }
+  .year-badge-modern { padding: 4px 10px; font-size: 11px; }
+  .modern-body { padding: 12px; }
+  .content-modern { gap: 14px; }
+  .metric-card-modern { padding: 14px; border-radius: 12px; }
+  .metric-icon-bg { width: 36px; height: 36px; margin-bottom: 10px; }
+  .metric-value-modern .currency-symbol { font-size: 18px; }
+  .metric-value-modern .value-number { font-size: 24px; }
+  .position-value-modern .position-hash { font-size: 18px; }
+  .position-value-modern .position-number { font-size: 28px; }
+  .metric-label-modern { font-size: 10px; }
+  .metric-unit-modern { font-size: 10px; }
+  .progress-section { padding: 12px; border-radius: 10px; }
+  .progress-bar-bg { height: 8px; }
+  .info-section-modern { padding: 12px; border-radius: 10px; flex-direction: column; align-items: flex-start; }
+  .info-icon { width: 28px; height: 28px; }
+}
+
+/* ============================================
+   RESPONSIVE MODO RANKING
+   ============================================ */
+
+/* Tablet y móviles grandes (≤768px) */
+@media (max-width: 768px) {
+  .mode-ranking { padding: 8px; border-radius: 10px; }
   .ranking-header { padding-bottom: 6px; margin-bottom: 6px; }
-  .ranking-header .card-title { font-size: 13px; }
-  .ranking-header .card-subtitle { font-size: 10px; }
-  .header-badge { padding: 4px 10px; }
-  .badge-count { font-size: 14px; }
-  .badge-label { font-size: 7px; }
-  .mode-ranking .card-content { padding: 6px; }
-  .bar-row { grid-template-columns: 20px 80px 1fr 50px; gap: 4px; }
-  .bar-row.is-mexico { padding: 2px 4px 2px 6px; border-left-width: 3px; }
-  .rank-position { width: 18px; height: 18px; }
+  .ranking-header .card-title { font-size: 12px; }
+  .ranking-header .card-subtitle { font-size: 9px; }
+  .header-badge { padding: 4px 8px; }
+  .badge-count { font-size: 12px; }
+  .badge-label { font-size: 6px; }
+  .mode-ranking .card-content { padding: 6px; border-radius: 4px; }
+  .bars-container { gap: 4px; padding: 6px; }
+  .bar-row { 
+    grid-template-columns: 16px 70px 1fr 45px; 
+    gap: 4px; 
+    min-height: 18px;
+    max-height: 22px;
+  }
+  .bar-row.is-mexico { padding: 2px 4px 2px 5px; border-left-width: 3px; }
+  .bar-row.is-mexico .country-label { font-size: 10px; }
+  .rank-position { width: 16px; height: 16px; border-radius: 3px; }
   .rank-number { font-size: 8px; }
   .country-label { font-size: 9px; }
+  .bar-horizontal { min-width: 24px; padding-right: 4px; border-radius: 2px; }
   .bar-value { font-size: 8px; }
-  .classification-badge { font-size: 6px; padding: 2px 3px; }
+  .classification-badge { font-size: 6px; padding: 2px 2px; border-radius: 2px; }
+  .color-legend-strip { padding-top: 6px; margin-top: 4px; }
   .legend-color-block { height: 12px; }
   .legend-indicator { font-size: 6px; }
   .legend-range-value { font-size: 7px; }
   .tooltip-international { display: none !important; }
 }
 
+/* Móviles medianos (≤480px) */
 @media (max-width: 480px) {
-  .mode-ranking { padding: 8px; }
-  .ranking-header .card-title { font-size: 12px; }
-  .bar-row { grid-template-columns: 18px 60px 1fr 40px; gap: 3px; }
-  .bar-row.is-mexico { padding: 1px 3px 1px 5px; border-left-width: 3px; }
-  .rank-position { width: 16px; height: 16px; }
+  .mode-ranking { padding: 6px; border-radius: 8px; }
+  .ranking-header { padding-bottom: 4px; margin-bottom: 4px; }
+  .ranking-header .card-title { font-size: 11px; }
+  .ranking-header .card-subtitle { font-size: 8px; }
+  .header-badge { padding: 3px 6px; }
+  .badge-count { font-size: 11px; }
+  .badge-label { font-size: 5px; }
+  .mode-ranking .card-content { padding: 4px; }
+  .bars-container { gap: 3px; padding: 4px; }
+  .bar-row { 
+    grid-template-columns: 14px 55px 1fr 38px; 
+    gap: 3px;
+    min-height: 16px;
+    max-height: 20px;
+  }
+  .bar-row.is-mexico { 
+    padding: 1px 3px 1px 4px; 
+    border-left-width: 2px;
+    margin: 1px 0;
+  }
+  .bar-row.is-mexico .country-label { font-size: 9px; }
+  .rank-position { width: 14px; height: 14px; border-radius: 2px; }
   .rank-number { font-size: 7px; }
   .country-label { font-size: 8px; }
+  .bar-wrapper-horizontal { border-radius: 2px; }
+  .bar-horizontal { min-width: 20px; padding-right: 3px; border-radius: 2px; }
   .bar-value { font-size: 7px; }
-  .classification-badge { font-size: 5px; padding: 1px 2px; }
+  .no-data-text { font-size: 7px; padding-left: 4px; }
+  .classification-badge { font-size: 5px; padding: 1px 2px; border-radius: 2px; }
+  .color-legend-strip { padding-top: 4px; margin-top: 3px; }
   .legend-color-block { height: 10px; }
   .legend-indicator { font-size: 5px; }
   .legend-range-value { font-size: 6px; }
+}
+
+/* iPhone 14 Pro Max (430px) */
+@media (max-width: 430px) {
+  .bar-row { 
+    grid-template-columns: 14px 52px 1fr 36px;
+    min-height: 15px;
+    max-height: 19px;
+  }
+  .bar-row.is-mexico .country-label { font-size: 8px; }
+  .country-label { font-size: 7.5px; }
+  .bar-value { font-size: 6.5px; }
+  .classification-badge { font-size: 5px; }
+}
+
+/* Pixel 7 (412px) */
+@media (max-width: 414px) {
+  .bar-row { 
+    grid-template-columns: 13px 50px 1fr 34px;
+    min-height: 14px;
+    max-height: 18px;
+  }
+  .bar-row.is-mexico .country-label { font-size: 7.5px; }
+  .rank-position { width: 13px; height: 13px; }
+  .rank-number { font-size: 6.5px; }
+  .country-label { font-size: 7px; }
+  .bar-horizontal { min-width: 18px; padding-right: 2px; }
+  .bar-value { font-size: 6px; }
+  .classification-badge { font-size: 4.5px; padding: 1px 1px; }
+}
+
+/* iPhone 12 Pro (390px) */
+@media (max-width: 390px) {
+  .mode-ranking { padding: 5px; }
+  .ranking-header .card-title { font-size: 10px; }
+  .ranking-header .card-subtitle { font-size: 7px; }
+  .header-badge { padding: 2px 5px; }
+  .badge-count { font-size: 10px; }
+  .bars-container { gap: 2px; padding: 3px; }
+  .bar-row { 
+    grid-template-columns: 12px 45px 1fr 32px;
+    gap: 2px;
+    min-height: 13px;
+    max-height: 17px;
+  }
+  .bar-row.is-mexico { padding: 1px 2px 1px 3px; }
+  .bar-row.is-mexico .country-label { font-size: 7px; }
+  .rank-position { width: 12px; height: 12px; }
+  .rank-number { font-size: 6px; }
+  .country-label { font-size: 6.5px; }
+  .bar-horizontal { min-width: 16px; }
+  .bar-value { font-size: 5.5px; }
+  .classification-badge { font-size: 4px; }
+  .legend-color-block { height: 9px; }
+  .legend-indicator { font-size: 4.5px; }
+  .legend-range-value { font-size: 5px; }
+}
+
+/* Samsung Galaxy S8+ (360px) */
+@media (max-width: 360px) {
+  .mode-ranking { padding: 4px; border-radius: 6px; }
+  .ranking-header { padding-bottom: 3px; margin-bottom: 3px; }
+  .ranking-header .card-title { font-size: 9px; }
+  .ranking-header .card-subtitle { font-size: 6px; }
+  .header-badge { padding: 2px 4px; }
+  .badge-count { font-size: 9px; }
+  .badge-label { font-size: 4px; }
+  .mode-ranking .card-content { padding: 3px; }
+  .bars-container { gap: 2px; padding: 2px; }
+  .bar-row { 
+    grid-template-columns: 11px 40px 1fr 28px;
+    gap: 2px;
+    min-height: 12px;
+    max-height: 15px;
+  }
+  .bar-row.is-mexico { 
+    padding: 1px 2px 1px 2px; 
+    border-left-width: 2px;
+  }
+  .bar-row.is-mexico .country-label { font-size: 6.5px; }
+  .rank-position { width: 11px; height: 11px; }
+  .rank-number { font-size: 5.5px; }
+  .country-label { font-size: 6px; }
+  .bar-horizontal { min-width: 14px; padding-right: 2px; }
+  .bar-value { font-size: 5px; }
+  .no-data-text { font-size: 5px; padding-left: 2px; }
+  .classification-badge { font-size: 3.5px; padding: 1px 1px; }
+  .color-legend-strip { padding-top: 3px; margin-top: 2px; }
+  .legend-color-block { height: 8px; }
+  .legend-indicator { font-size: 4px; }
+  .legend-range-value { font-size: 4.5px; }
+}
+
+/* iPhone SE (320px) */
+@media (max-width: 320px) {
+  .mode-ranking { padding: 3px; border-radius: 5px; }
+  .ranking-header { padding-bottom: 2px; margin-bottom: 2px; }
+  .ranking-header .card-title { font-size: 8px; }
+  .ranking-header .card-subtitle { font-size: 5px; }
+  .header-badge { padding: 2px 3px; }
+  .badge-count { font-size: 8px; }
+  .badge-label { font-size: 3.5px; }
+  .mode-ranking .card-content { padding: 2px; border-radius: 3px; }
+  .bars-container { gap: 1.5px; padding: 2px; }
+  .bar-row { 
+    grid-template-columns: 10px 35px 1fr 24px;
+    gap: 1.5px;
+    min-height: 10px;
+    max-height: 13px;
+    border-radius: 2px;
+  }
+  .bar-row.is-mexico { 
+    padding: 0px 1px 0px 2px; 
+    border-left-width: 2px;
+    border-radius: 0 3px 3px 0;
+  }
+  .bar-row.is-mexico .country-label { font-size: 6px; }
+  .rank-position { width: 10px; height: 10px; border-radius: 2px; }
+  .rank-number { font-size: 5px; }
+  .country-label { font-size: 5.5px; }
+  .bar-wrapper-horizontal { border-radius: 1.5px; }
+  .bar-horizontal { min-width: 12px; padding-right: 1px; border-radius: 1.5px; }
+  .bar-value { font-size: 4.5px; }
+  .no-data-text { font-size: 4px; padding-left: 1px; }
+  .classification-badge { font-size: 3px; padding: 0.5px 1px; border-radius: 1px; }
+  .color-legend-strip { padding-top: 2px; margin-top: 2px; }
+  .legend-items { border-radius: 2px; }
+  .legend-color-block { height: 7px; }
+  .legend-indicator { font-size: 3.5px; }
+  .legend-range-value { font-size: 4px; }
 }
 </style>

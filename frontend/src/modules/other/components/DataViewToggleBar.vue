@@ -1,5 +1,5 @@
 <!-- src/modules/other/components/DataViewToggleBar.vue -->
-<!-- ✅ CORREGIDO: Submenús funcionan con click en móvil -->
+<!-- ✅ CORREGIDO: Submenús funcionan con click en móvil + currency-badge ajustado -->
 <template>
   <div class="toggle-bar">
     <div class="toggle-bar-content">
@@ -1066,10 +1066,14 @@ onUnmounted(() => {
   .custom-tooltip {
     display: none;
   }
+   .currency-badge.currency-mxn .currency-code,
+  .currency-badge.currency-usd .currency-code {
+    font-size: 11px;
+  }
 }
 
 /* ============================================
-   ✅ MÓVIL (≤768px) - SUBMENÚS INLINE
+   ✅ MÓVIL (≤768px) - SUBMENÚS INLINE + CURRENCY AJUSTADO
    ============================================ */
 @media (max-width: 768px) {
   .toggle-bar {
@@ -1137,9 +1141,15 @@ onUnmounted(() => {
     font-weight: 500;
     color: #6b7280;
   }
+    .currency-badge.currency-mxn .currency-code,
+  .currency-badge.currency-usd .currency-code {
+    font-size: 10px;
+  }
   
+  /* ✅ AJUSTE: currency-badge del tamaño del label */
   .currency-badge {
-    padding: 5px 8px;
+    padding: 2px 4px;
+    border-radius: 3px;
   }
   
   .currency-name {
@@ -1147,7 +1157,8 @@ onUnmounted(() => {
   }
   
   .currency-code {
-    font-size: 12px;
+    font-size: 11px;
+    font-weight: 500;
   }
   
   .bottom-row {
@@ -1312,12 +1323,14 @@ onUnmounted(() => {
     font-size: 10px;
   }
   
+  /* ✅ AJUSTE: currency-badge */
   .currency-badge {
-    padding: 4px 7px;
+    padding: 2px 3px;
+    border-radius: 3px;
   }
   
   .currency-code {
-    font-size: 11px;
+    font-size: 10px;
   }
   
   .bottom-row {
@@ -1332,6 +1345,11 @@ onUnmounted(() => {
   .filter-btn-mobile {
     padding: 9px 12px;
     font-size: 12px;
+  }
+
+    .currency-badge.currency-mxn .currency-code,
+  .currency-badge.currency-usd .currency-code {
+    font-size: 10px;
   }
 }
 
@@ -1365,8 +1383,10 @@ onUnmounted(() => {
     font-size: 10px;
   }
   
+  /* ✅ AJUSTE: currency-badge */
   .currency-badge {
-    padding: 4px 6px;
+    padding: 1px 3px;
+    border-radius: 2px;
   }
   
   .currency-code {
@@ -1462,12 +1482,14 @@ onUnmounted(() => {
     font-size: 9px;
   }
   
+  /* ✅ AJUSTE: currency-badge */
   .currency-badge {
-    padding: 3px 5px;
+    padding: 1px 2px;
+    border-radius: 2px;
   }
   
   .currency-code {
-    font-size: 10px;
+    font-size: 9px;
   }
   
   .bottom-row {
@@ -1576,12 +1598,14 @@ onUnmounted(() => {
     font-size: 8px;
   }
   
+  /* ✅ AJUSTE: currency-badge */
   .currency-badge {
-    padding: 2px 4px;
+    padding: 1px 2px;
+    border-radius: 2px;
   }
   
   .currency-code {
-    font-size: 9px;
+    font-size: 8px;
   }
   
   .bottom-row {
@@ -1723,12 +1747,14 @@ onUnmounted(() => {
     font-size: 7px;
   }
   
+  /* ✅ AJUSTE: currency-badge */
   .currency-badge {
-    padding: 2px 3px;
+    padding: 1px 2px;
+    border-radius: 2px;
   }
   
   .currency-code {
-    font-size: 8px;
+    font-size: 7px;
   }
   
   .downloads-btn {
