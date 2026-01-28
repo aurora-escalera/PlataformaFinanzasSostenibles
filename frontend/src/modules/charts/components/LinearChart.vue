@@ -19,7 +19,7 @@
         }"
       >
         <span class="btn-color-dot" :style="{ backgroundColor: getVariableColor(varName) }"></span>
-        {{ getButtonLabel(varName) }}
+        <span class="btn-label">{{ getButtonLabel(varName) }}</span>
       </button>
     </div>
 
@@ -33,11 +33,15 @@
     <div v-else class="chart-wrapper" ref="chartWrapper">
       <svg 
         ref="svgRef"
-        :width="dimensions.width" 
-        :height="dimensions.height"
+        :viewBox="`0 0 ${dimensions.width} ${dimensions.height}`"
+        preserveAspectRatio="xMidYMid meet"
         class="line-chart"
         @mousemove="handleMouseMove"
-        @mouseleave="hideTooltip"
+        @mouseleave="handleMouseLeave"
+        @click="handleClick"
+        @touchstart="handleTouchStart"
+        @touchmove="handleTouchMove"
+        @touchend="handleTouchEnd"
       >
         <!-- Área de gradiente debajo de la línea -->
         <defs>
@@ -59,7 +63,7 @@
         <!-- Y axis labels -->
         <g class="y-axis-labels">
           <text v-for="i in gridLines" :key="`y-label-${i}`"
-            :x="chartPadding.left - 10" :y="chartPadding.top + (i - 1) * gridSpacing + 4"
+            :x="chartPadding.left - 8" :y="chartPadding.top + (i - 1) * gridSpacing + 4"
             class="y-axis-label" text-anchor="end">
             {{ formatYAxisValue(getYAxisValue(i - 1)) }}
           </text>
@@ -83,7 +87,7 @@
 
             <!-- Línea principal -->
             <path :d="getLinePath(varName)" :stroke="getVariableColor(varName)"
-              stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"
+              :stroke-width="responsiveStrokeWidth" fill="none" stroke-linecap="round" stroke-linejoin="round"
               :class="['line-path', { 'line-exit': animatingVariables.has(varName) }]"
               :style="{ animationDelay: animatingVariables.has(varName) ? '400ms' : `${idx * 0.1}s`,
                         animationDuration: animatingVariables.has(varName) ? '300ms' : '1.5s' }"/>
@@ -95,7 +99,7 @@
                 <circle 
                   :cx="getXPosition(i)" 
                   :cy="getAnimatedY(varName, i)" 
-                  :r="hoverState.visible && hoverState.index === i ? 12 : 8"
+                  :r="getHaloRadius(i)"
                   :fill="getVariableColor(varName)"
                   fill-opacity="0.15"
                   class="point-halo"/>
@@ -104,17 +108,17 @@
                 <circle 
                   :cx="getXPosition(i)" 
                   :cy="getAnimatedY(varName, i)" 
-                  :r="hoverState.visible && hoverState.index === i ? 7 : 5"
+                  :r="getPointRadius(i)"
                   :fill="getVariableColor(varName)"
                   stroke="white"
-                  stroke-width="2"
+                  :stroke-width="responsivePointStroke"
                   class="point-main"
                   :class="{ 'point-hovered': hoverState.visible && hoverState.index === i }"/>
                 
                 <!-- Etiqueta con el valor (solo número) -->
                 <text 
                   :x="getXPosition(i)" 
-                  :y="getAnimatedY(varName, i) - 15"
+                  :y="getAnimatedY(varName, i) - responsiveLabelOffset"
                   text-anchor="middle"
                   class="value-label-text"
                   :class="{ 'label-hovered': hoverState.visible && hoverState.index === i }">
@@ -132,46 +136,45 @@
       <div v-for="(label, i) in xLabels" :key="`x-${i}`" 
         class="x-axis-label" 
         :class="{ 'x-label-active': hoverState.visible && hoverState.index === i }"
-        :style="{ left: `${getXPosition(i)}px` }">
+        :style="{ left: getXPositionPercent(i) + '%' }">
         {{ label }}
       </div>
     </div>
 
-    <!-- Tooltip con Teleport (igual que StackedArea) -->
-    <Teleport to="body">
-      <transition name="tooltip-fade">
-        <div 
-          v-if="hoverState.visible" 
-          class="tooltip-container"
-          :style="tooltipFixedStyle"
-        >
-          <div class="tooltip-header">
-            <span class="tooltip-year-label">{{ hoverState.label }}</span>
-          </div>
-          <div class="tooltip-content">
-            <template v-for="(item, idx) in tooltipItems" :key="item.key">
-              <div v-if="idx > 0" class="tooltip-separator"></div>
-              
-              <div class="tooltip-item">
-                <span class="tooltip-color-indicator" :style="{ backgroundColor: item.color }"></span>
-                <span class="tooltip-variable-name">{{ getButtonLabel(item.name) }}:</span>
-                <span class="tooltip-variable-value">{{ item.formattedValue }}</span>
-              </div>
-              
-              <div v-if="item.position !== null" class="tooltip-item tooltip-sub-item">
-                <span class="tooltip-variable-name">Posición:</span>
-                <span class="tooltip-variable-value tooltip-position-value">No. {{ item.position }}</span>
-              </div>
-            </template>
-          </div>
+    <!-- Tooltip DENTRO del contenedor -->
+    <transition name="tooltip-fade">
+      <div 
+        v-if="hoverState.visible" 
+        class="tooltip-container"
+        :class="{ locked: tooltipLocked }"
+        :style="tooltipInternalStyle"
+      >
+        <div class="tooltip-header">
+          <span class="tooltip-year-label">{{ hoverState.label }}</span>
         </div>
-      </transition>
-    </Teleport>
+        <div class="tooltip-content">
+          <template v-for="(item, idx) in tooltipItems" :key="item.key">
+            <div v-if="idx > 0" class="tooltip-separator"></div>
+            
+            <div class="tooltip-item">
+              <span class="tooltip-color-indicator" :style="{ backgroundColor: item.color }"></span>
+              <span class="tooltip-variable-name">{{ getButtonLabel(item.name) }}:</span>
+              <span class="tooltip-variable-value">{{ item.formattedValue }}</span>
+            </div>
+            
+            <div v-if="item.position !== null" class="tooltip-item tooltip-sub-item">
+              <span class="tooltip-variable-name">Posición:</span>
+              <span class="tooltip-variable-value tooltip-position-value">No. {{ item.position }}</span>
+            </div>
+          </template>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 
 const props = defineProps({
   title: { type: String, default: 'Análisis histórico' },
@@ -199,8 +202,66 @@ const chartWrapper = ref(null)
 const svgRef = ref(null)
 const dimensions = ref({ width: props.width, height: props.height })
 const hoverState = ref({ visible: false, x: 0, index: -1, label: '', previousIndex: -1 })
+const tooltipLocked = ref(false) // ✅ Estado para fijar tooltip
 const animatingPoints = ref({})
-const chartPadding = computed(() => props.padding)
+
+// ✅ Estado responsivo
+const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024)
+const isMobileView = computed(() => windowWidth.value <= 768)
+
+// ✅ Padding responsivo
+const chartPadding = computed(() => {
+  const w = windowWidth.value
+  if (w <= 320) return { top: 25, right: 10, bottom: 25, left: 30 }
+  if (w <= 360) return { top: 28, right: 12, bottom: 28, left: 32 }
+  if (w <= 390) return { top: 30, right: 15, bottom: 30, left: 35 }
+  if (w <= 430) return { top: 32, right: 18, bottom: 32, left: 38 }
+  if (w <= 480) return { top: 35, right: 20, bottom: 35, left: 42 }
+  if (w <= 768) return { top: 40, right: 25, bottom: 40, left: 50 }
+  return props.padding
+})
+
+// ✅ Propiedades responsivas para SVG
+const responsiveStrokeWidth = computed(() => {
+  const w = windowWidth.value
+  if (w <= 320) return 1.5
+  if (w <= 390) return 2
+  if (w <= 480) return 2.5
+  return 3
+})
+
+const responsivePointStroke = computed(() => {
+  const w = windowWidth.value
+  if (w <= 320) return 1
+  if (w <= 390) return 1.5
+  return 2
+})
+
+const responsiveLabelOffset = computed(() => {
+  const w = windowWidth.value
+  if (w <= 320) return 10
+  if (w <= 390) return 12
+  if (w <= 480) return 13
+  return 15
+})
+
+const getHaloRadius = (i) => {
+  const w = windowWidth.value
+  const isHovered = hoverState.value.visible && hoverState.value.index === i
+  if (w <= 320) return isHovered ? 8 : 5
+  if (w <= 390) return isHovered ? 9 : 6
+  if (w <= 480) return isHovered ? 10 : 7
+  return isHovered ? 12 : 8
+}
+
+const getPointRadius = (i) => {
+  const w = windowWidth.value
+  const isHovered = hoverState.value.visible && hoverState.value.index === i
+  if (w <= 320) return isHovered ? 4 : 3
+  if (w <= 390) return isHovered ? 5 : 3.5
+  if (w <= 480) return isHovered ? 6 : 4
+  return isHovered ? 7 : 5
+}
 
 const colorPalette = ['#6b7280', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#ef4444']
 const semanticColors = {
@@ -214,7 +275,6 @@ const visibleVariables = ref([])
 const animatedData = ref({})
 const animatingVariables = ref(new Set())
 
-// Función para obtener el label del botón
 const getButtonLabel = (varName) => {
   if (props.buttonLabels && props.buttonLabels[varName]) {
     return props.buttonLabels[varName]
@@ -222,26 +282,31 @@ const getButtonLabel = (varName) => {
   return varName
 }
 
-// Posición del tooltip fija (estilo StackedArea)
-const tooltipFixedStyle = computed(() => {
-  if (!svgRef.value || !hoverState.value.visible) return {}
+// Posición del tooltip DENTRO del contenedor
+const tooltipInternalStyle = computed(() => {
+  if (!hoverState.value.visible || hoverState.value.index === -1) return { display: 'none' }
   
-  const ctm = svgRef.value.getScreenCTM()
-  if (!ctm) return {}
+  const xPos = getXPositionPercent(hoverState.value.index)
   
-  // Obtener posición Y del punto
-  let pointY = 0
-  if (hoverState.value.index !== -1 && visibleVariables.value.length > 0) {
-    const firstVar = visibleVariables.value[0]
-    pointY = getAnimatedY(firstVar, hoverState.value.index)
+  // Posicionar arriba del punto
+  let topPos = '10%'
+  
+  // Si está muy a la izquierda o derecha, ajustar
+  let leftPos = xPos
+  let transform = 'translateX(-50%)'
+  
+  if (xPos < 20) {
+    leftPos = 5
+    transform = 'translateX(0)'
+  } else if (xPos > 80) {
+    leftPos = 95
+    transform = 'translateX(-100%)'
   }
   
-  const screenX = ctm.a * (hoverState.value.x + 200) + ctm.e
-  const screenY = ctm.d * (pointY - 50) + ctm.f  // ← Tu ajuste de -180
-  
   return { 
-    left: `${screenX}px`, 
-    top: `${screenY}px` 
+    left: `${leftPos}%`,
+    top: topPos,
+    transform: transform
   }
 })
 
@@ -315,6 +380,18 @@ const getXPosition = i => {
   return chartPadding.value.left + i * (dimensions.value.width - chartPadding.value.left - chartPadding.value.right) / (len - 1)
 }
 
+// Posición X como porcentaje para las etiquetas del eje X (responsive)
+const getXPositionPercent = i => {
+  const len = props.xLabels.length
+  if (len <= 1) return 50
+  
+  const leftPadPercent = (chartPadding.value.left / dimensions.value.width) * 100
+  const rightPadPercent = (chartPadding.value.right / dimensions.value.width) * 100
+  const availablePercent = 100 - leftPadPercent - rightPadPercent
+  
+  return leftPadPercent + (i / (len - 1)) * availablePercent
+}
+
 const getY = val => {
   if (val == null || isNaN(val)) return dimensions.value.height - chartPadding.value.bottom
   const range = maxValue.value - minValue.value
@@ -343,7 +420,6 @@ const formatValue = val => {
   return `${pre}${val.toFixed(2)}${suf}`
 }
 
-// Formato compacto para las etiquetas sobre los puntos
 const formatPointValue = val => {
   if (val == null || isNaN(val)) return '—'
   return val.toFixed(2)
@@ -354,7 +430,6 @@ const getLinePath = v => {
   return d?.length ? d.map((val, i) => `${i === 0 ? 'M' : 'L'} ${getXPosition(i)} ${getY(val)}`).join(' ') : ''
 }
 
-// Path para el área con gradiente
 const getAreaPath = v => {
   const d = animatedData.value[v]
   if (!d?.length) return ''
@@ -404,10 +479,71 @@ const toggleVariable = v => {
 }
 
 const handleMouseMove = e => {
+  if (tooltipLocked.value) return // No mover si está fijo
   const rect = e.currentTarget.getBoundingClientRect()
   const scaleX = dimensions.value.width / rect.width
   const x = (e.clientX - rect.left) * scaleX
-  
+  processHover(x)
+}
+
+// ✅ Touch events para móvil
+const handleTouchStart = e => {
+  if (tooltipLocked.value) {
+    // Si está fijo y toca fuera, desfijarlo
+    tooltipLocked.value = false
+    hoverState.value.visible = false
+    return
+  }
+  e.preventDefault()
+  const touch = e.touches[0]
+  const rect = e.currentTarget.getBoundingClientRect()
+  const scaleX = dimensions.value.width / rect.width
+  const x = (touch.clientX - rect.left) * scaleX
+  processHover(x)
+  // En móvil, fijar automáticamente al tocar
+  tooltipLocked.value = true
+}
+
+const handleTouchMove = e => {
+  if (tooltipLocked.value) return
+  e.preventDefault()
+  const touch = e.touches[0]
+  const rect = e.currentTarget.getBoundingClientRect()
+  const scaleX = dimensions.value.width / rect.width
+  const x = (touch.clientX - rect.left) * scaleX
+  processHover(x)
+}
+
+const handleTouchEnd = () => {
+  // No ocultar si está fijo
+  if (!tooltipLocked.value) {
+    hideTooltip()
+  }
+}
+
+// ✅ Click para fijar/desfijar tooltip
+const handleClick = (e) => {
+  if (tooltipLocked.value) {
+    // Si ya está fijo, desfijarlo
+    tooltipLocked.value = false
+    hoverState.value.visible = false
+  } else {
+    // Fijar en la posición actual
+    const rect = e.currentTarget.getBoundingClientRect()
+    const scaleX = dimensions.value.width / rect.width
+    const x = (e.clientX - rect.left) * scaleX
+    processHover(x)
+    tooltipLocked.value = true
+  }
+}
+
+const handleMouseLeave = () => {
+  if (!tooltipLocked.value) {
+    hideTooltip()
+  }
+}
+
+const processHover = (x) => {
   const len = props.xLabels.length
   if (len === 0) return
   
@@ -417,18 +553,13 @@ const handleMouseMove = e => {
     for (let i = 0; i < len; i++) {
       const pointX = getXPosition(i)
       
-      // El punto se activa cuando el cursor está a 30% de distancia ANTES del punto
-      // (desde el punto anterior hacia este punto)
       if (i === 0) {
-        // Primer punto: activo desde el inicio hasta 70% hacia el segundo punto
         const nextX = getXPosition(1)
         const threshold = pointX + (nextX - pointX) * 0.7
         if (x < threshold) { closest = 0; break }
       } else if (i === len - 1) {
-        // Último punto: siempre activo después del threshold del penúltimo
         closest = len - 1
       } else {
-        // Puntos intermedios: activo desde 30% antes hasta 70% después
         const prevX = getXPosition(i - 1)
         const nextX = getXPosition(i + 1)
         const startThreshold = prevX + (pointX - prevX) * 0.3
@@ -463,14 +594,59 @@ const activateInitialVariables = vars => {
 
 const hideTooltip = () => { 
   hoverState.value = { visible: false, x: 0, index: -1, label: '', previousIndex: -1 }
-  animatingPoints.value = {} 
+  animatingPoints.value = {}
+  tooltipLocked.value = false
 }
 
-const updateDimensions = () => { dimensions.value = { width: props.width, height: props.height } }
+const updateDimensions = () => {
+  if (chartWrapper.value) {
+    const rect = chartWrapper.value.getBoundingClientRect()
+    const w = windowWidth.value
+    
+    // Usar el ancho real del contenedor
+    const realWidth = rect.width > 0 ? rect.width : props.width
+    
+    // Calcular altura proporcional (ratio 2:1 aproximadamente)
+    let realHeight = rect.height > 0 ? rect.height : props.height
+    
+    // En móvil, asegurar una altura mínima proporcional al ancho
+    if (w <= 768) {
+      const minHeight = realWidth * 0.6 // Ratio más cuadrado en móvil
+      realHeight = Math.max(realHeight, minHeight, 200)
+    }
+    
+    dimensions.value = { 
+      width: realWidth, 
+      height: realHeight
+    }
+    
+    console.log('📐 [LinearChart] Dimensiones actualizadas:', dimensions.value)
+  } else {
+    dimensions.value = { width: props.width, height: props.height }
+  }
+}
+
+const handleResize = () => {
+  windowWidth.value = window.innerWidth
+  updateDimensions()
+}
 
 onMounted(async () => {
   await nextTick()
-  updateDimensions()
+  
+  window.addEventListener('resize', handleResize)
+  handleResize()
+  
+  // Recalcular después de que el DOM esté completamente renderizado
+  setTimeout(() => {
+    handleResize()
+  }, 100)
+  
+  // Y otra vez después de que las animaciones CSS terminen
+  setTimeout(() => {
+    handleResize()
+  }, 500)
+  
   console.log('🚀 [LinearChart] Montado - positionsByYear:', props.positionsByYear)
   setTimeout(() => {
     const vars = Object.keys(props.data)
@@ -480,12 +656,17 @@ onMounted(async () => {
     }
   }, 100)
 })
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+})
 </script>
 
 <style scoped>
 .linear-chart-container {
   width: 100%;
   height: 100%;
+  min-height: 300px;
   background: white;
   border-radius: 12px;
   padding: 20px;
@@ -494,6 +675,7 @@ onMounted(async () => {
   flex-direction: column;
   box-sizing: border-box;
   overflow: visible;
+  position: relative;
 }
 
 .chart-header {
@@ -555,6 +737,7 @@ onMounted(async () => {
   background: transparent;
   color: #666;
   transition: all 0.3s ease;
+  white-space: nowrap;
 }
 
 .btn-color-dot {
@@ -562,6 +745,11 @@ onMounted(async () => {
   height: 10px;
   border-radius: 50%;
   flex-shrink: 0;
+}
+
+.btn-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .filter-btn.filter-active {
@@ -601,9 +789,10 @@ onMounted(async () => {
   position: relative;
   width: 100%;
   flex: 1;
-  min-height: 0;
+  min-height: 200px;
   display: flex;
-  align-items: stretch;
+  align-items: center;
+  justify-content: center;
   overflow: visible;
   box-sizing: border-box;
 }
@@ -611,7 +800,10 @@ onMounted(async () => {
 .line-chart {
   width: 100%;
   height: 100%;
+  min-height: 200px;
+  max-width: 100%;
   display: block;
+  touch-action: none;
 }
 
 .grid-line {
@@ -712,54 +904,51 @@ onMounted(async () => {
   filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.25));
 }
 
-/* Etiquetas de valor sobre los puntos - SOLO NÚMERO EN GRIS */
+/* Etiquetas de valor sobre los puntos */
 .value-label-text {
-  font-size: 12px;
-  font-weight: 600;
-  fill: #6b7280;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  transition: all 0.3s ease;
-}
-
-.value-label-text.label-hovered {
   font-size: 14px;
   font-weight: 700;
   fill: #374151;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  transition: all 0.3s ease;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
 }
 
-/* Tooltip con Teleport (igual que StackedArea) */
+.value-label-text.label-hovered {
+  font-size: 16px;
+  font-weight: 800;
+  fill: #1e293b;
+}
+
+/* Tooltip - Compacto y dentro del contenedor */
 .tooltip-container { 
-  position: fixed; 
-  transform: translate(-50%, -100%); 
-  background: white; 
-  border: 1px solid #e0e0e0; 
-  border-radius: 8px; 
-  padding: 12px 14px; 
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15); 
+  position: absolute;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #d0d0d0; 
+  border-radius: 5px; 
+  padding: 5px 7px; 
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1); 
   pointer-events: none; 
-  z-index: 99999; 
-  min-width: 200px; 
+  z-index: 100; 
+  min-width: 80px;
+  max-width: 130px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+  backdrop-filter: blur(4px);
 }
 
-.tooltip-container::after { 
-  content: ''; 
-  position: absolute; 
-  top: 100%; 
-  left: 50%; 
-  transform: translateX(-50%); 
-  border: 8px solid transparent; 
-  border-top-color: white; 
+.tooltip-container.locked {
+  border: 1px solid #3b82f6;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
 }
 
 .tooltip-header { 
-  margin-bottom: 10px; 
-  padding-bottom: 8px; 
-  border-bottom: 1px solid #f0f0f0; 
+  margin-bottom: 4px; 
+  padding-bottom: 3px; 
+  border-bottom: 1px solid #eee; 
 }
 
 .tooltip-year-label { 
-  font-size: 14px; 
+  font-size: 9px; 
   font-weight: 600; 
   color: #333; 
 }
@@ -767,45 +956,47 @@ onMounted(async () => {
 .tooltip-content { 
   display: flex; 
   flex-direction: column; 
-  gap: 5px; 
+  gap: 2px; 
 }
 
 .tooltip-item { 
   display: flex; 
   align-items: center; 
-  gap: 8px; 
-  font-size: 13px; 
+  gap: 4px; 
+  font-size: 8px; 
 }
 
 .tooltip-color-indicator { 
-  width: 10px; 
-  height: 10px; 
-  border-radius: 2px; 
+  width: 5px; 
+  height: 5px; 
+  border-radius: 1px; 
   flex-shrink: 0; 
 }
 
 .tooltip-variable-name { 
   color: #666; 
-  flex-shrink: 0; 
+  flex-shrink: 0;
+  font-size: 7px;
 }
 
 .tooltip-variable-value { 
   color: #333; 
   font-weight: 600; 
-  margin-left: auto; 
+  margin-left: auto;
+  font-size: 8px;
 }
 
 .tooltip-sub-item { 
-  padding-left: 18px; 
+  padding-left: 9px; 
 }
 
 .tooltip-sub-item .tooltip-variable-name { 
   color: #888; 
-  font-size: 11px; 
+  font-size: 6px; 
 }
 
 .tooltip-sub-item .tooltip-variable-value { 
-  font-size: 11px; 
+  font-size: 7px; 
 }
 
 .tooltip-position-value { 
@@ -815,13 +1006,13 @@ onMounted(async () => {
 
 .tooltip-separator { 
   height: 1px; 
-  background: #e0e0e0; 
-  margin: 4px 0; 
+  background: #eee; 
+  margin: 2px 0; 
 }
 
 .tooltip-fade-enter-active, 
 .tooltip-fade-leave-active { 
-  transition: all 0.2s ease; 
+  transition: all 0.15s ease; 
 }
 
 .tooltip-fade-enter-from, 
@@ -829,20 +1020,173 @@ onMounted(async () => {
   opacity: 0; 
 }
 
-/* Responsive */
+/* ============================================
+   RESPONSIVE - TABLETS (≤1024px)
+   ============================================ */
+@media (max-width: 1024px) {
+  .linear-chart-container {
+    padding: 16px;
+  }
+  
+  .chart-title {
+    font-size: 15px;
+  }
+  
+  .filter-btn {
+    padding: 7px 14px;
+    font-size: 11px;
+  }
+}
+
+/* ============================================
+   RESPONSIVE - MÓVIL (≤768px)
+   ============================================ */
 @media (max-width: 768px) {
   .linear-chart-container {
     padding: 12px;
     border-radius: 10px;
+    min-height: 280px;
+  }
+  
+  .chart-header {
+    margin-bottom: 8px;
   }
   
   .chart-title {
     font-size: 13px;
   }
   
+  .chart-subtitle {
+    font-size: 11px;
+  }
+  
+  .variable-filters {
+    padding: 4px;
+    gap: 4px;
+    margin-bottom: 8px;
+    border-radius: 16px;
+  }
+  
   .filter-btn {
-    padding: 6px 12px;
+    padding: 6px 10px;
     font-size: 10px;
+    gap: 5px;
+    border-radius: 12px;
+  }
+  
+  .btn-color-dot {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .chart-wrapper {
+    min-height: 180px;
+  }
+  
+  .line-chart {
+    min-height: 180px;
+  }
+  
+  .value-label-text {
+    font-size: 11px;
+  }
+  
+  .value-label-text.label-hovered {
+    font-size: 12px;
+  }
+  
+  .tooltip-container {
+    padding: 4px 5px;
+    min-width: 70px;
+    max-width: 110px;
+  }
+  
+  .tooltip-year-label {
+    font-size: 8px;
+  }
+  
+  .tooltip-item {
+    font-size: 7px;
+  }
+  
+  .tooltip-variable-name {
+    font-size: 6px;
+  }
+  
+  .tooltip-variable-value {
+    font-size: 7px;
+  }
+  
+  .x-axis-container {
+    height: 24px;
+    margin-top: 4px;
+  }
+  
+  .x-axis-label {
+    font-size: 9px;
+    padding: 2px 4px;
+  }
+  
+  .y-axis-label {
+    font-size: 9px;
+  }
+  
+  .no-data {
+    height: 200px;
+  }
+  
+  .no-data svg {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .no-data p {
+    font-size: 12px;
+  }
+}
+
+/* ============================================
+   RESPONSIVE - iPhone 14 Pro Max (≤430px)
+   ============================================ */
+@media (max-width: 430px) {
+  .linear-chart-container {
+    padding: 10px;
+    border-radius: 8px;
+    min-height: 260px;
+  }
+  
+  .chart-title {
+    font-size: 12px;
+  }
+  
+  .chart-subtitle {
+    font-size: 10px;
+  }
+  
+  .variable-filters {
+    padding: 3px;
+    gap: 3px;
+    margin-bottom: 6px;
+  }
+  
+  .filter-btn {
+    padding: 5px 8px;
+    font-size: 9px;
+    gap: 4px;
+    border-radius: 10px;
+  }
+  
+  .btn-color-dot {
+    width: 7px;
+    height: 7px;
+  }
+  
+  .chart-wrapper {
+    min-height: 160px;
+  }
+  
+  .line-chart {
+    min-height: 160px;
   }
   
   .value-label-text {
@@ -853,63 +1197,333 @@ onMounted(async () => {
     font-size: 11px;
   }
   
+  .tooltip-container {
+    padding: 4px 6px;
+    min-width: 80px;
+    max-width: 120px;
+  }
+  
   .x-axis-label {
-    font-size: 10px;
+    font-size: 8px;
+    padding: 2px 3px;
   }
   
   .y-axis-label {
-    font-size: 10px;
-  }
-  
-  .tooltip-container {
-    padding: 10px 12px;
-    min-width: 160px;
-  }
-  
-  .tooltip-year-label {
-    font-size: 12px;
-  }
-  
-  .tooltip-item {
-    font-size: 11px;
+    font-size: 8px;
   }
 }
 
-@media (max-width: 480px) {
+/* ============================================
+   RESPONSIVE - Samsung Galaxy S20 Ultra (≤412px)
+   ============================================ */
+@media (max-width: 412px) {
   .linear-chart-container {
-    padding: 10px;
+    padding: 9px;
   }
   
   .chart-title {
-    font-size: 12px;
+    font-size: 11px;
   }
   
   .filter-btn {
-    padding: 5px 10px;
-    font-size: 9px;
-    gap: 4px;
+    padding: 4px 7px;
+    font-size: 8px;
+  }
+  
+  .btn-label {
+    max-width: 80px;
+  }
+  
+  .value-label-text {
+    font-size: 7px;
+  }
+  
+  .x-axis-container {
+    height: 20px;
+  }
+  
+  .x-axis-label {
+    font-size: 7px;
+  }
+  
+  .y-axis-label {
+    font-size: 7px;
+  }
+}
+
+/* ============================================
+   RESPONSIVE - iPhone 12 Pro (≤390px)
+   ============================================ */
+@media (max-width: 390px) {
+  .linear-chart-container {
+    padding: 8px;
+    border-radius: 6px;
+    min-height: 240px;
+  }
+  
+  .chart-header {
+    margin-bottom: 6px;
+  }
+  
+  .chart-title {
+    font-size: 11px;
+  }
+  
+  .variable-filters {
+    padding: 2px;
+    gap: 2px;
+    margin-bottom: 5px;
+    border-radius: 12px;
+  }
+  
+  .filter-btn {
+    padding: 4px 6px;
+    font-size: 8px;
+    gap: 3px;
+    border-radius: 8px;
   }
   
   .btn-color-dot {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
+  }
+  
+  .btn-label {
+    max-width: 70px;
+  }
+  
+  .chart-wrapper {
+    min-height: 140px;
+  }
+  
+  .line-chart {
+    min-height: 140px;
   }
   
   .value-label-text {
     font-size: 9px;
   }
   
-  .tooltip-container {
-    padding: 8px 10px;
-    min-width: 140px;
-  }
-  
-  .tooltip-year-label {
-    font-size: 11px;
-  }
-  
-  .tooltip-item {
+  .value-label-text.label-hovered {
     font-size: 10px;
+  }
+  
+  .tooltip-container {
+    padding: 3px 5px;
+    min-width: 70px;
+    max-width: 110px;
+  }
+  
+  .x-axis-container {
+    height: 18px;
+    margin-top: 3px;
+  }
+  
+  .x-axis-label {
+    font-size: 7px;
+    padding: 1px 2px;
+  }
+  
+  .y-axis-label {
+    font-size: 7px;
+  }
+  
+  .no-data {
+    height: 150px;
+  }
+  
+  .no-data svg {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .no-data p {
+    font-size: 10px;
+  }
+}
+
+/* ============================================
+   RESPONSIVE - Samsung Galaxy S8+ (≤360px)
+   ============================================ */
+@media (max-width: 360px) {
+  .linear-chart-container {
+    padding: 6px;
+    border-radius: 5px;
+  }
+  
+  .chart-header {
+    margin-bottom: 4px;
+  }
+  
+  .chart-title {
+    font-size: 10px;
+  }
+  
+  .chart-subtitle {
+    font-size: 8px;
+  }
+  
+  .variable-filters {
+    padding: 2px;
+    gap: 2px;
+    margin-bottom: 4px;
+    border-radius: 10px;
+  }
+  
+  .filter-btn {
+    padding: 3px 5px;
+    font-size: 7px;
+    gap: 2px;
+    border-radius: 6px;
+  }
+  
+  .btn-color-dot {
+    width: 5px;
+    height: 5px;
+  }
+  
+  .btn-label {
+    max-width: 55px;
+  }
+  
+  .value-label-text {
+    font-size: 8px;
+  }
+  
+  .value-label-text.label-hovered {
+    font-size: 9px;
+  }
+  
+  .tooltip-container {
+    padding: 3px 4px;
+    min-width: 60px;
+    max-width: 100px;
+  }
+  
+  .x-axis-container {
+    height: 16px;
+    margin-top: 2px;
+  }
+  
+  .x-axis-label {
+    font-size: 6px;
+    padding: 1px 2px;
+  }
+  
+  .y-axis-label {
+    font-size: 6px;
+  }
+  
+  .no-data {
+    height: 120px;
+  }
+  
+  .no-data svg {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .no-data p {
+    font-size: 9px;
+  }
+}
+
+/* ============================================
+   RESPONSIVE - Muy pequeños (≤320px)
+   ============================================ */
+@media (max-width: 320px) {
+  .linear-chart-container {
+    padding: 5px;
+    border-radius: 4px;
+  }
+  
+  .chart-header {
+    margin-bottom: 3px;
+  }
+  
+  .chart-title {
+    font-size: 9px;
+  }
+  
+  .chart-subtitle {
+    font-size: 7px;
+  }
+  
+  .variable-filters {
+    padding: 1px;
+    gap: 1px;
+    margin-bottom: 3px;
+    border-radius: 8px;
+  }
+  
+  .filter-btn {
+    padding: 2px 4px;
+    font-size: 6px;
+    gap: 2px;
+    border-radius: 5px;
+  }
+  
+  .btn-color-dot {
+    width: 4px;
+    height: 4px;
+  }
+  
+  .btn-label {
+    max-width: 45px;
+  }
+  
+  .value-label-text {
+    font-size: 7px;
+  }
+  
+  .value-label-text.label-hovered {
+    font-size: 8px;
+  }
+  
+  .tooltip-container {
+    padding: 2px 3px;
+    min-width: 55px;
+    max-width: 90px;
+    font-size: 8px;
+  }
+  
+  .x-axis-container {
+    height: 14px;
+    margin-top: 2px;
+  }
+  
+  .x-axis-label {
+    font-size: 5px;
+    padding: 1px;
+  }
+  
+  .y-axis-label {
+    font-size: 5px;
+  }
+  
+  .no-data {
+    height: 100px;
+  }
+  
+  .no-data svg {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .no-data p {
+    font-size: 8px;
+  }
+}
+
+/* ============================================
+   EVITAR OVERFLOW
+   ============================================ */
+@media (max-width: 768px) {
+  .linear-chart-container,
+  .chart-wrapper,
+  .x-axis-container {
+    max-width: 100%;
+    overflow-x: hidden;
   }
 }
 </style>

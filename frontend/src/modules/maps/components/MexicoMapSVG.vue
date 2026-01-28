@@ -1027,7 +1027,7 @@ const tooltipStyle = computed(() => {
   
   /* ✅ hover-info-box a la IZQUIERDA */
   .hover-info-box {
-    top: 70%;
+    top: 60%;
     left: 8px;
     bottom: auto;
     transform: translateY(-70%);
@@ -1486,3 +1486,4 @@ const tooltipStyle = computed(() => {
   }
 }
 </style>
+

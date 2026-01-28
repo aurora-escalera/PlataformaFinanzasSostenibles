@@ -21,11 +21,11 @@
         }"
       >
         <span class="btn-color-dot" :style="{ backgroundColor: getVariableColor(variable) }"></span>
-        {{ getButtonLabel(variable) }}
+        <span class="btn-label">{{ getButtonLabel(variable) }}</span>
       </button>
     </div>
 
-    <!-- ✅ LEYENDA EN GRIS (controlable via prop - texto transparente cuando hideCurrencyLegend es true) -->
+    <!-- ✅ LEYENDA EN GRIS -->
     <div 
       v-if="availableVariables.length > 0" 
       class="currency-legend"
@@ -49,21 +49,25 @@
     <div v-else class="chart-wrapper" ref="chartWrapper">
       <svg 
         ref="svgRef"
-        :width="dimensions.width"
-        :height="dimensions.height"
+        :viewBox="`0 0 ${dimensions.width} ${dimensions.height}`"
+        preserveAspectRatio="xMidYMid meet"
         class="area-chart"
         @mousemove="handleMouseMove"
-        @mouseleave="hideTooltip"
+        @mouseleave="handleMouseLeave"
+        @click="handleClick"
+        @touchstart="handleTouchStart"
+        @touchmove="handleTouchMove"
+        @touchend="handleTouchEnd"
       >
         <!-- Grid lines horizontales -->
         <g class="grid">
           <line
             v-for="i in gridLines"
             :key="`grid-${i}`"
-            :x1="padding.left"
-            :y1="padding.top + (i - 1) * gridSpacing"
-            :x2="dimensions.width - padding.right"
-            :y2="padding.top + (i - 1) * gridSpacing"
+            :x1="chartPadding.left"
+            :y1="chartPadding.top + (i - 1) * gridSpacing"
+            :x2="dimensions.width - chartPadding.right"
+            :y2="chartPadding.top + (i - 1) * gridSpacing"
             class="grid-line"
           />
         </g>
@@ -73,8 +77,8 @@
           <text
             v-for="i in gridLines"
             :key="`y-label-${i}`"
-            :x="padding.left - 8"
-            :y="padding.top + (i - 1) * gridSpacing + 3"
+            :x="chartPadding.left - 8"
+            :y="chartPadding.top + (i - 1) * gridSpacing + 3"
             class="y-axis-label"
             text-anchor="end"
           >
@@ -82,13 +86,13 @@
           </text>
         </g>
 
-        <!-- Etiquetas del eje X (DENTRO del SVG) -->
+        <!-- Etiquetas del eje X -->
         <g class="x-axis-labels">
           <text
             v-for="(label, i) in props.xLabels"
             :key="`x-label-${i}`"
             :x="getXPosition(i)"
-            :y="dimensions.height - padding.bottom + 25"
+            :y="dimensions.height - chartPadding.bottom + 20"
             class="x-axis-label-svg"
             text-anchor="middle"
           >
@@ -113,9 +117,9 @@
         <line
           v-if="hoverState.visible"
           :x1="hoverState.x"
-          :y1="padding.top"
+          :y1="chartPadding.top"
           :x2="hoverState.x"
-          :y2="dimensions.height - padding.bottom"
+          :y2="dimensions.height - chartPadding.bottom"
           class="hover-line"
           stroke="#9ca3af"
           stroke-width="0.5"
@@ -125,9 +129,9 @@
         <!-- Línea horizontal punteada del hover -->
         <line
           v-if="hoverState.visible && hoverState.yValue !== null"
-          :x1="padding.left"
+          :x1="chartPadding.left"
           :y1="hoverState.yPosition"
-          :x2="dimensions.width - padding.right"
+          :x2="dimensions.width - chartPadding.right"
           :y2="hoverState.yPosition"
           class="hover-line"
           stroke="#9ca3af"
@@ -147,7 +151,7 @@
             <path
               :d="getLinePath(variable, idx)"
               :stroke="getVariableColor(variable)"
-              stroke-width="2"
+              :stroke-width="responsiveStrokeWidth"
               fill="none"
               stroke-linecap="round"
               stroke-linejoin="round"
@@ -160,7 +164,7 @@
                 v-if="hoverState.visible && animatingPoints[`${variable}-x`] !== undefined"
                 :cx="getAnimatedPointX(variable, idx)"
                 :cy="getAnimatedPointY(variable, idx)"
-                :r="3"
+                :r="responsivePointRadius"
                 :fill="getDarkerColor(variable)"
                 class="data-point animated-point"
                 :style="{ filter: `drop-shadow(0 0 8px ${getDarkerColor(variable)})`, opacity: 1 }"
@@ -173,7 +177,7 @@
                 :key="`point-${variable}-${i}`"
                 :cx="getXPosition(i)"
                 :cy="getStackedY(variable, i, idx)"
-                :r="hoverState.visible && hoverState.index === i && animatingPoints[`${variable}-x`] === undefined ? 3 : 0"
+                :r="hoverState.visible && hoverState.index === i && animatingPoints[`${variable}-x`] === undefined ? responsivePointRadius : 0"
                 :fill="getVariableColor(variable)"
                 :class="['data-point', { 'is-hovered': hoverState.visible && hoverState.index === i }]"
                 :style="{ filter: `drop-shadow(0 0 8px ${getVariableColor(variable)})` }"
@@ -184,46 +188,40 @@
       </svg>
     </div>
 
-    <!-- Tooltip con Teleport -->
-    <Teleport to="body">
-      <transition name="tooltip-fade">
-        <div 
-          v-if="hoverState.visible" 
-          class="tooltip-container"
-          :style="tooltipFixedStyle"
-        >
-          <div class="tooltip-header">
-            <span class="tooltip-year-label">{{ hoverState.label }}</span>
-          </div>
-          <div class="tooltip-content">
-            <!-- Iterar sobre items del tooltip con separadores -->
-            <template v-for="(item, idx) in tooltipItems" :key="item.key">
-              <!-- Separador antes de cada variable excepto la primera -->
-              <div v-if="idx > 0" class="tooltip-separator"></div>
-              
-              <!-- Valor principal -->
-              <div class="tooltip-item">
-                <span class="tooltip-color-indicator" :style="{ backgroundColor: item.color }"></span>
-                <span class="tooltip-variable-name">{{ item.name }}:</span>
-                <span class="tooltip-variable-value">{{ item.formattedValue }}</span>
-              </div>
-              
-              <!-- Porcentaje (si existe) -->
-              <div v-if="item.percentage !== null" class="tooltip-item tooltip-sub-item">
-                <span class="tooltip-variable-name">Porcentaje:</span>
-                <span class="tooltip-variable-value">{{ item.percentage }}%</span>
-              </div>
-              
-              <!-- Posición (si existe) -->
-              <div v-if="item.position !== null" class="tooltip-item tooltip-sub-item">
-                <span class="tooltip-variable-name">Posición:</span>
-                <span class="tooltip-variable-value tooltip-position-value">No. {{ item.position }}</span>
-              </div>
-            </template>
-          </div>
+    <!-- Tooltip DENTRO del contenedor -->
+    <transition name="tooltip-fade">
+      <div 
+        v-if="hoverState.visible" 
+        class="tooltip-container"
+        :class="{ locked: tooltipLocked }"
+        :style="tooltipInternalStyle"
+      >
+        <div class="tooltip-header">
+          <span class="tooltip-year-label">{{ hoverState.label }}</span>
         </div>
-      </transition>
-    </Teleport>
+        <div class="tooltip-content">
+          <template v-for="(item, idx) in tooltipItems" :key="item.key">
+            <div v-if="idx > 0" class="tooltip-separator"></div>
+            
+            <div class="tooltip-item">
+              <span class="tooltip-color-indicator" :style="{ backgroundColor: item.color }"></span>
+              <span class="tooltip-variable-name">{{ item.name }}:</span>
+              <span class="tooltip-variable-value">{{ item.formattedValue }}</span>
+            </div>
+            
+            <div v-if="item.percentage !== null" class="tooltip-item tooltip-sub-item">
+              <span class="tooltip-variable-name">Porcentaje:</span>
+              <span class="tooltip-variable-value">{{ item.percentage }}%</span>
+            </div>
+            
+            <div v-if="item.position !== null" class="tooltip-item tooltip-sub-item">
+              <span class="tooltip-variable-name">Posición:</span>
+              <span class="tooltip-variable-value tooltip-position-value">No. {{ item.position }}</span>
+            </div>
+          </template>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -249,9 +247,7 @@ const props = defineProps({
   positionsByYear: { type: Object, default: () => ({}) },
   percentagesByYear: { type: Object, default: () => ({}) },
   tooltipLabels: { type: Object, default: () => ({}) },
-  // ✅ NUEVA PROP: Etiquetas personalizadas para botones de filtro (no afecta tooltip)
   buttonLabels: { type: Object, default: () => ({}) },
-  // ✅ NUEVA PROP: Ocultar texto de leyenda de moneda (mantiene el espacio)
   hideCurrencyLegend: { type: Boolean, default: false }
 })
 
@@ -263,12 +259,38 @@ const containerRef = ref(null)
 const dimensions = ref({ width: 800, height: 300 })
 let resizeObserver = null
 
-// ✅ Detectar si es móvil
-const isMobile = ref(false)
+// ✅ Estado responsivo
+const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024)
+const isMobile = computed(() => windowWidth.value <= 768)
 
-const checkIsMobile = () => {
-  isMobile.value = window.innerWidth <= 768
-}
+// ✅ Padding responsivo
+const chartPadding = computed(() => {
+  const w = windowWidth.value
+  if (w <= 320) return { top: 15, right: 10, bottom: 25, left: 35 }
+  if (w <= 360) return { top: 18, right: 12, bottom: 28, left: 38 }
+  if (w <= 390) return { top: 18, right: 15, bottom: 30, left: 40 }
+  if (w <= 430) return { top: 20, right: 18, bottom: 30, left: 45 }
+  if (w <= 480) return { top: 20, right: 20, bottom: 32, left: 48 }
+  if (w <= 768) return { top: 20, right: 22, bottom: 32, left: 50 }
+  return { top: 20, right: 25, bottom: 35, left: 55 }
+})
+
+// ✅ Propiedades responsivas
+const responsiveStrokeWidth = computed(() => {
+  const w = windowWidth.value
+  if (w <= 320) return 1.5
+  if (w <= 390) return 1.8
+  if (w <= 480) return 2
+  return 2
+})
+
+const responsivePointRadius = computed(() => {
+  const w = windowWidth.value
+  if (w <= 320) return 2
+  if (w <= 390) return 2.5
+  if (w <= 480) return 3
+  return 3
+})
 
 const hoverState = ref({
   visible: false,
@@ -280,8 +302,9 @@ const hoverState = ref({
   previousIndex: -1
 })
 
+const tooltipLocked = ref(false) // ✅ Estado para fijar tooltip
+
 const animatingPoints = ref({})
-const padding = { top: 20, right: 25, bottom: 35, left: 55 }
 
 const colorPalette = ['#7cb342', '#9E9E9E', '#DC143C', '#8b5cf6', '#f59e0b', '#ec4899', '#06b6d4', '#ef4444']
 
@@ -298,14 +321,46 @@ const availableVariables = computed(() => Object.keys(props.data))
 const visibleVariables = ref([])
 const animatedData = ref({})
 
-// ✅ NUEVA FUNCIÓN: Obtener etiqueta para botón de filtro
 const getButtonLabel = (variable) => {
-  // Si hay una etiqueta personalizada para el botón, usarla
   if (props.buttonLabels[variable]) {
     return props.buttonLabels[variable]
   }
-  // Si no, usar el nombre original de la variable
   return variable
+}
+
+// ✅ Tooltip interno (dentro del contenedor)
+const tooltipInternalStyle = computed(() => {
+  if (!hoverState.value.visible || hoverState.value.index === -1) return { display: 'none' }
+  
+  const xPos = getXPositionPercent(hoverState.value.index)
+  let topPos = '5%'
+  let leftPos = xPos
+  let transform = 'translateX(-50%)'
+  
+  if (xPos < 25) {
+    leftPos = 5
+    transform = 'translateX(0)'
+  } else if (xPos > 75) {
+    leftPos = 95
+    transform = 'translateX(-100%)'
+  }
+  
+  return { 
+    left: `${leftPos}%`,
+    top: topPos,
+    transform: transform
+  }
+})
+
+const getXPositionPercent = (index) => {
+  const len = props.xLabels.length
+  if (len <= 1) return 50
+  
+  const leftPadPercent = (chartPadding.value.left / dimensions.value.width) * 100
+  const rightPadPercent = (chartPadding.value.right / dimensions.value.width) * 100
+  const availablePercent = 100 - leftPadPercent - rightPadPercent
+  
+  return leftPadPercent + (index / (len - 1)) * availablePercent
 }
 
 const tooltipItems = computed(() => {
@@ -318,8 +373,6 @@ const tooltipItems = computed(() => {
     const data = props.data[varName] || []
     const value = data[index]
     const color = getVariableColor(varName)
-    
-    // ✅ Tooltip usa tooltipLabels (nombres originales), NO buttonLabels
     const displayName = props.tooltipLabels[varName] || varName
     
     let percentage = null
@@ -361,9 +414,6 @@ watch(() => props.data, (newData, oldData) => {
     activateInitialVariables(vars)
   }
 }, { deep: true })
-
-watch(() => props.positionsByYear, (v) => console.log('📍 [StackedArea] positionsByYear:', v), { deep: true, immediate: true })
-watch(() => props.percentagesByYear, (v) => console.log('📊 [StackedArea] percentagesByYear:', v), { deep: true, immediate: true })
 
 const activateInitialVariables = (vars) => {
   if (props.initialVisibleVariables?.length > 0) {
@@ -424,20 +474,20 @@ const formatYAxisValue = (value) => {
   const suffix = props.valueSuffix
   
   if (props.showCurrencySymbol) {
-    if (Math.abs(value) >= 1e9) return `$${(value / 1e9).toFixed(2)} B`
-    if (Math.abs(value) >= 1e6) return `$${(value / 1e6).toFixed(2)} M`
-    if (Math.abs(value) >= 1e3) return `$${(value / 1e3).toFixed(2)} K`
-    return `$${value.toFixed(2)}`
+    if (Math.abs(value) >= 1e9) return `$${(value / 1e9).toFixed(1)}B`
+    if (Math.abs(value) >= 1e6) return `$${(value / 1e6).toFixed(1)}M`
+    if (Math.abs(value) >= 1e3) return `$${(value / 1e3).toFixed(1)}K`
+    return `$${value.toFixed(0)}`
   }
   
   if (props.decimalPlaces !== null) return `${prefix}${value.toFixed(props.decimalPlaces)}${suffix}`
-  if (Math.abs(value) >= 1e9) return `${prefix}${(value / 1e9).toFixed(2)} B${suffix}`
-  if (Math.abs(value) >= 1e6) return `${prefix}${(value / 1e6).toFixed(2)} M${suffix}`
-  if (Math.abs(value) >= 1e3) return `${prefix}${(value / 1e3).toFixed(2)} K${suffix}`
-  return `${prefix}${value.toFixed(2)}${suffix}`
+  if (Math.abs(value) >= 1e9) return `${prefix}${(value / 1e9).toFixed(1)}B${suffix}`
+  if (Math.abs(value) >= 1e6) return `${prefix}${(value / 1e6).toFixed(1)}M${suffix}`
+  if (Math.abs(value) >= 1e3) return `${prefix}${(value / 1e3).toFixed(1)}K${suffix}`
+  return `${prefix}${value.toFixed(0)}${suffix}`
 }
 
-const gridSpacing = computed(() => (dimensions.value.height - padding.top - padding.bottom) / (props.gridLines - 1))
+const gridSpacing = computed(() => (dimensions.value.height - chartPadding.value.top - chartPadding.value.bottom) / (props.gridLines - 1))
 
 const getVariableData = (variable) => animatedData.value[variable] || []
 
@@ -497,13 +547,13 @@ const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3)
 const easeInCubic = (t) => t * t * t
 
 const getXPosition = (index) => {
-  const chartWidth = dimensions.value.width - padding.left - padding.right
-  return padding.left + index * (chartWidth / (props.xLabels.length - 1))
+  const chartWidth = dimensions.value.width - chartPadding.value.left - chartPadding.value.right
+  return chartPadding.value.left + index * (chartWidth / (props.xLabels.length - 1))
 }
 
 const getYPosition = (value) => {
-  const chartHeight = dimensions.value.height - padding.top - padding.bottom
-  return dimensions.value.height - padding.bottom - (value / maxY.value) * chartHeight
+  const chartHeight = dimensions.value.height - chartPadding.value.top - chartPadding.value.bottom
+  return dimensions.value.height - chartPadding.value.bottom - (value / maxY.value) * chartHeight
 }
 
 const getStackedY = (variable, dataIndex, variableIndex) => {
@@ -560,11 +610,75 @@ const getLinePath = (variable, variableIndex) => {
 }
 
 const handleMouseMove = (event) => {
+  if (tooltipLocked.value) return // No mover si está fijo
   const svg = event.currentTarget
   const rect = svg.getBoundingClientRect()
   const scaleX = dimensions.value.width / rect.width
   const mouseX = (event.clientX - rect.left) * scaleX
-  
+  processHover(mouseX)
+}
+
+// ✅ Touch events para móvil
+const handleTouchStart = (event) => {
+  if (tooltipLocked.value) {
+    // Si está fijo y toca, desfijarlo
+    tooltipLocked.value = false
+    hoverState.value.visible = false
+    return
+  }
+  event.preventDefault()
+  const touch = event.touches[0]
+  const svg = event.currentTarget
+  const rect = svg.getBoundingClientRect()
+  const scaleX = dimensions.value.width / rect.width
+  const touchX = (touch.clientX - rect.left) * scaleX
+  processHover(touchX)
+  // En móvil, fijar automáticamente al tocar
+  tooltipLocked.value = true
+}
+
+const handleTouchMove = (event) => {
+  if (tooltipLocked.value) return
+  event.preventDefault()
+  const touch = event.touches[0]
+  const svg = event.currentTarget
+  const rect = svg.getBoundingClientRect()
+  const scaleX = dimensions.value.width / rect.width
+  const touchX = (touch.clientX - rect.left) * scaleX
+  processHover(touchX)
+}
+
+const handleTouchEnd = () => {
+  // No ocultar si está fijo
+  if (!tooltipLocked.value) {
+    hideTooltip()
+  }
+}
+
+// ✅ Click para fijar/desfijar tooltip
+const handleClick = (event) => {
+  if (tooltipLocked.value) {
+    // Si ya está fijo, desfijarlo
+    tooltipLocked.value = false
+    hoverState.value.visible = false
+  } else {
+    // Fijar en la posición actual
+    const svg = event.currentTarget
+    const rect = svg.getBoundingClientRect()
+    const scaleX = dimensions.value.width / rect.width
+    const mouseX = (event.clientX - rect.left) * scaleX
+    processHover(mouseX)
+    tooltipLocked.value = true
+  }
+}
+
+const handleMouseLeave = () => {
+  if (!tooltipLocked.value) {
+    hideTooltip()
+  }
+}
+
+const processHover = (mouseX) => {
   const dataLength = props.xLabels.length
   let closestIndex = 0
   if (dataLength > 1) {
@@ -604,16 +718,11 @@ const animatePointsToIndex = (targetIndex) => {
 const getAnimatedPointX = (variable) => animatingPoints.value[`${variable}-x`] || 0
 const getAnimatedPointY = (variable) => animatingPoints.value[`${variable}-y`] || 0
 
-const hideTooltip = () => { hoverState.value.visible = false; animatingPoints.value = {} }
-
-const tooltipFixedStyle = computed(() => {
-  if (!svgRef.value || !hoverState.value.visible) return {}
-  const ctm = svgRef.value.getScreenCTM()
-  if (!ctm) return {}
-  const screenX = ctm.a * hoverState.value.x + ctm.e
-  const screenY = ctm.b * hoverState.value.x + ctm.d * hoverState.value.yPosition + ctm.f
-  return { left: `${screenX}px`, top: `${screenY}px` }
-})
+const hideTooltip = () => { 
+  hoverState.value.visible = false
+  animatingPoints.value = {}
+  tooltipLocked.value = false
+}
 
 const formatValue = (value) => {
   if (value == null) return 'N/A'
@@ -622,52 +731,52 @@ const formatValue = (value) => {
   const suffix = props.valueSuffix
   
   if (props.showCurrencySymbol) {
-    if (Math.abs(value) >= 1e9) return `$${(value / 1e9).toFixed(2)} B`
-    if (Math.abs(value) >= 1e6) return `$${(value / 1e6).toFixed(2)} M`
-    if (Math.abs(value) >= 1e3) return `$${(value / 1e3).toFixed(2)} K`
+    if (Math.abs(value) >= 1e9) return `$${(value / 1e9).toFixed(2)}B`
+    if (Math.abs(value) >= 1e6) return `$${(value / 1e6).toFixed(2)}M`
+    if (Math.abs(value) >= 1e3) return `$${(value / 1e3).toFixed(2)}K`
     return `$${value.toFixed(2)}`
   }
   
   if (props.decimalPlaces !== null) return `${prefix}${value.toFixed(props.decimalPlaces)}${suffix}`
-  if (Math.abs(value) >= 1e9) return `${prefix}${(value / 1e9).toFixed(2)} B${suffix}`
-  if (Math.abs(value) >= 1e6) return `${prefix}${(value / 1e6).toFixed(2)} M${suffix}`
-  if (Math.abs(value) >= 1e3) return `${prefix}${(value / 1e3).toFixed(2)} K${suffix}`
+  if (Math.abs(value) >= 1e9) return `${prefix}${(value / 1e9).toFixed(2)}B${suffix}`
+  if (Math.abs(value) >= 1e6) return `${prefix}${(value / 1e6).toFixed(2)}M${suffix}`
+  if (Math.abs(value) >= 1e3) return `${prefix}${(value / 1e3).toFixed(2)}K${suffix}`
   return `${prefix}${value.toFixed(2)}${suffix}`
 }
 
-// ✅ FUNCIÓN ACTUALIZADA: Fuerza width del viewport en móvil
 const updateDimensions = () => {
-  checkIsMobile()
-  // En móvil, forzar width basado en viewport
-  if (isMobile.value) {
-    const mobileWidth = window.innerWidth + 70 // Viewport menos márgenes
-    dimensions.value = {
-      width: mobileWidth,
-      height: props.height ?? 300
-    }
-    return
-  }
-  
-  // En desktop, usar props si están definidas
-  if (props.width !== null && props.height !== null) {
-    dimensions.value = { width: props.width, height: props.height }
-    return
-  }
+  windowWidth.value = window.innerWidth
   
   if (chartWrapper.value) {
     const rect = chartWrapper.value.getBoundingClientRect()
-    dimensions.value = {
-      width: props.width ?? (rect.width > 0 ? Math.floor(rect.width) : 800),
-      height: props.height ?? (rect.height > 0 ? Math.floor(rect.height) : 300)
+    const w = windowWidth.value
+    
+    // En móvil, usar el ancho del contenedor
+    let width = rect.width > 0 ? rect.width : (props.width ?? 800)
+    
+    // Altura proporcional en móvil
+    let height = props.height ?? 300
+    if (w <= 768 && rect.width > 0) {
+      height = Math.max(rect.width * 0.5, 180)
+    }
+    
+    dimensions.value = { width, height }
+  } else {
+    dimensions.value = { 
+      width: props.width ?? 800, 
+      height: props.height ?? 300 
     }
   }
+}
+
+const handleResize = () => {
+  updateDimensions()
 }
 
 onMounted(async () => {
   await nextTick()
   
-  // Listener para resize
-  window.addEventListener('resize', updateDimensions)
+  window.addEventListener('resize', handleResize)
   
   setTimeout(() => {
     updateDimensions()
@@ -681,10 +790,12 @@ onMounted(async () => {
       resizeObserver.observe(chartWrapper.value)
     }
   }, 100)
+  
+  setTimeout(() => updateDimensions(), 500)
 })
 
 onUnmounted(() => {
-  window.removeEventListener('resize', updateDimensions)
+  window.removeEventListener('resize', handleResize)
   if (resizeObserver) { resizeObserver.disconnect(); resizeObserver = null }
 })
 </script>
@@ -692,15 +803,17 @@ onUnmounted(() => {
 <style scoped>
 .area-chart-container { 
   width: 100%; 
-  height: 100%; 
+  height: 100%;
+  min-height: 250px;
   display: flex; 
   flex-direction: column; 
   background: white; 
   border-radius: 12px; 
-  padding: 0px 0x; 
+  padding: 12px; 
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
   box-sizing: border-box; 
-  overflow: visible; 
+  overflow: visible;
+  position: relative;
 }
 
 .chart-header { 
@@ -716,7 +829,7 @@ onUnmounted(() => {
 .chart-title { 
   margin: 0; 
   letter-spacing: -0.2px; 
-  font-size: 12px; 
+  font-size: 14px; 
   text-align: center; 
   font-weight: 600; 
   color: #2c3e50; 
@@ -724,7 +837,7 @@ onUnmounted(() => {
 }
 
 .chart-subtitle { 
-  font-size: 11px; 
+  font-size: 12px; 
   color: #6b7280; 
   margin: 0; 
   line-height: 1.2; 
@@ -735,36 +848,44 @@ onUnmounted(() => {
   background: #f5f5f5; 
   border-radius: 20px; 
   padding: 6px; 
-  margin-bottom: 4px; 
+  margin-bottom: 6px; 
   display: flex; 
   justify-content: center; 
-  width: 100%; 
-  gap: 4px; 
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+  gap: 6px; 
   flex-wrap: wrap; 
   flex-shrink: 0; 
 }
 
 .filter-btn { 
-  padding: 6px 14px; 
+  padding: 8px 16px; 
   border: none; 
   border-radius: 16px; 
   cursor: pointer; 
-  font-size: 14px; 
+  font-size: 12px; 
   font-weight: 500; 
   display: flex; 
   align-items: center; 
   justify-content: center; 
-  gap: 6px; 
+  gap: 8px; 
   background: transparent; 
   color: #666; 
-  transition: all 0.3s ease; 
+  transition: all 0.3s ease;
+  white-space: nowrap;
 }
 
 .btn-color-dot { 
-  width: 8px; 
-  height: 8px; 
+  width: 10px; 
+  height: 10px; 
   border-radius: 50%; 
   flex-shrink: 0; 
+}
+
+.btn-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .filter-btn.filter-active { 
@@ -779,16 +900,15 @@ onUnmounted(() => {
   opacity: 0.7; 
 }
 
-.filter-btn:hover { transform: scale(1.05); }
+.filter-btn:hover { transform: scale(1.02); }
 
-/* ✅ LEYENDA EN GRIS */
 .currency-legend {
-  font-size: 14px;
+  font-size: 11px;
   font-style: italic;
   color: #888;
   text-align: left;
   width: 100%;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   padding-left: 8px;
 }
 
@@ -798,30 +918,36 @@ onUnmounted(() => {
   align-items: center; 
   justify-content: center; 
   flex: 1; 
-  min-height: 0; 
+  min-height: 150px; 
   color: #9ca3af; 
   gap: 8px; 
 }
 
-.no-data svg { opacity: 0.5; width: 32px; height: 32px; }
-.no-data p { margin: 0; font-size: 12px; }
+.no-data svg { opacity: 0.5; width: 36px; height: 36px; }
+.no-data p { margin: 0; font-size: 13px; }
 
 .chart-wrapper { 
   position: relative; 
   width: 100%; 
-  height: 100%; 
   flex: 1; 
-  min-height: 0; 
-  min-width: 0; 
-  display: block; 
+  min-height: 180px; 
+  display: flex;
+  align-items: center;
+  justify-content: center;
   overflow: visible; 
   box-sizing: border-box; 
 }
 
-.area-chart { display: block; }
+.area-chart { 
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+
 .grid-line { stroke: #e5e7eb; stroke-width: 1; }
-.y-axis-label { font-size: 13px; font-weight: 300; fill: #6b7280; user-select: none;}
-.x-axis-label-svg { font-size: 13px; font-weight: 400; fill: #6b7280; user-select: none; }
+.y-axis-label { font-size: 11px; font-weight: 400; fill: #6b7280; user-select: none; }
+.x-axis-label-svg { font-size: 11px; font-weight: 500; fill: #6b7280; user-select: none; }
 .hover-line { transition: opacity 0.15s ease; pointer-events: none; }
 .area-path { opacity: 0; animation: fadeInArea 1s ease-out forwards; }
 .line-path { stroke-dasharray: 3000; stroke-dashoffset: 3000; animation: drawLine 1.5s ease-out forwards; }
@@ -832,67 +958,68 @@ onUnmounted(() => {
 @keyframes fadeInArea { to { opacity: 1; } }
 @keyframes drawLine { to { stroke-dashoffset: 0; } }
 
+/* Tooltip - Compacto y dentro del contenedor */
 .tooltip-container { 
-  position: fixed; 
-  transform: translate(-50%, calc(-100% - 12px)); 
-  background: white; 
-  border: 1px solid #e0e0e0; 
-  border-radius: 8px; 
-  padding: 12px 14px; 
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15); 
+  position: absolute;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #d0d0d0; 
+  border-radius: 5px; 
+  padding: 5px 7px; 
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1); 
   pointer-events: none; 
-  z-index: 99999; 
-  min-width: 200px; 
+  z-index: 100; 
+  min-width: 85px;
+  max-width: 140px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+  backdrop-filter: blur(4px);
 }
 
-.tooltip-container::after { 
-  content: ''; 
-  position: absolute; 
-  top: 100%; 
-  left: 50%; 
-  transform: translateX(-50%); 
-  border: 8px solid transparent; 
-  border-top-color: white; 
+.tooltip-container.locked {
+  border: 1px solid #3b82f6;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
 }
 
-.tooltip-header { margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #f0f0f0; }
-.tooltip-year-label { font-size: 14px; font-weight: 600; color: #333; }
-.tooltip-content { display: flex; flex-direction: column; gap: 5px; }
-.tooltip-item { display: flex; align-items: center; gap: 8px; font-size: 13px; }
-.tooltip-color-indicator { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
-.tooltip-variable-name { color: #666; flex-shrink: 0; }
-.tooltip-variable-value { color: #333; font-weight: 600; margin-left: auto; }
-.tooltip-sub-item { padding-left: 18px; }
-.tooltip-sub-item .tooltip-variable-name { color: #888; font-size: 11px; }
-.tooltip-sub-item .tooltip-variable-value { font-size: 11px; }
+.tooltip-header { margin-bottom: 4px; padding-bottom: 3px; border-bottom: 1px solid #eee; }
+.tooltip-year-label { font-size: 9px; font-weight: 600; color: #333; }
+.tooltip-content { display: flex; flex-direction: column; gap: 2px; }
+.tooltip-item { display: flex; align-items: center; gap: 4px; font-size: 8px; }
+.tooltip-color-indicator { width: 5px; height: 5px; border-radius: 1px; flex-shrink: 0; }
+.tooltip-variable-name { color: #666; flex-shrink: 0; font-size: 7px; }
+.tooltip-variable-value { color: #333; font-weight: 600; margin-left: auto; font-size: 8px; }
+.tooltip-sub-item { padding-left: 9px; }
+.tooltip-sub-item .tooltip-variable-name { color: #888; font-size: 6px; }
+.tooltip-sub-item .tooltip-variable-value { font-size: 7px; }
 .tooltip-position-value { color: #333; font-weight: 600; }
-.tooltip-separator { height: 1px; background: #e0e0e0; margin: 4px 0; }
-.tooltip-fade-enter-active, .tooltip-fade-leave-active { transition: all 0.2s ease; }
-.tooltip-fade-enter-from, .tooltip-fade-leave-to { opacity: 0; transform: translate(-50%, calc(-100% - 20px)); }
+.tooltip-separator { height: 1px; background: #eee; margin: 2px 0; }
+.tooltip-fade-enter-active, .tooltip-fade-leave-active { transition: all 0.15s ease; }
+.tooltip-fade-enter-from, .tooltip-fade-leave-to { opacity: 0; }
 
 /* ============================================
-   RESPONSIVE - Media Queries para StackedArea.vue
+   RESPONSIVE - TABLETS (≤1024px)
    ============================================ */
+@media (max-width: 1024px) {
+  .area-chart-container {
+    padding: 10px;
+  }
+  
+  .chart-title {
+    font-size: 13px;
+  }
+  
+  .filter-btn {
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+}
 
-/* Tablets */
+/* ============================================
+   RESPONSIVE - MÓVIL (≤768px)
+   ============================================ */
 @media (max-width: 768px) {
   .area-chart-container {
-    padding: 0;
-    border-radius: 8px;
-  }
-  
-  /* ✅ Hacer el gráfico responsive */
-  .chart-wrapper {
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-  }
-  
-  .area-chart {
-  min-width: 100%;
-  width: 100% !important;
-  max-width: 100%;
+    padding: 8px;
+    border-radius: 10px;
+    min-height: 220px;
   }
   
   .chart-header {
@@ -900,41 +1027,42 @@ onUnmounted(() => {
   }
   
   .chart-title {
-    font-size: 11px;
+    font-size: 12px;
   }
   
   .chart-subtitle {
     font-size: 10px;
   }
   
-  /* Filtros de variables */
   .variable-filters {
     padding: 4px;
-    margin-bottom: 3px;
-    gap: 3px;
-    border-radius: 16px;
+    margin-bottom: 4px;
+    gap: 4px;
+    border-radius: 14px;
   }
   
   .filter-btn {
-    padding: 4px 10px;
-    font-size: 11px;
-    border-radius: 12px;
-    gap: 4px;
+    padding: 5px 10px;
+    font-size: 10px;
+    border-radius: 10px;
+    gap: 5px;
   }
   
   .btn-color-dot {
-    width: 6px;
-    height: 6px;
+    width: 7px;
+    height: 7px;
   }
   
-  /* Leyenda de moneda */
   .currency-legend {
-    font-size: 10px;
-    margin-bottom: 8px;
-    padding-left: 6px;
+    font-size: 9px;
+    margin-bottom: 6px;
+    padding-left: 4px;
   }
   
-  /* No data */
+  .chart-wrapper {
+    min-height: 160px;
+  }
+  
   .no-data svg {
     width: 28px;
     height: 28px;
@@ -944,75 +1072,155 @@ onUnmounted(() => {
     font-size: 11px;
   }
   
-  /* Ejes */
   .y-axis-label {
-    font-size: 9px;
+    font-size: 8px;
   }
   
   .x-axis-label-svg {
-    font-size: 9px;
+    font-size: 8px;
   }
   
-  /* Tooltip */
   .tooltip-container {
-    padding: 10px 12px;
-    min-width: 160px;
-    border-radius: 6px;
-  }
-  
-  .tooltip-header {
-    margin-bottom: 8px;
-    padding-bottom: 6px;
+    padding: 4px 6px;
+    min-width: 75px;
+    max-width: 120px;
   }
   
   .tooltip-year-label {
-    font-size: 12px;
-  }
-  
-  .tooltip-content {
-    gap: 4px;
+    font-size: 8px;
   }
   
   .tooltip-item {
-    font-size: 11px;
-    gap: 6px;
+    font-size: 7px;
+    gap: 3px;
   }
   
   .tooltip-color-indicator {
-    width: 8px;
-    height: 8px;
+    width: 4px;
+    height: 4px;
+  }
+  
+  .tooltip-variable-name {
+    font-size: 6px;
+  }
+  
+  .tooltip-variable-value {
+    font-size: 7px;
   }
   
   .tooltip-sub-item {
-    padding-left: 14px;
+    padding-left: 7px;
   }
   
   .tooltip-sub-item .tooltip-variable-name,
   .tooltip-sub-item .tooltip-variable-value {
-    font-size: 10px;
-  }
-  
-  .tooltip-separator {
-    margin: 3px 0;
+    font-size: 6px;
   }
 }
 
-/* Móviles pequeños */
-@media (max-width: 480px) {
+/* ============================================
+   RESPONSIVE - iPhone 14 Pro Max (≤430px)
+   ============================================ */
+@media (max-width: 430px) {
   .area-chart-container {
-    border-radius: 6px;
+    padding: 6px;
+    border-radius: 8px;
+    min-height: 200px;
   }
   
-  /* ✅ Gráfico responsive */
+  .chart-title {
+    font-size: 11px;
+  }
+  
+  .variable-filters {
+    padding: 3px;
+    gap: 3px;
+  }
+  
+  .filter-btn {
+    padding: 4px 8px;
+    font-size: 9px;
+    gap: 4px;
+  }
+  
+  .btn-color-dot {
+    width: 6px;
+    height: 6px;
+  }
+  
   .chart-wrapper {
-    overflow-x: auto;
-    overflow-y: hidden;
+    min-height: 140px;
   }
   
-  .area-chart {
-    min-width: 100%;
-    width: 100% !important;
-    max-width: 100%;
+  .y-axis-label {
+    font-size: 7px;
+  }
+  
+  .x-axis-label-svg {
+    font-size: 7px;
+  }
+  
+  .tooltip-container {
+    padding: 3px 5px;
+    min-width: 65px;
+    max-width: 100px;
+  }
+  
+  .tooltip-year-label {
+    font-size: 7px;
+  }
+  
+  .tooltip-item {
+    font-size: 6px;
+  }
+}
+
+/* ============================================
+   RESPONSIVE - Samsung Galaxy S20 Ultra (≤412px)
+   ============================================ */
+@media (max-width: 412px) {
+  .area-chart-container {
+    padding: 5px;
+  }
+  
+  .chart-title {
+    font-size: 10px;
+  }
+  
+  .filter-btn {
+    padding: 3px 6px;
+    font-size: 8px;
+  }
+  
+  .btn-label {
+    max-width: 70px;
+  }
+  
+  .currency-legend {
+    font-size: 8px;
+  }
+  
+  .chart-wrapper {
+    min-height: 130px;
+  }
+  
+  .y-axis-label {
+    font-size: 6px;
+  }
+  
+  .x-axis-label-svg {
+    font-size: 6px;
+  }
+}
+
+/* ============================================
+   RESPONSIVE - iPhone 12 Pro (≤390px)
+   ============================================ */
+@media (max-width: 390px) {
+  .area-chart-container {
+    padding: 4px;
+    border-radius: 6px;
+    min-height: 180px;
   }
   
   .chart-header {
@@ -1023,23 +1231,17 @@ onUnmounted(() => {
     font-size: 10px;
   }
   
-  .chart-subtitle {
-    font-size: 9px;
-  }
-  
-  /* Filtros de variables */
   .variable-filters {
-    padding: 3px;
-    margin-bottom: 2px;
+    padding: 2px;
     gap: 2px;
-    border-radius: 14px;
+    border-radius: 10px;
   }
   
   .filter-btn {
-    padding: 3px 8px;
-    font-size: 9px;
-    border-radius: 10px;
+    padding: 3px 5px;
+    font-size: 7px;
     gap: 3px;
+    border-radius: 8px;
   }
   
   .btn-color-dot {
@@ -1047,134 +1249,262 @@ onUnmounted(() => {
     height: 5px;
   }
   
-  /* Leyenda de moneda */
-  .currency-legend {
-    font-size: 8px;
-    margin-bottom: 6px;
-    padding-left: 4px;
+  .btn-label {
+    max-width: 60px;
   }
   
-  /* No data */
+  .currency-legend {
+    font-size: 7px;
+    margin-bottom: 4px;
+  }
+  
+  .chart-wrapper {
+    min-height: 120px;
+  }
+  
+  .no-data {
+    min-height: 100px;
+  }
+  
   .no-data svg {
     width: 24px;
     height: 24px;
   }
   
   .no-data p {
-    font-size: 10px;
+    font-size: 9px;
   }
   
-  /* Ejes */
-  .y-axis-label {
-    font-size: 7px;
-  }
-  
-  .x-axis-label-svg {
-    font-size: 7px;
-  }
-  
-  /* Tooltip */
   .tooltip-container {
-    padding: 8px 10px;
-    min-width: 140px;
-    border-radius: 5px;
+    padding: 3px 4px;
+    min-width: 55px;
+    max-width: 90px;
   }
   
   .tooltip-header {
-    margin-bottom: 6px;
-    padding-bottom: 5px;
+    margin-bottom: 2px;
+    padding-bottom: 2px;
   }
   
   .tooltip-year-label {
-    font-size: 11px;
-  }
-  
-  .tooltip-content {
-    gap: 3px;
+    font-size: 6px;
   }
   
   .tooltip-item {
-    font-size: 10px;
-    gap: 5px;
+    font-size: 5px;
+    gap: 2px;
   }
   
   .tooltip-color-indicator {
-    width: 6px;
-    height: 6px;
+    width: 3px;
+    height: 3px;
   }
   
   .tooltip-sub-item {
-    padding-left: 12px;
+    padding-left: 5px;
   }
   
   .tooltip-sub-item .tooltip-variable-name,
   .tooltip-sub-item .tooltip-variable-value {
-    font-size: 9px;
-  }
-  
-  .tooltip-separator {
-    margin: 2px 0;
-  }
-  
-  .tooltip-container::after {
-    border-width: 6px;
+    font-size: 5px;
   }
 }
 
-/* Landscape en móviles */
-@media (max-width: 768px) and (orientation: landscape) {
+/* ============================================
+   RESPONSIVE - Samsung Galaxy S8+ (≤360px)
+   ============================================ */
+@media (max-width: 360px) {
   .area-chart-container {
-    width: 100% !important;
-    max-width: 100vw !important;
-    overflow: hidden !important;
+    padding: 3px;
+    border-radius: 5px;
+    min-height: 160px;
   }
   
-  .chart-wrapper {
-    width: 100% !important;
-    max-width: 100% !important;
-    overflow: hidden !important;
+  .chart-title {
+    font-size: 9px;
   }
   
-  .area-chart {
-    min-width: 100%;
-    width: 100% !important;
-    max-width: 100%;
+  .chart-subtitle {
+    font-size: 8px;
   }
   
   .variable-filters {
-    padding: 3px;
+    padding: 2px;
+    gap: 1px;
+    border-radius: 8px;
+  }
+  
+  .filter-btn {
+    padding: 2px 4px;
+    font-size: 6px;
+    gap: 2px;
+    border-radius: 6px;
+  }
+  
+  .btn-color-dot {
+    width: 4px;
+    height: 4px;
+  }
+  
+  .btn-label {
+    max-width: 50px;
+  }
+  
+  .currency-legend {
+    font-size: 6px;
+    margin-bottom: 3px;
+  }
+  
+  .chart-wrapper {
+    min-height: 100px;
+  }
+  
+  .y-axis-label {
+    font-size: 5px;
+  }
+  
+  .x-axis-label-svg {
+    font-size: 5px;
+  }
+  
+  .tooltip-container {
+    padding: 2px 3px;
+    min-width: 50px;
+    max-width: 80px;
+  }
+  
+  .tooltip-year-label {
+    font-size: 5px;
+  }
+  
+  .tooltip-item {
+    font-size: 5px;
+  }
+  
+  .tooltip-separator {
+    margin: 1px 0;
+  }
+}
+
+/* ============================================
+   RESPONSIVE - Muy pequeños (≤320px)
+   ============================================ */
+@media (max-width: 320px) {
+  .area-chart-container {
+    padding: 2px;
+    border-radius: 4px;
+    min-height: 140px;
+  }
+  
+  .chart-header {
+    margin-bottom: 2px;
+  }
+  
+  .chart-title {
+    font-size: 8px;
+  }
+  
+  .chart-subtitle {
+    font-size: 7px;
+  }
+  
+  .variable-filters {
+    padding: 1px;
+    gap: 1px;
+    border-radius: 6px;
     margin-bottom: 2px;
   }
   
   .filter-btn {
-    padding: 3px 8px;
-    font-size: 9px;
+    padding: 2px 3px;
+    font-size: 5px;
+    gap: 1px;
+    border-radius: 4px;
+  }
+  
+  .btn-color-dot {
+    width: 3px;
+    height: 3px;
+  }
+  
+  .btn-label {
+    max-width: 40px;
   }
   
   .currency-legend {
+    font-size: 5px;
+    margin-bottom: 2px;
+    padding-left: 2px;
+  }
+  
+  .chart-wrapper {
+    min-height: 90px;
+  }
+  
+  .no-data {
+    min-height: 80px;
+  }
+  
+  .no-data svg {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .no-data p {
     font-size: 8px;
-    margin-bottom: 4px;
   }
   
   .y-axis-label {
-    font-size: 8px;
+    font-size: 4px;
   }
   
   .x-axis-label-svg {
-    font-size: 8px;
+    font-size: 4px;
   }
   
   .tooltip-container {
-    padding: 6px 8px;
-    min-width: 130px;
+    padding: 2px 3px;
+    min-width: 45px;
+    max-width: 70px;
+  }
+  
+  .tooltip-header {
+    margin-bottom: 2px;
+    padding-bottom: 1px;
   }
   
   .tooltip-year-label {
-    font-size: 10px;
+    font-size: 5px;
   }
   
   .tooltip-item {
-    font-size: 9px;
+    font-size: 4px;
+    gap: 1px;
+  }
+  
+  .tooltip-color-indicator {
+    width: 3px;
+    height: 3px;
+  }
+  
+  .tooltip-sub-item {
+    padding-left: 4px;
+  }
+  
+  .tooltip-sub-item .tooltip-variable-name,
+  .tooltip-sub-item .tooltip-variable-value {
+    font-size: 4px;
+  }
+}
+
+/* ============================================
+   EVITAR OVERFLOW
+   ============================================ */
+@media (max-width: 768px) {
+  .area-chart-container,
+  .chart-wrapper {
+    max-width: 100%;
+    overflow-x: hidden;
   }
 }
 </style>
