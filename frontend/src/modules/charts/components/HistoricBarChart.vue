@@ -1,6 +1,7 @@
 <!-- src/modules/charts/components/HistoricBarChart.vue -->
 <!-- ✅ MODIFICADO: Agregada prop buttonLabels para personalizar etiquetas de botones sin afectar tooltip -->
 <!-- ✅ CORREGIDO: yearGroupWidth ahora usa maxYearsWithoutScroll para mostrar solo esos años en pantalla -->
+<!-- ✅ AGREGADO: Scroll listener para ocultar tooltip en móvil -->
 <template>
   <div class="bar-chart-container">
     <div v-if="!hideHeader" class="chart-title-section">
@@ -169,7 +170,6 @@ const props = defineProps({
   variablesConfig: { type: Object, default: null },
   initialActiveVariables: { type: Array, default: null },
   maxYearsWithoutScroll: { type: Number, default: 6 },
-  // ✅ NUEVA PROP: Etiquetas personalizadas para botones de filtro (no afecta tooltip)
   buttonLabels: { type: Object, default: () => ({}) }
 })
 
@@ -190,12 +190,9 @@ const checkIsMobile = () => { isMobile.value = window.innerWidth <= 768 }
 
 const needsScroll = computed(() => (props.data?.length || 0) > props.maxYearsWithoutScroll)
 
-// ✅ CORREGIDO: Usar maxYearsWithoutScroll para calcular el ancho de cada grupo de año
-// Esto asegura que solo quepan maxYearsWithoutScroll años en la pantalla visible
 const yearGroupWidth = computed(() => {
   if (!needsScroll.value) return null
   const containerWidth = barsContainerWidth.value || 800
-  // Dividir el contenedor entre maxYearsWithoutScroll para que solo esos años sean visibles
   return Math.max(containerWidth / props.maxYearsWithoutScroll, 80)
 })
 
@@ -240,7 +237,6 @@ const scrollLeft = () => {
   }
 }
 
-// ✅ NUEVA FUNCIÓN: Obtener etiqueta para botón de filtro
 const getButtonLabel = (variable) => {
   if (props.buttonLabels[variable.key]) {
     return props.buttonLabels[variable.key]
@@ -251,7 +247,6 @@ const getButtonLabel = (variable) => {
   return variable.label
 }
 
-// ✅ TOOLTIP usa los labels ORIGINALES, no los buttonLabels
 const tooltipItems = computed(() => {
   if (!hoveredYear.value || !props.data) return []
   const yearData = props.data.find(d => d.year === hoveredYear.value)
@@ -449,11 +444,20 @@ const updateBarsContainerDimensions = () => {
   }
 }
 
+// ✅ Ocultar tooltip al hacer scroll en móvil
+const handleWindowScroll = () => {
+  if (hoveredYear.value) {
+    hoveredYear.value = null
+  }
+}
+
 let resizeObserver = null
 
 onMounted(async () => {
   await nextTick()
   window.addEventListener('resize', updateBarsContainerDimensions)
+  window.addEventListener('scroll', handleWindowScroll, true) // ✅ Agregar scroll listener
+  
   updateBarsContainerDimensions()
   if (barsScrollContainerRef.value) {
     resizeObserver = new ResizeObserver(() => {
@@ -465,6 +469,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('resize', updateBarsContainerDimensions)
+  window.removeEventListener('scroll', handleWindowScroll, true) // ✅ Remover scroll listener
   resizeObserver?.disconnect()
 })
 

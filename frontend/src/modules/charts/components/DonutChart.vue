@@ -933,7 +933,7 @@ function formatValue(value) {
 }
 
 /* ============================================
-   RESPONSIVE - Tablets
+   RESPONSIVE - Tablets (≤768px)
    ============================================ */
 @media (max-width: 768px) {
   .donut-chart-container {
@@ -949,6 +949,7 @@ function formatValue(value) {
   .donut-side {
     width: 100%;
     height: auto;
+    flex-shrink: 0;
   }
   
   .donut-content {
@@ -958,8 +959,8 @@ function formatValue(value) {
   }
   
   .donut-wrapper {
-    width: 150px;
-    height: 150px;
+    width: 140px;
+    height: 140px;
   }
   
   .donut-info {
@@ -967,104 +968,17 @@ function formatValue(value) {
   }
   
   .center-icon {
-    width: 34px;
-    height: 34px;
+    width: 32px;
+    height: 32px;
   }
   
   .center-icon svg {
-    width: 17px;
-    height: 17px;
+    width: 16px;
+    height: 16px;
   }
   
   .center-value {
-    font-size: 16px;
-  }
-  
-  .center-label {
-    font-size: 10px;
-  }
-  
-  .info-badge {
-    padding: 5px 12px;
-    font-size: 14px;
-  }
-  
-  .sectors-side {
-    max-height: 220px;
-  }
-  
-  .sectors-content {
-    gap: 10px;
-  }
-  
-  .sectors-title {
     font-size: 15px;
-  }
-  
-  .sectors-list {
-    gap: 5px;
-  }
-  
-  .sector-row {
-    padding: 10px 14px;
-    border-radius: 10px;
-  }
-  
-  .sector-name {
-    font-size: 14px;
-  }
-  
-  .sector-value {
-    font-size: 15px;
-  }
-  
-  .sector-percent-badge {
-    padding: 4px 8px;
-    font-size: 12px;
-    min-width: 50px;
-  }
-  
-  .segmented-bar {
-    height: 26px;
-  }
-  
-  .bar-segment-label {
-    font-size: 11px;
-  }
-}
-
-/* ============================================
-   RESPONSIVE - Móviles pequeños
-   ============================================ */
-@media (max-width: 480px) {
-  .donut-chart-container {
-    padding: 12px;
-    gap: 10px;
-  }
-  
-  .donut-content {
-    flex-direction: column;
-    gap: 12px;
-  }
-  
-  .donut-wrapper {
-    width: 130px;
-    height: 130px;
-  }
-  
-  .center-icon {
-    width: 30px;
-    height: 30px;
-    margin-bottom: 4px;
-  }
-  
-  .center-icon svg {
-    width: 15px;
-    height: 15px;
-  }
-  
-  .center-value {
-    font-size: 14px;
   }
   
   .center-label {
@@ -1072,47 +986,93 @@ function formatValue(value) {
   }
   
   .info-badge {
-    padding: 4px 10px;
+    padding: 5px 12px;
     font-size: 13px;
   }
   
+  .info-year {
+    font-size: 11px;
+  }
+  
+  /* ✅ Scroll para sectors-side */
   .sectors-side {
-    max-height: 200px;
+    flex: 1;
+    min-height: 0;
+    max-height: 180px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .sectors-content {
+    gap: 8px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
   
   .sectors-header {
-    padding-bottom: 8px;
+    padding-bottom: 6px;
+    flex-shrink: 0;
   }
   
   .sectors-title {
     font-size: 14px;
   }
   
+  /* ✅ Lista con scroll interno */
   .sectors-list {
     gap: 4px;
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 0;
+    padding-right: 8px;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* ✅ Scrollbar visible y estilizado */
+  .sectors-list::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .sectors-list::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+  }
+  
+  .sectors-list::-webkit-scrollbar-thumb {
+    background: #94a3b8;
+    border-radius: 3px;
+  }
+  
+  .sectors-list::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
   }
   
   .sector-row {
     padding: 8px 12px;
     border-radius: 8px;
+    flex-shrink: 0;
   }
   
   .sector-dot {
-    width: 11px;
-    height: 11px;
+    width: 10px;
+    height: 10px;
   }
   
   .sector-name {
-    font-size: 13px;
+    font-size: 12px;
   }
   
   .sector-value {
-    font-size: 14px;
+    font-size: 13px;
   }
   
   .sector-percent-badge {
     padding: 3px 7px;
-    font-size: 11px;
+    font-size: 10px;
     min-width: 45px;
     border-radius: 12px;
   }
@@ -1120,6 +1080,7 @@ function formatValue(value) {
   .distribution-bar-section {
     gap: 8px;
     padding-top: 12px;
+    flex-shrink: 0;
   }
   
   .distribution-label {
@@ -1127,7 +1088,7 @@ function formatValue(value) {
   }
   
   .distribution-total {
-    font-size: 14px;
+    font-size: 15px;
   }
   
   .segmented-bar-wrapper {
@@ -1136,14 +1097,13 @@ function formatValue(value) {
   }
   
   .segmented-bar {
-    height: 22px;
+    height: 24px;
     border-radius: 5px;
     gap: 2px;
   }
   
   .bar-segment {
     border-radius: 4px;
-    min-width: 3px;
   }
   
   .bar-segment-label {
@@ -1153,6 +1113,932 @@ function formatValue(value) {
   .currency-note {
     font-size: 10px;
   }
+  
+  /* Empty state responsive */
+  .empty-state-content {
+    padding: 30px 20px;
+    gap: 12px;
+  }
+  
+  .empty-icon {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .empty-icon svg {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .empty-title {
+    font-size: 15px;
+  }
+  
+  .empty-description {
+    font-size: 12px;
+  }
+  
+  .empty-badge {
+    padding: 6px 12px;
+  }
+  
+  .empty-badge-label {
+    font-size: 12px;
+  }
+}
+
+/* ============================================
+   RESPONSIVE - Móviles medianos (≤480px)
+   ============================================ */
+@media (max-width: 480px) {
+  .donut-chart-container {
+    padding: 10px;
+    gap: 8px;
+  }
+  
+  .donut-layout {
+    gap: 14px;
+  }
+  
+  .donut-content {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .donut-wrapper {
+    width: 120px;
+    height: 120px;
+  }
+  
+  .center-icon {
+    width: 28px;
+    height: 28px;
+    margin-bottom: 3px;
+  }
+  
+  .center-icon svg {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .center-value {
+    font-size: 13px;
+  }
+  
+  .center-label {
+    font-size: 8px;
+  }
+  
+  .info-badge {
+    padding: 4px 10px;
+    font-size: 12px;
+  }
+  
+  .info-year {
+    font-size: 10px;
+  }
+  
+  /* ✅ Scroll para sectors-side */
+  .sectors-side {
+    max-height: 160px;
+  }
+  
+  .sectors-header {
+    padding-bottom: 5px;
+  }
+  
+  .sectors-title {
+    font-size: 12px;
+  }
+  
+  .sectors-list {
+    gap: 3px;
+    padding-right: 6px;
+  }
+  
+  .sectors-list::-webkit-scrollbar {
+    width: 5px;
+  }
+  
+  .sector-row {
+    padding: 7px 10px;
+    border-radius: 6px;
+  }
+  
+  .sector-left {
+    gap: 8px;
+  }
+  
+  .sector-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+  }
+  
+  .sector-name {
+    font-size: 11px;
+  }
+  
+  .sector-right {
+    gap: 8px;
+  }
+  
+  .sector-value {
+    font-size: 11px;
+  }
+  
+  .sector-percent-badge {
+    padding: 2px 6px;
+    font-size: 9px;
+    min-width: 38px;
+    border-radius: 10px;
+  }
+  
+  .distribution-bar-section {
+    gap: 6px;
+    padding-top: 10px;
+  }
+  
+  .distribution-label {
+    font-size: 10px;
+  }
+  
+  .distribution-total {
+    font-size: 13px;
+  }
+  
+  .segmented-bar-wrapper {
+    padding: 2px;
+    border-radius: 6px;
+  }
+  
+  .segmented-bar {
+    height: 20px;
+    border-radius: 4px;
+    gap: 2px;
+  }
+  
+  .bar-segment {
+    border-radius: 3px;
+    min-width: 3px;
+  }
+  
+  .bar-segment-label {
+    font-size: 9px;
+  }
+  
+  .currency-note {
+    font-size: 9px;
+  }
+  
+  /* Empty state */
+  .empty-state-content {
+    padding: 24px 16px;
+    gap: 10px;
+  }
+  
+  .empty-icon {
+    width: 52px;
+    height: 52px;
+  }
+  
+  .empty-icon svg {
+    width: 30px;
+    height: 30px;
+  }
+  
+  .empty-title {
+    font-size: 14px;
+  }
+  
+  .empty-description {
+    font-size: 11px;
+  }
+  
+  .empty-badge {
+    padding: 5px 10px;
+  }
+  
+  .empty-badge-label {
+    font-size: 11px;
+  }
+}
+
+/* ============================================
+   RESPONSIVE - iPhone 14 Pro Max (≤430px)
+   ============================================ */
+@media (max-width: 430px) {
+  .donut-wrapper {
+    width: 110px;
+    height: 110px;
+  }
+  
+  .center-icon {
+    width: 26px;
+    height: 26px;
+  }
+  
+  .center-icon svg {
+    width: 13px;
+    height: 13px;
+  }
+  
+  .center-value {
+    font-size: 12px;
+  }
+  
+  /* ✅ Scroll para sectors-side */
+  .sectors-side {
+    max-height: 150px;
+  }
+  
+  .sectors-list {
+    padding-right: 5px;
+  }
+  
+  .sectors-list::-webkit-scrollbar {
+    width: 4px;
+  }
+  
+  .sector-row {
+    padding: 6px 9px;
+  }
+  
+  .sector-name {
+    font-size: 10px;
+  }
+  
+  .sector-value {
+    font-size: 10px;
+  }
+  
+  .sector-percent-badge {
+    padding: 2px 5px;
+    font-size: 8px;
+    min-width: 34px;
+  }
+}
+
+/* ============================================
+   RESPONSIVE - Pixel 7 / Galaxy S20 Ultra (≤414px)
+   ============================================ */
+@media (max-width: 414px) {
+  .donut-chart-container {
+    padding: 8px;
+    gap: 6px;
+  }
+  
+  .donut-layout {
+    gap: 12px;
+  }
+  
+  .donut-wrapper {
+    width: 105px;
+    height: 105px;
+  }
+  
+  .center-icon {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .center-icon svg {
+    width: 12px;
+    height: 12px;
+  }
+  
+  .center-value {
+    font-size: 11px;
+  }
+  
+  .center-label {
+    font-size: 7px;
+  }
+  
+  .info-badge {
+    padding: 3px 8px;
+    font-size: 11px;
+  }
+  
+  /* ✅ Scroll para sectors-side */
+  .sectors-side {
+    max-height: 140px;
+  }
+  
+  .sectors-title {
+    font-size: 11px;
+  }
+  
+  .sectors-list {
+    padding-right: 4px;
+  }
+  
+  .sector-row {
+    padding: 5px 8px;
+    border-radius: 5px;
+  }
+  
+  .sector-left {
+    gap: 6px;
+  }
+  
+  .sector-dot {
+    width: 7px;
+    height: 7px;
+  }
+  
+  .sector-name {
+    font-size: 9px;
+  }
+  
+  .sector-right {
+    gap: 6px;
+  }
+  
+  .sector-value {
+    font-size: 9px;
+  }
+  
+  .sector-percent-badge {
+    padding: 2px 4px;
+    font-size: 7px;
+    min-width: 30px;
+    border-radius: 8px;
+  }
+  
+  .distribution-label {
+    font-size: 9px;
+  }
+  
+  .distribution-total {
+    font-size: 12px;
+  }
+  
+  .segmented-bar {
+    height: 18px;
+  }
+  
+  .bar-segment-label {
+    font-size: 8px;
+  }
+  
+  .currency-note {
+    font-size: 8px;
+  }
+  
+  /* Empty state */
+  .empty-state-content {
+    padding: 20px 14px;
+    gap: 8px;
+  }
+  
+  .empty-icon {
+    width: 46px;
+    height: 46px;
+  }
+  
+  .empty-icon svg {
+    width: 26px;
+    height: 26px;
+  }
+  
+  .empty-title {
+    font-size: 13px;
+  }
+  
+  .empty-description {
+    font-size: 10px;
+  }
+}
+
+/* ============================================
+   RESPONSIVE - iPhone 12 Pro (≤390px)
+   ============================================ */
+@media (max-width: 390px) {
+  .donut-chart-container {
+    padding: 7px;
+    gap: 5px;
+  }
+  
+  .donut-layout {
+    gap: 10px;
+  }
+  
+  .donut-content {
+    gap: 8px;
+  }
+  
+  .donut-wrapper {
+    width: 95px;
+    height: 95px;
+  }
+  
+  .center-icon {
+    width: 22px;
+    height: 22px;
+    margin-bottom: 2px;
+  }
+  
+  .center-icon svg {
+    width: 11px;
+    height: 11px;
+  }
+  
+  .center-value {
+    font-size: 10px;
+  }
+  
+  .center-label {
+    font-size: 6px;
+  }
+  
+  .info-badge {
+    padding: 3px 7px;
+    font-size: 10px;
+  }
+  
+  .info-year {
+    font-size: 9px;
+  }
+  
+  /* ✅ Scroll para sectors-side */
+  .sectors-side {
+    max-height: 130px;
+  }
+  
+  .sectors-header {
+    padding-bottom: 4px;
+  }
+  
+  .sectors-title {
+    font-size: 10px;
+  }
+  
+  .sectors-list {
+    gap: 2px;
+    padding-right: 4px;
+  }
+  
+  .sectors-list::-webkit-scrollbar {
+    width: 3px;
+  }
+  
+  .sector-row {
+    padding: 4px 7px;
+    border-radius: 4px;
+  }
+  
+  .sector-left {
+    gap: 5px;
+  }
+  
+  .sector-dot {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .sector-name {
+    font-size: 8px;
+  }
+  
+  .sector-right {
+    gap: 5px;
+  }
+  
+  .sector-value {
+    font-size: 8px;
+  }
+  
+  .sector-percent-badge {
+    padding: 1px 4px;
+    font-size: 6.5px;
+    min-width: 26px;
+    border-radius: 6px;
+  }
+  
+  .distribution-bar-section {
+    gap: 5px;
+    padding-top: 8px;
+  }
+  
+  .distribution-label {
+    font-size: 8px;
+  }
+  
+  .distribution-total {
+    font-size: 11px;
+  }
+  
+  .segmented-bar-wrapper {
+    padding: 2px;
+    border-radius: 5px;
+  }
+  
+  .segmented-bar {
+    height: 16px;
+    border-radius: 3px;
+  }
+  
+  .bar-segment {
+    border-radius: 2px;
+    min-width: 2px;
+  }
+  
+  .bar-segment-label {
+    font-size: 7px;
+  }
+  
+  .currency-note {
+    font-size: 7px;
+  }
+  
+  /* Empty state */
+  .empty-state-content {
+    padding: 18px 12px;
+    gap: 7px;
+  }
+  
+  .empty-icon {
+    width: 42px;
+    height: 42px;
+  }
+  
+  .empty-icon svg {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .empty-title {
+    font-size: 12px;
+  }
+  
+  .empty-description {
+    font-size: 9px;
+  }
+  
+  .empty-badge {
+    padding: 4px 8px;
+  }
+  
+  .empty-badge-label {
+    font-size: 10px;
+  }
+}
+
+/* ============================================
+   RESPONSIVE - Samsung Galaxy S8+ (≤360px)
+   ============================================ */
+@media (max-width: 360px) {
+  .donut-chart-container {
+    padding: 6px;
+    gap: 4px;
+  }
+  
+  .donut-layout {
+    gap: 8px;
+  }
+  
+  .donut-content {
+    gap: 6px;
+  }
+  
+  .donut-wrapper {
+    width: 85px;
+    height: 85px;
+  }
+  
+  .center-icon {
+    width: 20px;
+    height: 20px;
+    margin-bottom: 1px;
+  }
+  
+  .center-icon svg {
+    width: 10px;
+    height: 10px;
+  }
+  
+  .center-value {
+    font-size: 9px;
+  }
+  
+  .center-label {
+    font-size: 5.5px;
+  }
+  
+  .info-badge {
+    padding: 2px 6px;
+    font-size: 9px;
+  }
+  
+  .info-year {
+    font-size: 8px;
+  }
+  
+  /* ✅ Scroll para sectors-side */
+  .sectors-side {
+    max-height: 115px;
+  }
+  
+  .sectors-header {
+    padding-bottom: 3px;
+  }
+  
+  .sectors-title {
+    font-size: 9px;
+  }
+  
+  .sectors-list {
+    gap: 2px;
+    padding-right: 3px;
+  }
+  
+  .sectors-list::-webkit-scrollbar {
+    width: 3px;
+  }
+  
+  .sector-row {
+    padding: 4px 6px;
+    border-radius: 4px;
+  }
+  
+  .sector-left {
+    gap: 4px;
+  }
+  
+  .sector-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 1px;
+  }
+  
+  .sector-name {
+    font-size: 7px;
+  }
+  
+  .sector-right {
+    gap: 4px;
+  }
+  
+  .sector-value {
+    font-size: 7px;
+  }
+  
+  .sector-percent-badge {
+    padding: 1px 3px;
+    font-size: 6px;
+    min-width: 22px;
+    border-radius: 5px;
+  }
+  
+  .distribution-bar-section {
+    gap: 4px;
+    padding-top: 6px;
+  }
+  
+  .distribution-label {
+    font-size: 7px;
+  }
+  
+  .distribution-total {
+    font-size: 10px;
+  }
+  
+  .segmented-bar-wrapper {
+    padding: 1px;
+    border-radius: 4px;
+  }
+  
+  .segmented-bar {
+    height: 14px;
+    border-radius: 3px;
+    gap: 1px;
+  }
+  
+  .bar-segment {
+    border-radius: 2px;
+    min-width: 2px;
+  }
+  
+  .bar-segment-label {
+    font-size: 6px;
+  }
+  
+  .currency-note {
+    font-size: 6px;
+  }
+  
+  /* Empty state */
+  .empty-state-content {
+    padding: 16px 10px;
+    gap: 6px;
+  }
+  
+  .empty-icon {
+    width: 38px;
+    height: 38px;
+  }
+  
+  .empty-icon svg {
+    width: 22px;
+    height: 22px;
+  }
+  
+  .empty-title {
+    font-size: 11px;
+  }
+  
+  .empty-description {
+    font-size: 8px;
+  }
+  
+  .empty-badge {
+    padding: 3px 7px;
+  }
+  
+  .empty-badge-label {
+    font-size: 9px;
+  }
+}
+
+/* ============================================
+   RESPONSIVE - iPhone SE (≤320px)
+   ============================================ */
+@media (max-width: 320px) {
+  .donut-chart-container {
+    padding: 5px;
+    gap: 3px;
+  }
+  
+  .donut-layout {
+    gap: 6px;
+  }
+  
+  .donut-content {
+    gap: 5px;
+  }
+  
+  .donut-wrapper {
+    width: 75px;
+    height: 75px;
+  }
+  
+  .center-icon {
+    width: 18px;
+    height: 18px;
+    margin-bottom: 1px;
+  }
+  
+  .center-icon svg {
+    width: 9px;
+    height: 9px;
+  }
+  
+  .center-value {
+    font-size: 8px;
+  }
+  
+  .center-label {
+    font-size: 5px;
+  }
+  
+  .info-badge {
+    padding: 2px 5px;
+    font-size: 8px;
+    border-radius: 12px;
+  }
+  
+  .info-year {
+    font-size: 7px;
+  }
+  
+  /* ✅ Scroll para sectors-side */
+  .sectors-side {
+    max-height: 100px;
+  }
+  
+  .sectors-header {
+    padding-bottom: 2px;
+  }
+  
+  .sectors-title {
+    font-size: 8px;
+  }
+  
+  .sectors-list {
+    gap: 1.5px;
+    padding-right: 2px;
+  }
+  
+  .sectors-list::-webkit-scrollbar {
+    width: 2px;
+  }
+  
+  .sector-row {
+    padding: 3px 5px;
+    border-radius: 3px;
+  }
+  
+  .sector-left {
+    gap: 3px;
+  }
+  
+  .sector-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 1px;
+  }
+  
+  .sector-name {
+    font-size: 6px;
+  }
+  
+  .sector-right {
+    gap: 3px;
+  }
+  
+  .sector-value {
+    font-size: 6px;
+  }
+  
+  .sector-percent-badge {
+    padding: 1px 2px;
+    font-size: 5px;
+    min-width: 18px;
+    border-radius: 4px;
+  }
+  
+  .distribution-bar-section {
+    gap: 3px;
+    padding-top: 5px;
+  }
+  
+  .distribution-label {
+    font-size: 6px;
+  }
+  
+  .distribution-total {
+    font-size: 9px;
+  }
+  
+  .segmented-bar-wrapper {
+    padding: 1px;
+    border-radius: 3px;
+  }
+  
+  .segmented-bar {
+    height: 12px;
+    border-radius: 2px;
+    gap: 1px;
+  }
+  
+  .bar-segment {
+    border-radius: 1.5px;
+    min-width: 1px;
+  }
+  
+  .bar-segment-label {
+    font-size: 5px;
+  }
+  
+  .currency-note {
+    font-size: 5px;
+  }
+  
+  /* Empty state */
+  .empty-state-content {
+    padding: 14px 8px;
+    gap: 5px;
+    border-radius: 12px;
+  }
+  
+  .empty-icon {
+    width: 34px;
+    height: 34px;
+  }
+  
+  .empty-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .empty-title {
+    font-size: 10px;
+  }
+  
+  .empty-description {
+    font-size: 7px;
+    line-height: 1.4;
+  }
+  
+  .empty-badge {
+    padding: 3px 6px;
+    border-radius: 14px;
+  }
+  
+  .empty-badge-label {
+    font-size: 8px;
+  }
 }
 
 /* ============================================
@@ -1161,7 +2047,7 @@ function formatValue(value) {
 @media (max-width: 768px) and (orientation: landscape) {
   .donut-layout {
     flex-direction: row;
-    gap: 20px;
+    gap: 16px;
   }
   
   .donut-side {
@@ -1171,20 +2057,49 @@ function formatValue(value) {
   
   .donut-content {
     flex-direction: column;
+    gap: 8px;
   }
   
   .donut-wrapper {
-    width: 140px;
-    height: 140px;
+    width: 100px;
+    height: 100px;
   }
   
+  /* ✅ Scroll para sectors-side en landscape */
   .sectors-side {
     max-height: none;
     flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+  
+  .sectors-content {
+    height: 100%;
+    overflow: hidden;
   }
   
   .sectors-list {
-    max-height: 180px;
+    max-height: 120px;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
+  
+  .sector-row {
+    padding: 5px 8px;
+  }
+  
+  .sector-name {
+    font-size: 9px;
+  }
+  
+  .sector-value {
+    font-size: 9px;
+  }
+  
+  .sector-percent-badge {
+    font-size: 7px;
+    min-width: 28px;
+  }
+
 }
 </style>

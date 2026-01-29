@@ -1,5 +1,5 @@
 <!-- src/modules/maps/components/HomePage.vue -->
-<!-- ✅ VERSIÓN CORREGIDA: Incluye overlays para QualitativePanel -->
+<!-- ✅ VERSIÓN COMBINADA: Estructura desktop original + ajustes móviles mejorados -->
 <template>
   <div class="filters-toggles-row">
     <!-- Columna izquierda: Filtros -->
@@ -85,7 +85,7 @@
             </div>
           </transition>
 
-          <!-- ✅ NUEVO: Overlay para QualitativePanel - SOLO sobre el mapa -->
+          <!-- ✅ Overlay para QualitativePanel - SOLO sobre el mapa -->
           <transition name="overlay-fade">
             <div 
               v-if="showQualitativeOverlay" 
@@ -1506,7 +1506,9 @@ onMounted(async () => {
   padding-bottom: 5px;
 }
 
-/* Overlay base */
+/* ============================================
+   OVERLAY - ESTILOS BASE (DESKTOP)
+   ============================================ */
 .map-overlay-filter {
   position: absolute;
   top: 19.6px;
@@ -1541,7 +1543,7 @@ onMounted(async () => {
   color: white;
 }
 
-/* ✅ NUEVO: Estilos para overlay de QualitativePanel */
+/* Estilos para overlay de QualitativePanel */
 .map-overlay-filter.qualitative-overlay {
   background: rgba(22, 60, 95, 0.90);
   cursor: default;
@@ -1654,9 +1656,8 @@ onMounted(async () => {
 }
 
 /* ============================================
-   RESPONSIVE
+   RESPONSIVE - MÓVIL (≤768px)
    ============================================ */
-
 @media (max-width: 768px) {
   .map-container {
     width: 100%;
@@ -1680,20 +1681,44 @@ onMounted(async () => {
     max-width: 100% !important;
     box-sizing: border-box;
     overflow: visible;
+    position: relative;
   }
   
   .map-and-charts-wrapper.no-gap {
     gap: 12px;
   }
   
-  .map-and-charts-wrapper > :deep(.map-wrapper) {
+  /* ✅ OVERLAY EN MÓVIL - Altura exacta del map-wrapper */
+  .map-overlay-filter {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
     width: 100% !important;
-    max-width: 100% !important;
-    min-height: 280px;
-    max-height: 320px;
+    height: 320px !important;
     border-radius: 12px;
+    z-index: 200;
     box-sizing: border-box;
-    flex-shrink: 0;
+    bottom: auto !important;
+  }
+  
+  .overlay-message {
+    padding: 16px;
+    max-width: 90%;
+  }
+  
+  .overlay-text {
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  
+  .overlay-icon svg {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .map-overlay-filter.qualitative-overlay .overlay-text {
+    font-size: 12px;
   }
   
   .charts-section {
@@ -1752,28 +1777,6 @@ onMounted(async () => {
     min-width: unset;
     width: 100%;
     max-width: 100%;
-  }
-  
-  .map-overlay-filter {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100% !important;
-    height: 100% !important;
-    max-height: none;
-    border-radius: 12px;
-    z-index: 200;
-    box-sizing: border-box;
-  }
-  
-  .overlay-message {
-    padding: 16px;
-    max-width: 85%;
-  }
-  
-  .overlay-text {
-    font-size: 12px;
-    line-height: 1.5;
   }
   
   .ranking-panel {
@@ -1854,10 +1857,22 @@ onMounted(async () => {
     gap: 10px;
   }
   
-  .map-and-charts-wrapper > :deep(.map-wrapper) {
-    min-height: 240px;
-    max-height: 280px;
+  .map-overlay-filter {
+    height: 280px !important;
     border-radius: 10px;
+  }
+  
+  .overlay-message {
+    padding: 12px;
+  }
+  
+  .overlay-text {
+    font-size: 11px;
+  }
+  
+  .overlay-icon svg {
+    width: 32px;
+    height: 32px;
   }
   
   .charts-section {
@@ -1878,18 +1893,6 @@ onMounted(async () => {
   
   .card-title {
     font-size: 13px;
-  }
-
-  .map-overlay-filter {
-    border-radius: 10px;
-  }
-  
-  .overlay-message {
-    padding: 12px;
-  }
-  
-  .overlay-text {
-    font-size: 11px;
   }
   
   .ranking-chart-section {
@@ -1922,6 +1925,50 @@ onMounted(async () => {
   }
 }
 
+/* iPhone 14 Pro Max (430px) */
+@media (max-width: 430px) {
+  .map-overlay-filter {
+    height: 270px !important;
+  }
+  
+  .overlay-text {
+    font-size: 11px;
+  }
+}
+
+/* Samsung Galaxy S20 Ultra (412px) */
+@media (max-width: 412px) {
+  .map-overlay-filter {
+    height: 260px !important;
+  }
+  
+  .overlay-text {
+    font-size: 10px;
+  }
+}
+
+/* iPhone 12 Pro (390px) */
+@media (max-width: 390px) {
+  .map-overlay-filter {
+    height: 250px !important;
+    border-radius: 8px;
+  }
+  
+  .overlay-message {
+    padding: 10px;
+  }
+  
+  .overlay-text {
+    font-size: 10px;
+  }
+  
+  .overlay-icon svg {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+/* Samsung Galaxy S8+ (360px) */
 @media (max-width: 360px) {
   .map-container {
     padding: 0 8px 4px 8px;
@@ -1931,10 +1978,18 @@ onMounted(async () => {
     gap: 8px;
   }
   
-  .map-and-charts-wrapper > :deep(.map-wrapper) {
-    min-height: 200px;
-    max-height: 240px;
+  .map-overlay-filter {
+    height: 240px !important;
     border-radius: 8px;
+  }
+  
+  .overlay-text {
+    font-size: 9px;
+  }
+  
+  .overlay-icon svg {
+    width: 24px;
+    height: 24px;
   }
   
   .charts-section {
@@ -1956,14 +2011,6 @@ onMounted(async () => {
   .card-title {
     font-size: 12px;
   }
-
-  .map-overlay-filter {
-    border-radius: 8px;
-  }
-  
-  .overlay-text {
-    font-size: 10px;
-  }
   
   .ranking-chart-section {
     min-height: 220px;
@@ -1981,6 +2028,7 @@ onMounted(async () => {
   }
 }
 
+/* Muy pequeños (320px) */
 @media (max-width: 320px) {
   .map-container {
     padding: 0 6px 4px 6px;
@@ -1990,10 +2038,22 @@ onMounted(async () => {
     gap: 6px;
   }
   
-  .map-and-charts-wrapper > :deep(.map-wrapper) {
-    min-height: 180px;
-    max-height: 220px;
+  .map-overlay-filter {
+    height: 220px !important;
     border-radius: 6px;
+  }
+  
+  .overlay-message {
+    padding: 8px;
+  }
+  
+  .overlay-text {
+    font-size: 8px;
+  }
+  
+  .overlay-icon svg {
+    width: 20px;
+    height: 20px;
   }
   
   .charts-section {
@@ -2009,14 +2069,6 @@ onMounted(async () => {
   
   .card-title {
     font-size: 11px;
-  }
-
-  .map-overlay-filter {
-    border-radius: 6px;
-  }
-  
-  .overlay-text {
-    font-size: 9px;
   }
   
   .ranking-chart-section {

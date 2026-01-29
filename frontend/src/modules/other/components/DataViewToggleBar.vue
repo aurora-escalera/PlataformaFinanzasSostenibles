@@ -1,45 +1,45 @@
 <!-- src/modules/other/components/DataViewToggleBar.vue -->
+<!-- ✅ CORREGIDO: Submenús funcionan con click en móvil + currency-badge ajustado -->
 <template>
   <div class="toggle-bar">
     <div class="toggle-bar-content">
-      <!-- Toggle Vista -->
-      <div class="toggle-section">
-        <span class="toggle-label">Vista:</span>
-        <div class="toggle-buttons">
-          <div class="toggle-btn-wrapper">
-            <button
-              :class="['toggle-btn', { active: isFederalActive }]"
-              @click="handleFederalClick"
-            >
-              <svg class="toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span class="btn-text-full">Datos Regionales</span>
-              <span class="btn-text-short">Regionales</span>
-            </button>
-            <span class="custom-tooltip">Da clic aquí para ver la vista de datos regionales</span>
-          </div>
-          
-          <div class="toggle-btn-wrapper">
-            <button
-              :class="['toggle-btn', { active: isSubnacionalActive }]"
-              @click="handleSubnacionalClick"
-            >
-              <svg class="toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-              </svg>
-              <span class="btn-text-full">Datos Subnacionales</span>
-              <span class="btn-text-short">Subnacionales</span>
-            </button>
-            <span class="custom-tooltip">Da clic aquí para ver la vista de datos subnacionales</span>
+      <!-- Fila superior: Toggle Vista + Moneda -->
+      <div class="top-row">
+        <!-- Toggle Vista -->
+        <div class="toggle-section">
+          <span class="toggle-label">Vista:</span>
+          <div class="toggle-buttons">
+            <div class="toggle-btn-wrapper">
+              <button
+                :class="['toggle-btn', { active: isFederalActive }]"
+                @click="handleFederalClick"
+              >
+                <svg class="toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span class="btn-text-full">Datos Regionales</span>
+                <span class="btn-text-short">Regionales</span>
+              </button>
+              <span class="custom-tooltip">Da clic aquí para ver la vista de datos regionales</span>
+            </div>
+            
+            <div class="toggle-btn-wrapper">
+              <button
+                :class="['toggle-btn', { active: isSubnacionalActive }]"
+                @click="handleSubnacionalClick"
+              >
+                <svg class="toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                </svg>
+                <span class="btn-text-full">Datos Subnacionales</span>
+                <span class="btn-text-short">Subnacionales</span>
+              </button>
+              <span class="custom-tooltip">Da clic aquí para ver la vista de datos subnacionales</span>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Contenedor derecho: Moneda + Descargas + Filtros (móvil) -->
-      <div class="right-section">
-        
-        <!-- Indicador Moneda - MOVIDO AQUÍ -->
+        <!-- Indicador Moneda -->
         <div class="currency-section">
           <span class="currency-label">Moneda:</span>
           <span class="currency-label-mobile">Currency:</span>
@@ -51,7 +51,10 @@
             <span class="currency-code">({{ currencyCode }})</span>
           </div>
         </div>
+      </div>
 
+      <!-- Fila inferior: Descargas + Filtros -->
+      <div class="bottom-row">
         <!-- SECCIÓN: Descargas -->
         <div class="downloads-section" ref="downloadsRef">
           <button 
@@ -80,10 +83,16 @@
 
               <div class="dropdown-menu-items">
                 <!-- 1. Datos Regionales -->
-                <div class="menu-item" @mouseenter="activeSubmenu = 'regional'" @mouseleave="activeSubmenu = null">
+                <div 
+                  class="menu-item" 
+                  :class="{ 'menu-item-expanded': activeSubmenu === 'regional' }"
+                  @mouseenter="!isMobile && (activeSubmenu = 'regional')" 
+                  @mouseleave="!isMobile && (activeSubmenu = null)"
+                  @click="isMobile && toggleSubmenu('regional')"
+                >
                   <div class="menu-item-content">
-                    <svg class="menu-arrow-left" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                    <svg class="menu-arrow" :class="{ 'rotated': activeSubmenu === 'regional' }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                     </svg>
                     <div class="menu-icon federal">
                       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -95,13 +104,15 @@
                       <span class="menu-desc">IFS, Ingresos y Presupuestos por año</span>
                     </div>
                   </div>
-                  <transition name="submenu-fade">
-                    <div v-if="activeSubmenu === 'regional'" class="submenu submenu-left">
-                      <button class="submenu-item" @click="handleDownload('regional', 'xlsx')" :disabled="isExporting">
+                  
+                  <!-- Submenu inline para móvil, absoluto para desktop -->
+                  <transition name="submenu-expand">
+                    <div v-if="activeSubmenu === 'regional'" class="submenu">
+                      <button class="submenu-item" @click.stop="handleDownload('regional', 'xlsx')" :disabled="isExporting">
                         <span class="format-badge xlsx">XLS</span>
                         <span>Descargar Excel</span>
                       </button>
-                      <button class="submenu-item" @click="handleDownload('regional', 'csv')" :disabled="isExporting">
+                      <button class="submenu-item" @click.stop="handleDownload('regional', 'csv')" :disabled="isExporting">
                         <span class="format-badge csv">CSV</span>
                         <span>Descargar CSV</span>
                       </button>
@@ -110,10 +121,16 @@
                 </div>
 
                 <!-- 2. Datos Subnacionales -->
-                <div class="menu-item" @mouseenter="activeSubmenu = 'subnacional'" @mouseleave="handleSubnacionalMouseLeave">
+                <div 
+                  class="menu-item"
+                  :class="{ 'menu-item-expanded': activeSubmenu === 'subnacional' }"
+                  @mouseenter="!isMobile && (activeSubmenu = 'subnacional')" 
+                  @mouseleave="!isMobile && handleSubnacionalMouseLeave()"
+                  @click="isMobile && toggleSubmenu('subnacional')"
+                >
                   <div class="menu-item-content">
-                    <svg class="menu-arrow-left" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                    <svg class="menu-arrow" :class="{ 'rotated': activeSubmenu === 'subnacional' }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                     </svg>
                     <div class="menu-icon subnacional">
                       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -125,31 +142,40 @@
                       <span class="menu-desc">{{ loadingYears ? 'Cargando años...' : `${availableYears.length} año(s) disponible(s)` }}</span>
                     </div>
                   </div>
-                  <transition name="submenu-fade">
-                    <div v-if="activeSubmenu === 'subnacional'" class="submenu submenu-left submenu-years" @mouseenter="keepSubnacionalOpen = true" @mouseleave="keepSubnacionalOpen = false">
+                  
+                  <transition name="submenu-expand">
+                    <div v-if="activeSubmenu === 'subnacional'" class="submenu submenu-years" @mouseenter="!isMobile && (keepSubnacionalOpen = true)" @mouseleave="!isMobile && (keepSubnacionalOpen = false)">
                       <div class="submenu-header">Seleccionar año</div>
                       <div v-if="loadingYears" class="submenu-loading">
                         <div class="spinner-tiny"></div>
                         <span>Cargando años...</span>
                       </div>
                       <template v-else>
-                        <div v-for="year in availableYears" :key="year" class="year-item" @mouseenter="activeYearSubmenu = year" @mouseleave="activeYearSubmenu = null">
+                        <div 
+                          v-for="year in availableYears" 
+                          :key="year" 
+                          class="year-item"
+                          :class="{ 'year-item-expanded': activeYearSubmenu === year }"
+                          @mouseenter="!isMobile && (activeYearSubmenu = year)" 
+                          @mouseleave="!isMobile && (activeYearSubmenu = null)"
+                          @click.stop="isMobile && toggleYearSubmenu(year)"
+                        >
                           <div class="year-item-content">
-                            <svg class="year-arrow-left" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                            <svg class="year-arrow" :class="{ 'rotated': activeYearSubmenu === year }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                             </svg>
                             <svg class="year-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
                             <span>{{ year }}</span>
                           </div>
-                          <transition name="submenu-fade">
-                            <div v-if="activeYearSubmenu === year" class="submenu-formats submenu-formats-left">
-                              <button class="submenu-item" @click="handleDownload('subnacional', 'xlsx', { year })" :disabled="isExporting">
+                          <transition name="submenu-expand">
+                            <div v-if="activeYearSubmenu === year" class="submenu-formats">
+                              <button class="submenu-item" @click.stop="handleDownload('subnacional', 'xlsx', { year })" :disabled="isExporting">
                                 <span class="format-badge xlsx">XLS</span>
                                 <span>Descargar Excel</span>
                               </button>
-                              <button class="submenu-item" @click="handleDownload('subnacional', 'csv', { year })" :disabled="isExporting">
+                              <button class="submenu-item" @click.stop="handleDownload('subnacional', 'csv', { year })" :disabled="isExporting">
                                 <span class="format-badge csv">CSV</span>
                                 <span>Descargar CSV</span>
                               </button>
@@ -165,10 +191,16 @@
                 <div class="menu-divider"></div>
 
                 <!-- 3. Reporte Completo -->
-                <div class="menu-item menu-item-highlight" @mouseenter="activeSubmenu = 'completo'" @mouseleave="activeSubmenu = null">
+                <div 
+                  class="menu-item menu-item-highlight"
+                  :class="{ 'menu-item-expanded': activeSubmenu === 'completo' }"
+                  @mouseenter="!isMobile && (activeSubmenu = 'completo')" 
+                  @mouseleave="!isMobile && (activeSubmenu = null)"
+                  @click="isMobile && toggleSubmenu('completo')"
+                >
                   <div class="menu-item-content">
-                    <svg class="menu-arrow-left" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                    <svg class="menu-arrow" :class="{ 'rotated': activeSubmenu === 'completo' }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                     </svg>
                     <div class="menu-icon complete">
                       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -180,13 +212,14 @@
                       <span class="menu-desc">Regional + Subnacional (todos los años)</span>
                     </div>
                   </div>
-                  <transition name="submenu-fade">
-                    <div v-if="activeSubmenu === 'completo'" class="submenu submenu-left">
-                      <button class="submenu-item" @click="handleDownload('completo', 'xlsx')" :disabled="isExporting">
+                  
+                  <transition name="submenu-expand">
+                    <div v-if="activeSubmenu === 'completo'" class="submenu">
+                      <button class="submenu-item" @click.stop="handleDownload('completo', 'xlsx')" :disabled="isExporting">
                         <span class="format-badge xlsx">XLS</span>
                         <span>Descargar Excel</span>
                       </button>
-                      <button class="submenu-item" @click="handleDownload('completo', 'csv')" :disabled="isExporting">
+                      <button class="submenu-item" @click.stop="handleDownload('completo', 'csv')" :disabled="isExporting">
                         <span class="format-badge csv">CSV</span>
                         <span>Descargar CSV</span>
                       </button>
@@ -260,6 +293,13 @@ const exportError = ref(null)
 const exportProgress = ref('')
 const showSuccess = ref(false)
 
+// ✅ NUEVO: Detectar si es móvil
+const isMobile = ref(false)
+
+const checkIsMobile = () => {
+  isMobile.value = window.innerWidth <= 768
+}
+
 const currencyCode = computed(() => isFederalActive.value ? 'USD' : 'MXN')
 const currencyName = computed(() => isFederalActive.value ? 'Dólares estadounidenses' : 'Pesos mexicanos')
 
@@ -288,6 +328,26 @@ const toggleDownloadsMenu = async () => {
   } else {
     activeSubmenu.value = null
     activeYearSubmenu.value = null
+  }
+}
+
+// ✅ NUEVO: Toggle para submenús en móvil
+const toggleSubmenu = (name) => {
+  if (activeSubmenu.value === name) {
+    activeSubmenu.value = null
+    activeYearSubmenu.value = null
+  } else {
+    activeSubmenu.value = name
+    activeYearSubmenu.value = null
+  }
+}
+
+// ✅ NUEVO: Toggle para años en móvil
+const toggleYearSubmenu = (year) => {
+  if (activeYearSubmenu.value === year) {
+    activeYearSubmenu.value = null
+  } else {
+    activeYearSubmenu.value = year
   }
 }
 
@@ -340,11 +400,14 @@ const handleDownload = async (viewType, format, options = {}) => {
 
 onMounted(async () => {
   document.addEventListener('click', handleClickOutside)
+  window.addEventListener('resize', checkIsMobile)
+  checkIsMobile()
   await fetchAvailableYears()
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
+  window.removeEventListener('resize', checkIsMobile)
 })
 </script>
 
@@ -357,6 +420,7 @@ onUnmounted(() => {
   background-color: #ffffff;
   border-bottom: 1px solid #e5e7eb;
   padding: 12px 24px;
+  box-sizing: border-box;
 }
 
 .toggle-bar-content {
@@ -366,6 +430,20 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   gap: 20px;
+}
+
+.top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex: 1;
+}
+
+.bottom-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
 .toggle-section {
@@ -388,9 +466,6 @@ onUnmounted(() => {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-/* ============================================
-   WRAPPER PARA TOOLTIP PERSONALIZADO
-   ============================================ */
 .toggle-btn-wrapper {
   position: relative;
   display: inline-flex;
@@ -405,9 +480,6 @@ onUnmounted(() => {
   border-radius: 0 8px 8px 0;
 }
 
-/* ============================================
-   TOOLTIP PERSONALIZADO
-   ============================================ */
 .custom-tooltip {
   position: absolute;
   bottom: calc(100% + 10px);
@@ -441,7 +513,6 @@ onUnmounted(() => {
 .toggle-btn-wrapper:hover .custom-tooltip {
   opacity: 1;
   visibility: visible;
-  bottom: calc(100% + 12px);
 }
 
 .toggle-btn {
@@ -470,28 +541,17 @@ onUnmounted(() => {
 .toggle-icon {
   width: 18px;
   height: 18px;
+  flex-shrink: 0;
 }
 
-/* Texto responsive en botones toggle */
 .btn-text-short {
   display: none;
-  font-size: 13px;
 }
 
-/* Label móvil de moneda - oculto por defecto */
 .currency-label-mobile {
   display: none;
 }
 
-/* Right Section */
-.right-section {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-left: auto;
-}
-
-/* Currency - AHORA EN RIGHT-SECTION */
 .currency-section {
   display: flex;
   align-items: center;
@@ -510,6 +570,7 @@ onUnmounted(() => {
   padding: 8px 14px;
   border-radius: 6px;
   transition: all 0.3s ease;
+  white-space: nowrap;
 }
 
 .currency-badge.currency-mxn {
@@ -517,15 +578,14 @@ onUnmounted(() => {
   border: 1px solid #fcd34d;
 }
 
-.currency-badge.currency-mxn .currency-name {
+.currency-badge.currency-mxn .currency-name,
+.currency-badge.currency-mxn .currency-code {
   font-size: 15px;
-  font-weight: 600;
   color: #b45309;
 }
 
-.currency-badge.currency-mxn .currency-code {
-  font-size: 15px;
-  color: #d97706;
+.currency-badge.currency-mxn .currency-name {
+  font-weight: 600;
 }
 
 .currency-badge.currency-usd {
@@ -533,18 +593,17 @@ onUnmounted(() => {
   border: 1px solid #6ee7b7;
 }
 
-.currency-badge.currency-usd .currency-name {
+.currency-badge.currency-usd .currency-name,
+.currency-badge.currency-usd .currency-code {
   font-size: 15px;
-  font-weight: 600;
   color: #047857;
 }
 
-.currency-badge.currency-usd .currency-code {
-  font-size: 15px;
-  color: #059669;
+.currency-badge.currency-usd .currency-name {
+  font-weight: 600;
 }
 
-/* Downloads Section */
+/* Downloads */
 .downloads-section {
   position: relative;
 }
@@ -591,9 +650,7 @@ onUnmounted(() => {
   transform: rotate(180deg);
 }
 
-/* ============================================
-   BOTÓN FILTROS MÓVIL - OCULTO POR DEFECTO
-   ============================================ */
+/* Filter Button */
 .filter-btn-mobile {
   display: none;
   align-items: center;
@@ -613,11 +670,6 @@ onUnmounted(() => {
 
 .filter-btn-mobile:hover {
   background-color: #f9fafb;
-  border-color: #9ca3af;
-}
-
-.filter-btn-mobile:active {
-  background-color: #f3f4f6;
 }
 
 .filter-icon {
@@ -640,7 +692,6 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
 }
 
 /* Dropdown */
@@ -653,7 +704,7 @@ onUnmounted(() => {
   border-radius: 12px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
   border: 1px solid #e5e7eb;
-  overflow: visible;
+  overflow: hidden;
   z-index: 1000;
 }
 
@@ -666,7 +717,6 @@ onUnmounted(() => {
   color: white;
   font-size: 14px;
   font-weight: 600;
-  border-radius: 12px 12px 0 0;
 }
 
 .dropdown-header svg {
@@ -676,11 +726,11 @@ onUnmounted(() => {
 
 .dropdown-menu-items {
   padding: 8px 0;
+  max-height: 400px;
+  overflow-y: auto;
 }
 
-/* Menu Items */
 .menu-item {
-  position: relative;
   cursor: pointer;
 }
 
@@ -692,29 +742,30 @@ onUnmounted(() => {
   transition: background-color 0.15s ease;
 }
 
-.menu-item:hover .menu-item-content {
+.menu-item:hover > .menu-item-content {
   background-color: #f9fafb;
 }
 
-.menu-item-highlight .menu-item-content {
+.menu-item-highlight > .menu-item-content {
   background-color: #f0fdf4;
 }
 
-.menu-item-highlight:hover .menu-item-content {
+.menu-item-highlight:hover > .menu-item-content {
   background-color: #dcfce7;
 }
 
-.menu-arrow-left {
+/* ✅ Flecha que rota */
+.menu-arrow {
   width: 16px;
   height: 16px;
   color: #9ca3af;
   flex-shrink: 0;
-  transition: transform 0.15s ease, color 0.15s ease;
+  transition: transform 0.2s ease, color 0.2s ease;
 }
 
-.menu-item:hover .menu-arrow-left {
-  color: #6b7280;
-  transform: translateX(-2px);
+.menu-arrow.rotated {
+  transform: rotate(90deg);
+  color: #1e3a5f;
 }
 
 .menu-icon {
@@ -753,9 +804,6 @@ onUnmounted(() => {
 .menu-desc {
   font-size: 11px;
   color: #6b7280;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .menu-divider {
@@ -764,10 +812,14 @@ onUnmounted(() => {
   margin: 8px 16px;
 }
 
-/* Submenu */
+/* ============================================
+   SUBMENUS - DESKTOP (absoluto a la izquierda)
+   ============================================ */
 .submenu {
   position: absolute;
   top: 0;
+  right: 100%;
+  margin-right: 4px;
   width: 180px;
   background: white;
   border-radius: 8px;
@@ -775,12 +827,6 @@ onUnmounted(() => {
   border: 1px solid #e5e7eb;
   padding: 6px 0;
   z-index: 1001;
-}
-
-.submenu-left {
-  right: 100%;
-  left: auto;
-  margin-right: 4px;
 }
 
 .submenu-years {
@@ -813,7 +859,6 @@ onUnmounted(() => {
   text-align: center;
   color: #9ca3af;
   font-size: 12px;
-  font-style: italic;
 }
 
 .spinner-tiny {
@@ -866,8 +911,20 @@ onUnmounted(() => {
   transition: background-color 0.15s ease;
 }
 
-.year-item:hover .year-item-content {
+.year-item:hover > .year-item-content {
   background-color: #f3f4f6;
+}
+
+.year-arrow {
+  width: 14px;
+  height: 14px;
+  color: #9ca3af;
+  transition: transform 0.2s ease;
+}
+
+.year-arrow.rotated {
+  transform: rotate(90deg);
+  color: #1e3a5f;
 }
 
 .year-icon {
@@ -876,21 +933,11 @@ onUnmounted(() => {
   color: #6b7280;
 }
 
-.year-arrow-left {
-  width: 14px;
-  height: 14px;
-  color: #9ca3af;
-  transition: transform 0.15s ease;
-}
-
-.year-item:hover .year-arrow-left {
-  transform: translateX(-2px);
-}
-
-/* Sub-submenu for formats */
 .submenu-formats {
   position: absolute;
   top: 0;
+  right: 100%;
+  margin-right: 4px;
   width: 170px;
   background: white;
   border-radius: 8px;
@@ -900,13 +947,6 @@ onUnmounted(() => {
   z-index: 1002;
 }
 
-.submenu-formats-left {
-  right: 100%;
-  left: auto;
-  margin-right: 4px;
-}
-
-/* Format Badges */
 .format-badge {
   font-size: 9px;
   font-weight: 700;
@@ -930,7 +970,6 @@ onUnmounted(() => {
   color: #92400e;
   font-size: 13px;
   font-weight: 500;
-  border-radius: 0 0 12px 12px;
 }
 
 .export-error {
@@ -943,7 +982,6 @@ onUnmounted(() => {
   color: #dc2626;
   font-size: 13px;
   font-weight: 500;
-  border-radius: 0 0 12px 12px;
 }
 
 .export-success {
@@ -956,7 +994,6 @@ onUnmounted(() => {
   color: #059669;
   font-size: 13px;
   font-weight: 500;
-  border-radius: 0 0 12px 12px;
 }
 
 .spinner-small {
@@ -985,74 +1022,27 @@ onUnmounted(() => {
   transform: translateY(-10px);
 }
 
-.submenu-fade-enter-active,
-.submenu-fade-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
+.submenu-expand-enter-active,
+.submenu-expand-leave-active {
+  transition: all 0.2s ease;
 }
 
-.submenu-fade-enter-from,
-.submenu-fade-leave-to {
+.submenu-expand-enter-from,
+.submenu-expand-leave-to {
   opacity: 0;
-  transform: translateX(8px);
 }
 
 /* ============================================
-   RESPONSIVE: LAPTOPS PEQUEÑAS (≤1200px)
-   ============================================ */
-@media (max-width: 1200px) {
-  .toggle-bar-content {
-    flex-wrap: wrap;
-  }
-  
-  .right-section {
-    margin-left: 0;
-  }
-  
-  .toggle-btn {
-    padding: 8px 16px;
-    font-size: 14px;
-  }
-  
-  .currency-name {
-    font-size: 14px;
-  }
-  
-  .currency-code {
-    font-size: 14px;
-  }
-  
-  .downloads-btn {
-    padding: 8px 14px;
-    font-size: 14px;
-  }
-  
-  .custom-tooltip {
-    font-size: 12px;
-    padding: 8px 12px;
-  }
-}
-
-/* ============================================
-   RESPONSIVE: TABLETS LANDSCAPE (≤1024px)
+   RESPONSIVE: TABLETS (≤1024px)
    ============================================ */
 @media (max-width: 1024px) {
   .toggle-bar {
     padding: 10px 20px;
   }
   
-  .toggle-bar-content {
-    gap: 16px;
-  }
-  
-  .toggle-label,
-  .currency-label {
-    font-size: 14px;
-  }
-  
   .toggle-btn {
     padding: 8px 14px;
     font-size: 13px;
-    gap: 6px;
   }
   
   .toggle-icon {
@@ -1064,11 +1054,7 @@ onUnmounted(() => {
     padding: 6px 12px;
   }
   
-  .currency-name {
-    font-size: 13px;
-  }
-  
-  .currency-code {
+  .currency-name, .currency-code {
     font-size: 13px;
   }
   
@@ -1077,76 +1063,72 @@ onUnmounted(() => {
     font-size: 13px;
   }
   
-  .downloads-icon {
-    width: 16px;
-    height: 16px;
-  }
-  
   .custom-tooltip {
+    display: none;
+  }
+   .currency-badge.currency-mxn .currency-code,
+  .currency-badge.currency-usd .currency-code {
     font-size: 11px;
-    padding: 7px 10px;
   }
 }
 
 /* ============================================
-   RESPONSIVE: TABLETS PORTRAIT (≤768px)
+   ✅ MÓVIL (≤768px) - SUBMENÚS INLINE + CURRENCY AJUSTADO
    ============================================ */
 @media (max-width: 768px) {
   .toggle-bar {
-    padding: 12px 16px;
-    position: relative;
+    padding: 10px 16px;
   }
   
   .toggle-bar-content {
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
     align-items: stretch;
   }
   
-  .toggle-section {
+  .top-row {
+    display: flex;
     flex-direction: row;
     align-items: center;
-    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+  }
+  
+  .toggle-section {
+    flex: none;
     gap: 8px;
   }
   
   .toggle-label {
-    font-size: 13px;
-  }
-  
-  .toggle-buttons {
-    width: fit-content;
+    font-size: 12px;
   }
   
   .toggle-btn {
-    flex: none;
-    justify-content: center;
-    padding: 10px 12px;
-    font-size: 13px;
+    padding: 8px 10px;
+    font-size: 12px;
+    gap: 4px;
   }
   
-  /* Cambiar texto de botones en móvil */
+  .toggle-icon {
+    width: 14px;
+    height: 14px;
+  }
+  
   .btn-text-full {
     display: none;
   }
   
   .btn-text-short {
     display: inline;
+    font-size: 11px;
   }
   
-  /* Ocultar tooltip en móvil */
-  .custom-tooltip {
-    display: none;
-  }
-  
-  /* Currency en móvil - posición absoluta arriba a la derecha */
   .currency-section {
-    position: absolute;
-    top: 12px;
-    right: 16px;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 5px;
+    flex-shrink: 0;
   }
   
   .currency-label {
@@ -1155,15 +1137,19 @@ onUnmounted(() => {
   
   .currency-label-mobile {
     display: inline;
-    font-size: 13px;
+    font-size: 11px;
     font-weight: 500;
     color: #6b7280;
   }
+    .currency-badge.currency-mxn .currency-code,
+  .currency-badge.currency-usd .currency-code {
+    font-size: 10px;
+  }
   
+  /* ✅ AJUSTE: currency-badge del tamaño del label */
   .currency-badge {
-    padding: 6px 10px;
-    width: auto;
-    justify-content: center;
+    padding: 2px 4px;
+    border-radius: 3px;
   }
   
   .currency-name {
@@ -1171,15 +1157,15 @@ onUnmounted(() => {
   }
   
   .currency-code {
-    font-size: 13px;
+    font-size: 11px;
+    font-weight: 500;
   }
   
-  .right-section {
-    width: 100%;
+  .bottom-row {
+    display: flex;
     flex-direction: row;
-    justify-content: space-between;
-    flex-wrap: wrap;
     gap: 10px;
+    width: 100%;
   }
   
   .downloads-section {
@@ -1194,26 +1180,104 @@ onUnmounted(() => {
   }
   
   .downloads-text {
-    display: none;
+    display: inline;
   }
   
+  /* ✅ Dropdown ocupa todo el ancho */
   .downloads-dropdown {
-    width: calc(100vw - 32px);
-    right: -8px;
-  }
-  
-  .submenu,
-  .submenu-formats {
     position: fixed;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    margin-right: 0;
-    right: auto;
-    width: 200px;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-height: 70vh;
+    border-radius: 16px 16px 0 0;
+    z-index: 1001;
   }
   
-  /* MOSTRAR BOTÓN DE FILTROS EN MÓVIL */
+  .dropdown-menu-items {
+    max-height: 50vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* ✅ SUBMENÚS INLINE (no absolutos) */
+  .submenu {
+    position: relative;
+    top: auto;
+    right: auto;
+    left: auto;
+    margin: 0;
+    width: 100%;
+    border-radius: 0;
+    box-shadow: none;
+    border: none;
+    border-top: 1px solid #e5e7eb;
+    background: #f9fafb;
+    padding: 0;
+  }
+  
+  .submenu-years {
+    width: 100%;
+  }
+  
+  .submenu-item {
+    padding: 12px 20px 12px 48px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  
+  .submenu-item:last-child {
+    border-bottom: none;
+  }
+  
+  .submenu-header {
+    padding: 10px 20px 10px 48px;
+    background: #f3f4f6;
+  }
+  
+  /* Year items inline */
+  .year-item {
+    position: relative;
+  }
+  
+  .year-item-content {
+    padding: 12px 20px 12px 48px;
+  }
+  
+  .submenu-formats {
+    position: relative;
+    top: auto;
+    right: auto;
+    left: auto;
+    margin: 0;
+    width: 100%;
+    border-radius: 0;
+    box-shadow: none;
+    border: none;
+    border-top: 1px solid #e5e7eb;
+    background: #f0f0f0;
+    padding: 0;
+  }
+  
+  .submenu-formats .submenu-item {
+    padding: 12px 20px 12px 72px;
+  }
+  
+  /* Flecha apunta hacia abajo cuando está expandido */
+  .menu-arrow {
+    transition: transform 0.2s ease;
+  }
+  
+  .menu-arrow.rotated {
+    transform: rotate(90deg);
+  }
+  
+  .year-arrow.rotated {
+    transform: rotate(90deg);
+  }
+  
+  /* Filtros móvil */
   .filter-btn-mobile {
     display: flex;
     flex: 1;
@@ -1222,15 +1286,15 @@ onUnmounted(() => {
 }
 
 /* ============================================
-   RESPONSIVE: MÓVILES GRANDES (≤480px)
+   ✅ iPhone 14 Pro Max (430px)
    ============================================ */
-@media (max-width: 480px) {
+@media (max-width: 430px) {
   .toggle-bar {
-    padding: 10px 12px;
+    padding: 10px 14px;
   }
   
-  .toggle-bar-content {
-    gap: 10px;
+  .top-row {
+    gap: 8px;
   }
   
   .toggle-section {
@@ -1238,63 +1302,122 @@ onUnmounted(() => {
   }
   
   .toggle-label {
-    font-size: 12px;
+    font-size: 11px;
   }
   
   .toggle-btn {
-    padding: 8px 10px;
-    font-size: 12px;
-    gap: 5px;
+    padding: 8px 9px;
+    font-size: 11px;
   }
   
   .toggle-icon {
-    width: 14px;
-    height: 14px;
+    width: 13px;
+    height: 13px;
   }
   
-  /* Currency móvil */
+  .btn-text-short {
+    font-size: 10px;
+  }
+  
   .currency-label-mobile {
-    font-size: 13px;
+    font-size: 10px;
   }
   
+  /* ✅ AJUSTE: currency-badge */
   .currency-badge {
-    padding: 5px 8px;
+    padding: 2px 3px;
+    border-radius: 3px;
   }
   
   .currency-code {
-    font-size: 12px;
+    font-size: 10px;
   }
   
-  .right-section {
+  .bottom-row {
     gap: 8px;
   }
   
   .downloads-btn {
-    padding: 8px 12px;
+    padding: 9px 12px;
     font-size: 12px;
   }
   
-  .downloads-icon {
-    width: 18px;
-    height: 18px;
+  .filter-btn-mobile {
+    padding: 9px 12px;
+    font-size: 12px;
+  }
+
+    .currency-badge.currency-mxn .currency-code,
+  .currency-badge.currency-usd .currency-code {
+    font-size: 10px;
+  }
+}
+
+/* ============================================
+   ✅ Samsung Galaxy S20 Ultra (412px)
+   ============================================ */
+@media (max-width: 412px) {
+  .toggle-bar {
+    padding: 9px 12px;
+  }
+  
+  .toggle-label {
+    font-size: 10px;
+  }
+  
+  .toggle-btn {
+    padding: 7px 8px;
+    font-size: 10px;
+  }
+  
+  .toggle-icon {
+    width: 12px;
+    height: 12px;
+  }
+  
+  .btn-text-short {
+    font-size: 10px;
+  }
+  
+  .currency-label-mobile {
+    font-size: 10px;
+  }
+  
+  /* ✅ AJUSTE: currency-badge */
+  .currency-badge {
+    padding: 1px 3px;
+    border-radius: 2px;
+  }
+  
+  .currency-code {
+    font-size: 10px;
+  }
+  
+  .downloads-btn {
+    padding: 8px 10px;
+    font-size: 11px;
+  }
+  
+  .downloads-text {
+    display: none;
   }
   
   .chevron-icon {
     display: none;
   }
   
-  .downloads-dropdown {
-    width: calc(100vw - 24px);
-    right: -6px;
+  .filter-btn-mobile {
+    padding: 8px 10px;
+    font-size: 11px;
   }
   
-  .dropdown-header {
-    padding: 12px 14px;
-    font-size: 13px;
+  .filter-text {
+    display: none;
   }
   
   .menu-item-content {
     padding: 10px 14px;
+    gap: 10px;
   }
   
   .menu-icon {
@@ -1310,146 +1433,101 @@ onUnmounted(() => {
     font-size: 10px;
   }
   
-  /* Filtros móvil */
-  .filter-btn-mobile {
-    padding: 8px 12px;
+  .submenu-item {
+    padding: 10px 16px 10px 42px;
     font-size: 12px;
   }
   
-  .filter-text {
-    display: none;
+  .year-item-content {
+    padding: 10px 16px 10px 42px;
   }
   
-  .filter-icon {
-    width: 18px;
-    height: 18px;
-  }
-  
-  .filter-badge {
-    top: -4px;
-    right: -4px;
-    min-width: 16px;
-    height: 16px;
-    font-size: 10px;
+  .submenu-formats .submenu-item {
+    padding: 10px 16px 10px 60px;
   }
 }
 
 /* ============================================
-   RESPONSIVE: MÓVILES MEDIANOS (≤400px)
+   ✅ iPhone 12 Pro (390px)
    ============================================ */
-@media (max-width: 400px) {
+@media (max-width: 390px) {
   .toggle-bar {
     padding: 8px 10px;
-  }
-  
-  .toggle-btn {
-    padding: 7px 8px;
-    font-size: 11px;
-  }
-  
-  .toggle-icon {
-    width: 13px;
-    height: 13px;
-  }
-  
-  /* Currency móvil */
-  .currency-label-mobile {
-    font-size: 11px;
-  }
-  
-  .currency-badge {
-    padding: 4px 6px;
-  }
-  
-  .currency-code {
-    font-size: 11px;
-  }
-  
-  .downloads-btn {
-    padding: 7px 10px;
-  }
-  
-  .downloads-icon {
-    width: 16px;
-    height: 16px;
-  }
-  
-  .downloads-dropdown {
-    width: calc(100vw - 20px);
-  }
-  
-  .submenu,
-  .submenu-formats {
-    width: 180px;
-  }
-  
-  .filter-btn-mobile {
-    padding: 7px 10px;
-  }
-  
-  .filter-icon {
-    width: 16px;
-    height: 16px;
-  }
-}
-
-/* ============================================
-   RESPONSIVE: MÓVILES PEQUEÑOS (≤360px)
-   ============================================ */
-@media (max-width: 360px) {
-  .toggle-bar {
-    padding: 8px;
   }
   
   .toggle-bar-content {
     gap: 8px;
   }
   
-  .toggle-btn {
-    padding: 6px 6px;
+  .toggle-label {
     font-size: 10px;
-    gap: 4px;
+  }
+  
+  .toggle-btn {
+    padding: 6px 7px;
+    font-size: 10px;
+    gap: 3px;
   }
   
   .toggle-icon {
-    width: 12px;
-    height: 12px;
+    width: 11px;
+    height: 11px;
   }
   
-  /* Currency móvil */
+  .btn-text-short {
+    font-size: 9px;
+  }
+  
   .currency-label-mobile {
-    font-size: 10px;
+    font-size: 9px;
   }
   
+  /* ✅ AJUSTE: currency-badge */
   .currency-badge {
-    padding: 3px 5px;
+    padding: 1px 2px;
+    border-radius: 2px;
   }
   
   .currency-code {
-    font-size: 10px;
+    font-size: 9px;
   }
   
-  .right-section {
+  .bottom-row {
     gap: 6px;
   }
   
   .downloads-btn {
-    padding: 6px 8px;
+    padding: 7px 8px;
+    border-radius: 6px;
+  }
+  
+  .downloads-icon {
+    width: 15px;
+    height: 15px;
+  }
+  
+  .filter-btn-mobile {
+    padding: 7px 8px;
+    border-radius: 6px;
+  }
+  
+  .filter-icon {
+    width: 15px;
+    height: 15px;
   }
   
   .downloads-dropdown {
-    width: calc(100vw - 16px);
-    right: -4px;
+    border-radius: 12px 12px 0 0;
   }
   
   .dropdown-header {
-    padding: 10px 12px;
-    font-size: 12px;
+    padding: 12px 14px;
+    font-size: 13px;
   }
   
   .menu-item-content {
-    padding: 8px 12px;
-    gap: 10px;
+    padding: 9px 12px;
+    gap: 8px;
   }
   
   .menu-icon {
@@ -1470,49 +1548,73 @@ onUnmounted(() => {
     font-size: 9px;
   }
   
-  .filter-btn-mobile {
-    padding: 6px 8px;
+  .submenu-item {
+    padding: 9px 14px 9px 36px;
+    font-size: 11px;
   }
   
-  .filter-icon {
-    width: 14px;
-    height: 14px;
+  .year-item-content {
+    padding: 9px 14px 9px 36px;
+    font-size: 12px;
+  }
+  
+  .submenu-formats .submenu-item {
+    padding: 9px 14px 9px 52px;
   }
 }
 
 /* ============================================
-   RESPONSIVE: MÓVILES MUY PEQUEÑOS (≤320px)
+   ✅ Samsung Galaxy S8+ (360px)
    ============================================ */
-@media (max-width: 320px) {
+@media (max-width: 360px) {
   .toggle-bar {
-    padding: 6px;
+    padding: 7px 8px;
+  }
+  
+  .toggle-bar-content {
+    gap: 6px;
+  }
+  
+  .toggle-label {
+    font-size: 9px;
   }
   
   .toggle-btn {
-    padding: 5px 5px;
+    padding: 5px 6px;
     font-size: 9px;
+    gap: 2px;
   }
   
   .toggle-icon {
-    width: 11px;
-    height: 11px;
+    width: 10px;
+    height: 10px;
   }
   
-  /* Currency móvil */
+  .btn-text-short {
+    font-size: 8px;
+  }
+  
   .currency-label-mobile {
-    font-size: 9px;
+    font-size: 8px;
   }
   
+  /* ✅ AJUSTE: currency-badge */
   .currency-badge {
-    padding: 2px 4px;
+    padding: 1px 2px;
+    border-radius: 2px;
   }
   
   .currency-code {
-    font-size: 9px;
+    font-size: 8px;
+  }
+  
+  .bottom-row {
+    gap: 5px;
   }
   
   .downloads-btn {
-    padding: 5px 6px;
+    padding: 6px 7px;
+    border-radius: 5px;
   }
   
   .downloads-icon {
@@ -1520,27 +1622,222 @@ onUnmounted(() => {
     height: 14px;
   }
   
-  .downloads-dropdown {
-    width: calc(100vw - 12px);
+  .filter-btn-mobile {
+    padding: 6px 7px;
+    border-radius: 5px;
   }
   
-  .submenu,
-  .submenu-formats {
-    width: 160px;
+  .filter-icon {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .filter-badge {
+    top: -3px;
+    right: -3px;
+    min-width: 14px;
+    height: 14px;
+    font-size: 8px;
+  }
+  
+  .downloads-dropdown {
+    max-height: 65vh;
+    border-radius: 10px 10px 0 0;
+  }
+  
+  .dropdown-header {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+  
+  .menu-item-content {
+    padding: 8px 10px;
+    gap: 6px;
+  }
+  
+  .menu-arrow {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .menu-icon {
+    width: 26px;
+    height: 26px;
+  }
+  
+  .menu-icon svg {
+    width: 13px;
+    height: 13px;
+  }
+  
+  .menu-title {
+    font-size: 11px;
+  }
+  
+  .menu-desc {
+    font-size: 8px;
   }
   
   .submenu-item {
-    padding: 8px 10px;
+    padding: 8px 12px 8px 32px;
+    font-size: 10px;
+  }
+  
+  .submenu-header {
+    padding: 8px 12px 8px 32px;
+    font-size: 9px;
+  }
+  
+  .year-item-content {
+    padding: 8px 12px 8px 32px;
     font-size: 11px;
+  }
+  
+  .year-arrow {
+    width: 12px;
+    height: 12px;
+  }
+  
+  .year-icon {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .submenu-formats .submenu-item {
+    padding: 8px 12px 8px 48px;
+  }
+  
+  .format-badge {
+    font-size: 8px;
+    padding: 2px 4px;
+  }
+}
+
+/* ============================================
+   ✅ Muy pequeños (320px)
+   ============================================ */
+@media (max-width: 320px) {
+  .toggle-bar {
+    padding: 6px;
+  }
+  
+  .toggle-bar-content {
+    gap: 5px;
+  }
+  
+  .toggle-label {
+    font-size: 8px;
+  }
+  
+  .toggle-btn {
+    padding: 4px 5px;
+    font-size: 8px;
+  }
+  
+  .toggle-icon {
+    width: 9px;
+    height: 9px;
+  }
+  
+  .btn-text-short {
+    font-size: 7px;
+  }
+  
+  .currency-label-mobile {
+    font-size: 7px;
+  }
+  
+  /* ✅ AJUSTE: currency-badge */
+  .currency-badge {
+    padding: 1px 2px;
+    border-radius: 2px;
+  }
+  
+  .currency-code {
+    font-size: 7px;
+  }
+  
+  .downloads-btn {
+    padding: 5px 6px;
+    border-radius: 4px;
+  }
+  
+  .downloads-icon {
+    width: 12px;
+    height: 12px;
   }
   
   .filter-btn-mobile {
     padding: 5px 6px;
+    border-radius: 4px;
   }
   
   .filter-icon {
     width: 12px;
     height: 12px;
+  }
+  
+  .downloads-dropdown {
+    max-height: 60vh;
+    border-radius: 8px 8px 0 0;
+  }
+  
+  .dropdown-header {
+    padding: 8px 10px;
+    font-size: 11px;
+  }
+  
+  .menu-item-content {
+    padding: 7px 8px;
+    gap: 5px;
+  }
+  
+  .menu-icon {
+    width: 22px;
+    height: 22px;
+  }
+  
+  .menu-icon svg {
+    width: 11px;
+    height: 11px;
+  }
+  
+  .menu-title {
+    font-size: 10px;
+  }
+  
+  .menu-desc {
+    font-size: 7px;
+  }
+  
+  .submenu-item {
+    padding: 7px 10px 7px 28px;
+    font-size: 9px;
+  }
+  
+  .year-item-content {
+    padding: 7px 10px 7px 28px;
+    font-size: 10px;
+  }
+  
+  .submenu-formats .submenu-item {
+    padding: 7px 10px 7px 42px;
+  }
+}
+
+/* ============================================
+   ✅ Evitar scroll horizontal
+   ============================================ */
+@media (max-width: 768px) {
+  .toggle-bar,
+  .toggle-bar-content,
+  .top-row,
+  .bottom-row,
+  .toggle-section,
+  .downloads-section {
+    max-width: 100%;
+    overflow-x: hidden;
+    box-sizing: border-box;
   }
 }
 </style>
