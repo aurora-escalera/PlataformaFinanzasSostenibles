@@ -43,7 +43,6 @@
         @touchmove="handleTouchMove"
         @touchend="handleTouchEnd"
       >
-        <!-- Área de gradiente debajo de la línea -->
         <defs>
           <linearGradient v-for="varName in visibleVariables" :key="`grad-${varName}`" 
             :id="`gradient-${varName.replace(/\s+/g, '-')}`" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -52,7 +51,6 @@
           </linearGradient>
         </defs>
 
-        <!-- Grid lines -->
         <g class="grid">
           <line v-for="i in gridLines" :key="`grid-${i}`"
             :x1="chartPadding.left" :y1="chartPadding.top + (i - 1) * gridSpacing"
@@ -60,7 +58,6 @@
             class="grid-line"/>
         </g>
 
-        <!-- Y axis labels -->
         <g class="y-axis-labels">
           <text v-for="i in gridLines" :key="`y-label-${i}`"
             :x="chartPadding.left - 8" :y="chartPadding.top + (i - 1) * gridSpacing + 4"
@@ -69,33 +66,27 @@
           </text>
         </g>
 
-        <!-- Hover line -->
         <line v-if="hoverState.visible"
           :x1="hoverState.x" :y1="chartPadding.top"
           :x2="hoverState.x" :y2="dimensions.height - chartPadding.bottom"
           class="hover-line"/>
 
-        <!-- Lines and points -->
         <g class="lines">
           <g v-for="(varName, idx) in visibleVariables" :key="`line-${varName}`">
-            <!-- Área con gradiente -->
             <path 
               :d="getAreaPath(varName)" 
               :fill="`url(#gradient-${varName.replace(/\s+/g, '-')})`"
               class="area-fill"
               :style="{ animationDelay: `${idx * 0.1}s` }"/>
 
-            <!-- Línea principal -->
             <path :d="getLinePath(varName)" :stroke="getVariableColor(varName)"
               :stroke-width="responsiveStrokeWidth" fill="none" stroke-linecap="round" stroke-linejoin="round"
               :class="['line-path', { 'line-exit': animatingVariables.has(varName) }]"
               :style="{ animationDelay: animatingVariables.has(varName) ? '400ms' : `${idx * 0.1}s`,
                         animationDuration: animatingVariables.has(varName) ? '300ms' : '1.5s' }"/>
 
-            <!-- Puntos permanentes visibles -->
             <g class="permanent-data-points">
               <g v-for="(point, i) in getVariableData(varName)" :key="`point-group-${varName}-${i}`">
-                <!-- Círculo exterior (halo) -->
                 <circle 
                   :cx="getXPosition(i)" 
                   :cy="getAnimatedY(varName, i)" 
@@ -104,7 +95,6 @@
                   fill-opacity="0.15"
                   class="point-halo"/>
                 
-                <!-- Círculo principal -->
                 <circle 
                   :cx="getXPosition(i)" 
                   :cy="getAnimatedY(varName, i)" 
@@ -115,7 +105,6 @@
                   class="point-main"
                   :class="{ 'point-hovered': hoverState.visible && hoverState.index === i }"/>
                 
-                <!-- Etiqueta con el valor (solo número) -->
                 <text 
                   :x="getXPosition(i)" 
                   :y="getAnimatedY(varName, i) - responsiveLabelOffset"
@@ -131,7 +120,6 @@
       </svg>
     </div>
 
-    <!-- X axis labels -->
     <div v-if="hasData" class="x-axis-container">
       <div v-for="(label, i) in xLabels" :key="`x-${i}`" 
         class="x-axis-label" 
@@ -141,7 +129,6 @@
       </div>
     </div>
 
-    <!-- Tooltip DENTRO del contenedor -->
     <transition name="tooltip-fade">
       <div 
         v-if="hoverState.visible" 
@@ -202,14 +189,12 @@ const chartWrapper = ref(null)
 const svgRef = ref(null)
 const dimensions = ref({ width: props.width, height: props.height })
 const hoverState = ref({ visible: false, x: 0, index: -1, label: '', previousIndex: -1 })
-const tooltipLocked = ref(false) // ✅ Estado para fijar tooltip
+const tooltipLocked = ref(false)
 const animatingPoints = ref({})
 
-// ✅ Estado responsivo
 const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024)
 const isMobileView = computed(() => windowWidth.value <= 768)
 
-// ✅ Padding responsivo
 const chartPadding = computed(() => {
   const w = windowWidth.value
   if (w <= 320) return { top: 25, right: 10, bottom: 25, left: 30 }
@@ -221,7 +206,6 @@ const chartPadding = computed(() => {
   return props.padding
 })
 
-// ✅ Propiedades responsivas para SVG
 const responsiveStrokeWidth = computed(() => {
   const w = windowWidth.value
   if (w <= 320) return 1.5
@@ -282,16 +266,11 @@ const getButtonLabel = (varName) => {
   return varName
 }
 
-// Posición del tooltip DENTRO del contenedor
 const tooltipInternalStyle = computed(() => {
   if (!hoverState.value.visible || hoverState.value.index === -1) return { display: 'none' }
   
   const xPos = getXPositionPercent(hoverState.value.index)
-  
-  // Posicionar arriba del punto
   let topPos = '10%'
-  
-  // Si está muy a la izquierda o derecha, ajustar
   let leftPos = xPos
   let transform = 'translateX(-50%)'
   
@@ -380,7 +359,6 @@ const getXPosition = i => {
   return chartPadding.value.left + i * (dimensions.value.width - chartPadding.value.left - chartPadding.value.right) / (len - 1)
 }
 
-// Posición X como porcentaje para las etiquetas del eje X (responsive)
 const getXPositionPercent = i => {
   const len = props.xLabels.length
   if (len <= 1) return 50
@@ -479,17 +457,15 @@ const toggleVariable = v => {
 }
 
 const handleMouseMove = e => {
-  if (tooltipLocked.value) return // No mover si está fijo
+  if (tooltipLocked.value) return
   const rect = e.currentTarget.getBoundingClientRect()
   const scaleX = dimensions.value.width / rect.width
   const x = (e.clientX - rect.left) * scaleX
   processHover(x)
 }
 
-// ✅ Touch events para móvil
 const handleTouchStart = e => {
   if (tooltipLocked.value) {
-    // Si está fijo y toca fuera, desfijarlo
     tooltipLocked.value = false
     hoverState.value.visible = false
     return
@@ -500,7 +476,6 @@ const handleTouchStart = e => {
   const scaleX = dimensions.value.width / rect.width
   const x = (touch.clientX - rect.left) * scaleX
   processHover(x)
-  // En móvil, fijar automáticamente al tocar
   tooltipLocked.value = true
 }
 
@@ -515,20 +490,16 @@ const handleTouchMove = e => {
 }
 
 const handleTouchEnd = () => {
-  // No ocultar si está fijo
   if (!tooltipLocked.value) {
     hideTooltip()
   }
 }
 
-// ✅ Click para fijar/desfijar tooltip
 const handleClick = (e) => {
   if (tooltipLocked.value) {
-    // Si ya está fijo, desfijarlo
     tooltipLocked.value = false
     hoverState.value.visible = false
   } else {
-    // Fijar en la posición actual
     const rect = e.currentTarget.getBoundingClientRect()
     const scaleX = dimensions.value.width / rect.width
     const x = (e.clientX - rect.left) * scaleX
@@ -603,15 +574,11 @@ const updateDimensions = () => {
     const rect = chartWrapper.value.getBoundingClientRect()
     const w = windowWidth.value
     
-    // Usar el ancho real del contenedor
     const realWidth = rect.width > 0 ? rect.width : props.width
-    
-    // Calcular altura proporcional (ratio 2:1 aproximadamente)
     let realHeight = rect.height > 0 ? rect.height : props.height
     
-    // En móvil, asegurar una altura mínima proporcional al ancho
     if (w <= 768) {
-      const minHeight = realWidth * 0.6 // Ratio más cuadrado en móvil
+      const minHeight = realWidth * 0.6
       realHeight = Math.max(realHeight, minHeight, 200)
     }
     
@@ -619,8 +586,6 @@ const updateDimensions = () => {
       width: realWidth, 
       height: realHeight
     }
-    
-    console.log('📐 [LinearChart] Dimensiones actualizadas:', dimensions.value)
   } else {
     dimensions.value = { width: props.width, height: props.height }
   }
@@ -631,23 +596,24 @@ const handleResize = () => {
   updateDimensions()
 }
 
+// ✅ Ocultar tooltip al hacer scroll
+const handleScroll = () => {
+  if (hoverState.value.visible) {
+    hideTooltip()
+  }
+}
+
 onMounted(async () => {
   await nextTick()
   
   window.addEventListener('resize', handleResize)
+  window.addEventListener('scroll', handleScroll, true)
+  
   handleResize()
   
-  // Recalcular después de que el DOM esté completamente renderizado
-  setTimeout(() => {
-    handleResize()
-  }, 100)
+  setTimeout(() => handleResize(), 100)
+  setTimeout(() => handleResize(), 500)
   
-  // Y otra vez después de que las animaciones CSS terminen
-  setTimeout(() => {
-    handleResize()
-  }, 500)
-  
-  console.log('🚀 [LinearChart] Montado - positionsByYear:', props.positionsByYear)
   setTimeout(() => {
     const vars = Object.keys(props.data)
     if (vars.length > 0 && visibleVariables.value.length === 0) {
@@ -659,6 +625,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
+  window.removeEventListener('scroll', handleScroll, true)
 })
 </script>
 
@@ -686,9 +653,7 @@ onUnmounted(() => {
   flex-shrink: 0;
 }
 
-.header-content {
-  flex: 1;
-}
+.header-content { flex: 1; }
 
 .chart-title {
   font-size: 16px;
@@ -758,13 +723,8 @@ onUnmounted(() => {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.filter-btn.filter-inactive {
-  opacity: 0.6;
-}
-
-.filter-btn:hover {
-  transform: scale(1.02);
-}
+.filter-btn.filter-inactive { opacity: 0.6; }
+.filter-btn:hover { transform: scale(1.02); }
 
 .no-data {
   display: flex;
@@ -776,14 +736,8 @@ onUnmounted(() => {
   gap: 12px;
 }
 
-.no-data svg {
-  opacity: 0.5;
-}
-
-.no-data p {
-  margin: 0;
-  font-size: 14px;
-}
+.no-data svg { opacity: 0.5; }
+.no-data p { margin: 0; font-size: 14px; }
 
 .chart-wrapper {
   position: relative;
@@ -806,10 +760,7 @@ onUnmounted(() => {
   touch-action: none;
 }
 
-.grid-line {
-  stroke: #e5e7eb;
-  stroke-width: 1;
-}
+.grid-line { stroke: #e5e7eb; stroke-width: 1; }
 
 .y-axis-label {
   font-size: 12px;
@@ -858,17 +809,13 @@ onUnmounted(() => {
   background: #f3f4f6;
 }
 
-/* Área con gradiente */
 .area-fill {
   opacity: 0;
   animation: fadeInArea 1s ease-out forwards;
 }
 
-@keyframes fadeInArea {
-  to { opacity: 1; }
-}
+@keyframes fadeInArea { to { opacity: 1; } }
 
-/* Línea principal */
 .line-path {
   stroke-dasharray: 3000;
   stroke-dashoffset: 3000;
@@ -881,19 +828,10 @@ onUnmounted(() => {
   stroke-dashoffset: 0;
 }
 
-@keyframes drawLine {
-  to { stroke-dashoffset: 0; }
-}
+@keyframes drawLine { to { stroke-dashoffset: 0; } }
+@keyframes fadeLine { from { opacity: 1; } to { opacity: 0; } }
 
-@keyframes fadeLine {
-  from { opacity: 1; }
-  to { opacity: 0; }
-}
-
-/* Puntos */
-.point-halo {
-  transition: r 0.3s ease;
-}
+.point-halo { transition: r 0.3s ease; }
 
 .point-main {
   transition: all 0.3s ease;
@@ -904,7 +842,6 @@ onUnmounted(() => {
   filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.25));
 }
 
-/* Etiquetas de valor sobre los puntos */
 .value-label-text {
   font-size: 14px;
   font-weight: 700;
@@ -920,7 +857,6 @@ onUnmounted(() => {
   fill: #1e293b;
 }
 
-/* Tooltip - Compacto y dentro del contenedor */
 .tooltip-container { 
   position: absolute;
   background: rgba(255, 255, 255, 0.96);
@@ -937,591 +873,137 @@ onUnmounted(() => {
 }
 
 .tooltip-container.locked {
-  border: 1px solid #3b82f6;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+  border: 1px solid #d0d0d0;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 
-.tooltip-header { 
-  margin-bottom: 4px; 
-  padding-bottom: 3px; 
-  border-bottom: 1px solid #eee; 
-}
+.tooltip-header { margin-bottom: 4px; padding-bottom: 3px; border-bottom: 1px solid #eee; }
+.tooltip-year-label { font-size: 9px; font-weight: 600; color: #333; }
+.tooltip-content { display: flex; flex-direction: column; gap: 2px; }
+.tooltip-item { display: flex; align-items: center; gap: 4px; font-size: 8px; }
+.tooltip-color-indicator { width: 5px; height: 5px; border-radius: 1px; flex-shrink: 0; }
+.tooltip-variable-name { color: #666; flex-shrink: 0; font-size: 7px; }
+.tooltip-variable-value { color: #333; font-weight: 600; margin-left: auto; font-size: 8px; }
+.tooltip-sub-item { padding-left: 9px; }
+.tooltip-sub-item .tooltip-variable-name { color: #888; font-size: 6px; }
+.tooltip-sub-item .tooltip-variable-value { font-size: 7px; }
+.tooltip-position-value { color: #333; font-weight: 600; }
+.tooltip-separator { height: 1px; background: #eee; margin: 2px 0; }
+.tooltip-fade-enter-active, .tooltip-fade-leave-active { transition: all 0.15s ease; }
+.tooltip-fade-enter-from, .tooltip-fade-leave-to { opacity: 0; }
 
-.tooltip-year-label { 
-  font-size: 9px; 
-  font-weight: 600; 
-  color: #333; 
-}
-
-.tooltip-content { 
-  display: flex; 
-  flex-direction: column; 
-  gap: 2px; 
-}
-
-.tooltip-item { 
-  display: flex; 
-  align-items: center; 
-  gap: 4px; 
-  font-size: 8px; 
-}
-
-.tooltip-color-indicator { 
-  width: 5px; 
-  height: 5px; 
-  border-radius: 1px; 
-  flex-shrink: 0; 
-}
-
-.tooltip-variable-name { 
-  color: #666; 
-  flex-shrink: 0;
-  font-size: 7px;
-}
-
-.tooltip-variable-value { 
-  color: #333; 
-  font-weight: 600; 
-  margin-left: auto;
-  font-size: 8px;
-}
-
-.tooltip-sub-item { 
-  padding-left: 9px; 
-}
-
-.tooltip-sub-item .tooltip-variable-name { 
-  color: #888; 
-  font-size: 6px; 
-}
-
-.tooltip-sub-item .tooltip-variable-value { 
-  font-size: 7px; 
-}
-
-.tooltip-position-value { 
-  color: #333; 
-  font-weight: 600; 
-}
-
-.tooltip-separator { 
-  height: 1px; 
-  background: #eee; 
-  margin: 2px 0; 
-}
-
-.tooltip-fade-enter-active, 
-.tooltip-fade-leave-active { 
-  transition: all 0.15s ease; 
-}
-
-.tooltip-fade-enter-from, 
-.tooltip-fade-leave-to { 
-  opacity: 0; 
-}
-
-/* ============================================
-   RESPONSIVE - TABLETS (≤1024px)
-   ============================================ */
 @media (max-width: 1024px) {
-  .linear-chart-container {
-    padding: 16px;
-  }
-  
-  .chart-title {
-    font-size: 15px;
-  }
-  
-  .filter-btn {
-    padding: 7px 14px;
-    font-size: 11px;
-  }
+  .linear-chart-container { padding: 16px; }
+  .chart-title { font-size: 15px; }
+  .filter-btn { padding: 7px 14px; font-size: 11px; }
 }
 
-/* ============================================
-   RESPONSIVE - MÓVIL (≤768px)
-   ============================================ */
 @media (max-width: 768px) {
-  .linear-chart-container {
-    padding: 12px;
-    border-radius: 10px;
-    min-height: 280px;
-  }
-  
-  .chart-header {
-    margin-bottom: 8px;
-  }
-  
-  .chart-title {
-    font-size: 13px;
-  }
-  
-  .chart-subtitle {
-    font-size: 11px;
-  }
-  
-  .variable-filters {
-    padding: 4px;
-    gap: 4px;
-    margin-bottom: 8px;
-    border-radius: 16px;
-  }
-  
-  .filter-btn {
-    padding: 6px 10px;
-    font-size: 10px;
-    gap: 5px;
-    border-radius: 12px;
-  }
-  
-  .btn-color-dot {
-    width: 8px;
-    height: 8px;
-  }
-  
-  .chart-wrapper {
-    min-height: 180px;
-  }
-  
-  .line-chart {
-    min-height: 180px;
-  }
-  
-  .value-label-text {
-    font-size: 11px;
-  }
-  
-  .value-label-text.label-hovered {
-    font-size: 12px;
-  }
-  
-  .tooltip-container {
-    padding: 4px 5px;
-    min-width: 70px;
-    max-width: 110px;
-  }
-  
-  .tooltip-year-label {
-    font-size: 8px;
-  }
-  
-  .tooltip-item {
-    font-size: 7px;
-  }
-  
-  .tooltip-variable-name {
-    font-size: 6px;
-  }
-  
-  .tooltip-variable-value {
-    font-size: 7px;
-  }
-  
-  .x-axis-container {
-    height: 24px;
-    margin-top: 4px;
-  }
-  
-  .x-axis-label {
-    font-size: 9px;
-    padding: 2px 4px;
-  }
-  
-  .y-axis-label {
-    font-size: 9px;
-  }
-  
-  .no-data {
-    height: 200px;
-  }
-  
-  .no-data svg {
-    width: 36px;
-    height: 36px;
-  }
-  
-  .no-data p {
-    font-size: 12px;
-  }
+  .linear-chart-container { padding: 12px; border-radius: 10px; min-height: 280px; }
+  .chart-header { margin-bottom: 8px; }
+  .chart-title { font-size: 13px; }
+  .chart-subtitle { font-size: 11px; }
+  .variable-filters { padding: 4px; gap: 4px; margin-bottom: 8px; border-radius: 16px; }
+  .filter-btn { padding: 6px 10px; font-size: 10px; gap: 5px; border-radius: 12px; }
+  .btn-color-dot { width: 8px; height: 8px; }
+  .chart-wrapper { min-height: 180px; }
+  .line-chart { min-height: 180px; }
+  .value-label-text { font-size: 11px; }
+  .value-label-text.label-hovered { font-size: 12px; }
+  .x-axis-container { height: 24px; margin-top: 4px; }
+  .x-axis-label { font-size: 9px; padding: 2px 4px; }
+  .y-axis-label { font-size: 9px; }
+  .no-data { height: 200px; }
+  .no-data svg { width: 36px; height: 36px; }
+  .no-data p { font-size: 12px; }
 }
 
-/* ============================================
-   RESPONSIVE - iPhone 14 Pro Max (≤430px)
-   ============================================ */
 @media (max-width: 430px) {
-  .linear-chart-container {
-    padding: 10px;
-    border-radius: 8px;
-    min-height: 260px;
-  }
-  
-  .chart-title {
-    font-size: 12px;
-  }
-  
-  .chart-subtitle {
-    font-size: 10px;
-  }
-  
-  .variable-filters {
-    padding: 3px;
-    gap: 3px;
-    margin-bottom: 6px;
-  }
-  
-  .filter-btn {
-    padding: 5px 8px;
-    font-size: 9px;
-    gap: 4px;
-    border-radius: 10px;
-  }
-  
-  .btn-color-dot {
-    width: 7px;
-    height: 7px;
-  }
-  
-  .chart-wrapper {
-    min-height: 160px;
-  }
-  
-  .line-chart {
-    min-height: 160px;
-  }
-  
-  .value-label-text {
-    font-size: 10px;
-  }
-  
-  .value-label-text.label-hovered {
-    font-size: 11px;
-  }
-  
-  .tooltip-container {
-    padding: 4px 6px;
-    min-width: 80px;
-    max-width: 120px;
-  }
-  
-  .x-axis-label {
-    font-size: 8px;
-    padding: 2px 3px;
-  }
-  
-  .y-axis-label {
-    font-size: 8px;
-  }
+  .linear-chart-container { padding: 10px; border-radius: 8px; min-height: 260px; }
+  .chart-title { font-size: 12px; }
+  .chart-subtitle { font-size: 10px; }
+  .variable-filters { padding: 3px; gap: 3px; margin-bottom: 6px; }
+  .filter-btn { padding: 5px 8px; font-size: 9px; gap: 4px; border-radius: 10px; }
+  .btn-color-dot { width: 7px; height: 7px; }
+  .chart-wrapper { min-height: 160px; }
+  .line-chart { min-height: 160px; }
+  .value-label-text { font-size: 10px; }
+  .value-label-text.label-hovered { font-size: 11px; }
+  .x-axis-label { font-size: 8px; padding: 2px 3px; }
+  .y-axis-label { font-size: 8px; }
 }
 
-/* ============================================
-   RESPONSIVE - Samsung Galaxy S20 Ultra (≤412px)
-   ============================================ */
 @media (max-width: 412px) {
-  .linear-chart-container {
-    padding: 9px;
-  }
-  
-  .chart-title {
-    font-size: 11px;
-  }
-  
-  .filter-btn {
-    padding: 4px 7px;
-    font-size: 8px;
-  }
-  
-  .btn-label {
-    max-width: 80px;
-  }
-  
-  .value-label-text {
-    font-size: 7px;
-  }
-  
-  .x-axis-container {
-    height: 20px;
-  }
-  
-  .x-axis-label {
-    font-size: 7px;
-  }
-  
-  .y-axis-label {
-    font-size: 7px;
-  }
+  .linear-chart-container { padding: 9px; }
+  .chart-title { font-size: 11px; }
+  .filter-btn { padding: 4px 7px; font-size: 8px; }
+  .btn-label { max-width: 80px; }
+  .value-label-text { font-size: 7px; }
+  .x-axis-container { height: 20px; }
+  .x-axis-label { font-size: 7px; }
+  .y-axis-label { font-size: 7px; }
 }
 
-/* ============================================
-   RESPONSIVE - iPhone 12 Pro (≤390px)
-   ============================================ */
 @media (max-width: 390px) {
-  .linear-chart-container {
-    padding: 8px;
-    border-radius: 6px;
-    min-height: 240px;
-  }
-  
-  .chart-header {
-    margin-bottom: 6px;
-  }
-  
-  .chart-title {
-    font-size: 11px;
-  }
-  
-  .variable-filters {
-    padding: 2px;
-    gap: 2px;
-    margin-bottom: 5px;
-    border-radius: 12px;
-  }
-  
-  .filter-btn {
-    padding: 4px 6px;
-    font-size: 8px;
-    gap: 3px;
-    border-radius: 8px;
-  }
-  
-  .btn-color-dot {
-    width: 6px;
-    height: 6px;
-  }
-  
-  .btn-label {
-    max-width: 70px;
-  }
-  
-  .chart-wrapper {
-    min-height: 140px;
-  }
-  
-  .line-chart {
-    min-height: 140px;
-  }
-  
-  .value-label-text {
-    font-size: 9px;
-  }
-  
-  .value-label-text.label-hovered {
-    font-size: 10px;
-  }
-  
-  .tooltip-container {
-    padding: 3px 5px;
-    min-width: 70px;
-    max-width: 110px;
-  }
-  
-  .x-axis-container {
-    height: 18px;
-    margin-top: 3px;
-  }
-  
-  .x-axis-label {
-    font-size: 7px;
-    padding: 1px 2px;
-  }
-  
-  .y-axis-label {
-    font-size: 7px;
-  }
-  
-  .no-data {
-    height: 150px;
-  }
-  
-  .no-data svg {
-    width: 28px;
-    height: 28px;
-  }
-  
-  .no-data p {
-    font-size: 10px;
-  }
+  .linear-chart-container { padding: 8px; border-radius: 6px; min-height: 240px; }
+  .chart-header { margin-bottom: 6px; }
+  .chart-title { font-size: 11px; }
+  .variable-filters { padding: 2px; gap: 2px; margin-bottom: 5px; border-radius: 12px; }
+  .filter-btn { padding: 4px 6px; font-size: 8px; gap: 3px; border-radius: 8px; }
+  .btn-color-dot { width: 6px; height: 6px; }
+  .btn-label { max-width: 70px; }
+  .chart-wrapper { min-height: 140px; }
+  .line-chart { min-height: 140px; }
+  .value-label-text { font-size: 9px; }
+  .value-label-text.label-hovered { font-size: 10px; }
+  .x-axis-container { height: 18px; margin-top: 3px; }
+  .x-axis-label { font-size: 7px; padding: 1px 2px; }
+  .y-axis-label { font-size: 7px; }
+  .no-data { height: 150px; }
+  .no-data svg { width: 28px; height: 28px; }
+  .no-data p { font-size: 10px; }
 }
 
-/* ============================================
-   RESPONSIVE - Samsung Galaxy S8+ (≤360px)
-   ============================================ */
 @media (max-width: 360px) {
-  .linear-chart-container {
-    padding: 6px;
-    border-radius: 5px;
-  }
-  
-  .chart-header {
-    margin-bottom: 4px;
-  }
-  
-  .chart-title {
-    font-size: 10px;
-  }
-  
-  .chart-subtitle {
-    font-size: 8px;
-  }
-  
-  .variable-filters {
-    padding: 2px;
-    gap: 2px;
-    margin-bottom: 4px;
-    border-radius: 10px;
-  }
-  
-  .filter-btn {
-    padding: 3px 5px;
-    font-size: 7px;
-    gap: 2px;
-    border-radius: 6px;
-  }
-  
-  .btn-color-dot {
-    width: 5px;
-    height: 5px;
-  }
-  
-  .btn-label {
-    max-width: 55px;
-  }
-  
-  .value-label-text {
-    font-size: 8px;
-  }
-  
-  .value-label-text.label-hovered {
-    font-size: 9px;
-  }
-  
-  .tooltip-container {
-    padding: 3px 4px;
-    min-width: 60px;
-    max-width: 100px;
-  }
-  
-  .x-axis-container {
-    height: 16px;
-    margin-top: 2px;
-  }
-  
-  .x-axis-label {
-    font-size: 6px;
-    padding: 1px 2px;
-  }
-  
-  .y-axis-label {
-    font-size: 6px;
-  }
-  
-  .no-data {
-    height: 120px;
-  }
-  
-  .no-data svg {
-    width: 24px;
-    height: 24px;
-  }
-  
-  .no-data p {
-    font-size: 9px;
-  }
+  .linear-chart-container { padding: 6px; border-radius: 5px; }
+  .chart-header { margin-bottom: 4px; }
+  .chart-title { font-size: 10px; }
+  .chart-subtitle { font-size: 8px; }
+  .variable-filters { padding: 2px; gap: 2px; margin-bottom: 4px; border-radius: 10px; }
+  .filter-btn { padding: 3px 5px; font-size: 7px; gap: 2px; border-radius: 6px; }
+  .btn-color-dot { width: 5px; height: 5px; }
+  .btn-label { max-width: 55px; }
+  .value-label-text { font-size: 8px; }
+  .value-label-text.label-hovered { font-size: 9px; }
+  .x-axis-container { height: 16px; margin-top: 2px; }
+  .x-axis-label { font-size: 6px; padding: 1px 2px; }
+  .y-axis-label { font-size: 6px; }
+  .no-data { height: 120px; }
+  .no-data svg { width: 24px; height: 24px; }
+  .no-data p { font-size: 9px; }
 }
 
-/* ============================================
-   RESPONSIVE - Muy pequeños (≤320px)
-   ============================================ */
 @media (max-width: 320px) {
-  .linear-chart-container {
-    padding: 5px;
-    border-radius: 4px;
-  }
-  
-  .chart-header {
-    margin-bottom: 3px;
-  }
-  
-  .chart-title {
-    font-size: 9px;
-  }
-  
-  .chart-subtitle {
-    font-size: 7px;
-  }
-  
-  .variable-filters {
-    padding: 1px;
-    gap: 1px;
-    margin-bottom: 3px;
-    border-radius: 8px;
-  }
-  
-  .filter-btn {
-    padding: 2px 4px;
-    font-size: 6px;
-    gap: 2px;
-    border-radius: 5px;
-  }
-  
-  .btn-color-dot {
-    width: 4px;
-    height: 4px;
-  }
-  
-  .btn-label {
-    max-width: 45px;
-  }
-  
-  .value-label-text {
-    font-size: 7px;
-  }
-  
-  .value-label-text.label-hovered {
-    font-size: 8px;
-  }
-  
-  .tooltip-container {
-    padding: 2px 3px;
-    min-width: 55px;
-    max-width: 90px;
-    font-size: 8px;
-  }
-  
-  .x-axis-container {
-    height: 14px;
-    margin-top: 2px;
-  }
-  
-  .x-axis-label {
-    font-size: 5px;
-    padding: 1px;
-  }
-  
-  .y-axis-label {
-    font-size: 5px;
-  }
-  
-  .no-data {
-    height: 100px;
-  }
-  
-  .no-data svg {
-    width: 20px;
-    height: 20px;
-  }
-  
-  .no-data p {
-    font-size: 8px;
-  }
+  .linear-chart-container { padding: 5px; border-radius: 4px; }
+  .chart-header { margin-bottom: 3px; }
+  .chart-title { font-size: 9px; }
+  .chart-subtitle { font-size: 7px; }
+  .variable-filters { padding: 1px; gap: 1px; margin-bottom: 3px; border-radius: 8px; }
+  .filter-btn { padding: 2px 4px; font-size: 6px; gap: 2px; border-radius: 5px; }
+  .btn-color-dot { width: 4px; height: 4px; }
+  .btn-label { max-width: 45px; }
+  .value-label-text { font-size: 7px; }
+  .value-label-text.label-hovered { font-size: 8px; }
+  .x-axis-container { height: 14px; margin-top: 2px; }
+  .x-axis-label { font-size: 5px; padding: 1px; }
+  .y-axis-label { font-size: 5px; }
+  .no-data { height: 100px; }
+  .no-data svg { width: 20px; height: 20px; }
+  .no-data p { font-size: 8px; }
 }
 
-/* ============================================
-   EVITAR OVERFLOW
-   ============================================ */
 @media (max-width: 768px) {
-  .linear-chart-container,
-  .chart-wrapper,
-  .x-axis-container {
+  .linear-chart-container, .chart-wrapper, .x-axis-container {
     max-width: 100%;
     overflow-x: hidden;
   }
