@@ -843,8 +843,8 @@ onUnmounted(() => {
 }
 
 .value-label-text {
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 200;
   fill: #374151;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   transition: all 0.3s ease;
@@ -852,8 +852,8 @@ onUnmounted(() => {
 }
 
 .value-label-text.label-hovered {
-  font-size: 16px;
-  font-weight: 800;
+  font-size: 13px;
+  font-weight: 300;
   fill: #1e293b;
 }
 
