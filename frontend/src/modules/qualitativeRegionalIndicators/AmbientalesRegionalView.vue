@@ -1,5 +1,5 @@
 <!-- src/modules/qualitativeRegionalIndicators/AmbientalesRegionalView.vue -->
-<!-- ✅ CORREGIDO: Emite años válidos al padre y valida año seleccionado -->
+<!-- ✅ REDISEÑADO: Estilo limpio con dos cards y gráficas de dona -->
 <template>
   <div class="ambientales-container">
     <!-- ✅ LOADING STATE mientras carga años -->
@@ -32,220 +32,237 @@
     </div>
 
     <!-- CONTENIDO -->
-    <div v-else class="card-body">
-      <!-- HEADER PRINCIPAL -->
-      <div class="main-header">
-        <div class="header-icon-badge">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
-            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+    <div v-else class="cards-wrapper" :class="{ 'animate-in': isAnimating }">
+      
+      <!-- ================================ -->
+      <!-- CARD 1: INDICADORES AMBIENTALES -->
+      <!-- ================================ -->
+      <div class="main-card">
+        <!-- HEADER -->
+        <div class="card-header">
+          <div class="header-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            </svg>
+          </div>
+          <span class="header-title">Indicadores Ambientales</span>
+        </div>
+
+        <!-- BODY -->
+        <div v-if="loading" class="card-body loading-state">
+          <div class="spinner"></div>
+        </div>
+        <div v-else class="card-body">
+          <!-- IRC - Índice de Riesgo Climático -->
+          <div class="indicator-row">
+            <div class="indicator-icon-box irc">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+                <circle cx="12" cy="12" r="4"/>
+              </svg>
+            </div>
+            <div class="indicator-info">
+              <span class="indicator-name">Índice de Riesgo Climático (IRC)</span>
+              <div class="indicator-bar">
+                <div class="indicator-bar-fill irc" :style="{ width: isAnimating ? getIRCBarWidth(countryData?.IRC) + '%' : '0%' }"></div>
+              </div>
+            </div>
+            <div class="indicator-value">
+              <span class="value-amount irc">{{ countryData?.IRC || '—' }}</span>
+              <span class="value-unit">puntos</span>
+            </div>
+          </div>
+
+          <!-- TARN - Tasa de Agotamiento -->
+          <div class="indicator-row">
+            <div class="indicator-icon-box tarn">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+            </div>
+            <div class="indicator-info">
+              <span class="indicator-name">Tasa Agotamiento Recursos Naturales (TARN)</span>
+              <div class="indicator-bar">
+                <div class="indicator-bar-fill tarn" :style="{ width: isAnimating ? Math.min(countryData?.TARN || 0, 100) + '%' : '0%' }"></div>
+              </div>
+            </div>
+            <div class="indicator-value">
+              <span class="value-amount tarn">{{ countryData?.TARN || '—' }}%</span>
+              <span class="value-unit">del GNI</span>
+            </div>
+          </div>
+
+          <!-- ECO2 - Emisiones CO2 -->
+          <div class="indicator-row">
+            <div class="indicator-icon-box eco2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                <path d="M18 20V10M12 20V4M6 20v-6"/>
+              </svg>
+            </div>
+            <div class="indicator-info">
+              <span class="indicator-name">Emisiones Anuales CO₂ (ECO2)</span>
+              <div class="indicator-bar">
+                <div class="indicator-bar-fill eco2" :style="{ width: isAnimating ? '75%' : '0%' }"></div>
+              </div>
+            </div>
+            <div class="indicator-value">
+              <span class="value-amount eco2">{{ formatEmissions(countryData?.ECO2) }}</span>
+              <span class="value-unit">Mt CO₂</span>
+            </div>
+          </div>
+
+          <!-- ECO2PC - Emisiones per cápita -->
+          <div class="indicator-row">
+            <div class="indicator-icon-box eco2pc">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+            </div>
+            <div class="indicator-info">
+              <span class="indicator-name">Emisiones CO₂ per Cápita (ECO2PC)</span>
+              <div class="indicator-bar">
+                <div class="indicator-bar-fill eco2pc" :style="{ width: isAnimating ? getCO2PCBarWidth(countryData?.ECO2PC) + '%' : '0%' }"></div>
+              </div>
+            </div>
+            <div class="indicator-value">
+              <span class="value-amount eco2pc">{{ countryData?.ECO2PC || '—' }}</span>
+              <span class="value-unit">t CO₂/hab</span>
+            </div>
+          </div>
+
+          <!-- CTE - Consumo Total Energía -->
+          <div class="indicator-row">
+            <div class="indicator-icon-box cte">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+              </svg>
+            </div>
+            <div class="indicator-info">
+              <span class="indicator-name">Consumo Total de Energía (CTE)</span>
+              <div class="indicator-bar">
+                <div class="indicator-bar-fill cte" :style="{ width: isAnimating ? getCTEBarWidth(countryData?.CTE) + '%' : '0%' }"></div>
+              </div>
+            </div>
+            <div class="indicator-value">
+              <span class="value-amount cte">{{ countryData?.CTE || '—' }}</span>
+              <span class="value-unit">MWh/hab</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="card-footer">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="16" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12.01" y2="8"/>
           </svg>
-        </div>
-        <span class="header-title">Indicadores Ambientales {{ selectedYear }}</span>
-        <span class="header-subtitle">{{ countryData?.País || 'México' }}</span>
-      </div>
-
-      <!-- FILA SUPERIOR -->
-      <div class="top-row">
-        <!-- RIESGO CLIMÁTICO -->
-        <div class="section-card">
-          <div class="section-header">
-            <div class="section-header-left">
-              <div class="section-icon-badge">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                  <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
-                  <circle cx="12" cy="12" r="4"/>
-                </svg>
-              </div>
-              <span class="section-title">Riesgo Climático</span>
-            </div>
-          </div>
-          <div v-if="loading" class="section-content loading-state"><div class="spinner"></div></div>
-          <div v-else class="section-content irc-content">
-            <div class="irc-main">
-              <div class="irc-value-container">
-                <span class="irc-big-value">{{ countryData?.IRC || '—' }}</span>
-                <span class="irc-label">Índice IRC</span>
-              </div>
-            </div>
-            <div class="irc-source">Germanwatch, 2022</div>
-          </div>
-        </div>
-
-        <!-- RECURSOS NATURALES -->
-        <div class="section-card">
-          <div class="section-header">
-            <div class="section-header-left">
-              <div class="section-icon-badge">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                </svg>
-              </div>
-              <span class="section-title">Recursos Naturales</span>
-            </div>
-          </div>
-          <div v-if="loading" class="section-content loading-state"><div class="spinner"></div></div>
-          <div v-else class="section-content recursos-content">
-            <div class="recursos-row">
-              <div class="recursos-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0F3759" stroke-width="1.5">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                </svg>
-              </div>
-              <div class="recursos-data">
-                <div class="recursos-header">
-                  <span class="recursos-label">TARN</span>
-                  <span class="recursos-value">{{ countryData?.TARN || '—' }}%</span>
-                </div>
-                <div class="recursos-bar"><div class="recursos-bar-fill" :style="{ width: Math.min(countryData?.TARN || 0, 100) + '%' }"></div></div>
-              </div>
-            </div>
-            <div class="recursos-row">
-              <div class="recursos-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0F3759" stroke-width="1.5">
-                  <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-                </svg>
-              </div>
-              <div class="recursos-data">
-                <div class="recursos-header">
-                  <span class="recursos-label">CTE</span>
-                  <span class="recursos-value">{{ countryData?.CTE || '—' }} MWh</span>
-                </div>
-                <div class="recursos-bar"><div class="recursos-bar-fill cte" :style="{ width: Math.min((countryData?.CTE || 0) / 10, 100) + '%' }"></div></div>
-              </div>
-            </div>
-            <div class="recursos-source">Banco Mundial / IEA, 2021-2022</div>
-          </div>
-        </div>
-
-        <!-- EMISIONES CO2 -->
-        <div class="section-card">
-          <div class="section-header">
-            <div class="section-header-left">
-              <div class="section-icon-badge">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
-                  <path d="M8 12h8M12 8v8"/>
-                </svg>
-              </div>
-              <span class="section-title">Emisiones CO₂</span>
-            </div>
-          </div>
-          <div v-if="loading" class="section-content loading-state"><div class="spinner"></div></div>
-          <div v-else class="section-content co2-content">
-            <div class="co2-grid">
-              <div class="co2-card">
-                <div class="co2-icon-bg">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0F3759" stroke-width="2">
-                    <path d="M18 20V10M12 20V4M6 20v-6"/>
-                  </svg>
-                </div>
-                <span class="co2-value">{{ formatNumber(countryData?.ECO2) }}</span>
-                <span class="co2-unit">Mt CO₂</span>
-              </div>
-              <div class="co2-card">
-                <div class="co2-icon-bg">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0F3759" stroke-width="2">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-                  </svg>
-                </div>
-                <span class="co2-value">{{ countryData?.ECO2PC || '—' }}</span>
-                <span class="co2-unit">t CO₂/hab</span>
-              </div>
-            </div>
-            <div class="co2-source">IEA, 2022</div>
-          </div>
+          <span>Fuentes: Germanwatch, Banco Mundial, IEA {{ selectedYear }}</span>
         </div>
       </div>
 
-      <!-- FILA INFERIOR -->
-      <div class="bottom-row">
-        <!-- GEI POR SECTOR -->
-        <div class="section-card gei-card">
-          <div class="section-header">
-            <div class="section-header-left">
-              <div class="section-icon-badge">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                  <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path d="M9 12l2 2 4-4"/>
-                </svg>
-              </div>
-              <span class="section-title">Emisiones GEI por Sector</span>
-            </div>
+      <!-- ================================ -->
+      <!-- CARD 2: GRÁFICAS (GEI + ENERGÍA) -->
+      <!-- ================================ -->
+      <div class="main-card charts-card">
+        <!-- HEADER -->
+        <div class="card-header charts-header">
+          <div class="header-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+              <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              <path d="M9 12l2 2 4-4"/>
+            </svg>
           </div>
-          <div v-if="loading" class="section-content loading-state"><div class="spinner"></div></div>
-          <div v-else class="section-content gei-content">
-            <div class="gei-donut-container">
-              <svg :width="donutSize" :height="donutSize" :viewBox="`0 0 ${donutSize} ${donutSize}`">
-                <circle :cx="donutSize/2" :cy="donutSize/2" :r="donutRadius" fill="none" stroke="#e2e8f0" :stroke-width="strokeWidth"/>
-                <path v-for="(segment, index) in geiArcs" :key="index" :d="segment.path" fill="none" :stroke="segment.color" :stroke-width="strokeWidth"/>
-              </svg>
-              <div class="gei-donut-center"><span class="gei-center-text">GEI</span></div>
-            </div>
-            <div class="gei-bars">
-              <div v-for="item in geiLegend" :key="item.label" class="gei-bar-row">
-                <div class="gei-bar-icon" :style="{ background: item.color }"></div>
-                <span class="gei-bar-label">{{ item.label }}</span>
-                <div class="gei-bar-track">
-                  <div class="gei-bar-fill" :style="{ width: item.value + '%', background: item.color }"></div>
-                </div>
-                <span class="gei-bar-value">{{ item.value }}%</span>
-              </div>
-            </div>
-          </div>
+          <span class="header-title">Distribución por Sectores</span>
         </div>
 
-        <!-- MATRIZ ENERGÉTICA -->
-        <div class="section-card energy-card">
-          <div class="section-header">
-            <div class="section-header-left">
-              <div class="section-icon-badge">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                  <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+        <!-- BODY -->
+        <div v-if="loading" class="card-body loading-state">
+          <div class="spinner"></div>
+        </div>
+        <div v-else class="card-body charts-body">
+          
+          <!-- SECCIÓN GEI -->
+          <div class="chart-section">
+            <div class="chart-section-title">Emisiones GEI por Sector</div>
+            <div class="chart-row">
+              <div class="donut-container">
+                <svg :width="donutSize" :height="donutSize" :viewBox="`0 0 ${donutSize} ${donutSize}`">
+                  <circle :cx="donutSize/2" :cy="donutSize/2" :r="donutRadius" fill="none" stroke="#e2e8f0" :stroke-width="strokeWidth"/>
+                  <path v-for="(segment, index) in geiArcs" :key="'gei-'+index" :d="segment.path" fill="none" :stroke="segment.color" :stroke-width="strokeWidth"/>
                 </svg>
+                <div class="donut-center">
+                  <span class="donut-center-text">GEI</span>
+                </div>
               </div>
-              <span class="section-title">Matriz Energética</span>
+              <div class="chart-legend">
+                <div v-for="item in geiLegend" :key="item.key" class="legend-row">
+                  <div class="legend-dot" :style="{ background: item.color }"></div>
+                  <span class="legend-label">{{ item.label }}</span>
+                  <span class="legend-value" :style="{ color: item.color }">{{ item.value }}%</span>
+                </div>
+              </div>
             </div>
           </div>
-          <div v-if="loading" class="section-content loading-state"><div class="spinner"></div></div>
-          <div v-else class="section-content energy-content">
-            <div class="energy-donut-wrapper">
-              <svg :width="energyDonutSize" :height="energyDonutSize" :viewBox="`0 0 ${energyDonutSize} ${energyDonutSize}`">
-                <circle :cx="energyDonutSize/2" :cy="energyDonutSize/2" :r="energyDonutRadius" fill="none" stroke="#e2e8f0" :stroke-width="energyStrokeWidth"/>
-                <path v-for="(segment, index) in energyArcs" :key="index" :d="segment.path" fill="none" :stroke="segment.color" :stroke-width="energyStrokeWidth"/>
-              </svg>
-              <div class="energy-donut-center">
-                <span class="energy-center-value">{{ countryData?.CCF || '—' }}%</span>
-                <span class="energy-center-label">Fósil</span>
+
+          <div class="charts-divider"></div>
+
+          <!-- SECCIÓN MATRIZ ENERGÉTICA -->
+          <div class="chart-section">
+            <div class="chart-section-title">Matriz Energética</div>
+            <div class="chart-row">
+              <div class="donut-container">
+                <svg :width="energyDonutSize" :height="energyDonutSize" :viewBox="`0 0 ${energyDonutSize} ${energyDonutSize}`">
+                  <circle :cx="energyDonutSize/2" :cy="energyDonutSize/2" :r="energyDonutRadius" fill="none" stroke="#e2e8f0" :stroke-width="energyStrokeWidth"/>
+                  <path v-for="(segment, index) in energyArcs" :key="'energy-'+index" :d="segment.path" fill="none" :stroke="segment.color" :stroke-width="energyStrokeWidth"/>
+                </svg>
+                <div class="donut-center energy-center">
+                  <span class="donut-center-value" :style="{ color: '#ef4444' }">{{ countryData?.CCF || '—' }}%</span>
+                  <span class="donut-center-label">Fósil</span>
+                </div>
+              </div>
+              <div class="chart-legend energy-legend">
+                <div class="legend-row">
+                  <div class="legend-dot fossil"></div>
+                  <span class="legend-label">Combustibles fósiles (CCF)</span>
+                  <span class="legend-value fossil">{{ countryData?.CCF || '—' }}%</span>
+                </div>
+                <div class="energy-bar-full">
+                  <div class="energy-bar-fill fossil" :style="{ width: (countryData?.CCF || 0) + '%' }"></div>
+                </div>
+                <div class="legend-row">
+                  <div class="legend-dot renewable"></div>
+                  <span class="legend-label">Energías renovables (CER)</span>
+                  <span class="legend-value renewable">{{ countryData?.CER || '—' }}%</span>
+                </div>
+                <div class="energy-bar-full renewable-track">
+                  <div class="energy-bar-fill renewable" :style="{ width: (countryData?.CER || 0) + '%' }"></div>
+                </div>
               </div>
             </div>
-            <div class="energy-bars-container">
-              <div class="energy-bar-row">
-                <div class="energy-bar-dot fossil"></div>
-                <span class="energy-bar-label">Combustibles fósiles</span>
-                <span class="energy-bar-value fossil">{{ countryData?.CCF || '—' }}%</span>
-              </div>
-              <div class="energy-bar-track-full fossil">
-                <div class="energy-bar-fill-full fossil" :style="{ width: (countryData?.CCF || 0) + '%' }"></div>
-              </div>
-              <div class="energy-bar-row">
-                <div class="energy-bar-dot renewable"></div>
-                <span class="energy-bar-label">Energías renovables</span>
-                <span class="energy-bar-value renewable">{{ countryData?.CER || '—' }}%</span>
-              </div>
-              <div class="energy-bar-track-full renewable">
-                <div class="energy-bar-fill-full renewable" :style="{ width: (countryData?.CER || 0) + '%' }"></div>
-              </div>
-            </div>
-            <div class="energy-source">IEA, 2022</div>
           </div>
+
+        </div>
+
+        <!-- FOOTER -->
+        <div class="card-footer">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="16" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+          <span>{{ countryData?.País || 'México' }} {{ selectedYear }} | Fuente: IEA</span>
         </div>
       </div>
+
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useStorageData } from '@/dataConection/useStorageData'
 
 const props = defineProps({
@@ -253,29 +270,29 @@ const props = defineProps({
   selectedCountry: { type: String, default: 'México' }
 })
 
-// ✅ IMPORTANTE: Agregar emit para years-loaded
 const emit = defineEmits(['back', 'years-loaded'])
 
 const { fetchRegionalData, fetchRegionalSheetNames } = useStorageData()
 const rawData = ref([])
 const loading = ref(false)
 const error = ref(null)
+const isAnimating = ref(false)
 
-// ✅ NUEVO: Estado de años válidos
+// Estado de años válidos
 const validYears = ref([])
 const yearsLoaded = ref(false)
 
 // Donut config GEI
-const donutSize = 100
-const strokeWidth = 14
+const donutSize = 90
+const strokeWidth = 12
 const donutRadius = (donutSize - strokeWidth) / 2
 
 // Donut config Energía
-const energyDonutSize = 80
+const energyDonutSize = 90
 const energyStrokeWidth = 12
 const energyDonutRadius = (energyDonutSize - energyStrokeWidth) / 2
 
-// Colores GEI - VARIACIONES DE AZUL
+// Colores GEI
 const geiColors = {
   energy: '#0F3759',
   agriculture: '#2563eb',
@@ -289,7 +306,7 @@ const countryData = computed(() => {
   return found || rawData.value[0]
 })
 
-// ✅ NUEVO: Computed para validar año
+// Computed para validar año
 const isYearValid = computed(() => {
   if (!yearsLoaded.value) return false
   if (!props.selectedYear) return false
@@ -297,14 +314,50 @@ const isYearValid = computed(() => {
   return validYears.value.some(y => String(y) === yearStr)
 })
 
+// ============================================
+// FUNCIONES DE FORMATO Y CÁLCULO
+// ============================================
+
+const formatEmissions = (value) => {
+  if (!value || value === '—') return '—'
+  const num = Number(value)
+  if (isNaN(num)) return value
+  if (num >= 1e9) return (num / 1e9).toFixed(1)
+  if (num >= 1e6) return (num / 1e6).toFixed(1)
+  if (num >= 1e3) return (num / 1e3).toFixed(1)
+  return num.toLocaleString('es-MX')
+}
+
+const getIRCBarWidth = (value) => {
+  const num = Number(value) || 0
+  // IRC máximo aprox 200
+  return Math.min((num / 200) * 100, 100)
+}
+
+const getCO2PCBarWidth = (value) => {
+  const num = Number(value) || 0
+  // CO2 per cápita máximo aprox 20 toneladas
+  return Math.min((num / 20) * 100, 100)
+}
+
+const getCTEBarWidth = (value) => {
+  const num = Number(value) || 0
+  // CTE máximo aprox 15 MWh/hab
+  return Math.min((num / 15) * 100, 100)
+}
+
+// ============================================
+// DATOS PARA GRÁFICAS
+// ============================================
+
 const geiLegend = computed(() => [
-  { label: 'Energía', value: countryData.value?.GEI_EN || 0, color: geiColors.energy },
-  { label: 'Agricultura', value: countryData.value?.GEI_AGUT || 0, color: geiColors.agriculture },
-  { label: 'Industrial', value: countryData.value?.GEI_PI || 0, color: geiColors.industrial },
-  { label: 'Residuos', value: countryData.value?.GEI_RE || 0, color: geiColors.waste }
+  { key: 'energy', label: 'Energía', value: countryData.value?.GEI_EN || 0, color: geiColors.energy },
+  { key: 'agriculture', label: 'Agricultura', value: countryData.value?.GEI_AGUT || 0, color: geiColors.agriculture },
+  { key: 'industrial', label: 'Industrial', value: countryData.value?.GEI_PI || 0, color: geiColors.industrial },
+  { key: 'waste', label: 'Residuos', value: countryData.value?.GEI_RE || 0, color: geiColors.waste }
 ])
 
-// Función para crear arcos SVG
+// Funciones para arcos SVG
 const describeArc = (x, y, radius, startAngle, endAngle) => {
   const start = polarToCartesian(x, y, radius, endAngle)
   const end = polarToCartesian(x, y, radius, startAngle)
@@ -372,16 +425,19 @@ const energyArcs = computed(() => {
   })
 })
 
-const formatNumber = (value) => {
-  if (!value || value === '—') return '—'
-  const num = Number(value)
-  if (isNaN(num)) return value
-  if (num >= 1000000000) return (num / 1000000000).toFixed(1)
-  if (num >= 1000000) return (num / 1000000).toFixed(1)
-  return num.toLocaleString()
+const triggerAnimation = () => {
+  isAnimating.value = false
+  nextTick(() => {
+    setTimeout(() => {
+      isAnimating.value = true
+    }, 150)
+  })
 }
 
-// ✅ CORREGIDO: Cargar años válidos y EMITIR AL PADRE
+// ============================================
+// CARGA DE DATOS
+// ============================================
+
 const loadValidYears = async () => {
   try {
     console.log('📅 [AmbientalesRegionalView] Cargando años válidos...')
@@ -395,7 +451,6 @@ const loadValidYears = async () => {
     
     console.log('📅 [AmbientalesRegionalView] Años válidos:', years)
     
-    // ✅ IMPORTANTE: Emitir años al padre
     if (years.length > 0) {
       console.log('📤 [AmbientalesRegionalView] Emitiendo años al padre:', years)
       emit('years-loaded', years)
@@ -409,26 +464,27 @@ const loadValidYears = async () => {
   }
 }
 
-// ✅ CORREGIDO: Cargar datos solo si el año es válido
 const loadData = async () => {
   if (!props.selectedYear) return
   if (!yearsLoaded.value) return
   
   const yearStr = String(props.selectedYear)
   
-  // Validar que el año existe
   if (!validYears.value.some(y => String(y) === yearStr)) {
     console.warn(`⚠️ [AmbientalesRegionalView] Año ${yearStr} no disponible`)
     return
   }
   
   loading.value = true
+  isAnimating.value = false
+  
   try {
     console.log(`📊 [AmbientalesRegionalView] Cargando datos para año: ${yearStr}`)
     const data = await fetchRegionalData('ambientalesRegional', yearStr)
     if (data && data.length > 0) {
       rawData.value = data
       console.log(`✅ [AmbientalesRegionalView] Datos cargados: ${data.length} registros`)
+      triggerAnimation()
     }
   } catch (err) {
     console.error('❌ [AmbientalesRegionalView] Error:', err)
@@ -438,7 +494,10 @@ const loadData = async () => {
   }
 }
 
-// Watch para cambios de año
+// ============================================
+// WATCHERS
+// ============================================
+
 watch(() => props.selectedYear, async (newYear) => {
   if (newYear && yearsLoaded.value) {
     rawData.value = []
@@ -446,14 +505,16 @@ watch(() => props.selectedYear, async (newYear) => {
   }
 }, { immediate: false })
 
-// Watch para cuando los años se cargan
 watch(yearsLoaded, (loaded) => {
   if (loaded && props.selectedYear && isYearValid.value) {
     loadData()
   }
 })
 
-// Lifecycle
+// ============================================
+// LIFECYCLE
+// ============================================
+
 onMounted(async () => {
   console.log('🚀 [AmbientalesRegionalView] Montado con año:', props.selectedYear)
   await loadValidYears()
@@ -465,369 +526,275 @@ onMounted(async () => {
 
 <style scoped>
 .ambientales-container {
-  background-color: white;
-  border-radius: 15px;
+  background-color: #f8fafc;
+  border-radius: 12px;
   height: 100%;
   width: 100%;
-  padding: 8px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   box-sizing: border-box;
 }
 
-.global-empty-state {
+/* Empty State */
+.global-empty-state { 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  height: 100%; 
+  background: white; 
+  border-radius: 16px; 
+}
+
+.empty-state-content { 
+  display: flex; 
+  flex-direction: column; 
+  align-items: center; 
+  text-align: center; 
+  max-width: 280px; 
+}
+
+.empty-state-icon { 
+  width: 64px; 
+  height: 64px; 
+  margin-bottom: 12px; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%); 
+  border-radius: 50%; 
+}
+
+.empty-state-title { 
+  font-size: 15px; 
+  font-weight: 600; 
+  color: #2d3748; 
+  margin: 0 0 6px 0; 
+}
+
+.empty-state-description { 
+  font-size: 12px; 
+  color: #718096; 
+  margin: 0; 
+  line-height: 1.4; 
+}
+
+.spinner { 
+  width: 30px; 
+  height: 30px; 
+  border: 3px solid #e2e8f0; 
+  border-top-color: #0F3759; 
+  border-radius: 50%; 
+  animation: spin 1s linear infinite; 
+  margin-bottom: 12px; 
+}
+
+/* Cards Wrapper */
+.cards-wrapper {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  gap: 16px;
   height: 100%;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.empty-state-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  max-width: 280px;
+.cards-wrapper.animate-in {
+  opacity: 1;
+  transform: translateY(0);
 }
 
-.empty-state-icon {
-  width: 70px;
-  height: 70px;
-  margin-bottom: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
-  border-radius: 50%;
-}
-
-.empty-state-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #2d3748;
-  margin: 0 0 6px 0;
-}
-
-.empty-state-description {
-  font-size: 13px;
-  color: #718096;
-  margin: 0;
-  line-height: 1.5;
-}
-
-.spinner {
-  width: 30px;
-  height: 30px;
-  border: 3px solid #e2e8f0;
-  border-top-color: #0F3759;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 12px;
-}
-
-.card-body {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+/* Main Card */
+.main-card { 
+  background: white; 
+  border-radius: 16px; 
+  flex: 1;
+  display: flex; 
+  flex-direction: column; 
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); 
   overflow: hidden;
 }
 
-.main-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #0F3759 0%, #1a4d7a 100%);
-  flex-shrink: 0;
+.charts-card {
+  flex: 0.9;
 }
 
-.header-icon-badge {
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.15);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
+/* Header */
+.card-header { 
+  display: flex; 
+  align-items: center; 
+  gap: 12px; 
+  padding: 14px 18px; 
+  background: linear-gradient(135deg, #0F3759 0%, #1a4d7a 100%); 
+  flex-shrink: 0; 
 }
 
-.header-title {
-  font-size: 12px;
-  font-weight: 600;
-  color: white;
+.charts-header {
+  background: linear-gradient(135deg, #1a4d7a 0%, #2d5f8a 100%);
 }
 
-.header-subtitle {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.7);
-  margin-left: auto;
+.header-icon { 
+  width: 36px; 
+  height: 36px; 
+  border-radius: 10px; 
+  background: rgba(255, 255, 255, 0.15); 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  flex-shrink: 0; 
 }
 
-.top-row {
-  display: flex;
-  gap: 6px;
-  height: 36%;
-  min-height: 0;
+.header-title { 
+  flex: 1; 
+  font-size: 14px; 
+  font-weight: 600; 
+  color: white; 
 }
 
-.bottom-row {
-  display: flex;
-  gap: 6px;
-  flex: 1;
-  min-height: 0;
+/* Body */
+.card-body { 
+  flex: 1; 
+  padding: 12px 14px; 
+  display: flex; 
+  flex-direction: column; 
+  justify-content: center; 
+  gap: 8px; 
+  overflow: hidden; 
 }
 
-.section-card {
-  flex: 1;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
+.charts-body {
+  gap: 12px;
+  justify-content: flex-start;
 }
 
-.gei-card {
-  flex: 1.2;
+/* ================================ */
+/* INDICATOR ROW */
+/* ================================ */
+.indicator-row { 
+  display: flex; 
+  align-items: center; 
+  gap: 14px; 
+  padding: 12px 14px; 
+  background: #f8fafc; 
+  border-radius: 12px; 
 }
 
-.energy-card {
-  flex: 0.8;
+.indicator-icon-box { 
+  width: 40px; 
+  height: 40px; 
+  border-radius: 10px; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  flex-shrink: 0; 
 }
 
-.section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  background: linear-gradient(135deg, #0F3759 0%, #1a4d7a 100%);
-  flex-shrink: 0;
+.indicator-icon-box.irc { background: linear-gradient(135deg, #0F3759 0%, #1a4d7a 100%); }
+.indicator-icon-box.tarn { background: linear-gradient(135deg, #0F3759 0%, #1a4d7a 100%); }
+.indicator-icon-box.eco2 { background: linear-gradient(135deg, #0F3759 0%, #1a4d7a 100%); }
+.indicator-icon-box.eco2pc { background: linear-gradient(135deg, #0F3759 0%, #1a4d7a 100%); }
+.indicator-icon-box.cte { background: linear-gradient(135deg, #0F3759 0%, #1a4d7a 100%); }
+
+.indicator-info { 
+  flex: 1; 
+  min-width: 0; 
+  display: flex; 
+  flex-direction: column; 
+  gap: 5px; 
 }
 
-.section-header-left {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.indicator-name { 
+  font-size: 11px; 
+  font-weight: 600; 
+  color: #1e293b; 
+  line-height: 1.3; 
 }
 
-.section-icon-badge {
-  width: 22px;
-  height: 22px;
-  border-radius: 5px;
-  background: rgba(255, 255, 255, 0.15);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.indicator-bar { 
+  height: 5px; 
+  background: #e2e8f0; 
+  border-radius: 3px; 
+  overflow: hidden; 
+  max-width: 140px; 
 }
 
-.section-title {
-  font-size: 12px;
-  font-weight: 600;
-  color: white;
+.indicator-bar-fill { 
+  height: 100%; 
+  border-radius: 3px; 
+  transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); 
 }
 
-.section-content {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
+.indicator-bar-fill.irc { background: #0F3759; }
+.indicator-bar-fill.tarn { background: #0F3759; }
+.indicator-bar-fill.eco2 { background: #0F3759; }
+.indicator-bar-fill.eco2pc { background: #0F3759; }
+.indicator-bar-fill.cte { background: #0F3759; }
+
+.indicator-value { 
+  display: flex; 
+  flex-direction: column; 
+  align-items: flex-end; 
+  min-width: 70px; 
 }
 
-.irc-content {
-  background: #f8fafc;
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
+.value-amount { 
+  font-size: 18px; 
+  font-weight: 800; 
+  color: #0F3759; 
+  line-height: 1; 
 }
 
-.irc-main {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
+.value-amount.irc { color: #0F3759; }
+.value-amount.tarn { color: #0F3759; }
+.value-amount.eco2 { color: #0F3759; }
+.value-amount.eco2pc { color: #0F3759; }
+.value-amount.cte { color: #0F3759; }
 
-.irc-value-container {
-  text-align: center;
-}
-
-.irc-big-value {
-  font-size: 36px;
-  font-weight: 800;
-  color: #0F3759;
-  display: block;
-  line-height: 1;
-}
-
-.irc-label {
-  font-size: 11px;
-  color: #64748b;
-  text-transform: uppercase;
+.value-unit { 
+  font-size: 9px; 
+  color: #94a3b8; 
   font-weight: 500;
 }
 
-.irc-source {
-  font-size: 10px;
-  color: #94a3b8;
-}
-
-.recursos-content {
+/* ================================ */
+/* CHART SECTIONS */
+/* ================================ */
+.chart-section {
   background: #f8fafc;
-  padding: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  border-radius: 12px;
+  padding: 12px;
 }
 
-.recursos-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: white;
-  border-radius: 6px;
-  padding: 8px 10px;
-  border: 1px solid #f1f5f9;
-}
-
-.recursos-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  background: #f8fafc;
-  border: 1px solid #f1f5f9;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.recursos-data {
-  flex: 1;
-  min-width: 0;
-}
-
-.recursos-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 4px;
-}
-
-.recursos-label {
-  font-size: 12px;
+.chart-section-title {
+  font-size: 11px;
   font-weight: 600;
-  color: #0F3759;
-}
-
-.recursos-value {
-  font-size: 13px;
-  font-weight: 700;
-  color: #0F3759;
-}
-
-.recursos-bar {
-  height: 6px;
-  background: #e2e8f0;
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-.recursos-bar-fill {
-  height: 100%;
-  background: #0F3759;
-  border-radius: 3px;
-  transition: width 0.8s ease-out;
-}
-
-.recursos-bar-fill.cte {
-  background: #2563eb;
-}
-
-.recursos-source {
-  font-size: 9px;
-  color: #94a3b8;
-  text-align: center;
-  margin-top: auto;
-}
-
-.co2-content {
-  background: #f8fafc;
-  padding: 8px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-}
-
-.co2-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  width: 100%;
-  flex: 1;
-}
-
-.co2-card {
-  background: white;
-  border-radius: 8px;
-  padding: 8px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-}
-
-.co2-icon-bg {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #e8f4fc 0%, #d1e9f6 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.co2-value {
-  font-size: 20px;
-  font-weight: 700;
-  color: #0F3759;
-}
-
-.co2-unit {
-  font-size: 10px;
-  color: #64748b;
+  color: #475569;
   text-transform: uppercase;
-  font-weight: 500;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+  text-align: center;
 }
 
-.co2-source {
-  font-size: 9px;
-  color: #94a3b8;
-  margin-top: 4px;
-}
-
-.gei-content {
-  background: white;
-  padding: 10px 12px;
+.chart-row {
   display: flex;
   align-items: center;
   gap: 16px;
-  height: 100%;
 }
 
-.gei-donut-container {
+.charts-divider {
+  height: 1px;
+  background: #e2e8f0;
+  margin: 4px 0;
+}
+
+/* Donut Container */
+.donut-container {
   position: relative;
   flex-shrink: 0;
 }
 
-.gei-donut-center {
+.donut-center {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -835,183 +802,129 @@ onMounted(async () => {
   text-align: center;
 }
 
-.gei-center-text {
-  font-size: 16px;
+.donut-center-text {
+  font-size: 14px;
   font-weight: 700;
   color: #0F3759;
 }
 
-.gei-bars {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 8px;
-}
-
-.gei-bar-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.gei-bar-icon {
-  width: 14px;
-  height: 14px;
-  border-radius: 4px;
-  flex-shrink: 0;
-}
-
-.gei-bar-label {
-  width: 80px;
-  font-size: 12px;
-  color: #475569;
-  flex-shrink: 0;
-  font-weight: 500;
-}
-
-.gei-bar-track {
-  flex: 1;
-  height: 10px;
-  background: #f1f5f9;
-  border-radius: 5px;
-  overflow: hidden;
-}
-
-.gei-bar-fill {
-  height: 100%;
-  border-radius: 5px;
-  transition: width 0.8s ease-out;
-}
-
-.gei-bar-value {
-  width: 45px;
-  font-size: 13px;
-  font-weight: 700;
-  color: #0F3759;
-  text-align: right;
-}
-
-.energy-content {
-  background: white;
-  padding: 8px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  height: 100%;
-  overflow: hidden;
-}
-
-.energy-donut-wrapper {
-  position: relative;
-  flex-shrink: 0;
-}
-
-.energy-donut-center {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  text-align: center;
-}
-
-.energy-center-value {
+.donut-center-value {
   font-size: 14px;
   font-weight: 800;
-  color: #dc2626;
   display: block;
   line-height: 1;
 }
 
-.energy-center-label {
-  font-size: 9px;
+.donut-center-label {
+  font-size: 8px;
   color: #64748b;
   font-weight: 500;
 }
 
-.energy-bars-container {
-  width: 100%;
+/* Chart Legend */
+.chart-legend {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.energy-bar-row {
-  display: flex;
-  align-items: center;
   gap: 6px;
 }
 
-.energy-bar-dot {
+.legend-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legend-dot {
   width: 10px;
   height: 10px;
-  border-radius: 50%;
+  border-radius: 3px;
   flex-shrink: 0;
 }
 
-.energy-bar-dot.fossil {
-  background: #ef4444;
-}
+.legend-dot.fossil { background: #ef4444; }
+.legend-dot.renewable { background: #22c55e; }
 
-.energy-bar-dot.renewable {
-  background: #22c55e;
-}
-
-.energy-bar-label {
+.legend-label {
   flex: 1;
   font-size: 11px;
   color: #475569;
   font-weight: 500;
 }
 
-.energy-bar-value {
+.legend-value {
   font-size: 12px;
   font-weight: 700;
-  flex-shrink: 0;
+  min-width: 40px;
+  text-align: right;
 }
 
-.energy-bar-value.fossil { color: #dc2626; }
-.energy-bar-value.renewable { color: #16a34a; }
+.legend-value.fossil { color: #dc2626; }
+.legend-value.renewable { color: #16a34a; }
 
-.energy-bar-track-full {
-  width: 100%;
-  height: 6px;
+/* Energy Bars */
+.energy-legend {
+  gap: 4px;
+}
+
+.energy-bar-full {
+  height: 5px;
+  background: #fee2e2;
   border-radius: 3px;
   overflow: hidden;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
-.energy-bar-track-full.fossil { background: #fee2e2; }
-.energy-bar-track-full.renewable { background: #dcfce7; }
+.energy-bar-full.renewable-track {
+  background: #dcfce7;
+}
 
-.energy-bar-fill-full {
+.energy-bar-fill {
   height: 100%;
   border-radius: 3px;
   transition: width 0.8s ease-out;
 }
 
-.energy-bar-fill-full.fossil { background: #ef4444; }
-.energy-bar-fill-full.renewable { background: #22c55e; }
+.energy-bar-fill.fossil { background: #ef4444; }
+.energy-bar-fill.renewable { background: #22c55e; }
 
-.energy-source {
-  font-size: 8px;
-  color: #94a3b8;
-  margin-top: auto;
-  flex-shrink: 0;
+/* Footer */
+.card-footer { 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  gap: 6px; 
+  padding: 12px 18px; 
+  background: #f8fafc; 
+  border-top: 1px solid #f1f5f9; 
+  flex-shrink: 0; 
+  color: #94a3b8; 
 }
 
-.loading-state {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f8fafc;
+.card-footer span { 
+  font-size: 11px; 
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+/* Loading State */
+.loading-state { 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  flex: 1; 
+}
+
+@keyframes spin { 
+  to { transform: rotate(360deg); } 
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .cards-wrapper {
+    flex-direction: column;
+  }
+  
+  .charts-card {
+    flex: 1;
+  }
 }
 </style>
