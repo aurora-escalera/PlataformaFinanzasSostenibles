@@ -397,9 +397,9 @@ export const storageConfig = {
           order: 3
         },
         {
-          key: 'GEI_AGUT',
-          column: 'GEI_AGUT',
-          label: 'Emisiones GEI en el sector agricultura, ganadería y sus de la tierra.',
+          key: 'GEI_AG',
+          column: 'GEI_AG',
+          label: 'Emisiones GEI en el sector agricultura',
           color: '#0F3759',
           order: 4
         },

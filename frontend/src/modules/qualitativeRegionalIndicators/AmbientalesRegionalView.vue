@@ -352,7 +352,7 @@ const getCTEBarWidth = (value) => {
 
 const geiLegend = computed(() => [
   { key: 'energy', label: 'Energía', value: countryData.value?.GEI_EN || 0, color: geiColors.energy },
-  { key: 'agriculture', label: 'Agricultura', value: countryData.value?.GEI_AGUT || 0, color: geiColors.agriculture },
+  { key: 'agriculture', label: 'Agricultura', value: countryData.value?.GEI_AG || 0, color: geiColors.agriculture },
   { key: 'industrial', label: 'Industrial', value: countryData.value?.GEI_PI || 0, color: geiColors.industrial },
   { key: 'waste', label: 'Residuos', value: countryData.value?.GEI_RE || 0, color: geiColors.waste }
 ])
