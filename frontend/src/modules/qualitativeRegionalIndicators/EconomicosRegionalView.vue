@@ -610,12 +610,12 @@ onMounted(async () => {
   flex-shrink: 0; 
 }
 
-.indicator-icon-box.pib { background: linear-gradient(135deg, #0F3759 0%, #1a5a8a 100%); }
-.indicator-icon-box.pibpc { background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%); }
-.indicator-icon-box.it { background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%); }
-.indicator-icon-box.itpc { background: linear-gradient(135deg, #3B5A70 0%, #4a7090 100%); }
-.indicator-icon-box.pt { background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%); }
-.indicator-icon-box.ptpc { background: linear-gradient(135deg, #4E6D82 0%, #5d8098 100%); }
+.indicator-icon-box.pib { background: linear-gradient(135deg, #0F3759 0%, #1a4d7a 100%); }
+.indicator-icon-box.pibpc { background: linear-gradient(135deg, #0F3759 0%, #1a4d7a 100%); }
+.indicator-icon-box.it { background: linear-gradient(135deg, #0F3759 0%, #1a4d7a 100%); }
+.indicator-icon-box.itpc { background: linear-gradient(135deg, #0F3759 0%, #1a4d7a 100%); }
+.indicator-icon-box.pt { background: linear-gradient(135deg, #0F3759 0%, #1a4d7a 100%); }
+.indicator-icon-box.ptpc { background: linear-gradient(135deg, #0F3759 0%, #1a4d7a 100%); }
 
 .indicator-info { 
   flex: 1; 
@@ -646,12 +646,12 @@ onMounted(async () => {
   transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); 
 }
 
-.indicator-bar-fill.pib { background: linear-gradient(90deg, #0F3759 0%, #1a6d9a 100%); }
-.indicator-bar-fill.pibpc { background: linear-gradient(90deg, #bbf7d0 0%, #22c55e 100%); }
-.indicator-bar-fill.it { background: linear-gradient(90deg, #fecaca 0%, #ef4444 100%); }
-.indicator-bar-fill.itpc { background: linear-gradient(90deg, #cbd5e1 0%, #3B5A70 100%); }
-.indicator-bar-fill.pt { background: linear-gradient(90deg, #ddd6fe 0%, #8b5cf6 100%); }
-.indicator-bar-fill.ptpc { background: linear-gradient(90deg, #e2e8f0 0%, #4E6D82 100%); }
+.indicator-bar-fill.pib { background: #0F3759; }
+.indicator-bar-fill.pibpc { background: #0F3759; }
+.indicator-bar-fill.it { background: #0F3759; }
+.indicator-bar-fill.itpc { background: #0F3759; }
+.indicator-bar-fill.pt { background: #0F3759; }
+.indicator-bar-fill.ptpc { background: #0F3759; }
 
 .indicator-value { 
   display: flex; 
@@ -667,11 +667,11 @@ onMounted(async () => {
   line-height: 1; 
 }
 
-.value-amount.pibpc { color: #16a34a; }
-.value-amount.it { color: #dc2626; }
-.value-amount.itpc { color: #3B5A70; }
-.value-amount.pt { color: #7c3aed; }
-.value-amount.ptpc { color: #4E6D82; }
+.value-amount.pibpc { color: #0F3759; }
+.value-amount.it { color: #0F3759; }
+.value-amount.itpc { color: #0F3759; }
+.value-amount.pt { color: #0F3759; }
+.value-amount.ptpc { color: #0F3759; }
 
 .value-unit { 
   font-size: 10px; 
