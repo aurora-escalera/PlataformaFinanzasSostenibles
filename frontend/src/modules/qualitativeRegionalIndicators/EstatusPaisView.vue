@@ -1,7 +1,7 @@
 <!-- src/modules/qualitativeRegionalIndicators/EstatusPaisView.vue -->
-<!-- ✅ CORREGIDO: Usa fetchRegionalSheetNames y fetchRegionalData para datos regionales -->
+<!-- ✅ REDISEÑADO: Estilo limpio con dos cards -->
 <template>
-  <div class="estatus-pais-container">
+  <div class="estatus-container">
     <!-- ✅ LOADING STATE mientras carga años -->
     <div v-if="!yearsLoaded" class="global-empty-state">
       <div class="empty-state-content">
@@ -10,11 +10,11 @@
       </div>
     </div>
 
-    <!-- ✅ EMPTY STATE cuando no hay año seleccionado o año inválido -->
+    <!-- ✅ EMPTY STATE cuando no hay año o año inválido -->
     <div v-else-if="!selectedYear || !isYearValid" class="global-empty-state">
       <div class="empty-state-content">
         <div class="empty-state-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#718096" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#718096" stroke-width="1.5">
             <circle cx="12" cy="12" r="10"/>
             <line x1="2" y1="12" x2="22" y2="12"/>
             <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
@@ -32,182 +32,244 @@
       </div>
     </div>
 
-    <!-- ✅ CONTENIDO cuando hay año válido seleccionado -->
-    <div v-else class="card-body">
+    <!-- CONTENIDO -->
+    <div v-else class="cards-wrapper" :class="{ 'animate-in': isAnimating }">
       
-      <!-- ========================================== -->
-      <!-- FILA 1: Emisiones CO2 + GEI + Transparencia (30%) -->
-      <!-- ========================================== -->
-      <div class="row-top">
-        <!-- Card Emisiones CO2 -->
-        <div class="emission-card">
-          <div class="card-header-dark">
-            <div class="card-header-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <!-- ================================ -->
+      <!-- CARD 1: INDICADORES DE POSICIÓN -->
+      <!-- ================================ -->
+      <div class="main-card">
+        <!-- HEADER -->
+        <div class="card-header">
+          <div class="header-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+              <path d="M18 20V10M12 20V4M6 20v-6"/>
+            </svg>
+          </div>
+          <span class="header-title">Indicadores de Posición</span>
+        </div>
+
+        <!-- BODY -->
+        <div v-if="loading" class="card-body loading-state">
+          <div class="spinner"></div>
+        </div>
+        <div v-else class="card-body">
+          <!-- POS_ETCO2 -->
+          <div class="indicator-row">
+            <div class="indicator-icon-box">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
                 <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
               </svg>
             </div>
-            <span class="card-header-title">Emisiones CO₂</span>
+            <div class="indicator-info">
+              <span class="indicator-name">Posición Emisiones CO₂ (POS_ETCO2)</span>
+              <div class="indicator-bar">
+                <div class="indicator-bar-fill" :style="{ width: isAnimating ? getPositionBarWidth(countryData?.POS_ETCO2) + '%' : '0%' }"></div>
+              </div>
+            </div>
+            <div class="indicator-value">
+              <span class="value-amount">{{ countryData?.POS_ETCO2 || '—' }}</span>
+              <span class="value-unit">de 20 países</span>
+            </div>
           </div>
-          <div class="emission-body co2-bg">
-            <div v-if="loading" class="loading-mini"><div class="spinner-small"></div></div>
-            <template v-else>
-              <span class="emission-number blue">{{ countryData?.POS_ETCO2 || '—' }}</span>
-              <span class="emission-label">de 20 países</span>
-              <span class="emission-source">IEA, 2022</span>
-            </template>
-          </div>
-        </div>
 
-        <!-- Card Emisiones GEI -->
-        <div class="emission-card">
-          <div class="card-header-dark">
-            <div class="card-header-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <!-- POS_ETGEI -->
+          <div class="indicator-row">
+            <div class="indicator-icon-box">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
                 <path d="M12 2v8"/>
                 <circle cx="12" cy="14" r="4"/>
                 <path d="M12 18v4"/>
               </svg>
             </div>
-            <span class="card-header-title">Emisiones GEI</span>
+            <div class="indicator-info">
+              <span class="indicator-name">Posición Emisiones GEI (POS_ETGEI)</span>
+              <div class="indicator-bar">
+                <div class="indicator-bar-fill" :style="{ width: isAnimating ? getPositionBarWidth(countryData?.POS_ETGEI) + '%' : '0%' }"></div>
+              </div>
+            </div>
+            <div class="indicator-value">
+              <span class="value-amount">{{ countryData?.POS_ETGEI || '—' }}</span>
+              <span class="value-unit">de 20 países</span>
+            </div>
           </div>
-          <div class="emission-body gei-bg">
-            <div v-if="loading" class="loading-mini"><div class="spinner-small"></div></div>
-            <template v-else>
-              <span class="emission-number red">{{ countryData?.POS_ETGEI || '—' }}</span>
-              <span class="emission-label">de 20 países</span>
-              <span class="emission-source">ClimateWatch, 2021</span>
-            </template>
-          </div>
-        </div>
 
-        <!-- Card Transparencia -->
-        <div class="transparencia-card">
-          <div class="card-header-dark">
-            <div class="card-header-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <!-- TP - Índice Presupuestos Abiertos -->
+          <div class="indicator-row">
+            <div class="indicator-icon-box">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
                 <path d="M3 3v18h18"/>
                 <path d="M18 17V9"/>
                 <path d="M13 17V5"/>
                 <path d="M8 17v-3"/>
               </svg>
             </div>
-            <span class="card-header-title">Índice Presupuestos Abiertos</span>
+            <div class="indicator-info">
+              <span class="indicator-name">Índice Presupuestos Abiertos (TP)</span>
+              <div class="indicator-bar">
+                <div class="indicator-bar-fill" :style="{ width: isAnimating ? getPositionBarWidth(countryData?.TP) + '%' : '0%' }"></div>
+              </div>
+            </div>
+            <div class="indicator-value">
+              <span class="value-amount">{{ countryData?.TP || '—' }}</span>
+              <span class="value-unit">posición</span>
+            </div>
           </div>
-          <div class="transparencia-body">
-            <div v-if="loading" class="loading-mini"><div class="spinner-small"></div></div>
-            <template v-else>
-              <span class="transparencia-number">{{ countryData?.TP || '—' }}</span>
-              <span class="transparencia-label">Posición Regional</span>
-            </template>
-          </div>
-        </div>
-      </div>
 
-      <!-- ========================================== -->
-      <!-- FILA 2: NDC Completo (40%) -->
-      <!-- ========================================== -->
-      <div class="row-middle">
-        <div class="ndc-card">
-          <div class="card-header-dark">
-            <div class="card-header-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <!-- LEGCC - Ley de Cambio Climático -->
+          <div class="indicator-row">
+            <div class="indicator-icon-box">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                 <polyline points="14 2 14 8 20 8"/>
-                <line x1="16" y1="13" x2="8" y2="13"/>
-                <line x1="16" y1="17" x2="8" y2="17"/>
               </svg>
             </div>
-            <span class="card-header-title">Contribuciones Nacionalmente Determinadas (NDC)</span>
-            <span class="ndc-header-badge">{{ countryData?.NDC || '1a NDC sometida en 2016; NDC actualizada en 2020' }}</span>
-          </div>
-          <div class="ndc-body">
-            <div v-if="loading" class="loading-state">
-              <div class="spinner-small"></div>
-            </div>
-            <template v-else>
-              <!-- Timeline Section -->
-              <div class="ndc-timeline-section">
-                <div class="timeline-point">
-                  <span class="timeline-year">2016</span>
-                  <span class="timeline-event">1ra NDC</span>
-                </div>
-                <div class="timeline-line"></div>
-                <div class="timeline-point">
-                  <span class="timeline-year">2022</span>
-                  <span class="timeline-event">Actualizada</span>
-                </div>
+            <div class="indicator-info">
+              <span class="indicator-name">Ley de Cambio Climático (LEGCC)</span>
+              <div class="indicator-status">
+                <span class="status-badge" :class="countryData?.LEGCC === 'SI' ? 'active' : 'inactive'">
+                  {{ countryData?.LEGCC || '—' }}
+                </span>
               </div>
-              
-              <!-- Details Section -->
-              <div class="ndc-details-section">
-                <div class="ndc-detail-item">
-                  <span class="detail-label">TIPOS DE METAS</span>
-                  <div class="detail-badges">
-                    <span class="badge orange">Condicional</span>
-                    <span class="badge blue">Incondicional</span>
-                  </div>
-                </div>
-                <div class="ndc-detail-item">
-                  <span class="detail-label">METAS DE ADAPTACIÓN</span>
-                  <span class="detail-value green">✓ {{ countryData?.METAS_ADP || 'SI' }}</span>
-                </div>
-                <div class="ndc-detail-item">
-                  <span class="detail-label">COSTO ESTIMADO</span>
-                  <div class="costo-container">
-                    <span class="costo-prefix">USD</span>
-                    <span class="costo-value">{{ formatCurrency(countryData?.C_NDC) }}</span>
-                  </div>
-                </div>
-              </div>
-            </template>
-          </div>
-        </div>
-      </div>
-
-      <!-- ========================================== -->
-      <!-- FILA 3: Marco Institucional (30%) -->
-      <!-- ========================================== -->
-      <div class="row-bottom">
-        <!-- Card Ley de Cambio Climático -->
-        <div class="marco-card">
-          <div class="card-header-dark">
-            <div class="card-header-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="m16 12-4 4-4-4"/>
-                <path d="M12 8v8"/>
-              </svg>
             </div>
-            <span class="card-header-title">Ley de Cambio Climático</span>
+            <div class="indicator-value status-value">
+              <span class="value-icon">{{ countryData?.LEGCC === 'SI' ? '✓' : '✗' }}</span>
+            </div>
           </div>
-          <div class="marco-body">
-            <div v-if="loading" class="loading-mini"><div class="spinner-small"></div></div>
-            <template v-else>
-              <div class="marco-icon-large">⚖️</div>
-              <span class="marco-value">{{ countryData?.LEGCC || 'SI' }}</span>
-            </template>
-          </div>
-        </div>
 
-        <!-- Card Arreglos Institucionales -->
-        <div class="marco-card">
-          <div class="card-header-dark">
-            <div class="card-header-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <!-- AICC - Arreglos Institucionales -->
+          <div class="indicator-row">
+            <div class="indicator-icon-box">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
                 <rect x="4" y="4" width="16" height="16" rx="2" ry="2"/>
                 <rect x="9" y="9" width="6" height="6"/>
               </svg>
             </div>
-            <span class="card-header-title">Arreglos Institucionales para Cambio Climático</span>
+            <div class="indicator-info">
+              <span class="indicator-name">Arreglos Institucionales CC (AICC)</span>
+              <div class="indicator-status">
+                <span class="status-badge" :class="countryData?.AICC === 'SI' ? 'active' : 'inactive'">
+                  {{ countryData?.AICC || '—' }}
+                </span>
+              </div>
+            </div>
+            <div class="indicator-value status-value">
+              <span class="value-icon">{{ countryData?.AICC === 'SI' ? '✓' : '✗' }}</span>
+            </div>
           </div>
-          <div class="marco-body">
-            <div v-if="loading" class="loading-mini"><div class="spinner-small"></div></div>
-            <template v-else>
-              <div class="marco-icon-large">🏛️</div>
-              <span class="marco-value">{{ countryData?.AICC || 'SI' }}</span>
-            </template>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="card-footer">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="16" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+          <span>Fuentes: ClimateWatch, IEA, IBP {{ selectedYear }}</span>
+        </div>
+      </div>
+
+      <!-- ================================ -->
+      <!-- CARD 2: NDC (Contribuciones Nacionalmente Determinadas) -->
+      <!-- ================================ -->
+      <div class="main-card ndc-card">
+        <!-- HEADER -->
+        <div class="card-header ndc-header">
+          <div class="header-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
           </div>
+          <span class="header-title">Contribuciones Nacionalmente Determinadas (NDC)</span>
+        </div>
+
+        <!-- BODY -->
+        <div v-if="loading" class="card-body loading-state">
+          <div class="spinner"></div>
+        </div>
+        <div v-else class="card-body ndc-body">
+          
+          <!-- NDC Status -->
+          <div class="ndc-status-section">
+            <div class="ndc-status-label">Estado NDC</div>
+            <div class="ndc-status-text">{{ countryData?.NDC || '—' }}</div>
+          </div>
+
+          <!-- NDC Indicators -->
+          <div class="ndc-indicators">
+            <!-- TIPO_METAS -->
+            <div class="indicator-row">
+              <div class="indicator-icon-box">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                  <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+              </div>
+              <div class="indicator-info">
+                <span class="indicator-name">Tipos de Metas (TIPO_METAS)</span>
+                <div class="metas-badges">
+                  <span v-for="meta in parseTipoMetas(countryData?.TIPO_METAS)" :key="meta" class="meta-badge">
+                    {{ meta }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- METAS_ADP -->
+            <div class="indicator-row">
+              <div class="indicator-icon-box">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+              </div>
+              <div class="indicator-info">
+                <span class="indicator-name">Metas de Adaptación (METAS_ADP)</span>
+                <div class="indicator-status">
+                  <span class="status-badge" :class="countryData?.METAS_ADP === 'SI' ? 'active' : 'inactive'">
+                    {{ countryData?.METAS_ADP || '—' }}
+                  </span>
+                </div>
+              </div>
+              <div class="indicator-value status-value">
+                <span class="value-icon">{{ countryData?.METAS_ADP === 'SI' ? '✓' : '✗' }}</span>
+              </div>
+            </div>
+
+            <!-- C_NDC - Costo Estimado -->
+            <div class="indicator-row">
+              <div class="indicator-icon-box">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                  <line x1="12" y1="1" x2="12" y2="23"/>
+                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                </svg>
+              </div>
+              <div class="indicator-info">
+                <span class="indicator-name">Costo Estimado NDC (C_NDC)</span>
+                <div class="indicator-bar">
+                  <div class="indicator-bar-fill" :style="{ width: isAnimating ? '70%' : '0%' }"></div>
+                </div>
+              </div>
+              <div class="indicator-value">
+                <span class="value-amount">${{ formatCurrency(countryData?.C_NDC) }}</span>
+                <span class="value-unit">USD</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- FOOTER -->
+        <div class="card-footer">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="16" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+          <span>{{ countryData?.País || 'México' }} {{ selectedYear }} | Fuente: LGCC, CICC</span>
         </div>
       </div>
 
@@ -216,611 +278,491 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, computed } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useStorageData } from '@/dataConection/useStorageData'
 
 const props = defineProps({
-  selectedEntity: {
-    type: String,
-    default: null
-  },
-  selectedYear: {
-    type: [String, Number],
-    default: null
-  }
+  selectedYear: { type: [String, Number], default: null },
+  selectedEntity: { type: String, default: null }
 })
 
 const emit = defineEmits(['back', 'years-loaded'])
 
-// ✅ CORRECCIÓN: Usar fetchRegionalSheetNames y fetchRegionalData
-const { fetchRegionalSheetNames, fetchRegionalData } = useStorageData()
-
+const { fetchRegionalData, fetchRegionalSheetNames } = useStorageData()
 const rawData = ref([])
 const loading = ref(false)
 const error = ref(null)
+const isAnimating = ref(false)
 
-// Años válidos del sheet
+// Estado de años válidos
 const validYears = ref([])
 const yearsLoaded = ref(false)
 
-// Computed: Obtener datos del país
 const countryData = computed(() => {
   if (rawData.value.length === 0) return null
   return rawData.value[0]
 })
 
-// Verificar si el año seleccionado es válido
+// Computed para validar año
 const isYearValid = computed(() => {
   if (!yearsLoaded.value) return false
   if (!props.selectedYear) return false
-  
   const yearStr = String(props.selectedYear)
-  const isValid = validYears.value.some(y => String(y) === yearStr)
-  
-  console.log('🔍 [EstatusPaisView] Validando año:', {
-    selectedYear: props.selectedYear,
-    yearStr,
-    validYears: validYears.value,
-    isValid
-  })
-  
-  return isValid
+  return validYears.value.some(y => String(y) === yearStr)
 })
 
-// Formatear número grande
+// ============================================
+// FUNCIONES DE FORMATO Y CÁLCULO
+// ============================================
+
 const formatCurrency = (value) => {
   if (!value || value === '—') return '—'
   const num = parseFloat(String(value).replace(/[^0-9.-]/g, ''))
   if (isNaN(num)) return value
+  // Convertir a billones si es muy grande
+  if (num >= 1e9) return (num / 1e9).toFixed(2) + 'B'
+  if (num >= 1e6) return (num / 1e6).toFixed(2) + 'M'
   return new Intl.NumberFormat('es-MX').format(num)
 }
 
-// ✅ CORRECCIÓN: Cargar años válidos usando fetchRegionalSheetNames
+const getPositionBarWidth = (value) => {
+  const num = Number(value) || 0
+  if (num === 0) return 0
+  // Posición de 20 países, invertido (1 = mejor = barra más corta)
+  return Math.min((num / 20) * 100, 100)
+}
+
+const parseTipoMetas = (value) => {
+  if (!value) return ['—']
+  // Separar por "/" o "," 
+  const metas = String(value).split(/[\/,]/).map(m => m.trim()).filter(m => m)
+  return metas.length > 0 ? metas : ['—']
+}
+
+const triggerAnimation = () => {
+  isAnimating.value = false
+  nextTick(() => {
+    setTimeout(() => {
+      isAnimating.value = true
+    }, 150)
+  })
+}
+
+// ============================================
+// CARGA DE DATOS
+// ============================================
+
 const loadValidYears = async () => {
   try {
-    console.log('📅 [EstatusPaisView] Cargando años válidos del sheet estatusDelPais...')
-    
-    // ✅ Usar fetchRegionalSheetNames en lugar de fetchSheetNames
+    console.log('📅 [EstatusPaisView] Cargando años válidos...')
     const sheetNames = await fetchRegionalSheetNames('estatusDelPais')
-    
-    console.log('📅 [EstatusPaisView] Sheets encontrados:', sheetNames)
-    
     const years = sheetNames
       .filter(name => /^\d{4}$/.test(name))
-      .sort((a, b) => b - a)
+      .sort((a, b) => Number(b) - Number(a))
     
     validYears.value = years
     yearsLoaded.value = true
     
     console.log('📅 [EstatusPaisView] Años válidos:', years)
     
-    // ✅ IMPORTANTE: Emitir los años al padre para actualizar el filtro
     if (years.length > 0) {
       console.log('📤 [EstatusPaisView] Emitiendo años al padre:', years)
       emit('years-loaded', years)
     }
     
     return years
-    
   } catch (err) {
-    console.error('❌ [EstatusPaisView] Error obteniendo años válidos:', err)
+    console.error('❌ [EstatusPaisView] Error cargando años:', err)
     yearsLoaded.value = true
     return []
   }
 }
 
-// ✅ CORRECCIÓN: Cargar datos usando fetchRegionalData
 const loadData = async () => {
-  // Validación: No cargar si no hay año o si los años no se han cargado
-  if (!props.selectedYear) {
-    console.log('⏸️ [EstatusPaisView] Sin año seleccionado')
-    return
-  }
-  
-  // Validación: Esperar a que los años válidos se carguen
-  if (!yearsLoaded.value) {
-    console.log('⏸️ [EstatusPaisView] Esperando carga de años válidos...')
-    return
-  }
+  if (!props.selectedYear) return
+  if (!yearsLoaded.value) return
   
   const yearStr = String(props.selectedYear)
   
-  // Validación: Verificar que el año existe en el sheet
   if (!validYears.value.some(y => String(y) === yearStr)) {
-    console.warn(`⚠️ [EstatusPaisView] Año ${yearStr} NO existe. Años válidos:`, validYears.value)
+    console.warn(`⚠️ [EstatusPaisView] Año ${yearStr} no disponible`)
     return
   }
   
   loading.value = true
-  error.value = null
+  isAnimating.value = false
   
   try {
-    console.log('📊 [EstatusPaisView] Cargando datos para año:', yearStr)
-    
-    // ✅ Usar fetchRegionalData en lugar de fetchData
+    console.log(`📊 [EstatusPaisView] Cargando datos para año: ${yearStr}`)
     const data = await fetchRegionalData('estatusDelPais', yearStr)
-    
-    console.log('📊 [EstatusPaisView] Datos obtenidos:', data?.length, 'filas')
-    
     if (data && data.length > 0) {
       rawData.value = data
-      console.log('📊 [EstatusPaisView] Columnas:', Object.keys(data[0]))
-      console.log('📊 [EstatusPaisView] Primer registro:', data[0])
-    } else {
-      console.warn('⚠️ [EstatusPaisView] No se obtuvieron datos')
-      rawData.value = []
+      console.log(`✅ [EstatusPaisView] Datos cargados: ${data.length} registros`)
+      triggerAnimation()
     }
-    
-    console.log('✅ [EstatusPaisView] Datos cargados correctamente')
   } catch (err) {
-    console.error('❌ [EstatusPaisView] Error cargando datos:', err)
+    console.error('❌ [EstatusPaisView] Error:', err)
     error.value = err.message
   } finally {
     loading.value = false
   }
 }
 
-// Watch para cambios de año
-watch(() => props.selectedYear, (newYear, oldYear) => {
-  console.log('👀 [EstatusPaisView] Año cambió:', oldYear, '→', newYear)
-  
+// ============================================
+// WATCHERS
+// ============================================
+
+watch(() => props.selectedYear, async (newYear) => {
   if (newYear && yearsLoaded.value) {
-    loadData()
+    rawData.value = []
+    await loadData()
   }
-})
+}, { immediate: false })
 
-// Watch para cuando los años se cargan
 watch(yearsLoaded, (loaded) => {
-  if (loaded && props.selectedYear) {
-    console.log('📅 [EstatusPaisView] Años cargados, intentando cargar datos...')
+  if (loaded && props.selectedYear && isYearValid.value) {
     loadData()
   }
 })
 
-// Lifecycle
+// ============================================
+// LIFECYCLE
+// ============================================
+
 onMounted(async () => {
   console.log('🚀 [EstatusPaisView] Montado con año:', props.selectedYear)
-  
-  // PRIMERO cargar años válidos (y emitirlos al padre)
   await loadValidYears()
-  
-  // LUEGO intentar cargar datos si el año es válido
   if (props.selectedYear && isYearValid.value) {
     await loadData()
-  } else if (props.selectedYear) {
-    console.warn(`⚠️ [EstatusPaisView] Año inicial ${props.selectedYear} no es válido`)
-    // Si hay años válidos, el filtro se actualizará automáticamente
   }
 })
 </script>
 
 <style scoped>
-.estatus-pais-container {
-  background-color: white;
-  border-radius: 15px;
+.estatus-container {
+  background-color: #f8fafc;
+  border-radius: 12px;
   height: 100%;
   width: 100%;
-  padding: 15px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
-/* ========== EMPTY STATE ========== */
-.global-empty-state {
+/* Empty State */
+.global-empty-state { 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  height: 100%; 
+  background: white; 
+  border-radius: 16px; 
+}
+
+.empty-state-content { 
+  display: flex; 
+  flex-direction: column; 
+  align-items: center; 
+  text-align: center; 
+  max-width: 280px; 
+}
+
+.empty-state-icon { 
+  width: 64px; 
+  height: 64px; 
+  margin-bottom: 12px; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%); 
+  border-radius: 50%; 
+}
+
+.empty-state-title { 
+  font-size: 15px; 
+  font-weight: 600; 
+  color: #2d3748; 
+  margin: 0 0 6px 0; 
+}
+
+.empty-state-description { 
+  font-size: 12px; 
+  color: #718096; 
+  margin: 0; 
+  line-height: 1.4; 
+}
+
+.spinner { 
+  width: 30px; 
+  height: 30px; 
+  border: 3px solid #e2e8f0; 
+  border-top-color: #0F3759; 
+  border-radius: 50%; 
+  animation: spin 1s linear infinite; 
+  margin-bottom: 12px; 
+}
+
+/* Cards Wrapper */
+.cards-wrapper {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  gap: 16px;
   height: 100%;
-  width: 100%;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.empty-state-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  max-width: 400px;
-  padding: 40px;
+.cards-wrapper.animate-in {
+  opacity: 1;
+  transform: translateY(0);
 }
 
-.empty-state-icon {
-  width: 120px;
-  height: 120px;
-  margin-bottom: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
-  border-radius: 50%;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-}
-
-.empty-state-icon svg {
-  opacity: 0.7;
-}
-
-.empty-state-title {
-  font-size: 22px;
-  font-weight: 600;
-  color: #2d3748;
-  margin: 0 0 12px 0;
-}
-
-.empty-state-description {
-  font-size: 14px;
-  color: #718096;
-  margin: 0;
-  line-height: 1.6;
-}
-
-/* ========== SPINNER ========== */
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid #e2e8f0;
-  border-top: 3px solid #1e3a5f;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 16px;
-}
-
-/* ========== CARD BODY ========== */
-.card-body {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+/* Main Card */
+.main-card { 
+  background: white; 
+  border-radius: 16px; 
+  flex: 1;
+  display: flex; 
+  flex-direction: column; 
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); 
   overflow: hidden;
 }
 
-/* ========== HEADER OSCURO (común) ========== */
-.card-header-dark {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
-  background: linear-gradient(135deg, #1e3a5f 0%, #153d5e 100%);
-  border-bottom: 1px solid #3b6b8a;
-  flex-shrink: 0;
+/* Header */
+.card-header { 
+  display: flex; 
+  align-items: center; 
+  gap: 12px; 
+  padding: 14px 18px; 
+  background: linear-gradient(135deg, #0F3759 0%, #1a4d7a 100%); 
+  flex-shrink: 0; 
 }
 
-.card-header-icon {
-  width: 18px;
-  height: 18px;
-  min-width: 18px;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.15);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
+.ndc-header {
+  background: linear-gradient(135deg, #1a4d7a 0%, #2d5f8a 100%);
 }
 
-.card-header-icon svg {
-  width: 12px;
-  height: 12px;
+.header-icon { 
+  width: 36px; 
+  height: 36px; 
+  border-radius: 10px; 
+  background: rgba(255, 255, 255, 0.15); 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  flex-shrink: 0; 
 }
 
-.card-header-title {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 10px;
-  font-weight: 500;
-  color: white;
-  line-height: 1.1;
+.header-title { 
+  flex: 1; 
+  font-size: 14px; 
+  font-weight: 600; 
+  color: white; 
 }
 
-/* ========== FILA 1: EMISIONES + TRANSPARENCIA (30%) ========== */
-.row-top {
-  display: flex;
-  gap: 10px;
-  height: 30%;
-  min-height: 0;
-}
-
-.emission-card,
-.transparencia-card {
-  flex: 1;
-  border-radius: 12px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e2e8f0;
-}
-
-.emission-body {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 8px;
-  gap: 2px;
-}
-
-.emission-body.co2-bg {
-  background: #eff6ff;
-}
-
-.emission-body.gei-bg {
-  background: #fef2f2;
-}
-
-.emission-number {
-  font-size: 36px;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.emission-number.blue {
-  color: #2563eb;
-}
-
-.emission-number.red {
-  color: #dc2626;
-}
-
-.emission-label {
-  font-size: 12px;
-  font-weight: 500;
-  color: #475569;
-}
-
-.emission-source {
-  font-size: 10px;
-  font-style: italic;
-  color: #64748b;
-}
-
-.transparencia-body {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 8px;
-  gap: 2px;
-  background: #eff6ff;
-}
-
-.transparencia-number {
-  font-size: 36px;
-  font-weight: 700;
-  color: #2563eb;
-  line-height: 1;
-}
-
-.transparencia-label {
-  font-size: 12px;
-  font-weight: 500;
-  color: #3b82f6;
-}
-
-/* ========== FILA 2: NDC (40%) ========== */
-.row-middle {
-  height: 40%;
-  min-height: 0;
-}
-
-.ndc-card {
-  height: 100%;
-  border-radius: 12px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e2e8f0;
-}
-
-.ndc-card .card-header-dark {
-  flex-wrap: wrap;
-}
-
-.ndc-header-badge {
-  margin-left: auto;
-  background: #dc2626;
-  color: white;
-  padding: 3px 8px;
-  border-radius: 4px;
-  font-size: 9px;
-  font-weight: 600;
+/* Body */
+.card-body { 
+  flex: 1; 
+  padding: 12px 14px; 
+  display: flex; 
+  flex-direction: column; 
+  justify-content: center; 
+  gap: 8px; 
+  overflow: hidden; 
 }
 
 .ndc-body {
-  flex: 1;
-  display: flex;
-  padding: 10px 15px;
-  gap: 15px;
-  background: #ffffff;
-  align-items: center;
-  min-height: 0;
+  gap: 12px;
+  justify-content: flex-start;
 }
 
-.ndc-timeline-section {
-  display: flex;
-  align-items: center;
-  flex: 0.8;
+/* ================================ */
+/* INDICATOR ROW */
+/* ================================ */
+.indicator-row { 
+  display: flex; 
+  align-items: center; 
+  gap: 14px; 
+  padding: 12px 14px; 
+  background: #f8fafc; 
+  border-radius: 12px; 
 }
 
-.timeline-point {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  background: #ffffff;
-  padding: 8px 16px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  border: 2px solid #16a34a;
+.indicator-icon-box { 
+  width: 40px; 
+  height: 40px; 
+  border-radius: 10px; 
+  background: linear-gradient(135deg, #0F3759 0%, #1a4d7a 100%);
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  flex-shrink: 0; 
 }
 
-.timeline-year {
-  font-size: 20px;
-  font-weight: 700;
-  color: #16a34a;
+.indicator-info { 
+  flex: 1; 
+  min-width: 0; 
+  display: flex; 
+  flex-direction: column; 
+  gap: 5px; 
 }
 
-.timeline-event {
-  font-size: 9px;
-  color: #64748b;
+.indicator-name { 
+  font-size: 11px; 
+  font-weight: 600; 
+  color: #1e293b; 
+  line-height: 1.3; 
+}
+
+.indicator-bar { 
+  height: 5px; 
+  background: #e2e8f0; 
+  border-radius: 3px; 
+  overflow: hidden; 
+  max-width: 140px; 
+}
+
+.indicator-bar-fill { 
+  height: 100%; 
+  border-radius: 3px; 
+  background: #0F3759;
+  transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); 
+}
+
+.indicator-value { 
+  display: flex; 
+  flex-direction: column; 
+  align-items: flex-end; 
+  min-width: 70px; 
+}
+
+.value-amount { 
+  font-size: 20px; 
+  font-weight: 800; 
+  color: #0F3759; 
+  line-height: 1; 
+}
+
+.value-unit { 
+  font-size: 9px; 
+  color: #94a3b8; 
   font-weight: 500;
 }
 
-.timeline-line {
-  flex: 1;
-  height: 3px;
-  background: linear-gradient(90deg, #16a34a, #4ade80);
-  margin: 0 8px;
-  border-radius: 2px;
-}
-
-.ndc-details-section {
+/* Status Badge */
+.indicator-status {
   display: flex;
-  gap: 10px;
-  flex: 1.2;
-}
-
-.ndc-detail-item {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  background: white;
-  padding: 8px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
-  gap: 6px;
 }
 
-.detail-label {
-  font-size: 9px;
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.status-badge.active {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.status-badge.inactive {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.status-value {
+  min-width: 40px;
+}
+
+.value-icon {
+  font-size: 20px;
+  color: #16a34a;
+}
+
+/* ================================ */
+/* NDC SECTION */
+/* ================================ */
+.ndc-status-section {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.ndc-status-label {
+  font-size: 10px;
   font-weight: 600;
   color: #64748b;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
-  text-align: center;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
 }
 
-.detail-badges {
+.ndc-status-text {
+  font-size: 12px;
+  font-weight: 500;
+  color: #1e293b;
+  line-height: 1.4;
+}
+
+.ndc-indicators {
   display: flex;
-  gap: 4px;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.badge {
-  padding: 3px 8px;
-  border-radius: 12px;
-  font-size: 9px;
+/* Metas Badges */
+.metas-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.meta-badge {
+  padding: 4px 10px;
+  border-radius: 16px;
+  font-size: 10px;
   font-weight: 600;
-}
-
-.badge.orange {
-  background: #dc2626;
+  background: #0F3759;
   color: white;
 }
 
-.badge.blue {
-  background: white;
-  color: #2563eb;
-  border: 1.5px solid #2563eb;
+/* Footer */
+.card-footer { 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  gap: 6px; 
+  padding: 12px 18px; 
+  background: #f8fafc; 
+  border-top: 1px solid #f1f5f9; 
+  flex-shrink: 0; 
+  color: #94a3b8; 
 }
 
-.detail-value {
-  font-size: 14px;
-  font-weight: 700;
-  color: #1e293b;
+.card-footer span { 
+  font-size: 11px; 
 }
 
-.detail-value.green {
-  color: #16a34a;
+/* Loading State */
+.loading-state { 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  flex: 1; 
 }
 
-.costo-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+@keyframes spin { 
+  to { transform: rotate(360deg); } 
 }
 
-.costo-prefix {
-  font-size: 11px;
-  font-weight: 600;
-  color: #64748b;
-}
-
-.costo-value {
-  font-size: 14px;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-/* ========== FILA 3: MARCO INSTITUCIONAL (30%) ========== */
-.row-bottom {
-  display: flex;
-  gap: 10px;
-  height: 30%;
-  min-height: 0;
-}
-
-.marco-card {
-  flex: 1;
-  border-radius: 12px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e2e8f0;
-}
-
-.marco-body {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 8px;
-  gap: 4px;
-  background: #f0fdf4;
-}
-
-.marco-icon-large {
-  font-size: 28px;
-}
-
-.marco-value {
-  font-size: 20px;
-  font-weight: 700;
-  color: #16a34a;
-}
-
-/* ========== LOADING STATES ========== */
-.loading-state {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  width: 100%;
-}
-
-.loading-mini {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  width: 100%;
-}
-
-.spinner-small {
-  width: 20px;
-  height: 20px;
-  border: 2px solid #e2e8f0;
-  border-top: 2px solid #1e3a5f;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+/* Responsive */
+@media (max-width: 900px) {
+  .cards-wrapper {
+    flex-direction: column;
+  }
 }
 </style>
