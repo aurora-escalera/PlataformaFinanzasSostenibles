@@ -404,7 +404,8 @@ const {
   handleStateHover,
   handleStateLeave,
   resetSelection,
-  initializeData
+  initializeData,
+  reloadDataForYear
 } = props.mapsComposable || useMaps()
 
 const {
@@ -774,13 +775,14 @@ const handleEntityChange = async (entity) => {
       internationalYears.value = [...intYears]
       availableYears.value = intYears
       
-      if (selectedYear.value === null) {
+    if (selectedYear.value === null) {
         console.log('📅 [Internacional] Manteniendo "Todos los años" (null)')
       } else if (!intYears.includes(selectedYear.value)) {
         const firstYear = intYears[0]
         selectedYear.value = firstYear
         setActiveYear(firstYear)
-      }
+        await reloadDataForYear(firstYear)
+    }
       
       filterBarKey.value++
       await nextTick()
@@ -828,9 +830,11 @@ const handleYearChange = async (year) => {
   
   if (year) {
     setActiveYear(year)
+    await reloadDataForYear(year)
   }
   
   await nextTick()
+
   
   if (!isRetractableExpanded.value) {
     if (showStackedArea.value) {
@@ -1073,6 +1077,7 @@ const handlePanelClosed = async () => {
     const preferredYear = initialYears.value.includes('2024') ? '2024' : initialYears.value[0]
     selectedYear.value = preferredYear
     setActiveYear(preferredYear)
+    await reloadDataForYear(preferredYear)
   }
   
   filterBarKey.value++
@@ -1105,10 +1110,11 @@ const handleOverlayClick = async () => {
   
   restoreInitialYears()
   
-  if (availableYears.value.length > 0) {
+if (availableYears.value.length > 0) {
     const preferredYear = availableYears.value.includes('2024') ? '2024' : availableYears.value[0]
     selectedYear.value = preferredYear
     setActiveYear(preferredYear)
+    await reloadDataForYear(preferredYear)
   }
   
   resetSelection()

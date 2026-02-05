@@ -123,8 +123,7 @@ const parseNumericValue = (value) => {
   
   let stringValue = String(value).trim()
   stringValue = stringValue.replace(/\s/g, '')
-  stringValue = stringValue.replace(/\./g, '')
-  stringValue = stringValue.replace(/,/g, '.')
+  stringValue = stringValue.replace(/,/g, '')
   
   const result = parseFloat(stringValue)
   return isNaN(result) ? 0 : result

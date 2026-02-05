@@ -289,23 +289,7 @@ const parseNumericValue = (value) => {
   
   let stringValue = String(value).trim()
   stringValue = stringValue.replace(/\s/g, '')
-  
-  const hasCommaAndDot = stringValue.includes(',') && stringValue.includes('.')
-  
-  if (hasCommaAndDot) {
-    stringValue = stringValue.replace(/\./g, '')
-    stringValue = stringValue.replace(/,/g, '.')
-  } else if (stringValue.includes(',')) {
-    stringValue = stringValue.replace(/,/g, '.')
-  } else if (stringValue.includes('.')) {
-    const parts = stringValue.split('.')
-    const multipleDots = parts.length > 2
-    const lastPartHasThreeDigits = parts[parts.length - 1].length === 3
-    
-    if (multipleDots || (parts.length === 2 && lastPartHasThreeDigits)) {
-      stringValue = stringValue.replace(/\./g, '')
-    }
-  }
+  stringValue = stringValue.replace(/,/g, '')
   
   const result = parseFloat(stringValue)
   return isNaN(result) ? 0 : result

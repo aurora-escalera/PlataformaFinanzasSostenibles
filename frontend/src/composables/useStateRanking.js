@@ -68,10 +68,7 @@ export function useStateRanking() {
           // ✅ IMPORTANTE: NO eliminar puntos si son decimales
           // Solo eliminar puntos si hay comas (formato europeo con miles)
           // Ejemplo: "1.234,56" → "1234.56"
-          if (cleanValue.includes(',')) {
-            // Formato europeo: punto para miles, coma para decimales
-            cleanValue = cleanValue.replace(/\./g, '').replace(',', '.')
-          }
+          cleanValue = cleanValue.replace(/,/g, '')
           // Si solo hay punto, asumimos que es decimal (formato US)
           // Ejemplo: "2.5" → "2.5" (no tocar)
         }

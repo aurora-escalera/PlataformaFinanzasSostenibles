@@ -119,11 +119,7 @@ export const useMaps = () => {
           if (cleanValue === '' || cleanValue === '""' || cleanValue === '"""') {
             cleanValue = '0'
           } else {
-            // Manejar formato europeo vs americano
-            if (cleanValue.includes(',')) {
-              // Formato europeo: punto para miles, coma para decimales
-              cleanValue = cleanValue.replace(/\./g, '').replace(',', '.')
-            }
+          cleanValue = cleanValue.replace(/,/g, '')
           }
         }
         

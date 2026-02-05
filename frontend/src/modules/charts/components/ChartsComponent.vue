@@ -294,8 +294,7 @@ const getCleanValue = (row, column) => {
   if (typeof raw === 'string') {
     let cleanValue = raw.replace(/^["']+|["']+$/g, '').trim()
     if (cleanValue === '' || cleanValue === '""') return 0
-    cleanValue = cleanValue.replace(/\./g, '')
-    cleanValue = cleanValue.replace(',', '.')
+    cleanValue = cleanValue.replace(/,/g, '')
     return parseFloat(cleanValue) || 0
   }
   return parseFloat(raw) || 0
