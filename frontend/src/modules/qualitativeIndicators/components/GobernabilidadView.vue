@@ -6,7 +6,7 @@
     <div v-if="!selectedEntity" class="global-empty-state">
       <div class="empty-state-content">
         <div class="empty-state-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#718096" stroke-width="1.5">
+          <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#718096" stroke-width="1.5">
             <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
             <line x1="8" y1="2" x2="8" y2="18"/>
             <line x1="16" y1="6" x2="16" y2="22"/>
@@ -139,7 +139,7 @@
             <!-- IGOPP -->
             <div class="indice-row">
               <div class="indice-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0F3759" stroke-width="1.5">
+                <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#0F3759" stroke-width="1.5">
                   <path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/>
                 </svg>
               </div>
@@ -157,7 +157,7 @@
             <!-- BIPE -->
             <div class="indice-row">
               <div class="indice-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0F3759" stroke-width="1.5">
+                <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#0F3759" stroke-width="1.5">
                   <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12l2 2 4-4"/>
                 </svg>
               </div>
@@ -175,7 +175,7 @@
             <!-- ITDIF -->
             <div class="indice-row">
               <div class="indice-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0F3759" stroke-width="1.5">
+                <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#0F3759" stroke-width="1.5">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                   <polyline points="14 2 14 8 20 8"/>
                 </svg>
@@ -770,7 +770,7 @@ onMounted(() => {
 }
 
 .mini-donut-label {
-  font-size: 7px;
+  font-size: 10px;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.7);
   text-transform: uppercase;
@@ -874,7 +874,7 @@ onMounted(() => {
 }
 
 .bar-value-text {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   margin-bottom: 2px;
 }
@@ -909,7 +909,7 @@ onMounted(() => {
   align-items: center;
   gap: 3px;
   margin-top: 2px;
-  font-size: 8px;
+  font-size: 12px;
   color: #64748b;
 }
 
@@ -987,7 +987,7 @@ onMounted(() => {
 }
 
 .indice-label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   color: #0F3759;
 }
@@ -1094,7 +1094,7 @@ onMounted(() => {
 .diagnostico-bajo { color: #dc2626; }
 
 .pbrsed-label {
-  font-size: 7px;
+  font-size: 10px;
   color: #94a3b8;
   text-transform: uppercase;
   letter-spacing: 0.3px;
@@ -1132,7 +1132,7 @@ onMounted(() => {
 .ici-label {
   width: 75px;
   flex-shrink: 0;
-  font-size: 10px;
+  font-size: 12px;
   color: #64748b;
 }
 

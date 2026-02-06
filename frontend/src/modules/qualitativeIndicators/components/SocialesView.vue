@@ -24,20 +24,19 @@
     <div v-else class="card-body">
       <!-- FILA 1: 3 Secciones -->
       <div class="top-row">
-        <!-- SECCIÓN 1: DESOCUPACIÓN -->
-        <div class="desocupacion-section card">
+        <!-- SECCIÓN 1: MARGINACIÓN (movida desde fila inferior) -->
+        <div class="marginacion-section card">
           <div class="card-header-dark">
             <div class="card-header-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-                <line x1="8" y1="11" x2="16" y2="11"></line>
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                <circle cx="12" cy="10" r="3"></circle>
               </svg>
             </div>
-            <span class="card-header-title">Tasas de Desocupación y Participación</span>
+            <span class="card-header-title">Índice de Marginación</span>
             
             <div class="info-tooltip">
-              <button class="info-btn" @click="showInfoDesocupacion = !showInfoDesocupacion">
+              <button class="info-btn" @click="showInfoMarginacion = !showInfoMarginacion">
                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="12" cy="12" r="10"></circle>
                   <line x1="12" y1="16" x2="12" y2="12"></line>
@@ -45,31 +44,62 @@
                 </svg>
               </button>
               <Transition name="tooltip-fade">
-                <div v-if="showInfoDesocupacion" class="tooltip-content">
-                  Indicadores de empleo que muestran la tasa de desocupación y participación laboral en la entidad.
+                <div v-if="showInfoMarginacion" class="tooltip-content">
+                  Medida de déficit y carencias que padece la población en educación, vivienda e ingresos.
                 </div>
               </Transition>
             </div>
           </div>
 
           <div class="card-body-content">
-            <div v-if="desocupacionLoading" class="loading-state">
+            <div v-if="marginacionLoading" class="loading-state-small">
               <div class="spinner-small"></div>
-              <p>Cargando datos...</p>
             </div>
 
-            <div v-else-if="desocupacionError" class="error-state">
-              <p>Error: {{ desocupacionError }}</p>
-              <button @click="loadDesocupacionData(selectedEntity, selectedYear)" class="retry-btn-small">
-                Reintentar
-              </button>
+            <div v-else-if="marginacionError" class="error-state-small">
+              <p>Error cargando datos</p>
             </div>
 
-            <HorizontalBarsList
-              v-else
-              :data="desocupacionData"
-              :showIcons="true"
-            />
+            <div v-else class="indicator-content">
+              <!-- Fila 1: Índice e Índice Normalizado -->
+              <div class="indicator-stats-row">
+                <div class="indicator-stat-card">
+                  <div class="stat-icon-wrapper blue-gradient">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                      <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                  </div>
+                  <div class="stat-info">
+                    <span class="stat-label">ÍNDICE</span>
+                    <span class="stat-value">{{ formatNumber(marginacionIndice) }}</span>
+                  </div>
+                </div>
+                
+                <div class="indicator-stat-card">
+                  <div class="stat-info full-width">
+                    <span class="stat-label">ÍNDICE NORMALIZADO</span>
+                    <span class="stat-value">{{ marginacionNormalizado.toFixed(2) }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Fila 2: Grado (ancho completo) -->
+              <div class="indicator-stats-row-full">
+                <div class="indicator-stat-card">
+                  <div class="stat-info full-width">
+                    <span class="stat-label">GRADO</span>
+                    <div 
+                      class="stat-badge"
+                      :class="getBlueBadgeClass(marginacionGrado)"
+                    >
+                      {{ marginacionGrado || 'Sin datos' }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
 
@@ -110,20 +140,23 @@
             </div>
 
             <div v-else class="indicator-content">
-              <!-- Fila superior: Índice y Grado -->
-              <div class="indicator-stats-row">
-                <div class="indicator-stat-card">
-                  <div class="stat-icon-wrapper blue-gradient">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-                    </svg>
+              <!-- Fila 1: Índice -->
+              <div class="indicator-stats-row-full">
+                <div class="indicator-stat-card" style="flex-direction: row; justify-content: space-between; padding: 4px 12px;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <div class="stat-icon-wrapper blue-gradient">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                      </svg>
+                    </div>
+                    <span class="stat-label" style="padding-bottom: 0;">ÍNDICE</span>
                   </div>
-                  <div class="stat-info">
-                    <span class="stat-label">ÍNDICE</span>
-                    <span class="stat-value">{{ formatNumber(rezagoIndice) }}</span>
-                  </div>
+                  <span class="stat-value" style="font-size: 18px;">{{ formatNumber(rezagoIndice) }}</span>
                 </div>
-                
+              </div>
+
+              <!-- Fila 2: Grado -->
+              <div class="indicator-stats-row-full">
                 <div class="indicator-stat-card">
                   <div class="stat-info full-width">
                     <span class="stat-label">GRADO</span>
@@ -132,29 +165,6 @@
                       :class="getBlueBadgeClass(rezagoGrado)"
                     >
                       {{ rezagoGrado || 'Sin datos' }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <!-- Barra de progreso animada -->
-              <div class="indicator-progress-section">
-                <div class="progress-header">
-                  <span class="progress-title">NORMALIZADO</span>
-                  <span class="progress-value-text">{{ getRezagoPercentage(rezagoIndice).toFixed(1) }}%</span>
-                </div>
-                <div class="animated-progress-bar">
-                  <div class="progress-track">
-                    <div 
-                      class="progress-fill animated"
-                      :style="{ '--target-width': getRezagoPercentage(rezagoIndice) + '%' }"
-                    ></div>
-                    <div class="progress-markers">
-                      <span class="marker" style="left: 0%">0</span>
-                      <span class="marker" style="left: 25%">25</span>
-                      <span class="marker center" style="left: 50%">50</span>
-                      <span class="marker" style="left: 75%">75</span>
-                      <span class="marker" style="left: 100%">100</span>
                     </div>
                   </div>
                 </div>
@@ -214,21 +224,22 @@
         </div>
       </div>
 
-      <!-- FILA 2: 3 Secciones (Marginación 50%, IDH 25%, Población 25%) -->
+      <!-- FILA 2: 3 Secciones (Desocupación 50%, IDH 25%, Población 25%) -->
       <div class="bottom-row">
-        <!-- SECCIÓN 4: MARGINACIÓN - DISEÑO MEJORADO -->
-        <div class="marginacion-section card">
+        <!-- SECCIÓN 4: DESOCUPACIÓN (movida desde fila superior) -->
+        <div class="desocupacion-section card">
           <div class="card-header-dark">
             <div class="card-header-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                <circle cx="12" cy="10" r="3"></circle>
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+                <line x1="8" y1="11" x2="16" y2="11"></line>
               </svg>
             </div>
-            <span class="card-header-title">Índice de Marginación</span>
+            <span class="card-header-title">Tasas de Desocupación y Participación</span>
             
             <div class="info-tooltip">
-              <button class="info-btn" @click="showInfoMarginacion = !showInfoMarginacion">
+              <button class="info-btn" @click="showInfoDesocupacion = !showInfoDesocupacion">
                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="12" cy="12" r="10"></circle>
                   <line x1="12" y1="16" x2="12" y2="12"></line>
@@ -236,70 +247,31 @@
                 </svg>
               </button>
               <Transition name="tooltip-fade">
-                <div v-if="showInfoMarginacion" class="tooltip-content">
-                  Medida de déficit y carencias que padece la población en educación, vivienda e ingresos.
+                <div v-if="showInfoDesocupacion" class="tooltip-content">
+                  Indicadores de empleo que muestran la tasa de desocupación y participación laboral en la entidad.
                 </div>
               </Transition>
             </div>
           </div>
 
           <div class="card-body-content">
-            <div v-if="marginacionLoading" class="loading-state-small">
+            <div v-if="desocupacionLoading" class="loading-state">
               <div class="spinner-small"></div>
+              <p>Cargando datos...</p>
             </div>
 
-            <div v-else-if="marginacionError" class="error-state-small">
-              <p>Error cargando datos</p>
+            <div v-else-if="desocupacionError" class="error-state">
+              <p>Error: {{ desocupacionError }}</p>
+              <button @click="loadDesocupacionData(selectedEntity, selectedYear)" class="retry-btn-small">
+                Reintentar
+              </button>
             </div>
 
-            <div v-else class="indicator-content horizontal-layout">
-              <!-- Columna izquierda: Stats -->
-              <div class="indicator-stats-column">
-                <div class="indicator-stat-card horizontal">
-                  <div class="stat-icon-wrapper blue-gradient">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                      <circle cx="12" cy="10" r="3"/>
-                    </svg>
-                  </div>
-                  <div class="stat-info">
-                    <span class="stat-label">ÍNDICE</span>
-                    <span class="stat-value large">{{ formatNumber(marginacionIndice) }}</span>
-                  </div>
-                </div>
-                
-                <div class="indicator-stat-card horizontal">
-                  <div class="stat-info">
-                    <span class="stat-label">GRADO DE MARGINACIÓN</span>
-                    <div 
-                      class="stat-badge large"
-                      :class="getBlueBadgeClass(marginacionGrado)"
-                    >
-                      {{ marginacionGrado || 'Sin datos' }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <!-- Columna derecha: Barra circular o progreso -->
-              <div class="indicator-progress-column">
-                <div class="circular-progress-container">
-                  <svg class="circular-progress" viewBox="0 0 100 100">
-                    <circle class="progress-bg" cx="50" cy="50" r="40"/>
-                    <circle 
-                      class="progress-ring animated"
-                      cx="50" cy="50" r="40"
-                      :style="{ '--target-offset': getCircleOffset(marginacionNormalizado * 100) }"
-                    />
-                  </svg>
-                  <div class="circular-progress-text">
-                    <span class="progress-number">{{ (marginacionNormalizado * 100).toFixed(0) }}</span>
-                    <span class="progress-percent">%</span>
-                  </div>
-                </div>
-                <span class="progress-subtitle">Normalizado</span>
-              </div>
-            </div>
+            <HorizontalBarsList
+              v-else
+              :data="desocupacionData"
+              :showIcons="true"
+            />
           </div>
         </div>
 
@@ -473,15 +445,6 @@ const getBlueBadgeClass = (grado) => {
 }
 
 // ============================================
-// FUNCIÓN PARA CÍRCULO DE PROGRESO
-// ============================================
-const getCircleOffset = (percentage) => {
-  const circumference = 2 * Math.PI * 40 // r=40
-  const offset = circumference - (percentage / 100) * circumference
-  return offset
-}
-
-// ============================================
 // DESOCUPACIÓN
 // ============================================
 const desocupacionData = ref([])
@@ -588,16 +551,6 @@ const loadMarginacionData = async (entityName = null, year = null) => {
   } finally {
     marginacionLoading.value = false
   }
-}
-
-const getMarginacionBadgeClass = (grado) => {
-  const gradoLower = grado.toLowerCase()
-  if (gradoLower.includes('muy bajo')) return 'badge-success'
-  if (gradoLower.includes('bajo')) return 'badge-info'
-  if (gradoLower.includes('medio')) return 'badge-warning'
-  if (gradoLower.includes('alto') && !gradoLower.includes('muy')) return 'badge-danger'
-  if (gradoLower.includes('muy alto')) return 'badge-critical'
-  return 'badge-default'
 }
 
 // ============================================
@@ -744,16 +697,6 @@ const loadRezagoData = async (entityName = null, year = null) => {
   } finally {
     rezagoLoading.value = false
   }
-}
-
-const getRezagoBadgeClass = (grado) => {
-  const gradoLower = grado.toLowerCase()
-  if (gradoLower.includes('muy bajo')) return 'badge-success'
-  if (gradoLower.includes('bajo')) return 'badge-info'
-  if (gradoLower.includes('medio')) return 'badge-warning'
-  if (gradoLower.includes('alto') && !gradoLower.includes('muy')) return 'badge-danger'
-  if (gradoLower.includes('muy alto')) return 'badge-critical'
-  return 'badge-default'
 }
 
 const getRezagoPercentage = (value) => {
@@ -979,7 +922,7 @@ onMounted(async () => {
   min-height: 0;
 }
 
-.desocupacion-section, .rezago-section, .gini-section {
+.marginacion-section, .rezago-section, .gini-section {
   flex: 1;
   min-width: 0;
 }
@@ -994,7 +937,7 @@ onMounted(async () => {
   overflow: hidden;
 }
 
-.marginacion-section {
+.desocupacion-section {
   flex: 0 0 50%;
   min-width: 0;
   display: flex;
@@ -1134,6 +1077,11 @@ onMounted(async () => {
   min-height: 0;
 }
 
+.card-body-content > .indicator-content {
+  flex: 1;
+  min-height: 0;
+}
+
 .card-body-content > :deep(.horizontal-bars-container) {
   flex: 1;
   height: 100%;
@@ -1218,38 +1166,62 @@ onMounted(async () => {
 .indicator-content {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 4px;
   height: 100%;
-  padding: 4px;
-}
-
-.indicator-content.horizontal-layout {
-  flex-direction: row;
-  gap: 16px;
+  padding: 3px;
+  min-height: 0;
 }
 
 .indicator-stats-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 4px;
+  flex: 1;
+  min-height: 0;
+}
+
+.indicator-stats-row > * {
+  min-height: 0;
+}
+
+.indicator-stats-row-full {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4px;
+  flex: 1;
+  min-height: 0;
+}
+
+.indicator-stats-row-full > * {
+  min-height: 0;
+}
+
+.indicator-stats-row.single-row-fill {
+  flex: 1;
+  height: 100%;
 }
 
 .indicator-stats-column {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   flex: 1;
 }
 
 .indicator-stat-card {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
+  justify-content: center;
+  gap: 1px;
+  padding: 4px;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  border-radius: 10px;
+  border-radius: 8px;
   border: 1px solid #e2e8f0;
   transition: all 0.2s ease;
+  text-align: center;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .indicator-stat-card:hover {
@@ -1257,14 +1229,54 @@ onMounted(async () => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.indicator-stat-card.horizontal {
+.indicator-stat-card .stat-icon-wrapper {
+  margin-bottom: 5px;
+  flex-shrink: 0;
+  width: 40px;
+  height: 28px;
+  border-radius: 6px;
+}
+
+.indicator-stat-card .stat-icon-wrapper svg {
+  width: 12px;
+  height: 12px;
+}
+
+.indicator-stat-card .stat-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-width: 0;
+  width: 100%;
+  flex: 1;
+}
+
+.indicator-stat-card .stat-value {
+  font-size: 15px;
+  font-weight: 800;
+  color: #0F3759;
+  line-height: 1;
+}
+
+.indicator-stat-card .stat-label {
+  font-size: 10px;
+
+  padding-bottom: 5px;
+}
+
+.indicator-stat-card .stat-badge {
+  width: 100%;
+  padding: 3px 8px;
+  font-size: 14px;
+  font-weight: 300;
   flex: 1;
 }
 
 .stat-icon-wrapper {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1279,7 +1291,8 @@ onMounted(async () => {
 .stat-info {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 6px;
   min-width: 0;
 }
 
@@ -1297,7 +1310,7 @@ onMounted(async () => {
 }
 
 .stat-value {
-  font-size: 18px;
+  font-size: 24px;
   font-weight: 800;
   color: #0F3759;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -1305,7 +1318,7 @@ onMounted(async () => {
 }
 
 .stat-value.large {
-  font-size: 22px;
+  font-size: 28px;
 }
 
 /* ============================================
@@ -1326,7 +1339,7 @@ onMounted(async () => {
 
 .stat-badge.large {
   padding: 8px 16px;
-  font-size: 13px;
+  font-size: 15px;
 }
 
 /* Paleta de azules */
@@ -1462,98 +1475,6 @@ onMounted(async () => {
 .progress-markers .marker.center {
   color: #64748b;
   font-weight: 700;
-}
-
-/* ============================================
-   ✅ CÍRCULO DE PROGRESO ANIMADO
-   ============================================ */
-.indicator-progress-column {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-width: 120px;
-}
-
-.circular-progress-container {
-  position: relative;
-  width: 100px;
-  height: 100px;
-}
-
-.circular-progress {
-  width: 100%;
-  height: 100%;
-  transform: rotate(-90deg);
-}
-
-.progress-bg {
-  fill: none;
-  stroke: #e2e8f0;
-  stroke-width: 8;
-}
-
-.progress-ring {
-  fill: none;
-  stroke: url(#blueGradient);
-  stroke-width: 8;
-  stroke-linecap: round;
-  stroke-dasharray: 251.2; /* 2 * PI * 40 */
-  stroke-dashoffset: 251.2;
-}
-
-.progress-ring.animated {
-  animation: circleProgress 1.5s ease-out forwards;
-  animation-delay: 0.3s;
-}
-
-@keyframes circleProgress {
-  from {
-    stroke-dashoffset: 251.2;
-  }
-  to {
-    stroke-dashoffset: var(--target-offset);
-  }
-}
-
-/* Fallback sin gradiente SVG */
-.progress-ring {
-  stroke: #1e3a5f;
-}
-
-.circular-progress-text {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  display: flex;
-  align-items: baseline;
-  gap: 2px;
-}
-
-.progress-number {
-  font-size: 24px;
-  font-weight: 800;
-  color: #0F3759;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  line-height: 1;
-}
-
-.progress-percent {
-  font-size: 12px;
-  font-weight: 600;
-  color: #64748b;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-.progress-subtitle {
-  font-size: 10px;
-  font-weight: 600;
-  color: #94a3b8;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 /* ============================================

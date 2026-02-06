@@ -148,7 +148,7 @@
           <line x1="12" y1="16" x2="12" y2="12"/>
           <line x1="12" y1="8" x2="12.01" y2="8"/>
         </svg>
-        <span>{{ countryData?.País || 'México' }} {{ selectedYear }} | Fuentes: Climate Investment Funds, GEF, BID</span>
+        <span>{{ countryData?.País || 'México' }} {{ selectedYear }} | Fuentes: GCF, GEF, CIF, BID </span>
       </div>
     </div>
   </div>

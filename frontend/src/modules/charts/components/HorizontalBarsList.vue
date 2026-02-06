@@ -32,7 +32,6 @@
         <!-- Valor y Porcentaje -->
         <div class="bar-right">
           <span class="bar-value">{{ formatValue(item.value) }}</span>
-          <span class="bar-percentage">{{ getPercentage(item.value) }}%</span>
         </div>
       </div>
     </div>
@@ -104,11 +103,7 @@ const formatValue = (value) => {
     return `$${Math.round(value)}`
   }
   
-  // Para indicadores sociales, mostrar el valor con decimales si es necesario
-  if (value < 10) {
-    return value.toFixed(1)
-  }
-  return Math.round(value).toString()
+return value.toFixed(2)
 }
 
 // Obtener gradiente basado en color
