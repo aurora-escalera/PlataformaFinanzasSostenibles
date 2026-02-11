@@ -1,5 +1,5 @@
 <!-- src/modules/other/components/DataViewToggleBar.vue -->
-<!-- ✅ CORREGIDO: Submenús funcionan con click en móvil + currency-badge ajustado -->
+<!-- ✅ CORREGIDO: Submenús con CLICK en TODAS las plataformas (desktop + móvil) -->
 <template>
   <div class="toggle-bar">
     <div class="toggle-bar-content">
@@ -86,9 +86,7 @@
                 <div 
                   class="menu-item" 
                   :class="{ 'menu-item-expanded': activeSubmenu === 'regional' }"
-                  @mouseenter="!isMobile && (activeSubmenu = 'regional')" 
-                  @mouseleave="!isMobile && (activeSubmenu = null)"
-                  @click="isMobile && toggleSubmenu('regional')"
+                  @click.stop="toggleSubmenu('regional')"
                 >
                   <div class="menu-item-content">
                     <svg class="menu-arrow" :class="{ 'rotated': activeSubmenu === 'regional' }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -105,7 +103,7 @@
                     </div>
                   </div>
                   
-                  <!-- Submenu inline para móvil, absoluto para desktop -->
+                  <!-- Submenu: click para abrir/cerrar -->
                   <transition name="submenu-expand">
                     <div v-if="activeSubmenu === 'regional'" class="submenu">
                       <button class="submenu-item" @click.stop="handleDownload('regional', 'xlsx')" :disabled="isExporting">
@@ -124,9 +122,7 @@
                 <div 
                   class="menu-item"
                   :class="{ 'menu-item-expanded': activeSubmenu === 'subnacional' }"
-                  @mouseenter="!isMobile && (activeSubmenu = 'subnacional')" 
-                  @mouseleave="!isMobile && handleSubnacionalMouseLeave()"
-                  @click="isMobile && toggleSubmenu('subnacional')"
+                  @click.stop="toggleSubmenu('subnacional')"
                 >
                   <div class="menu-item-content">
                     <svg class="menu-arrow" :class="{ 'rotated': activeSubmenu === 'subnacional' }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -144,7 +140,7 @@
                   </div>
                   
                   <transition name="submenu-expand">
-                    <div v-if="activeSubmenu === 'subnacional'" class="submenu submenu-years" @mouseenter="!isMobile && (keepSubnacionalOpen = true)" @mouseleave="!isMobile && (keepSubnacionalOpen = false)">
+                    <div v-if="activeSubmenu === 'subnacional'" class="submenu submenu-years">
                       <div class="submenu-header">Seleccionar año</div>
                       <div v-if="loadingYears" class="submenu-loading">
                         <div class="spinner-tiny"></div>
@@ -156,9 +152,7 @@
                           :key="year" 
                           class="year-item"
                           :class="{ 'year-item-expanded': activeYearSubmenu === year }"
-                          @mouseenter="!isMobile && (activeYearSubmenu = year)" 
-                          @mouseleave="!isMobile && (activeYearSubmenu = null)"
-                          @click.stop="isMobile && toggleYearSubmenu(year)"
+                          @click.stop="toggleYearSubmenu(year)"
                         >
                           <div class="year-item-content">
                             <svg class="year-arrow" :class="{ 'rotated': activeYearSubmenu === year }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -194,9 +188,7 @@
                 <div 
                   class="menu-item menu-item-highlight"
                   :class="{ 'menu-item-expanded': activeSubmenu === 'completo' }"
-                  @mouseenter="!isMobile && (activeSubmenu = 'completo')" 
-                  @mouseleave="!isMobile && (activeSubmenu = null)"
-                  @click="isMobile && toggleSubmenu('completo')"
+                  @click.stop="toggleSubmenu('completo')"
                 >
                   <div class="menu-item-content">
                     <svg class="menu-arrow" :class="{ 'rotated': activeSubmenu === 'completo' }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -286,14 +278,13 @@ const emit = defineEmits(['update:modelValue', 'click-federal', 'click-subnacion
 const showDownloadsMenu = ref(false)
 const activeSubmenu = ref(null)
 const activeYearSubmenu = ref(null)
-const keepSubnacionalOpen = ref(false)
 const downloadsRef = ref(null)
 const isExporting = ref(false)
 const exportError = ref(null)
 const exportProgress = ref('')
 const showSuccess = ref(false)
 
-// ✅ NUEVO: Detectar si es móvil
+// Detectar si es móvil (se mantiene por si se necesita en el futuro)
 const isMobile = ref(false)
 
 const checkIsMobile = () => {
@@ -331,7 +322,7 @@ const toggleDownloadsMenu = async () => {
   }
 }
 
-// ✅ NUEVO: Toggle para submenús en móvil
+// ✅ Toggle para submenús — click en TODAS las plataformas
 const toggleSubmenu = (name) => {
   if (activeSubmenu.value === name) {
     activeSubmenu.value = null
@@ -342,7 +333,7 @@ const toggleSubmenu = (name) => {
   }
 }
 
-// ✅ NUEVO: Toggle para años en móvil
+// ✅ Toggle para años — click en TODAS las plataformas
 const toggleYearSubmenu = (year) => {
   if (activeYearSubmenu.value === year) {
     activeYearSubmenu.value = null
@@ -357,15 +348,6 @@ const handleClickOutside = (event) => {
     activeSubmenu.value = null
     activeYearSubmenu.value = null
   }
-}
-
-const handleSubnacionalMouseLeave = () => {
-  setTimeout(() => {
-    if (!keepSubnacionalOpen.value) {
-      activeSubmenu.value = null
-      activeYearSubmenu.value = null
-    }
-  }, 100)
 }
 
 const handleDownload = async (viewType, format, options = {}) => {
@@ -813,28 +795,24 @@ onUnmounted(() => {
 }
 
 /* ============================================
-   SUBMENUS - DESKTOP (absoluto a la izquierda)
+   ✅ SUBMENUS - INLINE en todas las plataformas
+   Se eliminó position:absolute para evitar el
+   problema del gap en hover de desktop
    ============================================ */
 .submenu {
-  position: absolute;
-  top: 0;
-  right: 100%;
-  margin-right: 4px;
-  width: 180px;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-  border: 1px solid #e5e7eb;
-  padding: 6px 0;
-  z-index: 1001;
+  width: 100%;
+  background: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+  padding: 0;
+  overflow: hidden;
 }
 
 .submenu-years {
-  width: 200px;
+  width: 100%;
 }
 
 .submenu-header {
-  padding: 8px 14px;
+  padding: 8px 14px 8px 48px;
   font-size: 11px;
   font-weight: 600;
   color: #6b7280;
@@ -842,6 +820,7 @@ onUnmounted(() => {
   letter-spacing: 0.5px;
   border-bottom: 1px solid #e5e7eb;
   margin-bottom: 4px;
+  background: #f3f4f6;
 }
 
 .submenu-loading {
@@ -875,7 +854,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 10px 14px;
+  padding: 10px 14px 10px 48px;
   font-size: 13px;
   font-weight: 500;
   border: none;
@@ -884,10 +863,15 @@ onUnmounted(() => {
   background: transparent;
   color: #374151;
   text-align: left;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.submenu-item:last-child {
+  border-bottom: none;
 }
 
 .submenu-item:hover:not(:disabled) {
-  background-color: #f3f4f6;
+  background-color: #e5e7eb;
 }
 
 .submenu-item:disabled {
@@ -904,15 +888,16 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 14px;
+  padding: 10px 14px 10px 48px;
   font-size: 13px;
   font-weight: 500;
   color: #374151;
   transition: background-color 0.15s ease;
+  cursor: pointer;
 }
 
 .year-item:hover > .year-item-content {
-  background-color: #f3f4f6;
+  background-color: #e5e7eb;
 }
 
 .year-arrow {
@@ -933,18 +918,17 @@ onUnmounted(() => {
   color: #6b7280;
 }
 
+/* ✅ Formatos de año: inline */
 .submenu-formats {
-  position: absolute;
-  top: 0;
-  right: 100%;
-  margin-right: 4px;
-  width: 170px;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-  border: 1px solid #e5e7eb;
-  padding: 6px 0;
-  z-index: 1002;
+  width: 100%;
+  background: #f0f0f0;
+  border-top: 1px solid #e5e7eb;
+  padding: 0;
+  overflow: hidden;
+}
+
+.submenu-formats .submenu-item {
+  padding: 10px 14px 10px 72px;
 }
 
 .format-badge {
@@ -1066,7 +1050,8 @@ onUnmounted(() => {
   .custom-tooltip {
     display: none;
   }
-   .currency-badge.currency-mxn .currency-code,
+
+  .currency-badge.currency-mxn .currency-code,
   .currency-badge.currency-usd .currency-code {
     font-size: 11px;
   }
@@ -1141,12 +1126,12 @@ onUnmounted(() => {
     font-weight: 500;
     color: #6b7280;
   }
-    .currency-badge.currency-mxn .currency-code,
+
+  .currency-badge.currency-mxn .currency-code,
   .currency-badge.currency-usd .currency-code {
     font-size: 10px;
   }
   
-  /* ✅ AJUSTE: currency-badge del tamaño del label */
   .currency-badge {
     padding: 2px 4px;
     border-radius: 3px;
@@ -1183,7 +1168,6 @@ onUnmounted(() => {
     display: inline;
   }
   
-  /* ✅ Dropdown ocupa todo el ancho */
   .downloads-dropdown {
     position: fixed;
     top: auto;
@@ -1202,69 +1186,22 @@ onUnmounted(() => {
     -webkit-overflow-scrolling: touch;
   }
   
-  /* ✅ SUBMENÚS INLINE (no absolutos) */
-  .submenu {
-    position: relative;
-    top: auto;
-    right: auto;
-    left: auto;
-    margin: 0;
-    width: 100%;
-    border-radius: 0;
-    box-shadow: none;
-    border: none;
-    border-top: 1px solid #e5e7eb;
-    background: #f9fafb;
-    padding: 0;
-  }
-  
-  .submenu-years {
-    width: 100%;
-  }
-  
   .submenu-item {
     padding: 12px 20px 12px 48px;
-    border-bottom: 1px solid #f0f0f0;
-  }
-  
-  .submenu-item:last-child {
-    border-bottom: none;
   }
   
   .submenu-header {
     padding: 10px 20px 10px 48px;
-    background: #f3f4f6;
-  }
-  
-  /* Year items inline */
-  .year-item {
-    position: relative;
   }
   
   .year-item-content {
     padding: 12px 20px 12px 48px;
   }
   
-  .submenu-formats {
-    position: relative;
-    top: auto;
-    right: auto;
-    left: auto;
-    margin: 0;
-    width: 100%;
-    border-radius: 0;
-    box-shadow: none;
-    border: none;
-    border-top: 1px solid #e5e7eb;
-    background: #f0f0f0;
-    padding: 0;
-  }
-  
   .submenu-formats .submenu-item {
     padding: 12px 20px 12px 72px;
   }
   
-  /* Flecha apunta hacia abajo cuando está expandido */
   .menu-arrow {
     transition: transform 0.2s ease;
   }
@@ -1277,7 +1214,6 @@ onUnmounted(() => {
     transform: rotate(90deg);
   }
   
-  /* Filtros móvil */
   .filter-btn-mobile {
     display: flex;
     flex: 1;
@@ -1323,7 +1259,6 @@ onUnmounted(() => {
     font-size: 10px;
   }
   
-  /* ✅ AJUSTE: currency-badge */
   .currency-badge {
     padding: 2px 3px;
     border-radius: 3px;
@@ -1347,7 +1282,7 @@ onUnmounted(() => {
     font-size: 12px;
   }
 
-    .currency-badge.currency-mxn .currency-code,
+  .currency-badge.currency-mxn .currency-code,
   .currency-badge.currency-usd .currency-code {
     font-size: 10px;
   }
@@ -1383,7 +1318,6 @@ onUnmounted(() => {
     font-size: 10px;
   }
   
-  /* ✅ AJUSTE: currency-badge */
   .currency-badge {
     padding: 1px 3px;
     border-radius: 2px;
@@ -1482,7 +1416,6 @@ onUnmounted(() => {
     font-size: 9px;
   }
   
-  /* ✅ AJUSTE: currency-badge */
   .currency-badge {
     padding: 1px 2px;
     border-radius: 2px;
@@ -1598,7 +1531,6 @@ onUnmounted(() => {
     font-size: 8px;
   }
   
-  /* ✅ AJUSTE: currency-badge */
   .currency-badge {
     padding: 1px 2px;
     border-radius: 2px;
@@ -1747,7 +1679,6 @@ onUnmounted(() => {
     font-size: 7px;
   }
   
-  /* ✅ AJUSTE: currency-badge */
   .currency-badge {
     padding: 1px 2px;
     border-radius: 2px;

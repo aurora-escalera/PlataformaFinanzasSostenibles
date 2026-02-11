@@ -622,66 +622,11 @@ export function useStorageData() {
     
     // Quitar símbolos de moneda y espacios
     str = str.replace(/[$€£¥₹\s]/g, '')
+     // Todos los valores usan punto como decimal
+    str = str.replace(/,/g, '')
     
-    // Contar ocurrencias de comas y puntos
-    const commas = (str.match(/,/g) || []).length
-    const dots = (str.match(/\./g) || []).length
-    
-    let result
-    
-    if (commas === 0 && dots === 0) {
-      // Sin separadores: "1234567"
-      result = parseFloat(str) || 0
-      
-    } else if (commas > 0 && dots === 0) {
-      // Solo comas
-      if (commas === 1) {
-        // Una coma: puede ser decimal europeo (3,14) o separador de miles (1,234)
-        const parts = str.split(',')
-        if (parts[1].length === 3 && /^\d+$/.test(parts[0]) && /^\d{3}$/.test(parts[1])) {
-          // Separador de miles: "1,234" → "1234"
-          result = parseFloat(str.replace(',', '')) || 0
-        } else {
-          // Decimal europeo: "3,14" → "3.14"
-          result = parseFloat(str.replace(',', '.')) || 0
-        }
-      } else {
-        // Múltiples comas: separadores de miles americanos "1,234,567"
-        result = parseFloat(str.replace(/,/g, '')) || 0
-      }
-      
-    } else if (dots > 0 && commas === 0) {
-      // Solo puntos
-      if (dots === 1) {
-        // Un punto: puede ser decimal (3.14) o separador de miles europeo (1.234)
-        const parts = str.split('.')
-        if (parts[1].length === 3 && /^\d+$/.test(parts[0]) && /^\d{3}$/.test(parts[1])) {
-          // Separador de miles europeo: "1.234" → "1234"
-          result = parseFloat(str.replace('.', '')) || 0
-        } else {
-          // Decimal americano: "3.14" → ya está correcto
-          result = parseFloat(str) || 0
-        }
-      } else {
-        // Múltiples puntos: separadores de miles europeos "1.234.567"
-        result = parseFloat(str.replace(/\./g, '')) || 0
-      }
-      
-    } else {
-      // Tiene ambos: comas Y puntos
-      const lastCommaIndex = str.lastIndexOf(',')
-      const lastDotIndex = str.lastIndexOf('.')
-      
-      if (lastCommaIndex > lastDotIndex) {
-        // Formato europeo: "1.234.567,89" → la coma es el decimal
-        result = parseFloat(str.replace(/\./g, '').replace(',', '.')) || 0
-      } else {
-        // Formato americano: "1,234,567.89" → el punto es el decimal
-        result = parseFloat(str.replace(/,/g, '')) || 0
-      }
-    }
-    
-    return result
+    return parseFloat(str) || 0
+
   }
   
   /**

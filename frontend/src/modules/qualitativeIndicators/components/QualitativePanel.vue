@@ -378,16 +378,36 @@ const handleRegionalYearsLoaded = (years) => {
 }
 
 // ============================================
-// FUNCIONES DE CARGA DE AÑOS - SUBNACIONALES
-// (Usan fetchSheetNames porque están en estructura plana)
+// FUNCIÓN HELPER: Unir años de múltiples hojas
+// ============================================
+const fetchAllYearsFromSheets = async (fileKeys) => {
+  const allYears = new Set()
+  
+  await Promise.all(
+    fileKeys.map(async (key) => {
+      try {
+        const sheetNames = await fetchSheetNames(key)
+        sheetNames
+          .filter(name => /^\d{4}$/.test(name))
+          .forEach(year => allYears.add(year))
+      } catch (err) {
+        console.warn(`⚠️ [QualitativePanel] No se pudieron obtener años de "${key}":`, err.message)
+      }
+    })
+  )
+  
+  return [...allYears].sort((a, b) => b - a)
+}
+
+// ============================================
+// CARGA DE AÑOS POR CATEGORÍA
 // ============================================
 const loadAmbientalesYears = async () => {
   try {
-    console.log('📅 [QualitativePanel] Cargando años de sheet AMBIENTALES...')
-    const sheetNames = await fetchSheetNames('incendiosForestales')
-    const years = sheetNames
-      .filter(name => /^\d{4}$/.test(name))
-      .sort((a, b) => b - a)
+    console.log('📅 [QualitativePanel] Cargando años de sheets AMBIENTALES...')
+    const years = await fetchAllYearsFromSheets([
+      'incendiosForestales', 'residuosSolidos', 'emisiones', 'energia', 'areasNaturales'
+    ])
     console.log('✅ [QualitativePanel] Años AMBIENTALES encontrados:', years)
     emit('years-loaded', years)
   } catch (err) {
@@ -397,11 +417,10 @@ const loadAmbientalesYears = async () => {
 
 const loadEconomicosYears = async () => {
   try {
-    console.log('📅 [QualitativePanel] Cargando años de sheet ECONÓMICOS...')
-    const sheetNames = await fetchSheetNames('ingresoTotal')
-    const years = sheetNames
-      .filter(name => /^\d{4}$/.test(name))
-      .sort((a, b) => b - a)
+    console.log('📅 [QualitativePanel] Cargando años de sheets ECONÓMICOS...')
+    const years = await fetchAllYearsFromSheets([
+      'ingresoTotal', 'egresoTotal', 'pea', 'pib', 'itaee'
+    ])
     console.log('✅ [QualitativePanel] Años ECONÓMICOS encontrados:', years)
     emit('years-loaded', years)
   } catch (err) {
@@ -411,11 +430,10 @@ const loadEconomicosYears = async () => {
 
 const loadSocialesYears = async () => {
   try {
-    console.log('📅 [QualitativePanel] Cargando años de sheet SOCIALES...')
-    const sheetNames = await fetchSheetNames('desocupacion')
-    const years = sheetNames
-      .filter(name => /^\d{4}$/.test(name))
-      .sort((a, b) => b - a)
+    console.log('📅 [QualitativePanel] Cargando años de sheets SOCIALES...')
+    const years = await fetchAllYearsFromSheets([
+      'desocupacion', 'marginacion', 'idh', 'rezagoSocial', 'indiceGini', 'poblacion'
+    ])
     console.log('✅ [QualitativePanel] Años SOCIALES encontrados:', years)
     emit('years-loaded', years)
   } catch (err) {
@@ -425,11 +443,10 @@ const loadSocialesYears = async () => {
 
 const loadPresupuestosYears = async () => {
   try {
-    console.log('📅 [QualitativePanel] Cargando años de sheet PRESUPUESTOS...')
-    const sheetNames = await fetchSheetNames('presupuestoEstatal')
-    const years = sheetNames
-      .filter(name => /^\d{4}$/.test(name))
-      .sort((a, b) => b - a)
+    console.log('📅 [QualitativePanel] Cargando años de sheets PRESUPUESTOS...')
+    const years = await fetchAllYearsFromSheets([
+      'presupuestoEstatal', 'financiamientos', 'programas'
+    ])
     console.log('✅ [QualitativePanel] Años PRESUPUESTOS encontrados:', years)
     emit('years-loaded', years)
   } catch (err) {
@@ -439,11 +456,10 @@ const loadPresupuestosYears = async () => {
 
 const loadGobernabilidadYears = async () => {
   try {
-    console.log('📅 [QualitativePanel] Cargando años de sheet GOBERNABILIDAD...')
-    const sheetNames = await fetchSheetNames('satisfaccionFederal')
-    const years = sheetNames
-      .filter(name => /^\d{4}$/.test(name))
-      .sort((a, b) => b - a)
+    console.log('📅 [QualitativePanel] Cargando años de sheets GOBERNABILIDAD...')
+    const years = await fetchAllYearsFromSheets([
+      'satisfaccionFederal', 'satisfaccionEstatal', 'IGOPP', 'BIPE', 'ITDIF', 'ICI', 'PBRSED'
+    ])
     console.log('✅ [QualitativePanel] Años GOBERNABILIDAD encontrados:', years)
     emit('years-loaded', years)
   } catch (err) {

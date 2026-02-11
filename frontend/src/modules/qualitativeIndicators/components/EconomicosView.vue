@@ -57,11 +57,8 @@
               <p>Cargando datos...</p>
             </div>
 
-            <div v-else-if="itaeError" class="error-state">
-              <p>Error: {{ itaeError }}</p>
-              <button @click="loadITAEData(selectedEntity, selectedYear)" class="retry-btn-small">
-                Reintentar
-              </button>
+            <div v-else-if="itaeError" class="error-state-small">
+              <p>Error cargando datos</p>
             </div>
 
             <BulletChart
@@ -167,10 +164,7 @@
               </div>
 
               <div v-else-if="PIBError" class="error-state-small">
-                <p>Error al cargar datos</p>
-                <button @click="loadPIBData(selectedEntity, selectedYear)" class="retry-btn-small">
-                  Reintentar
-                </button>
+                <p>Error cargando datos</p>
               </div>
 
               <!-- ✅ IconPercentageChart con diseño Split Diagonal -->
@@ -227,11 +221,8 @@
                 <p>Cargando datos...</p>
               </div>
 
-              <div v-else-if="ingresoTotalError" class="error-state">
-                <p>Error: {{ ingresoTotalError }}</p>
-                <button @click="loadIngresoTotalData(selectedEntity, selectedYear)" class="retry-btn-small">
-                  Reintentar
-                </button>
+              <div v-else-if="ingresoTotalError" class="error-state-small">
+                <p>Error cargando datos</p>
               </div>
 
               <HorizontalBarChart
@@ -289,23 +280,7 @@ const parseNumericValue = (value) => {
   
   let stringValue = String(value).trim()
   stringValue = stringValue.replace(/\s/g, '')
-  
-  const hasCommaAndDot = stringValue.includes(',') && stringValue.includes('.')
-  
-  if (hasCommaAndDot) {
-    stringValue = stringValue.replace(/\./g, '')
-    stringValue = stringValue.replace(/,/g, '.')
-  } else if (stringValue.includes(',')) {
-    stringValue = stringValue.replace(/,/g, '.')
-  } else if (stringValue.includes('.')) {
-    const parts = stringValue.split('.')
-    const multipleDots = parts.length > 2
-    const lastPartHasThreeDigits = parts[parts.length - 1].length === 3
-    
-    if (multipleDots || (parts.length === 2 && lastPartHasThreeDigits)) {
-      stringValue = stringValue.replace(/\./g, '')
-    }
-  }
+  stringValue = stringValue.replace(/,/g, '')
   
   const result = parseFloat(stringValue)
   return isNaN(result) ? 0 : result

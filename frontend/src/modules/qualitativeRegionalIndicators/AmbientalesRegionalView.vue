@@ -108,7 +108,7 @@
             </div>
             <div class="indicator-value">
               <span class="value-amount eco2">{{ formatEmissions(countryData?.ECO2) }}</span>
-              <span class="value-unit">Mt CO₂</span>
+              <span class="value-unit">{{ getEmissionsUnit(countryData?.ECO2) }}</span>
             </div>
           </div>
 
@@ -318,14 +318,30 @@ const isYearValid = computed(() => {
 // FUNCIONES DE FORMATO Y CÁLCULO
 // ============================================
 
+const parseNumericValue = (value) => {
+  if (!value || value === '—') return NaN
+  const cleaned = String(value).replace(/,/g, '')
+  return Number(cleaned)
+}
+
 const formatEmissions = (value) => {
   if (!value || value === '—') return '—'
-  const num = Number(value)
+  const num = parseNumericValue(value)
   if (isNaN(num)) return value
   if (num >= 1e9) return (num / 1e9).toFixed(1)
   if (num >= 1e6) return (num / 1e6).toFixed(1)
   if (num >= 1e3) return (num / 1e3).toFixed(1)
   return num.toLocaleString('es-MX')
+}
+
+const getEmissionsUnit = (value) => {
+  if (!value || value === '—') return 't CO₂'
+  const num = parseNumericValue(value)
+  if (isNaN(num)) return 't CO₂'
+  if (num >= 1e9) return 'Gt CO₂'
+  if (num >= 1e6) return 'Mt CO₂'
+  if (num >= 1e3) return 'Kt CO₂'
+  return 't CO₂'
 }
 
 const getIRCBarWidth = (value) => {
@@ -752,7 +768,7 @@ onMounted(async () => {
 .value-amount.cte { color: #0F3759; }
 
 .value-unit { 
-  font-size: 9px; 
+  font-size: 10.5px; 
   color: #94a3b8; 
   font-weight: 500;
 }
@@ -847,7 +863,7 @@ onMounted(async () => {
 
 .legend-label {
   flex: 1;
-  font-size: 11px;
+  font-size: 12px;
   color: #475569;
   font-weight: 500;
 }
@@ -902,7 +918,7 @@ onMounted(async () => {
 }
 
 .card-footer span { 
-  font-size: 11px; 
+  font-size: 11.5px; 
 }
 
 /* Loading State */

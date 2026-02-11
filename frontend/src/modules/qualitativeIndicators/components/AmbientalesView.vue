@@ -42,11 +42,8 @@
               <p>Cargando datos...</p>
             </div>
 
-            <div v-else-if="incendiosError" class="error-state">
-              <p>Error: {{ incendiosError }}</p>
-              <button @click="loadIncendiosData(selectedEntity, selectedYear)" class="retry-btn-small">
-                Reintentar
-              </button>
+            <div v-else-if="incendiosError" class="error-state-small">
+              <p>Error cargando datos</p>
             </div>
 
             <HorizontalBarChart
@@ -186,11 +183,8 @@
                 <p>Cargando datos...</p>
               </div>
 
-              <div v-else-if="areasError" class="error-state">
-                <p>Error: {{ areasError }}</p>
-                <button @click="loadAreasNaturalesData(selectedEntity, selectedYear)" class="retry-btn-small">
-                  Reintentar
-                </button>
+              <div v-else-if="areasError" class="error-state-small">
+                <p>Error cargando datos</p>
               </div>
 
               <VerticalBarChart

@@ -1,12 +1,12 @@
 <!-- src/modules/qualitativeIndicators/components/GobernabilidadView.vue -->
-<!-- ✅ VERSIÓN COMPACTA - Todo ajustado al espacio disponible -->
+<!-- ✅ VERSIÓN COMPACTA - Con error states en todas las secciones -->
 <template>
   <div class="gobernabilidad-container">
     <!-- ✅ EMPTY STATE -->
     <div v-if="!selectedEntity" class="global-empty-state">
       <div class="empty-state-content">
         <div class="empty-state-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#718096" stroke-width="1.5">
+          <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#718096" stroke-width="1.5">
             <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
             <line x1="8" y1="2" x2="8" y2="18"/>
             <line x1="16" y1="6" x2="16" y2="22"/>
@@ -84,6 +84,10 @@
             <div class="spinner"></div>
           </div>
 
+          <div v-else-if="satisfaccionError" class="section-content error-state-small">
+            <p>Error cargando datos</p>
+          </div>
+
           <div v-else class="section-content satisfaccion-content">
             <div class="bars-container">
               <div class="bar-column">
@@ -135,11 +139,15 @@
             <div class="spinner"></div>
           </div>
 
+          <div v-else-if="indicesError" class="section-content error-state-small">
+            <p>Error cargando datos</p>
+          </div>
+
           <div v-else class="section-content indices-content">
             <!-- IGOPP -->
             <div class="indice-row">
               <div class="indice-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0F3759" stroke-width="1.5">
+                <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#0F3759" stroke-width="1.5">
                   <path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/>
                 </svg>
               </div>
@@ -157,7 +165,7 @@
             <!-- BIPE -->
             <div class="indice-row">
               <div class="indice-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0F3759" stroke-width="1.5">
+                <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#0F3759" stroke-width="1.5">
                   <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12l2 2 4-4"/>
                 </svg>
               </div>
@@ -175,7 +183,7 @@
             <!-- ITDIF -->
             <div class="indice-row">
               <div class="indice-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0F3759" stroke-width="1.5">
+                <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#0F3759" stroke-width="1.5">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                   <polyline points="14 2 14 8 20 8"/>
                 </svg>
@@ -209,6 +217,10 @@
 
           <div v-if="pbrsedLoading" class="section-content loading-state">
             <div class="spinner"></div>
+          </div>
+
+          <div v-else-if="pbrsedError" class="section-content error-state-small">
+            <p>Error cargando datos</p>
           </div>
 
           <div v-else class="section-content pbrsed-content">
@@ -279,6 +291,10 @@
 
           <div v-if="iciLoading" class="section-content loading-state">
             <div class="spinner"></div>
+          </div>
+
+          <div v-else-if="iciError" class="section-content error-state-small">
+            <p>Error cargando datos</p>
           </div>
 
           <div v-else class="section-content ici-content">
@@ -387,8 +403,7 @@ const parseNumericValue = (value) => {
   
   let stringValue = String(value).trim()
   stringValue = stringValue.replace(/\s/g, '')
-  stringValue = stringValue.replace(/\./g, '')
-  stringValue = stringValue.replace(/,/g, '.')
+  stringValue = stringValue.replace(/,/g, '')
   
   const result = parseFloat(stringValue)
   return isNaN(result) ? 0 : result
@@ -400,6 +415,7 @@ const parseNumericValue = (value) => {
 const satisfaccionFederal = ref(0)
 const satisfaccionEstatal = ref(0)
 const satisfaccionLoading = ref(false)
+const satisfaccionError = ref(false)
 
 const avgSatisfaccion = computed(() => {
   return ((satisfaccionFederal.value + satisfaccionEstatal.value) / 2).toFixed(1)
@@ -408,6 +424,7 @@ const avgSatisfaccion = computed(() => {
 const loadSatisfaccionData = async (entityName, year) => {
   try {
     satisfaccionLoading.value = true
+    satisfaccionError.value = false
     
     if (!entityName) {
       satisfaccionFederal.value = 0
@@ -420,10 +437,12 @@ const loadSatisfaccionData = async (entityName, year) => {
     const mappingFederal = getMapping('satisfaccionFederal')
     const sheetNameFederal = getSheetName('satisfaccionFederal')
     const rawDataFederal = await fetchData('satisfaccionFederal', sheetNameFederal)
+    if (!rawDataFederal || rawDataFederal.length === 0) throw new Error('Sin datos de satisfacción federal')
     
     const mappingEstatal = getMapping('satisfaccionEstatal')
     const sheetNameEstatal = getSheetName('satisfaccionEstatal')
     const rawDataEstatal = await fetchData('satisfaccionEstatal', sheetNameEstatal)
+    if (!rawDataEstatal || rawDataEstatal.length === 0) throw new Error('Sin datos de satisfacción estatal')
     
     const entityRowFederal = rawDataFederal.find(row => row[mappingFederal.categoryColumn] === entityName)
     const entityRowEstatal = rawDataEstatal.find(row => row[mappingEstatal.categoryColumn] === entityName)
@@ -433,6 +452,7 @@ const loadSatisfaccionData = async (entityName, year) => {
     
   } catch (err) {
     console.error('❌ [Satisfacción] Error:', err)
+    satisfaccionError.value = true
   } finally {
     satisfaccionLoading.value = false
   }
@@ -445,6 +465,7 @@ const igoppValue = ref(0)
 const bipeValue = ref(0)
 const itdifValue = ref(0)
 const indicesLoading = ref(false)
+const indicesError = ref(false)
 
 const headerIndicators = computed(() => [
   { label: 'IGOPP', value: igoppValue.value },
@@ -455,6 +476,7 @@ const headerIndicators = computed(() => [
 const loadIndicesData = async (entityName, year) => {
   try {
     indicesLoading.value = true
+    indicesError.value = false
     
     if (!entityName) {
       igoppValue.value = 0
@@ -468,23 +490,27 @@ const loadIndicesData = async (entityName, year) => {
     const mappingIGOPP = getMapping('IGOPP')
     const sheetNameIGOPP = getSheetName('IGOPP')
     const rawDataIGOPP = await fetchData('IGOPP', sheetNameIGOPP)
+    if (!rawDataIGOPP || rawDataIGOPP.length === 0) throw new Error('Sin datos IGOPP')
     const entityRowIGOPP = rawDataIGOPP.find(row => row[mappingIGOPP.categoryColumn] === entityName)
     igoppValue.value = entityRowIGOPP ? parseNumericValue(entityRowIGOPP[mappingIGOPP.variables[0].column]) : 0
     
     const mappingBIPE = getMapping('BIPE')
     const sheetNameBIPE = getSheetName('BIPE')
     const rawDataBIPE = await fetchData('BIPE', sheetNameBIPE)
+    if (!rawDataBIPE || rawDataBIPE.length === 0) throw new Error('Sin datos BIPE')
     const entityRowBIPE = rawDataBIPE.find(row => row[mappingBIPE.categoryColumn] === entityName)
     bipeValue.value = entityRowBIPE ? parseNumericValue(entityRowBIPE[mappingBIPE.variables[0].column]) : 0
     
     const mappingITDIF = getMapping('ITDIF')
     const sheetNameITDIF = getSheetName('ITDIF')
     const rawDataITDIF = await fetchData('ITDIF', sheetNameITDIF)
+    if (!rawDataITDIF || rawDataITDIF.length === 0) throw new Error('Sin datos ITDIF')
     const entityRowITDIF = rawDataITDIF.find(row => row[mappingITDIF.categoryColumn] === entityName)
     itdifValue.value = entityRowITDIF ? parseNumericValue(entityRowITDIF[mappingITDIF.variables[0].column]) : 0
     
   } catch (err) {
     console.error('❌ [Índices] Error:', err)
+    indicesError.value = true
   } finally {
     indicesLoading.value = false
   }
@@ -498,10 +524,12 @@ const iciConsistencia = ref(0)
 const iciProyectos = ref(0)
 const iciIndicadores = ref(0)
 const iciLoading = ref(false)
+const iciError = ref(false)
 
 const loadICIData = async (entityName, year) => {
   try {
     iciLoading.value = true
+    iciError.value = false
     
     if (!entityName) {
       iciGeneral.value = 0
@@ -516,6 +544,7 @@ const loadICIData = async (entityName, year) => {
     const mapping = getMapping('ICI')
     const sheetName = getSheetName('ICI')
     const rawData = await fetchData('ICI', sheetName)
+    if (!rawData || rawData.length === 0) throw new Error('Sin datos ICI')
     
     const entityRow = rawData.find(row => row[mapping.categoryColumn] === entityName)
     
@@ -528,6 +557,7 @@ const loadICIData = async (entityName, year) => {
     
   } catch (err) {
     console.error('❌ [ICI] Error:', err)
+    iciError.value = true
   } finally {
     iciLoading.value = false
   }
@@ -539,6 +569,7 @@ const loadICIData = async (entityName, year) => {
 const pbrsedValue = ref(0)
 const diagnosticoValue = ref('N/A')
 const pbrsedLoading = ref(false)
+const pbrsedError = ref(false)
 
 const diagnosticoClass = computed(() => {
   const value = diagnosticoValue.value.toLowerCase()
@@ -567,6 +598,7 @@ const diagnosticoIconColor = computed(() => {
 const loadPBRSEDData = async (entityName, year) => {
   try {
     pbrsedLoading.value = true
+    pbrsedError.value = false
     
     if (!entityName) {
       pbrsedValue.value = 0
@@ -579,6 +611,7 @@ const loadPBRSEDData = async (entityName, year) => {
     const mapping = getMapping('PBRSED')
     const sheetName = getSheetName('PBRSED')
     const rawData = await fetchData('PBRSED', sheetName)
+    if (!rawData || rawData.length === 0) throw new Error('Sin datos PBRSED')
     
     const entityRow = rawData.find(row => row[mapping.categoryColumn] === entityName)
     
@@ -589,6 +622,7 @@ const loadPBRSEDData = async (entityName, year) => {
     
   } catch (err) {
     console.error('❌ [PBRSED] Error:', err)
+    pbrsedError.value = true
   } finally {
     pbrsedLoading.value = false
   }
@@ -771,7 +805,7 @@ onMounted(() => {
 }
 
 .mini-donut-label {
-  font-size: 7px;
+  font-size: 10px;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.7);
   text-transform: uppercase;
@@ -849,6 +883,25 @@ onMounted(() => {
   overflow: hidden;
 }
 
+/* ERROR STATE */
+.error-state-small {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+  padding: 10px;
+  text-align: center;
+  background: #f8fafc;
+}
+
+.error-state-small p {
+  color: #666;
+  font-size: 12px;
+  margin: 0;
+}
+
 /* SATISFACCIÓN CIUDADANA */
 .satisfaccion-content {
   background: white;
@@ -875,7 +928,7 @@ onMounted(() => {
 }
 
 .bar-value-text {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   margin-bottom: 2px;
 }
@@ -910,7 +963,7 @@ onMounted(() => {
   align-items: center;
   gap: 3px;
   margin-top: 2px;
-  font-size: 8px;
+  font-size: 12px;
   color: #64748b;
 }
 
@@ -988,7 +1041,7 @@ onMounted(() => {
 }
 
 .indice-label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   color: #0F3759;
 }
@@ -1095,7 +1148,7 @@ onMounted(() => {
 .diagnostico-bajo { color: #dc2626; }
 
 .pbrsed-label {
-  font-size: 7px;
+  font-size: 10px;
   color: #94a3b8;
   text-transform: uppercase;
   letter-spacing: 0.3px;
@@ -1133,7 +1186,7 @@ onMounted(() => {
 .ici-label {
   width: 75px;
   flex-shrink: 0;
-  font-size: 10px;
+  font-size: 12px;
   color: #64748b;
 }
 

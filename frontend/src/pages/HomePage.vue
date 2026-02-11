@@ -404,7 +404,8 @@ const {
   handleStateHover,
   handleStateLeave,
   resetSelection,
-  initializeData
+  initializeData,
+  reloadDataForYear
 } = props.mapsComposable || useMaps()
 
 const {
@@ -774,13 +775,14 @@ const handleEntityChange = async (entity) => {
       internationalYears.value = [...intYears]
       availableYears.value = intYears
       
-      if (selectedYear.value === null) {
+    if (selectedYear.value === null) {
         console.log('📅 [Internacional] Manteniendo "Todos los años" (null)')
       } else if (!intYears.includes(selectedYear.value)) {
         const firstYear = intYears[0]
         selectedYear.value = firstYear
         setActiveYear(firstYear)
-      }
+        await reloadDataForYear(firstYear)
+    }
       
       filterBarKey.value++
       await nextTick()
@@ -830,9 +832,14 @@ const handleYearChange = async (year) => {
     setActiveYear(year)
   }
   
-  await nextTick()
-  
+  // Solo recargar datos del mapa y rankings cuando NO está el panel cualitativo abierto
   if (!isRetractableExpanded.value) {
+    if (year) {
+      await reloadDataForYear(year)
+    }
+    
+    await nextTick()
+    
     if (showStackedArea.value) {
       await loadIFSSData()
     } else if (showRegionalCharts.value) {
@@ -916,7 +923,9 @@ const handleStateClickWithEmit = async (stateName) => {
   handleStateClick(stateName)
   selectedEntity.value = stateName
   currentDataView.value = 'subnacional'
-  restoreInitialYears()
+  if (!isRetractableExpanded.value) {
+    restoreInitialYears()
+  }
   await nextTick()
   
   if (selectedState.value === stateName) {
@@ -979,9 +988,12 @@ const handleYearsLoaded = async (years) => {
   if (years && years.length > 0) {
     availableYears.value = years
     
-    const firstYear = years[0]
-    selectedYear.value = firstYear
-    setActiveYear(firstYear)
+    if (selectedYear.value !== null && !years.includes(selectedYear.value)) {
+      const firstYear = years[0]
+      selectedYear.value = firstYear
+      setActiveYear(firstYear)
+      console.log('📅 [HomePage] Año actual no disponible, cambiando a:', firstYear)
+    }
     
     filterBarKey.value++
     await nextTick()
@@ -1069,10 +1081,15 @@ const handlePanelClosed = async () => {
   
   availableYears.value = [...initialYears.value]
   
-  if (initialYears.value.length > 0) {
+  const currentYear = selectedYear.value
+  if (currentYear !== null && initialYears.value.includes(currentYear)) {
+    setActiveYear(currentYear)
+    await reloadDataForYear(currentYear)
+  } else if (initialYears.value.length > 0) {
     const preferredYear = initialYears.value.includes('2024') ? '2024' : initialYears.value[0]
     selectedYear.value = preferredYear
     setActiveYear(preferredYear)
+    await reloadDataForYear(preferredYear)
   }
   
   filterBarKey.value++
@@ -1105,10 +1122,11 @@ const handleOverlayClick = async () => {
   
   restoreInitialYears()
   
-  if (availableYears.value.length > 0) {
+if (availableYears.value.length > 0) {
     const preferredYear = availableYears.value.includes('2024') ? '2024' : availableYears.value[0]
     selectedYear.value = preferredYear
     setActiveYear(preferredYear)
+    await reloadDataForYear(preferredYear)
   }
   
   resetSelection()
