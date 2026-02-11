@@ -1,5 +1,6 @@
 <!-- src/modules/qualitativeIndicators/components/PresupuestosView.vue -->
 <!-- ✅ VERSIÓN COMPACTA - Header de presupuesto más delgado -->
+<!-- ✅ CORREGIDO: Error states estandarizados sin botones de retry -->
 <template>
   <div class="presupuestos-container">
     <!-- ✅ EMPTY STATE cuando no hay entidad seleccionada -->
@@ -74,14 +75,12 @@
       <!-- Sección Inferior: Financiamientos y Programas -->
       <div class="bottom-section">
         <div class="combined-section">
-          <div v-if="financiamientosLoading || programasLoading" class="loading-state">
+          <div v-if="financiamientosLoading || programasLoading" class="loading-state-small">
             <div class="spinner-small"></div>
-            <p>Cargando datos...</p>
           </div>
 
-          <div v-else-if="financiamientosError || programasError" class="error-state">
-            <p>Error: {{ financiamientosError || programasError }}</p>
-            <button @click="reloadAllData" class="retry-btn">Reintentar</button>
+          <div v-else-if="financiamientosError || programasError" class="error-state-small">
+            <p>Error cargando datos</p>
           </div>
 
           <SectorFinanceCard
@@ -153,7 +152,7 @@ const loadPresupuestoData = async (entityName = null, year = null) => {
     const sheetName = getSheetName('presupuestoEstatal')
     const rawData = await fetchData('presupuestoEstatal', sheetName)
     
-    if (rawData.length === 0) {
+    if (!rawData || rawData.length === 0) {
       throw new Error('No se obtuvieron datos')
     }
     
@@ -196,7 +195,7 @@ const loadFinanciamientosData = async (entityName = null, year = null) => {
     const sheetName = getSheetName('financiamientos')
     const rawData = await fetchData('financiamientos', sheetName)
     
-    if (rawData.length === 0) {
+    if (!rawData || rawData.length === 0) {
       throw new Error('No se obtuvieron datos')
     }
     
@@ -252,7 +251,7 @@ const loadProgramasData = async (entityName = null, year = null) => {
     const sheetName = getSheetName('programas')
     const rawData = await fetchData('programas', sheetName)
     
-    if (rawData.length === 0) {
+    if (!rawData || rawData.length === 0) {
       throw new Error('No se obtuvieron datos')
     }
     
@@ -329,12 +328,6 @@ const formatCurrencyShort = (value) => {
     return `$${(value / 1000).toFixed(0)}K`
   }
   return `$${Math.round(value)}`
-}
-
-const reloadAllData = () => {
-  loadPresupuestoData(props.selectedEntity, props.selectedYear)
-  loadFinanciamientosData(props.selectedEntity, props.selectedYear)
-  loadProgramasData(props.selectedEntity, props.selectedYear)
 }
 
 // ============================================
@@ -582,14 +575,16 @@ onMounted(async () => {
 }
 
 /* Loading & Error States */
-.loading-state, .error-state {
+.loading-state-small, .error-state-small {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   height: 100%;
   width: 100%;
-  padding: 20px;
+  padding: 10px;
+  text-align: center;
+  background: #f8fafc;
 }
 
 .spinner-small {
@@ -607,24 +602,9 @@ onMounted(async () => {
   100% { transform: rotate(360deg); }
 }
 
-.loading-state p, .error-state p {
+.error-state-small p {
   color: #666;
   font-size: 12px;
   margin: 0;
-}
-
-.retry-btn {
-  background: #ef4444;
-  color: white;
-  border: none;
-  padding: 6px 14px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 12px;
-  margin-top: 8px;
-}
-
-.retry-btn:hover {
-  background: #dc2626;
 }
 </style>

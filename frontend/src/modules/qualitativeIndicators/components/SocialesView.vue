@@ -1,6 +1,7 @@
 <!-- src/modules/qualitativeIndicators/components/SocialesView.vue -->
 <!-- ✅ ACTUALIZADO: Paleta azules, animaciones y diseño mejorado -->
 <!-- ✅ MODIFICADO: Card de Población sin barra ni posición -->
+<!-- ✅ CORREGIDO: Error states estandarizados sin botones de retry -->
 <template>
   <div class="sociales-container">
     <!-- ✅ EMPTY STATE CENTRALIZADO cuando no hay entidad seleccionada -->
@@ -24,7 +25,7 @@
     <div v-else class="card-body">
       <!-- FILA 1: 3 Secciones -->
       <div class="top-row">
-        <!-- SECCIÓN 1: MARGINACIÓN (movida desde fila inferior) -->
+        <!-- SECCIÓN 1: MARGINACIÓN -->
         <div class="marginacion-section card">
           <div class="card-header-dark">
             <div class="card-header-icon">
@@ -103,7 +104,7 @@
           </div>
         </div>
 
-        <!-- SECCIÓN 2: REZAGO SOCIAL - DISEÑO MEJORADO -->
+        <!-- SECCIÓN 2: REZAGO SOCIAL -->
         <div class="rezago-section card">
           <div class="card-header-dark">
             <div class="card-header-icon">
@@ -203,16 +204,12 @@
           </div>
 
           <div class="card-body-content">
-            <div v-if="giniLoading" class="loading-state">
+            <div v-if="giniLoading" class="loading-state-small">
               <div class="spinner-small"></div>
-              <p>Cargando datos...</p>
             </div>
 
-            <div v-else-if="giniError" class="error-state">
-              <p>Error: {{ giniError }}</p>
-              <button @click="loadGiniData(selectedEntity, selectedYear)" class="retry-btn-small">
-                Reintentar
-              </button>
+            <div v-else-if="giniError" class="error-state-small">
+              <p>Error cargando datos</p>
             </div>
 
             <HorizontalBarsList
@@ -226,7 +223,7 @@
 
       <!-- FILA 2: 3 Secciones (Desocupación 50%, IDH 25%, Población 25%) -->
       <div class="bottom-row">
-        <!-- SECCIÓN 4: DESOCUPACIÓN (movida desde fila superior) -->
+        <!-- SECCIÓN 4: DESOCUPACIÓN -->
         <div class="desocupacion-section card">
           <div class="card-header-dark">
             <div class="card-header-icon">
@@ -255,16 +252,12 @@
           </div>
 
           <div class="card-body-content">
-            <div v-if="desocupacionLoading" class="loading-state">
+            <div v-if="desocupacionLoading" class="loading-state-small">
               <div class="spinner-small"></div>
-              <p>Cargando datos...</p>
             </div>
 
-            <div v-else-if="desocupacionError" class="error-state">
-              <p>Error: {{ desocupacionError }}</p>
-              <button @click="loadDesocupacionData(selectedEntity, selectedYear)" class="retry-btn-small">
-                Reintentar
-              </button>
+            <div v-else-if="desocupacionError" class="error-state-small">
+              <p>Error cargando datos</p>
             </div>
 
             <HorizontalBarsList
@@ -327,7 +320,7 @@
           </div>
         </div>
 
-        <!-- ✅ SECCIÓN 6: POBLACIÓN - DISEÑO MEJORADO SIN BARRA NI POSICIÓN -->
+        <!-- SECCIÓN 6: POBLACIÓN -->
         <div class="poblacion-section card">
           <div class="card-header-dark">
             <div class="card-header-icon">
@@ -365,15 +358,12 @@
               <p>Error cargando datos</p>
             </div>
 
-            <!-- ✅ NUEVO DISEÑO DE POBLACIÓN -->
             <div v-else class="poblacion-content-new">
-              <!-- Valor grande de población -->
               <div class="poblacion-header">
                 <span class="poblacion-value-large">{{ formatNumberCompact(poblacionValue) }}</span>
                 <span class="poblacion-subtitle">Personas</span>
               </div>
               
-              <!-- Componente de visualización -->
               <div class="poblacion-visual">
                 <ScalablePerson :value="poblacionValue" />
               </div>
@@ -468,7 +458,7 @@ const loadDesocupacionData = async (entityName = null, year = null) => {
     const sheetName = getSheetName('desocupacion')
     const rawData = await fetchData('desocupacion', sheetName)
     
-    if (rawData.length === 0) {
+    if (!rawData || rawData.length === 0) {
       throw new Error('No se obtuvieron datos del Google Sheet')
     }
     
@@ -529,7 +519,7 @@ const loadMarginacionData = async (entityName = null, year = null) => {
     const sheetName = getSheetName('marginacion')
     const rawData = await fetchData('marginacion', sheetName)
     
-    if (rawData.length === 0) {
+    if (!rawData || rawData.length === 0) {
       throw new Error('No se obtuvieron datos')
     }
     
@@ -577,7 +567,7 @@ const loadIDHData = async (entityName = null, year = null) => {
     const sheetName = getSheetName('idh')
     const rawData = await fetchData('idh', sheetName)
     
-    if (rawData.length === 0) {
+    if (!rawData || rawData.length === 0) {
       throw new Error('No se obtuvieron datos')
     }
     
@@ -623,7 +613,7 @@ const loadPoblacionData = async (entityName = null, year = null) => {
     const sheetName = getSheetName('poblacion')
     const rawData = await fetchData('poblacion', sheetName)
     
-    if (rawData.length === 0) {
+    if (!rawData || rawData.length === 0) {
       throw new Error('No se obtuvieron datos')
     }
     
@@ -677,7 +667,7 @@ const loadRezagoData = async (entityName = null, year = null) => {
     const sheetName = getSheetName('rezagoSocial')
     const rawData = await fetchData('rezagoSocial', sheetName)
     
-    if (rawData.length === 0) {
+    if (!rawData || rawData.length === 0) {
       throw new Error('No se obtuvieron datos')
     }
     
@@ -738,7 +728,7 @@ const loadGiniData = async (entityName = null, year = null) => {
     const sheetName = getSheetName('indiceGini')
     const rawData = await fetchData('indiceGini', sheetName)
     
-    if (rawData.length === 0) {
+    if (!rawData || rawData.length === 0) {
       throw new Error('No se obtuvieron datos del Google Sheet')
     }
     
@@ -954,9 +944,7 @@ onMounted(async () => {
   overflow: hidden;
 }
 
-/* ============================================
-   ✅ HEADER OSCURO
-   ============================================ */
+/* HEADER OSCURO */
 .card-header-dark {
   display: flex;
   align-items: center;
@@ -994,9 +982,7 @@ onMounted(async () => {
   flex: 1;
 }
 
-/* ============================================
-   ✅ TOOLTIP
-   ============================================ */
+/* TOOLTIP */
 .info-tooltip {
   position: relative;
   margin-left: auto;
@@ -1064,9 +1050,7 @@ onMounted(async () => {
   transform: translateY(-4px);
 }
 
-/* ============================================
-   ✅ CARD BODY CONTENT
-   ============================================ */
+/* CARD BODY CONTENT */
 .card-body-content {
   flex: 1;
   overflow: hidden;
@@ -1122,6 +1106,7 @@ onMounted(async () => {
   width: 100%;
   padding: 10px;
   text-align: center;
+  background: #f8fafc;
 }
 
 .spinner-small {
@@ -1139,30 +1124,13 @@ onMounted(async () => {
   100% { transform: rotate(360deg); }
 }
 
-.retry-btn-small {
-  background: #f44336;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 13px;
-  margin-top: 10px;
-}
-
-.retry-btn-small:hover {
-  background: #d32f2f;
-}
-
 .error-state p, .error-state-small p {
   color: #666;
-  font-size: 14px;
-  margin: 0 0 10px 0;
+  font-size: 12px;
+  margin: 0;
 }
 
-/* ============================================
-   ✅ NUEVO DISEÑO - INDICATOR CONTENT
-   ============================================ */
+/* INDICATOR CONTENT */
 .indicator-content {
   display: flex;
   flex-direction: column;
@@ -1261,7 +1229,6 @@ onMounted(async () => {
 
 .indicator-stat-card .stat-label {
   font-size: 10px;
-
   padding-bottom: 5px;
 }
 
@@ -1321,9 +1288,7 @@ onMounted(async () => {
   font-size: 28px;
 }
 
-/* ============================================
-   ✅ BADGES AZULES
-   ============================================ */
+/* BADGES AZULES */
 .stat-badge {
   display: inline-flex;
   align-items: center;
@@ -1342,7 +1307,6 @@ onMounted(async () => {
   font-size: 15px;
 }
 
-/* Paleta de azules */
 .stat-badge.badge-blue-lightest {
   background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
   color: #0c4a6e;
@@ -1379,9 +1343,7 @@ onMounted(async () => {
   border: 1px solid #94a3b8;
 }
 
-/* ============================================
-   ✅ BARRA DE PROGRESO ANIMADA
-   ============================================ */
+/* BARRA DE PROGRESO ANIMADA */
 .indicator-progress-section {
   flex: 1;
   display: flex;
@@ -1445,12 +1407,8 @@ onMounted(async () => {
 }
 
 @keyframes fillProgress {
-  from {
-    width: 0;
-  }
-  to {
-    width: var(--target-width);
-  }
+  from { width: 0; }
+  to { width: var(--target-width); }
 }
 
 .progress-markers {
@@ -1477,9 +1435,7 @@ onMounted(async () => {
   font-weight: 700;
 }
 
-/* ============================================
-   IDH SECTION
-   ============================================ */
+/* IDH SECTION */
 .idh-content {
   padding: 10px;
   height: 100%;
@@ -1533,9 +1489,7 @@ onMounted(async () => {
   overflow: hidden;
 }
 
-/* ============================================
-   ✅ POBLACIÓN SECTION - NUEVO DISEÑO
-   ============================================ */
+/* POBLACIÓN SECTION */
 .poblacion-content-new {
   display: flex;
   flex-direction: column;
@@ -1583,7 +1537,6 @@ onMounted(async () => {
   overflow: hidden;
 }
 
-/* Ajustes responsivos */
 @media (max-height: 700px) {
   .poblacion-value-large {
     font-size: 26px;
