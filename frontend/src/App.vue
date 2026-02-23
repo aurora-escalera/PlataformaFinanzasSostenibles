@@ -60,9 +60,9 @@ const calculateScale = () => {
   if (width >= 2560) return 1
   if (width >= 1920) return 0.92
   if (width >= 1600) return 0.85
-  if (width >= 1440) return 0.80
-  if (width >= 1280) return 0.75
-  if (width >= 1024) return 0.70
+  if (width >= 1440) return 0.70
+  if (width >= 1280) return 0.70
+  if (width >= 769) return 0.70
   return 1
 }
 
@@ -172,19 +172,31 @@ body {
   :root { --app-scale: 0.85; }
 }
 
+/* ✅ FIX: era "max-width: px" (roto), corregido a 1599px */
 @media (min-width: 1440px) and (max-width: 1599px) {
   :root { --app-scale: 0.80; }
 }
 
-@media (min-width: 1280px) and (max-width: 1439px) {
-  :root { --app-scale: 0.75; }
-}
-
-@media (min-width: 1024px) and (max-width: 1279px) {
+@media (min-width: 900px) and (max-width: 1439px) {
   :root { --app-scale: 0.70; }
 }
 
-@media (max-width: 1023px) {
+/* ============================================
+   SCROLL HORIZONTAL PARA SCALE 0.70
+   (769px - 1439px)
+   ============================================ */
+@media (min-width: 769px) and (max-width: 1439px) {
+  html, body {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #app {
+    min-width: 1280px;
+  }
+}
+
+@media (max-width: 769px) {
   :root { --app-scale: 1; }
   #app {
     zoom: 1;
@@ -375,80 +387,7 @@ body > .map-tooltip-compact .tooltip-classification-bar {
   margin: 5px 0 !important;
 }
 
-/* ============================================
-   FIX: Tooltips de LinearChart y StackedArea - MÓVIL
-   ============================================ */
-@media (max-width: 768px) {
-  .linear-chart-container .tooltip-container,
-  .area-chart-container .tooltip-container {
-    padding: 4px 6px !important;
-    min-width: 160px !important;
-    max-width: 200px !important;
-    border-radius: 4px !important;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.1) !important;
-    top: 2% !important;
-  }
 
-  .linear-chart-container .tooltip-header,
-  .area-chart-container .tooltip-header {
-    margin-bottom: 2px !important;
-    padding-bottom: 2px !important;
-  }
-
-  .linear-chart-container .tooltip-year-label,
-  .area-chart-container .tooltip-year-label {
-    font-size: 8px !important;
-  }
-
-  .linear-chart-container .tooltip-content,
-  .area-chart-container .tooltip-content {
-    gap: 2px !important;
-  }
-
-  .linear-chart-container .tooltip-item,
-  .area-chart-container .tooltip-item {
-    font-size: 7px !important;
-    gap: 3px !important;
-  }
-
-  .linear-chart-container .tooltip-color-indicator,
-  .area-chart-container .tooltip-color-indicator {
-    width: 5px !important;
-    height: 5px !important;
-    border-radius: 1px !important;
-  }
-
-  .linear-chart-container .tooltip-variable-name,
-  .area-chart-container .tooltip-variable-name {
-    font-size: 7px !important;
-    white-space: nowrap !important;
-  }
-
-  .linear-chart-container .tooltip-variable-value,
-  .area-chart-container .tooltip-variable-value {
-    font-size: 7px !important;
-  }
-
-  .linear-chart-container .tooltip-sub-item,
-  .area-chart-container .tooltip-sub-item {
-    padding-left: 8px !important;
-  }
-
-  .linear-chart-container .tooltip-sub-item .tooltip-variable-name,
-  .area-chart-container .tooltip-sub-item .tooltip-variable-name {
-    font-size: 6px !important;
-  }
-
-  .linear-chart-container .tooltip-sub-item .tooltip-variable-value,
-  .area-chart-container .tooltip-sub-item .tooltip-variable-value {
-    font-size: 6px !important;
-  }
-
-  .linear-chart-container .tooltip-separator,
-  .area-chart-container .tooltip-separator {
-    margin: 1px 0 !important;
-  }
-}
 </style>
 
 <style scoped>
