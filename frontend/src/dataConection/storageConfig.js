@@ -1,6 +1,5 @@
 // src/dataConection/storageConfig.js
 // ✅ ACTUALIZADO con búsqueda en CUALITATIVOS REGIONALES en getSheetIdForFile y getSheetName
-
 console.log('API Key:', import.meta.env.VITE_GOOGLE_SHEETS_API_KEY)
 console.log('Sheet ID Principal:', import.meta.env.VITE_GOOGLE_SHEET_ID)
 console.log('Sheet ID Cuantitativos:', import.meta.env.VITE_GOOGLE_SHEET_ID_CUANTITATIVOS)
@@ -16,7 +15,7 @@ let currentActiveYear = '2024'
 
 export const storageConfig = {
   provider: import.meta.env.VITE_STORAGE_PROVIDER || 'googlesheets',
-  
+   
   googlesheets: {
     apiKey: import.meta.env.VITE_GOOGLE_SHEETS_API_KEY,
     
@@ -37,8 +36,8 @@ export const storageConfig = {
           datosCuantitativos: '2024',
           chartsPresupuestos: '2024', 
           chartsIngresos: '2024', 
-          posicionesCuantitativos: '2024'  
-        }
+          posicionesCuantitativos: '2024'
+          }
       },
       cuantitativosRegional: {
         sheetId: import.meta.env.VITE_GOOGLE_SHEET_ID,
@@ -299,7 +298,7 @@ export const storageConfig = {
       datosInternacionales: '2024'
     }
   },
-  
+   
   mappings: {
     // ✅ CUALITATIVOS REGIONALES - Estatus del país
     estatusDelPais: {
@@ -370,8 +369,8 @@ export const storageConfig = {
         }
       ]
     },
-
-        // ✅ CUALITATIVOS REGIONALES - Ambientales
+    
+    // ✅ CUALITATIVOS REGIONALES - Ambientales
     ambientalesRegional: {
       categoryColumn: 'País',
       variables: [
@@ -502,7 +501,8 @@ export const storageConfig = {
         }
       ]
     },
-     // ✅ CUALITATIVOS REGIONALES - Economicos
+    
+    // ✅ CUALITATIVOS REGIONALES - Economicos
     economicosRegional: {
       categoryColumn: 'País',
       variables: [
@@ -550,7 +550,7 @@ export const storageConfig = {
         }
       ]
     },
-
+    
     // ✅ CUALITATIVOS REGIONALES - Financiamiento
     financiamientoRegional: {
       categoryColumn: 'País',
@@ -585,7 +585,7 @@ export const storageConfig = {
         }
       ]
     },
-
+    
     // CUALITATIVOS - PRESUPUESTO
     presupuestoEstatal: {
       categoryColumn: 'Entidad Federativa',
@@ -728,7 +728,7 @@ export const storageConfig = {
         },
         {
           key: 'Bioecosistemas',
-          column: 'Bio-ecosistemas',
+          column: 'Bioecosistemas',   // ✅ CORREGIDO: era 'Bio-ecosistemas'
           label: 'Bioecosistemas',
           color: '#3B5A70',
           order: 6
@@ -749,7 +749,7 @@ export const storageConfig = {
         },
         {
           key: 'Eduambiental',
-          column: 'Edu-Ambiental',
+          column: 'Eduambiental',     // ✅ CORREGIDO: era 'Edu-Ambiental'
           label: 'Eduambiental',
           color: '#0F3759',
           order: 9
@@ -777,7 +777,7 @@ export const storageConfig = {
         }
       ]
     },
-
+    
     // CUALITATIVOS - GOBERNABILIDAD
     satisfaccionFederal: {
       categoryColumn: 'Entidad Federativa',
@@ -947,7 +947,7 @@ export const storageConfig = {
         }
       ]
     },
-
+    
     // CUALITATIVOS - SOCIALES
     desocupacion: {
       categoryColumn: 'Entidad Federativa',
@@ -1218,7 +1218,7 @@ export const storageConfig = {
         }
       ]
     },
-
+    
     // CUANTITATIVOS
     chartsPresupuestos: {
       stateColumn: 'Entidad Federativa',
@@ -1407,8 +1407,8 @@ export const storageConfig = {
         },
       ]
     },
-//CUANTITATIVO INTERNACIONAL
-datosInternacionales: {
+    //CUANTITATIVO INTERNACIONAL
+    datosInternacionales: {
       categoryColumn: 'País',
       variables: [
         {
@@ -1421,7 +1421,7 @@ datosInternacionales: {
         }
       ]
     },
-// CUANTITATIVOS REGIONALES
+    // CUANTITATIVOS REGIONALES
     chartsPresupuestosRegional: {
       stateColumn: 'Año',
       variableColumns: [
@@ -1656,24 +1656,24 @@ datosInternacionales: {
           order: 2
         },
         {
-      key: 'ps_val_reg',
-      column: 'PS ($)',
-      label: 'PS Regional',
-      colorClass: 'green',
-      color: '#7cb342',
-      order: 9
-    },
-    {
-      key: 'ps_pos_reg',
-      column: 'POS_PS',
-      label: 'Posicion PS Regional',
-      colorClass: 'green',
-      color: '#7cb342',
-      order: 10
-    }
+          key: 'ps_val_reg',
+          column: 'PS ($)',
+          label: 'PS Regional',
+          colorClass: 'green',
+          color: '#7cb342',
+          order: 9
+        },
+        {
+          key: 'ps_pos_reg',
+          column: 'POS_PS',
+          label: 'Posicion PS Regional',
+          colorClass: 'green',
+          color: '#7cb342',
+          order: 10
+        }
       ]
     },
-
+    
     rankingCuantitativo: {
       stateColumn: 'Entidad Federativa',
       columnsByVariable: {
@@ -1694,8 +1694,7 @@ datosInternacionales: {
         }
       ]
     },
-
- //Historicos  
+    //Historicos
     iicBarChart: {
       yearColumn: 'Año',
       variableColumns: [
@@ -1742,7 +1741,7 @@ datosInternacionales: {
         }
       ]
     },
-
+    
     ifssStackedArea: {
       yearColumn: 'Año',
       variableColumns: [
@@ -1836,7 +1835,6 @@ datosInternacionales: {
           label: 'Desastres Naturales',
           color: '#a5d6a7',
         }
-
       ]
     },
     
@@ -1983,7 +1981,7 @@ datosInternacionales: {
       ]
     }
   },
-  
+   
   variablesConfig: {
     federal: { label: 'Federal', color: '#0F3759', order: 1 },
     estatal: { label: 'Estatal', color: '#3B5A70', order: 2 },
@@ -2161,7 +2159,6 @@ export function getSheetName(fileKey) {
     'economicosRegional',
     'financiamientoRegional'
     // ⚠️ NOTA: datosInternacionales NO usa año dinámico por defecto
-    // Si necesitas que use año dinámico, agrégalo aquí
   ]
   
   if (dynamicYearFiles.includes(fileKey)) {
@@ -2247,7 +2244,6 @@ export function getSheetName(fileKey) {
   
   return config.files[fileKey] || fileKey
 }
-
 
 export function getMapping(mappingName) {
   const mapping = storageConfig.mappings[mappingName]
